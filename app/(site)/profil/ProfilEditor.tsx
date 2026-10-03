@@ -10,15 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { KANTONE, chf } from "@/lib/ch";
+import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
+import { chf } from "@/lib/ch";
 import { downloadBytes } from "@/lib/download";
-import { GROESSEN, RECHTSFORMEN, isProfileEmpty, type Profile, type ProfileKey } from "@/lib/profile";
+import { isProfileEmpty, type Profile } from "@/lib/profile";
 import { useProfile } from "@/lib/use-profile";
-
-const selectClass =
-  "h-11 w-full rounded-lg border border-input bg-paper px-3 text-base focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 type Notice = { kind: "ok" | "error"; text: string } | null;
 
@@ -39,14 +35,11 @@ export function summaryRows(p: Profile): { label: string; value: string }[] {
 }
 
 export function ProfilEditor() {
-  const { profile, ready, update, clearEverything, exportJson, importFrom } = useProfile();
+  const { profile, clearEverything, exportJson, importFrom } = useProfile();
   const [notice, setNotice] = useState<Notice>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pendingImport, setPendingImport] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const type = profile.organisationstyp ?? "kmu";
-  const set = (key: ProfileKey, value: string) => update({ [key]: value.trim() === "" ? undefined : value });
 
   function doExport() {
     const { text, filename } = exportJson();
@@ -87,78 +80,7 @@ export function ProfilEditor() {
       <section aria-labelledby="grunddaten" className="grid max-w-2xl gap-6">
         <h2 id="grunddaten">Grunddaten</h2>
 
-        <fieldset className="grid gap-2">
-          <legend className="mb-1 font-medium">Ich bin</legend>
-          <div className="flex flex-wrap gap-3">
-            {(
-              [
-                ["kmu", "KMU oder Selbständige"],
-                ["verein", "Verein"],
-              ] as const
-            ).map(([value, label]) => (
-              <label
-                key={value}
-                className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-input px-4 py-2 has-[:checked]:border-ink has-[:checked]:bg-surface"
-              >
-                <input
-                  type="radio"
-                  name="organisationstyp"
-                  value={value}
-                  checked={ready && type === value}
-                  onChange={() => update({ organisationstyp: value, groesse: undefined })}
-                  className="size-5 accent-ink"
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        <div className="grid gap-1.5">
-          <Label htmlFor="p-firma">{type === "verein" ? "Name des Vereins" : "Firma"}</Label>
-          <Input id="p-firma" autoComplete="organization" value={profile.firma ?? ""} onChange={(e) => set("firma", e.target.value)} />
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="p-branche">{type === "verein" ? "Tätigkeit des Vereins" : "Branche"}</Label>
-          <Input id="p-branche" value={profile.branche ?? ""} onChange={(e) => set("branche", e.target.value)} />
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="p-rechtsform">Rechtsform</Label>
-          <select id="p-rechtsform" className={selectClass} value={profile.rechtsform ?? ""} onChange={(e) => set("rechtsform", e.target.value)}>
-            <option value="">Bitte wählen</option>
-            {RECHTSFORMEN.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="p-ort">Ort</Label>
-          <Input id="p-ort" autoComplete="address-level2" value={profile.ort ?? ""} onChange={(e) => set("ort", e.target.value)} />
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="p-kanton">Kanton</Label>
-          <select id="p-kanton" className={selectClass} value={profile.kanton ?? ""} onChange={(e) => set("kanton", e.target.value)}>
-            <option value="">Bitte wählen</option>
-            {KANTONE.map(([code, name]) => (
-              <option key={code} value={code}>
-                {name} ({code})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="p-groesse">Grösse</Label>
-          <select id="p-groesse" className={selectClass} value={profile.groesse ?? ""} onChange={(e) => set("groesse", e.target.value)}>
-            <option value="">Bitte wählen</option>
-            {GROESSEN[type].map((g) => (
-              <option key={g.value} value={g.value}>
-                {g.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <ProfileFieldsForm fields={["organisationstyp", "firma", "branche", "rechtsform", "ort", "kanton", "groesse"]} />
         <p className="text-sm text-muted-foreground">Änderungen werden sofort in deinem Browser gespeichert.</p>
       </section>
 

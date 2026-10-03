@@ -1,4 +1,7 @@
 import { cn } from "cn";
+import { scoreBand } from "@/lib/score";
+
+export { scoreBand };
 
 type Props = {
   score: number;
@@ -7,13 +10,6 @@ type Props = {
   label?: string;
   className?: string;
 };
-
-/** Stufe in Worten, damit die Bedeutung nie nur an einer Farbe hängt. */
-export function scoreBand(ratio: number): { key: "tief" | "mittel" | "hoch"; text: string } {
-  if (ratio >= 0.75) return { key: "hoch", text: "stark" };
-  if (ratio >= 0.4) return { key: "mittel", text: "ausbaufähig" };
-  return { key: "tief", text: "Handlungsbedarf" };
-}
 
 export function ScoreBadge({ score, max = 100, label, className }: Props) {
   const safeMax = max > 0 ? max : 100;

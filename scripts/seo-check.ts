@@ -13,7 +13,9 @@ for (const tool of tools) {
   const problems: string[] = [];
   const c = readToolContent(tool.slug);
   const fm = c.frontmatter;
-  const kw = tool.keyword.toLowerCase();
+  // Bindestrich und Leerzeichen gelten als gleich («Digitaler-Auftritt-Check» enthält «Digitaler Auftritt»).
+  const norm = (t: string) => t.toLowerCase().replace(/[-–]/g, " ");
+  const kw = norm(tool.keyword);
 
   if (!fm.title || fm.title.length > 60) problems.push(`title: ${fm.title?.length ?? 0} Zeichen (höchstens 60)`);
   if (fm.title && !/schweiz/i.test(fm.title)) problems.push("title enthält «Schweiz» nicht");
@@ -21,12 +23,12 @@ for (const tool of tools) {
     problems.push(`description: ${fm.description?.length ?? 0} Zeichen (höchstens 155)`);
   }
   if (/^#\s+\S/m.test(c.body)) problems.push("zusätzliche H1 im Text");
-  if (!fm.h1?.toLowerCase().includes(kw)) problems.push(`Keyword «${tool.keyword}» fehlt in der H1`);
+  if (!norm(fm.h1 ?? "").includes(kw)) problems.push(`Keyword «${tool.keyword}» fehlt in der H1`);
 
-  const firstParagraph = (c.sections.warum ?? "").split(/\n\s*\n/)[0]?.toLowerCase() ?? "";
+  const firstParagraph = norm((c.sections.warum ?? "").split(/\n\s*\n/)[0] ?? "");
   if (!firstParagraph.includes(kw)) problems.push(`Keyword «${tool.keyword}» fehlt im ersten Absatz`);
 
-  const occurrences = (`${fm.h1 ?? ""}\n${c.body}`.toLowerCase().match(new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? []).length;
+  const occurrences = (norm(`${fm.h1 ?? ""}\n${c.body}`).match(new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? []).length;
   if (occurrences < 3 || occurrences > 5) problems.push(`Keyword «${tool.keyword}» kommt ${occurrences}-mal vor (3 bis 5)`);
 
   const internalLinks = getRelated(tool.slug).length + 1 + (getNextStep(tool.slug) ? 1 : 0);

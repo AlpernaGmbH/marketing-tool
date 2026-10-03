@@ -26,7 +26,6 @@ export default defineConfig({
       timeout: 60_000,
       env: {
         GATE_SECRET: "smoke-secret-smoke-secret-smoke-secret-0123",
-        MT_SMOKE: "1",
         N8N_WEBHOOK_URL: "http://127.0.0.1:3998/hook",
         UPSTASH_REDIS_REST_URL: "",
         UPSTASH_REDIS_REST_TOKEN: "",

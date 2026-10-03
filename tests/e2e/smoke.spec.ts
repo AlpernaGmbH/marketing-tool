@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-const TOOL = "smoke-test";
+const TOOL = "digitaler-auftritt-check";
+/** Abschnitt (section) nach der id seiner Überschrift. */
+const sec = (page: import("@playwright/test").Page, id: string) => page.locator(`section[aria-labelledby="${id}"]`);
 const lead = (over: Record<string, unknown> = {}) => ({
   name: "Anna Keller",
   firma: "Malerei Keller",
@@ -24,8 +26,11 @@ test.describe("Seiten", () => {
   test("mobil bei 375 px: kein horizontaler Überlauf, Menü öffnet", async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 375, height: 812 } });
     const page = await context.newPage();
+    for (const path of ["/", "/strategie", "/vereine", "/tools/digitaler-auftritt-check"]) {
+      await page.goto(path);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), path).toBe(false);
+    }
     await page.goto("/");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
     await page.getByRole("button", { name: "Menü" }).click();
     await expect(page.getByRole("link", { name: "Strategie" }).last()).toBeVisible();
     await context.close();
@@ -53,6 +58,144 @@ test.describe("Seiten", () => {
     await page.reload();
     await expect(page.getByLabel("Firma", { exact: true })).toHaveValue("Malerei Keller");
     await expect(page.getByLabel("Ort")).toHaveValue("Gossau");
+  });
+});
+
+test.describe("Startseite", () => {
+  test("zeigt Hero, vier Pfade plus Vereine, Meistgenutzt, Warum kostenlos, Pitch und sieben Fragen", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.getByRole("button", { name: /Menü/ })).toBeHidden();
+    // Auf der Startseite gibt es nur das grosse Suchfeld, nicht zusätzlich das aus der Kopfzeile.
+    await expect(page.getByRole("search")).toHaveCount(1);
+    await expect(page.getByRole("search", { name: "Welches Werkzeug suchst du?" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Tool finden" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Strategie-Pfad starten" })).toHaveAttribute("href", "/tools/digitaler-auftritt-check");
+
+    const pfade = sec(page, "pfade");
+    for (const [name, href] of [["Strategie", "/strategie"], ["Content", "/content"], ["Analyse", "/analyse"], ["Schweiz", "/schweiz"], ["Für Vereine", "/vereine"]]) {
+      await expect(pfade.getByRole("link", { name: new RegExp(`^${name}`) })).toHaveAttribute("href", href);
+    }
+
+    await expect(sec(page, "meistgenutzt").getByRole("link", { name: /Digitaler-Auftritt-Check/ })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "Warum kostenlos?" })).toBeVisible();
+    await expect(sec(page, "warum-kostenlos").locator("p")).toHaveCount(3);
+    await expect(page.getByRole("heading", { level: 2, name: "Marketing in der Schweiz – was anders ist" })).toBeVisible();
+    await expect(sec(page, "faq").locator("h3")).toHaveCount(7);
+  });
+
+  test("Suche findet das Werkzeug und öffnet es", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("searchbox", { name: "Welches Werkzeug suchst du?" }).fill("Auftritt");
+    await page.getByRole("link", { name: /Digitaler-Auftritt-Check/ }).first().click();
+    await expect(page).toHaveURL(/\/tools\/digitaler-auftritt-check$/);
+  });
+
+  test("enthält Organisation, Website und FAQPage als JSON-LD", async ({ page }) => {
+    await page.goto("/");
+    const types = await page.$$eval('script[type="application/ld+json"]', (nodes) => nodes.map((n) => JSON.parse(n.textContent ?? "{}")["@type"]));
+    expect(types).toEqual(["Organization", "WebSite", "FAQPage"]);
+  });
+});
+
+test.describe("Kategorieseiten", () => {
+  for (const page of ["strategie", "content", "analyse", "schweiz", "ki", "vereine"]) {
+    test(`/${page}: eine H1, Einleitung, Hintergrund, fünf Fragen, Canonical, JSON-LD`, async ({ page: p }) => {
+      const res = await p.goto(`/${page}`);
+      expect(res?.status()).toBe(200);
+      await expect(p.locator("h1")).toHaveCount(1);
+      await expect(sec(p, "hintergrund")).toBeVisible();
+      await expect(sec(p, "fragen").locator("h3")).toHaveCount(5);
+      await expect(p.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`/${page}$`));
+      const types = await p.$$eval('script[type="application/ld+json"]', (nodes) => nodes.map((n) => JSON.parse(n.textContent ?? "{}")["@type"]));
+      expect(types).toEqual(["CollectionPage", "FAQPage", "BreadcrumbList"]);
+    });
+  }
+
+  test("/strategie zeigt den Pfad mit dem Referenz-Werkzeug und Fortschritt 0", async ({ page }) => {
+    await page.goto("/strategie");
+    await expect(page.getByTestId("path-graphic")).toBeVisible();
+    await expect(sec(page, "pfad").getByRole("link", { name: /Digitaler-Auftritt-Check/ })).toBeVisible();
+    await expect(page.getByRole("search", { name: "Werkzeug suchen" })).toBeVisible(); // Kopfzeile
+    await expect(page.getByText("0 von 1 erledigt")).toBeVisible();
+    await expect(page.getByRole("note")).toContainText("Dieser Bereich ist im Aufbau");
+  });
+
+  test("/vereine ist ehrlich leer, solange kein Vereins-Werkzeug existiert", async ({ page }) => {
+    await page.goto("/vereine");
+    await expect(page.getByRole("note")).toContainText("noch kein Werkzeug");
+    await expect(sec(page, "pfad")).toHaveCount(0);
+    await expect(sec(page, "werkzeuge")).toHaveCount(0);
+  });
+
+  test("unbekannte Seiten sind 404", async ({ page }) => {
+    expect((await page.goto("/gibt-es-nicht"))?.status()).toBe(404);
+    expect((await page.goto("/strategie/gibt-es-nicht"))?.status()).toBe(404);
+  });
+
+  test("Open-Graph-Bild pro Kategorie ist ein PNG", async ({ request, page }) => {
+    await page.goto("/content");
+    const href = await page.locator('meta[property="og:image"]').getAttribute("content");
+    expect(href).toBeTruthy();
+    const res = await request.get(new URL(href!).pathname);
+    expect(res.status()).toBe(200);
+    expect(res.headers()["content-type"]).toContain("image/png");
+  });
+
+  test("der Fortschritt kommt aus dem Browser und wirkt auf Pfad und Startseite", async ({ page }) => {
+    await page.goto("/strategie");
+    await page.evaluate((slug) => localStorage.setItem(`mt:${slug}`, JSON.stringify({ v: 1, phase: "result", step: 0, answers: {}, counted: true })), TOOL);
+    await page.reload();
+    await expect(page.getByText("1 von 1 erledigt")).toBeVisible();
+    await expect(sec(page, "pfad").getByText("Erledigt", { exact: true })).toBeVisible();
+    await page.goto("/");
+    await expect(sec(page, "pfade").getByText("Pfad abgeschlossen")).toBeVisible();
+  });
+});
+
+test.describe("Referenz-Werkzeug im Browser", () => {
+  async function runToResult(page: import("@playwright/test").Page) {
+    await page.goto(`/tools/${TOOL}`);
+    await page.getByRole("button", { name: "Check starten" }).click();
+    await page.getByLabel("Website", { exact: true }).check();
+    await page.getByRole("button", { name: "Weiter" }).click();
+    const rows = page.locator("form fieldset");
+    const n = await rows.count();
+    expect(n).toBeGreaterThanOrEqual(3);
+    for (let i = 0; i < n; i++) await rows.nth(i).getByLabel("Nein").check();
+    await page.getByRole("button", { name: "Zur Zusammenfassung" }).click();
+    await page.getByRole("button", { name: "Ergebnis anzeigen" }).click();
+    await expect(page.getByText("Dein Ergebnis")).toBeVisible();
+  }
+
+  test("freier Durchlauf bis zum Ergebnis, Download erst nach dem Formular, Lead kommt bei n8n an", async ({ page }) => {
+    await runToResult(page);
+    await expect(page.getByText("Das würde ich zuerst tun")).toBeVisible();
+
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("Dein erstes Ergebnis war gratis.")).toBeVisible();
+
+    const email = `browser-${Date.now()}@example.ch`;
+    await dialog.getByLabel("Name").fill("Anna Keller");
+    await dialog.getByLabel("Firma").fill("Malerei Keller");
+    await dialog.getByLabel("E-Mail").fill(email);
+    await dialog.getByRole("checkbox").check();
+    const download = page.waitForEvent("download");
+    await dialog.getByRole("button", { name: "Freischalten" }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
+
+    await expect.poll(async () => {
+      const received = (await (await page.request.get("http://127.0.0.1:3998/received")).json()) as Record<string, string>[];
+      return received.find((l) => l.email === email)?.tool;
+    }).toBe(TOOL);
+  });
+
+  test("nach dem freien Durchlauf verlangt ein neuer Start das Formular", async ({ page }) => {
+    await runToResult(page);
+    await page.getByRole("button", { name: "Neu starten" }).click();
+    await page.getByRole("button", { name: "Check starten" }).click();
+    await expect(page.getByRole("dialog").getByText("Dein erstes Ergebnis war gratis.")).toBeVisible();
   });
 });
 

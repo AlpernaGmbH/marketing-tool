@@ -184,7 +184,7 @@ BreadcrumbList. Metadata: title ≤ 60 Zeichen mit «Schweiz», description ≤
     ## Alperna
     problem: …
     baustein: Google Business Profil
-    beweis: …
+    beweis: …            (oder «@baustein»: nimmt den Beweis aus content/pitch/bausteine.md)
 Schreibregeln: Nutzen vor Erklärung; der erste Satz jedes Abschnitts trägt
 die Aussage; Schweizer Beispiele (Gemeinden, Kantone, Anlässe, Behörden,
 Gesetze beim Namen); keine Füllwörter; Du-Form; jede Zahl mit Quelle in

@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryStore, SECRET, post } from "@/tests/helpers";
 
-vi.hoisted(() => {
-  process.env.MT_SMOKE = "1"; // registriert das Smoke-Tool in tools/index.ts
-});
-
 const store = new MemoryStore();
 const limit = vi.hoisted(() => ({ allow: true }));
 
@@ -18,7 +14,7 @@ import { POST as access } from "@/app/api/access/route";
 import { POST as complete } from "@/app/api/access/complete/route";
 import { POST as lead } from "@/app/api/lead/route";
 
-const TOOL = "smoke-test";
+const TOOL = "digitaler-auftritt-check";
 const form = { name: "Anna Keller", firma: "Malerei Keller", email: "anna@keller.ch", consent: true, tool: TOOL };
 const IP = "198.51.100.20";
 
