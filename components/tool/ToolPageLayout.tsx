@@ -1,8 +1,11 @@
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
+import { FaqList } from "@/components/site/FaqList";
+import { Html } from "@/components/site/Html";
+import { PageH1 } from "@/components/site/PageH1";
 import { AlpernaPitch } from "@/components/tool/AlpernaPitch";
 import { RelatedTools } from "@/components/tool/RelatedTools";
 import { minutesLabel } from "@/lib/ch";
-import { SECTION_TITLES, markdownToHtml, stripAlpernaFields, type ParsedToolContent } from "@/lib/content";
+import { SECTION_TITLES, faqToHtml, markdownToHtml, type ParsedToolContent } from "@/lib/content";
 import { CATEGORY_LABELS, type ToolConfig } from "@/lib/registry";
 
 type Props = {
@@ -12,34 +15,16 @@ type Props = {
   children: React.ReactNode;
 };
 
-/** «ICP-Builder für Schweizer KMU» → die gelbe Markierung liegt auf «Schweizer KMU» (eine pro Seite). */
-function H1({ text }: { text: string }) {
-  const i = text.indexOf(" für ");
-  if (i < 0) return <h1>{text}</h1>;
-  return (
-    <h1>
-      {text.slice(0, i + 5)}
-      <mark className="mark-yellow">{text.slice(i + 5)}</mark>
-    </h1>
-  );
-}
-
-function Html({ html }: { html: string }) {
-  return <div className="content" dangerouslySetInnerHTML={{ __html: html }} />;
-}
-
 /** Seitenaufbau Tool-Seite in der Reihenfolge aus CLAUDE.md. */
 export async function ToolPageLayout({ config, content, children }: Props) {
   const { frontmatter: fm, sections, faq, alperna } = content;
-  const [warum, nutzen, fehler, beispiel] = await Promise.all([
+  const [warum, nutzen, fehler, beispiel, faqItems] = await Promise.all([
     markdownToHtml(sections.warum ?? ""),
     markdownToHtml(sections.nutzen ?? ""),
     markdownToHtml(sections.fehler ?? ""),
     markdownToHtml(sections.beispiel ?? ""),
+    faqToHtml(faq),
   ]);
-  const faqHtml = await Promise.all(
-    faq.map(async (f) => ({ question: f.question, html: await markdownToHtml(stripAlpernaFields(f.answer)) })),
-  );
 
   return (
     <article>
@@ -52,7 +37,7 @@ export async function ToolPageLayout({ config, content, children }: Props) {
           ]}
         />
         <div className="mt-4">
-          <H1 text={fm.h1 ?? config.name} />
+          <PageH1 text={fm.h1 ?? config.name} />
         </div>
         <p className="measure mt-3 text-lg text-muted-foreground">{fm.tagline ?? config.tagline}</p>
         <p className="mt-3 text-sm text-muted-foreground">
@@ -95,15 +80,8 @@ export async function ToolPageLayout({ config, content, children }: Props) {
 
         <section aria-labelledby="fragen" className="pb-[var(--section-y)]">
           <h2 id="fragen">{SECTION_TITLES.fragen}</h2>
-          <div className="mt-4 grid gap-8">
-            {faqHtml.map((f) => (
-              <div key={f.question} className="measure">
-                <h3>{f.question}</h3>
-                <div className="mt-2">
-                  <Html html={f.html} />
-                </div>
-              </div>
-            ))}
+          <div className="mt-4">
+            <FaqList items={faqItems} />
           </div>
         </section>
 

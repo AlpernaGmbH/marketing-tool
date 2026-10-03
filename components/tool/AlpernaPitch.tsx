@@ -30,7 +30,17 @@ export function AlpernaPitch({ variant = "short", toolName, toolSlug, fields }: 
 
   const items = (bausteine?.items ?? []).filter((b) => usable(b.text));
   const gewaehlt = items.find((b) => b.name === (fields?.baustein as BausteinName | undefined));
+  // «beweis: @baustein» nimmt den Beweis aus content/pitch/bausteine.md, statt ihn im Seitentext zu wiederholen.
+  const beweis =
+    fields?.beweis === "@baustein"
+      ? bausteine?.items.find((b) => b.name === (fields?.baustein as BausteinName | undefined))?.beweis
+      : fields?.beweis;
   const angebot = bausteine && usable(bausteine.einstiegsangebot) ? bausteine.einstiegsangebot : null;
+
+  // Ohne Text und ohne Knöpfe (Bausteine noch offen, Ziele nicht gesetzt) bleibt der Abschnitt weg,
+  // statt eine Überschrift über einem leeren Kasten zu zeigen.
+  const hasText = variant === "short" ? usable(fields?.problem) || !!gewaehlt || usable(beweis) : items.length > 0;
+  if (!hasText && !erstgespraech && !wa) return null;
 
   return (
     <section aria-labelledby="alperna-pitch" className="rounded-lg border border-line bg-surface p-6 md:p-10">
@@ -40,7 +50,7 @@ export function AlpernaPitch({ variant = "short", toolName, toolSlug, fields }: 
         <div className="content mt-4">
           {usable(fields?.problem) && <p>{fields.problem}</p>}
           {gewaehlt && <p>{gewaehlt.text}</p>}
-          {usable(fields?.beweis) && <p>{fields.beweis}</p>}
+          {usable(beweis) && <p>{beweis}</p>}
           {gewaehlt?.name === "Website" && angebot && <p>{angebot}</p>}
         </div>
       ) : (

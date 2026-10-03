@@ -42,7 +42,7 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
-          <Search items={items} />
+          <Search items={items} hideOn="/" />
           <Link href="/profil" className="whitespace-nowrap text-[0.95rem] font-medium underline-offset-4 hover:underline">
             Mein Profil
           </Link>

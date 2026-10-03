@@ -186,6 +186,37 @@ describe("AlpernaPitch", () => {
     render(<AlpernaPitch fields={{ problem: "Nur das Problem.", baustein: "Website" }} />);
     expect(screen.getByText("Nur das Problem.")).toBeInTheDocument();
   });
+  it("nimmt bei «beweis: @baustein» den Beweis aus den Bausteinen, auch wenn dessen Text noch offen ist", () => {
+    bausteine.value = data();
+    render(<AlpernaPitch fields={{ problem: "Problem.", baustein: "Website", beweis: "@baustein" }} />);
+    expect(screen.getByText("Beweis Website")).toBeInTheDocument();
+    expect(screen.queryByText("@baustein")).not.toBeInTheDocument();
+    cleanup();
+    bausteine.value = data({ items: items.map((i) => ({ ...i, beweis: "TODO Beweis" })) });
+    const { container } = render(<AlpernaPitch fields={{ problem: "Problem.", baustein: "Website", beweis: "@baustein" }} />);
+    expect(container.textContent).not.toMatch(/TODO|@baustein/);
+    cleanup();
+    bausteine.value = null;
+    const { container: c2 } = render(<AlpernaPitch fields={{ problem: "Problem.", baustein: "Website", beweis: "@baustein" }} />);
+    expect(c2.textContent).not.toContain("@baustein");
+  });
+  it("zeigt nichts, solange weder Text noch Knöpfe vorhanden sind", () => {
+    vi.stubEnv("NEXT_PUBLIC_WHATSAPP_NUMBER", "");
+    vi.stubEnv("NEXT_PUBLIC_ERSTGESPRAECH_URL", "");
+    bausteine.value = data({ einstiegsangebot: "TODO", items: items.map((i) => ({ ...i, text: "TODO", beweis: "TODO" })) });
+    const long = render(<AlpernaPitch variant="long" />);
+    expect(long.container).toBeEmptyDOMElement();
+    cleanup();
+    bausteine.value = null;
+    const short = render(<AlpernaPitch />);
+    expect(short.container).toBeEmptyDOMElement();
+    cleanup();
+    // Ein einziger Knopf genügt, damit der Abschnitt erscheint.
+    vi.stubEnv("NEXT_PUBLIC_ERSTGESPRAECH_URL", "https://example.com/erstgespraech");
+    render(<AlpernaPitch variant="long" />);
+    expect(screen.getByRole("heading", { name: "Wenn du das lieber abgibst" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Kostenloses Erstgespräch" })).toBeInTheDocument();
+  });
   it("zeigt in der langen Fassung alle sechs Bausteine", () => {
     bausteine.value = data();
     render(<AlpernaPitch variant="long" />);

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s | Alperna",
   },
   description:
-    "Kostenlose Marketing-Werkzeuge für Schweizer KMU und Vereine: verständlich, nach Schweizer Recht, ohne Konto.",
+    "Kostenlose Marketing-Werkzeuge für Schweizer KMU und Vereine: verständlich, mit Ergebnis in Minuten, ohne Konto.",
   applicationName: "Alperna Marketing-Tools",
   openGraph: {
     type: "website",

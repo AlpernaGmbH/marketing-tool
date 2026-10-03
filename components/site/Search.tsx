@@ -2,7 +2,7 @@
 
 import Fuse from "fuse.js";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useId, useMemo, useState } from "react";
 
 export type SearchItem = {
@@ -17,12 +17,17 @@ type Props = {
   items: SearchItem[];
   /** «hero» ist grösser und steht auf der Startseite. */
   variant?: "header" | "hero";
+  /** Beschriftung des Feldes für Hilfstechnologien; sie muss pro Seite eindeutig sein. */
+  label?: string;
+  /** Pfad, auf dem das Feld entfällt (die Startseite hat ihr eigenes grosses Suchfeld). */
+  hideOn?: string;
   onNavigate?: () => void;
 };
 
-export function Search({ items, variant = "header", onNavigate }: Props) {
+export function Search({ items, variant = "header", label = "Werkzeug suchen", hideOn, onNavigate }: Props) {
   const id = useId();
   const router = useRouter();
+  const pathname = usePathname();
   const [query, setQuery] = useState("");
 
   const fuse = useMemo(
@@ -49,17 +54,20 @@ export function Search({ items, variant = "header", onNavigate }: Props) {
     router.push(`/tools/${slug}`);
   }
 
+  if (hideOn !== undefined && pathname === hideOn) return null;
+
   return (
     <div className={variant === "hero" ? "w-full max-w-xl" : "w-full md:w-64"}>
       <form
         role="search"
+        aria-label={label}
         onSubmit={(e) => {
           e.preventDefault();
           if (results[0]) go(results[0].slug);
         }}
       >
         <label htmlFor={id} className="sr-only">
-          Werkzeug suchen
+          {label}
         </label>
         <input
           id={id}
