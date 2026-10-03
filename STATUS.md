@@ -1,6 +1,6 @@
 # STATUS.md
 
-Stand: 03.10.2026. **Etappe 1a (Infrastruktur) ist im Code fertig und getestet. Es läuft noch nichts online**, weil Voraussetzungen aus Etappe 0 fehlen (siehe «Offen»).
+Stand: 03.10.2026. **Etappe 1a (Infrastruktur) ist fertig, getestet und auf Vercel deployt** (hinter Vercel-Login, noch nicht öffentlich). Etappe 0 ist bis auf Upstash, WhatsApp-Nummer, Logo/Farben und DNS erledigt (siehe «Offen»).
 
 ## Fertig
 
@@ -12,24 +12,33 @@ Stand: 03.10.2026. **Etappe 1a (Infrastruktur) ist im Code fertig und getestet. 
 - **Qualität:** 240 Unit- und Komponententests, 11 Playwright-Smoke-Tests, `npm run check` grün. Lighthouse mobil gegen den Production-Build: Startseite und eine Tool-Seite je Performance 98, SEO 100, Accessibility 100 (gemessen mit einem Test-Tool, das danach wieder entfernt wurde).
 - Verifiziert im echten Browser (Chromium): freier Durchlauf bis zum Ergebnis ohne Formular, Formular beim ersten Download und beim zweiten Start, Download startet nach dem Absenden ohne Reload, danach alles offen, Lead kommt mit genau den erlaubten Feldern bei einem n8n-Stub an, 375 px ohne Überlauf, Skip-Link als erster Tab-Stopp.
 
-## Offen (Voraussetzungen, die nur ihr erledigen könnt)
+## Eingerichtet (Etappe 0, am 03.10.2026)
 
-| Was | Stand bei der Prüfung am 03.10.2026 |
+| Was | Stand |
 |---|---|
-| Vercel-Projekt | Team `alpernatoolv1` ist verbunden, **enthält aber kein Projekt**. Damit gibt es auch kein `vercel link`, keine Preview-URL und keine Env-Variablen. |
-| Upstash Redis | Nicht angelegt (hängt am Vercel-Projekt). Bis dahin zählt nur das Cookie. |
-| n8n-Workflow «Tools-Lead» | **Existiert nicht.** n8n ist verbunden (11 andere Workflows), Credentials für Gmail, Notion und Anthropic sind da. `N8N_WEBHOOK_URL` fehlt. |
-| Repo | Der Plan nennt `alpernagmbh/marketing-tools`. Gebaut wurde in `AlpernaGmbH/alperna-website-v2` (leer, einziges Repo dieser Session). Name und Vercel-Verknüpfung sind eure Entscheidung. |
+| Repo | `AlpernaGmbH/marketing-tool`, privat, Branch `main`. `AlpernaGmbH` ist ein **persönlicher GitHub-Account**, keine Organisation. Der Name weicht vom Plan ab (`marketing-tools` mit s). |
+| Vercel | Projekt `marketing-tool` (Team `alpernatoolv1`, Hobby), mit dem Repo verknüpft, Auto-Deploy aus `main`, Region `fra1`. `*.vercel.app` ist durch Vercel-Login geschützt (nicht öffentlich, nicht indexierbar). |
+| Vercel-Variablen | Gesetzt: `GATE_SECRET` (neu erzeugt, sensitiv), `N8N_WEBHOOK_URL` (sensitiv), `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_ERSTGESPRAECH_URL` (Calendly «Kennenlern-Gespräch»). |
+| n8n | Workflow **«Tools-Lead»** (`BC48H0mAidcbY4zH`) ist aktiv: Webhook → Notion-Eintrag → Mail an `kontakt@alperna.ch` → Antwort 200. Echter Testlauf bestanden (Eintrag mit allen Feldern, Mail). Der Testeintrag steht in Notion mit Status «Verloren» und kann gelöscht werden. Der Webhook-Pfad ist ein langer Zufallspfad (Secret). |
+| CRM | Neue Notion-Datenbank **«Tools-Leads (tools.alperna.ch)»** unter «CRM’s», bewusst getrennt von den Outreach-Datenbanken (deren Workflows lesen «Neu»-Leads und sollen Inbound-Leads nicht mitverarbeiten). |
+
+## Offen
+
+| Was | Stand |
+|---|---|
+| Upstash Redis | Muss im Vercel-Dashboard angeklickt werden (Storage → Upstash Redis, Region EU, Free). Bis dahin zählt nur das Cookie; die Gate-Logik funktioniert so, ist aber pro Gerät statt pro IP. |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | Fehlt. Ohne sie entfällt der Knopf «Kurz schreiben». |
+| n8n-Workflow «Tools-Lead-Queue» | Fehlt noch (stündlich `lead_queue` aus Redis leeren). Braucht Upstash. Ohne ihn gehen Leads verloren, wenn n8n länger ausfällt und Redis gleichzeitig läuft. |
 | `assets/brand/` | Leer. Farben `--ink` und `--accent` sowie das Wortlogo sind **Platzhalter** (siehe `assets/brand/README.md`). |
 | `content/pitch/bausteine.md` | Vorlage mit TODO-Feldern liegt da, **Inhalt fehlt** (sechs Bausteine, Einstiegsangebot). Offene Felder erscheinen nicht auf der Seite. |
 | `specs/digitaler-auftritt-check.md` | Fehlt; Voraussetzung für Etappe 1b. |
-| Env-Variablen | `GATE_SECRET`, `N8N_WEBHOOK_URL`, `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_ERSTGESPRAECH_URL`, Upstash-Paar. Vorlage: `.env.example`. **Ohne `GATE_SECRET` ist das Gate aus** (siehe Entscheide 9). |
-| DNS `tools.alperna.ch` | CNAME auf Vercel, erst nach dem Projekt. |
+| DNS `tools.alperna.ch` | CNAME `tools` → `cname.vercel-dns.com` und Domain im Vercel-Projekt hinzufügen. Erst dann wird die Seite öffentlich. |
+| Altes Repo | `AlpernaGmbH/alperna-website-v2` enthält denselben Stand auf dem Branch `claude/pensive-newton-33588d`. Kann archiviert oder gelöscht werden. |
 | Umami, Gemini-Key | Umami erst Etappe 7, Gemini erst Etappe 8. Beides blockiert Etappe 1 nicht. |
 
 ## Entscheide (Abweichungen vom Plan und Auslegungen)
 
-1. **Repo:** Siehe oben. Der Code ist unabhängig vom Repo-Namen und lässt sich verschieben.
+1. **Repo:** `marketing-tool` (ohne s) auf dem persönlichen Account `AlpernaGmbH`. Die Session darf keine Repos anlegen (GitHub-Integration ohne Recht dafür); das Repo hat Alperna selbst angelegt.
 2. **`defineTool` liegt in `lib/define-tool.ts`, nicht in `lib/registry.ts`.** Der Plan hätte einen Zirkelimport erzeugt (`tool.config.ts` → Registry → `tools/index.ts` → `tool.config.ts`). `lib/registry.ts` exportiert `defineTool` weiter. CLAUDE.md ist angepasst.
 3. **`lib/profile.ts` (rein) und `lib/use-profile.ts` (Hook) getrennt**, damit `logic.ts` und Tests das Profil ohne React nutzen können. CLAUDE.md ist angepasst.
 4. **PDF-Schriften als `.woff`, nicht `.woff2`.** `@pdf-lib/fontkit` liest woff2, scheitert beim Subsetting aber mit `RangeError`; das PDF käme nie zustande. Die Webseite nutzt woff2. Beide Formate liegen in `public/fonts/` (OFL, Lizenztexte dabei).
