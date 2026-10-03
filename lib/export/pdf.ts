@@ -1,0 +1,305 @@
+import fontkit from "@pdf-lib/fontkit";
+import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { FOOTER_TEXT, type DocBlock, type DocumentModel } from "@/lib/export/model";
+
+// PDF im Browser (und in Tests unter Node): A4, Poppins für Titel, Montserrat für Text.
+// Die Schriften werden eingebettet; fehlende Zeichen werden ersetzt statt als Kästchen gedruckt.
+
+export type PdfFonts = {
+  /** Poppins 700 */
+  title: Uint8Array;
+  /** Poppins 600 */
+  heading: Uint8Array;
+  /** Montserrat 400 */
+  body: Uint8Array;
+  /** Montserrat 500 */
+  bodyMedium: Uint8Array;
+};
+
+const A4 = { w: 595.28, h: 841.89 };
+const M = { left: 56, right: 56, top: 78, bottom: 64 };
+const CONTENT_W = A4.w - M.left - M.right;
+const COLOR = {
+  ink: rgb(10 / 255, 10 / 255, 10 / 255),
+  muted: rgb(94 / 255, 90 / 255, 83 / 255),
+  line: rgb(228 / 255, 225 / 255, 218 / 255),
+  surface: rgb(245 / 255, 243 / 255, 239 / 255),
+  yellow: rgb(255 / 255, 198 / 255, 41 / 255),
+};
+
+/** Ersatz für Zeichen, die in den eingebetteten Schriften fehlen. */
+const REPLACEMENTS: Record<string, string> = {
+  "→": "->",
+  "←": "<-",
+  "≤": "<=",
+  "≥": ">=",
+  "✓": "x",
+  "✗": "x",
+  "×": "x",
+  "−": "-",
+  " ": " ",
+  " ": " ",
+  "\t": " ",
+};
+
+class Fonts {
+  private sets = new Map<PDFFont, Set<number>>();
+  constructor(
+    readonly title: PDFFont,
+    readonly heading: PDFFont,
+    readonly body: PDFFont,
+    readonly bodyMedium: PDFFont,
+  ) {
+    for (const f of [title, heading, body, bodyMedium]) this.sets.set(f, new Set(f.getCharacterSet()));
+  }
+  /** Text so umbauen, dass `font` jedes Zeichen kennt. */
+  safe(font: PDFFont, text: string): string {
+    const set = this.sets.get(font)!;
+    let out = "";
+    for (const ch of text.replace(/\r/g, "")) {
+      if (ch === "\n") out += ch;
+      else if (set.has(ch.codePointAt(0)!)) out += ch;
+      else {
+        const rep = REPLACEMENTS[ch];
+        out += rep && [...rep].every((c) => set.has(c.codePointAt(0)!)) ? rep : set.has(63) ? "?" : "";
+      }
+    }
+    return out;
+  }
+}
+
+/** Bricht Text in Zeilen von höchstens `width` Punkten. Sehr lange Wörter werden zeichenweise umbrochen. */
+export function wrapLines(text: string, font: PDFFont, size: number, width: number): string[] {
+  const lines: string[] = [];
+  for (const paragraph of text.split("\n")) {
+    const words = paragraph.split(/ +/).filter((w, i, a) => w !== "" || a.length === 1);
+    let line = "";
+    const push = () => {
+      lines.push(line);
+      line = "";
+    };
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (font.widthOfTextAtSize(candidate, size) <= width) {
+        line = candidate;
+        continue;
+      }
+      if (line) push();
+      if (font.widthOfTextAtSize(word, size) <= width) {
+        line = word;
+        continue;
+      }
+      // Wort länger als eine Zeile: zeichenweise
+      let chunk = "";
+      for (const ch of word) {
+        if (font.widthOfTextAtSize(chunk + ch, size) > width && chunk) {
+          lines.push(chunk);
+          chunk = ch;
+        } else chunk += ch;
+      }
+      line = chunk;
+    }
+    push();
+  }
+  return lines.length ? lines : [""];
+}
+
+type Cursor = { page: PDFPage; y: number };
+
+class Layout {
+  pages: PDFPage[] = [];
+  cur!: Cursor;
+  constructor(
+    private doc: PDFDocument,
+    private f: Fonts,
+    private model: DocumentModel,
+  ) {
+    this.newPage();
+  }
+
+  newPage() {
+    const page = this.doc.addPage([A4.w, A4.h]);
+    this.pages.push(page);
+    this.cur = { page, y: A4.h - M.top };
+  }
+
+  /** Stellt sicher, dass `h` Punkte Platz sind, sonst neue Seite. */
+  need(h: number) {
+    if (this.cur.y - h < M.bottom) this.newPage();
+  }
+
+  text(text: string, font: PDFFont, size: number, x: number, color = COLOR.ink) {
+    this.cur.page.drawText(text, { x, y: this.cur.y - size, size, font, color });
+  }
+
+  title() {
+    const { title, subtitle } = this.model;
+    this.cur.page.drawRectangle({ x: M.left, y: this.cur.y - 4, width: 44, height: 5, color: COLOR.yellow });
+    this.cur.y -= 22;
+    const lines = wrapLines(this.f.safe(this.f.title, title), this.f.title, 24, CONTENT_W);
+    for (const l of lines) {
+      this.text(l, this.f.title, 24, M.left);
+      this.cur.y -= 30;
+    }
+    if (subtitle) {
+      for (const l of wrapLines(this.f.safe(this.f.body, subtitle), this.f.body, 11, CONTENT_W)) {
+        this.text(l, this.f.body, 11, M.left, COLOR.muted);
+        this.cur.y -= 16;
+      }
+    }
+    this.cur.y -= 8;
+  }
+
+  block(b: DocBlock) {
+    switch (b.type) {
+      case "heading": {
+        const size = b.level === 1 ? 18 : b.level === 2 ? 14 : 11.5;
+        const font = this.f.heading;
+        const lines = wrapLines(this.f.safe(font, b.text), font, size, CONTENT_W);
+        this.need(lines.length * (size + 5) + 18 + (size + 5)); // Überschrift nie allein am Seitenende
+        this.cur.y -= b.level === 1 ? 14 : 10;
+        for (const l of lines) {
+          this.text(l, font, size, M.left);
+          this.cur.y -= size + 5;
+        }
+        this.cur.y -= 2;
+        break;
+      }
+      case "paragraph":
+        this.paragraph(b.text, M.left, CONTENT_W);
+        this.cur.y -= 6;
+        break;
+      case "list":
+        b.items.forEach((item, i) => {
+          const marker = b.ordered ? `${i + 1}.` : "•";
+          const indent = 18;
+          const lines = wrapLines(this.f.safe(this.f.body, item), this.f.body, 10.5, CONTENT_W - indent);
+          this.need(16);
+          this.text(this.f.safe(this.f.body, marker), this.f.bodyMedium, 10.5, M.left);
+          for (const l of lines) {
+            this.need(16);
+            this.text(l, this.f.body, 10.5, M.left + indent);
+            this.cur.y -= 16;
+          }
+          this.cur.y -= 2;
+        });
+        this.cur.y -= 4;
+        break;
+      case "facts":
+        this.table(
+          ["", ""],
+          b.items.map((f) => [f.label, f.value]),
+          [1, 2.4],
+          false,
+        );
+        break;
+      case "table":
+        this.table(b.header, b.rows, b.widths, true);
+        break;
+    }
+  }
+
+  paragraph(text: string, x: number, width: number) {
+    for (const l of wrapLines(this.f.safe(this.f.body, text), this.f.body, 10.5, width)) {
+      this.need(16);
+      this.text(l, this.f.body, 10.5, x);
+      this.cur.y -= 16;
+    }
+  }
+
+  table(header: string[], rows: string[][], widths: number[] | undefined, showHeader: boolean) {
+    const cols = header.length;
+    const rel = widths && widths.length === cols ? widths : Array(cols).fill(1);
+    const total = rel.reduce((a, b) => a + b, 0);
+    const colW = rel.map((w) => (w / total) * CONTENT_W);
+    const pad = 6;
+    const lh = 13;
+    const size = 9.5;
+
+    const rowLines = (cells: string[], font: PDFFont) =>
+      colW.map((w, i) => wrapLines(this.f.safe(font, cells[i] ?? ""), font, size, w - pad * 2));
+
+    const drawRow = (cells: string[], fillHeader: boolean) => {
+      const font = fillHeader ? this.f.heading : this.f.body;
+      let lines = rowLines(cells, font);
+      const maxLines = Math.floor((A4.h - M.top - M.bottom - pad * 2) / lh);
+      // Eine Zeile höher als eine Seite: abschneiden statt endlos Seiten zu erzeugen.
+      lines = lines.map((l) => (l.length > maxLines ? [...l.slice(0, maxLines - 1), "…"] : l));
+      const h = Math.max(...lines.map((l) => l.length)) * lh + pad * 2;
+      this.need(h);
+      const top = this.cur.y;
+      if (fillHeader) {
+        this.cur.page.drawRectangle({ x: M.left, y: top - h, width: CONTENT_W, height: h, color: COLOR.surface });
+      }
+      let x = M.left;
+      lines.forEach((cell, i) => {
+        cell.forEach((l, li) => {
+          this.cur.page.drawText(l, {
+            x: x + pad,
+            y: top - pad - size - li * lh + 2,
+            size,
+            font: !fillHeader && i === 0 && !showHeader ? this.f.bodyMedium : font,
+            color: COLOR.ink,
+          });
+        });
+        x += colW[i];
+      });
+      this.cur.page.drawLine({
+        start: { x: M.left, y: top - h },
+        end: { x: M.left + CONTENT_W, y: top - h },
+        thickness: 0.6,
+        color: COLOR.line,
+      });
+      this.cur.y = top - h;
+    };
+
+    if (showHeader) drawRow(header, true);
+    for (const r of rows) drawRow(r, false);
+    this.cur.y -= 10;
+  }
+}
+
+/** Kopf (Firma links, Datum rechts) und Fuss (Hinweis links, Seitenzahl rechts) auf jeder Seite. */
+function decorate(pages: PDFPage[], f: Fonts, model: DocumentModel) {
+  const firma = f.safe(f.bodyMedium, model.firma?.trim() || "Alperna");
+  const datum = model.datum ? f.safe(f.body, model.datum) : "";
+  const footer = f.safe(f.body, FOOTER_TEXT);
+  pages.forEach((page, i) => {
+    const top = A4.h - 40;
+    page.drawText(firma, { x: M.left, y: top, size: 9, font: f.bodyMedium, color: COLOR.muted });
+    if (datum) {
+      const w = f.body.widthOfTextAtSize(datum, 9);
+      page.drawText(datum, { x: A4.w - M.right - w, y: top, size: 9, font: f.body, color: COLOR.muted });
+    }
+    page.drawLine({ start: { x: M.left, y: top - 8 }, end: { x: A4.w - M.right, y: top - 8 }, thickness: 0.6, color: COLOR.line });
+
+    const bottom = 36;
+    const count = `Seite ${i + 1} von ${pages.length}`;
+    const cw = f.body.widthOfTextAtSize(count, 8.5);
+    page.drawText(footer, { x: M.left, y: bottom, size: 8.5, font: f.body, color: COLOR.muted });
+    page.drawText(count, { x: A4.w - M.right - cw, y: bottom, size: 8.5, font: f.body, color: COLOR.muted });
+  });
+}
+
+/** Baut das PDF. Wirft nicht bei unbekannten Zeichen oder sehr langen Wörtern. */
+export async function buildPdf(model: DocumentModel, fonts: PdfFonts): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  doc.registerFontkit(fontkit);
+  doc.setTitle(model.title);
+  doc.setAuthor(model.firma?.trim() || "Alperna");
+  doc.setCreator("tools.alperna.ch");
+  doc.setProducer("tools.alperna.ch");
+  doc.setLanguage("de-CH");
+
+  const f = new Fonts(
+    await doc.embedFont(fonts.title, { subset: true }),
+    await doc.embedFont(fonts.heading, { subset: true }),
+    await doc.embedFont(fonts.body, { subset: true }),
+    await doc.embedFont(fonts.bodyMedium, { subset: true }),
+  );
+  const layout = new Layout(doc, f, model);
+  layout.title();
+  for (const b of model.blocks) layout.block(b);
+  decorate(layout.pages, f, model);
+  return doc.save();
+}

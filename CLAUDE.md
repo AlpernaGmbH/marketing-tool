@@ -77,8 +77,9 @@ Breadcrumbs
 - lib/access.ts – ipHash(), readGateCookie(), writeGateCookie(), canStart(),
 markComplete(), unlock()
 - lib/redis.ts – Upstash-Client, Key-Helfer, TTLs
-- lib/profile.ts – useProfile(): localStorage-Key mt:profile, Export/Import
-JSON
+- lib/profile.ts – Profil-Typen, Validierung, Export/Import JSON (rein, ohne React)
+- lib/use-profile.ts – useProfile(): localStorage-Key mt:profile
+- lib/storage.ts, lib/use-local.ts – localStorage mit Rückfall auf Arbeitsspeicher
 - lib/ch.ts – chf(), dateCH(), typoCH(), uidValid()
 - data/*.json – Schweizer Datensätze, jede Datei mit meta {source, url, asOf}
 - content/tools/<slug>.md – Seitentext mit festen Abschnitten (Vorlage unten)

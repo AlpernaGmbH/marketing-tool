@@ -92,6 +92,18 @@ describe("LeadGate", () => {
     await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
   });
 
+  it("hält Einwilligungstext und Datenschutz-Link in einem Label zusammen", () => {
+    setup(vi.fn() as unknown as typeof fetch);
+    // Zugänglicher Name des Checkbox kommt aus dem Label, der Link steckt darin.
+    expect(screen.getByRole("checkbox", { name: /Alperna darf mich zu meinem Ergebnis kontaktieren/ })).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Datenschutzerklärung" });
+    expect(link).toHaveAttribute("href", "/datenschutz");
+    const label = document.querySelector('label[for="lead-consent"]');
+    expect(label).not.toBeNull();
+    expect(label!.contains(link)).toBe(true);
+    expect(label!.textContent).toContain("Alperna darf mich zu meinem Ergebnis kontaktieren");
+  });
+
   it("versteckt das Honeypot-Feld vor Hilfstechnologien und Tastatur", () => {
     setup(vi.fn() as unknown as typeof fetch);
     const honeypot = document.getElementById("lead-website") as HTMLInputElement;

@@ -56,8 +56,9 @@ export function LeadGate({ open, onOpenChange, tool, reason, onSuccess }: Props)
     setSubmitError(null);
     const result = await submitLead({ ...values, tool });
     if (result.ok) {
-      onOpenChange(false);
+      // Erst onSuccess (löst das wartende Tool oder den Download aus), dann schliessen.
       onSuccess();
+      onOpenChange(false);
       return;
     }
     setSubmitError(ERRORS[result.reason]);
@@ -65,7 +66,7 @@ export function LeadGate({ open, onOpenChange, tool, reason, onSuccess }: Props)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent data-reason={reason} className="sm:max-w-md">
+      <DialogContent data-reason={reason} className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Dein erstes Ergebnis war gratis.</DialogTitle>
           <DialogDescription>
@@ -126,13 +127,14 @@ export function LeadGate({ open, onOpenChange, tool, reason, onSuccess }: Props)
                   />
                 )}
               />
-              <Label htmlFor="lead-consent" id="lead-consent-text" className="leading-snug">
+              {/* Bewusst ein einfaches <label>: shadcn «Label» ist ein Flex-Container und würde Text und Link trennen. */}
+              <label htmlFor="lead-consent" id="lead-consent-text" className="text-sm leading-snug">
                 Alperna darf mich zu meinem Ergebnis kontaktieren. Mehr dazu in der{" "}
                 <Link href="/datenschutz" className="underline underline-offset-2">
                   Datenschutzerklärung
                 </Link>
                 .
-              </Label>
+              </label>
             </div>
             {errors.consent && (
               <p role="alert" className="text-sm text-destructive">
