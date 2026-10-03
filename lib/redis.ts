@@ -1,0 +1,63 @@
+import { Redis } from "@upstash/redis";
+
+const DAY = 24 * 60 * 60;
+
+/** TTLs in Sekunden. */
+export const TTL = {
+  run: 30 * DAY,
+  unlocked: 365 * DAY,
+  daily: 2 * DAY,
+} as const;
+
+/** Redis-Keys. <iphash> ist nie die Klartext-IP. */
+export const keys = {
+  run: (iphash: string) => `run:${iphash}`,
+  unlocked: (iphash: string) => `unlocked:${iphash}`,
+  popular: (slug: string) => `popular:${slug}`,
+  ai: (iphash: string, day: string) => `ai:${iphash}:${day}`,
+  lookup: (iphash: string, day: string) => `lookup:${iphash}:${day}`,
+  aiGlobal: (day: string) => `ai:global:${day}`,
+  leadQueue: "lead_queue",
+} as const;
+
+/** Datum als YYYY-MM-DD in Schweizer Zeit (Tageslimits laufen um Mitternacht in der Schweiz ab). */
+export function dayKey(date: Date = new Date()): string {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Zurich",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+let client: Redis | null | undefined;
+
+/**
+ * Upstash-Client oder null, wenn nicht konfiguriert. Der Vercel-Marketplace setzt
+ * UPSTASH_REDIS_REST_*; die älteren KV_REST_API_*-Namen gelten als Fallback.
+ */
+export function getRedis(): Redis | null {
+  if (client !== undefined) return client;
+  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  client = url && token ? new Redis({ url, token, retry: { retries: 1, backoff: () => 100 } }) : null;
+  return client;
+}
+
+/** Nur für Tests. */
+export function resetRedisClient(): void {
+  client = undefined;
+}
+
+/** Wartet höchstens `ms` auf Redis. Ein Besucher wartet nie länger wegen unserer Technik. */
+export async function withTimeout<T>(promise: Promise<T>, ms = 1500): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("redis_timeout")), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}

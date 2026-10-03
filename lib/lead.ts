@@ -1,0 +1,45 @@
+import type { LeadInput } from "@/lib/lead-schema";
+
+export { leadSchema, type LeadInput } from "@/lib/lead-schema";
+
+/** Genau diese Felder gehen an n8n, sonst nichts (CLAUDE.md, Harte Regel 1). */
+export type LeadPayload = {
+  name: string;
+  firma: string;
+  email: string;
+  telefon: string;
+  tool: string;
+  kategorie: string;
+  quelle: "tools.alperna.ch";
+  zeit: string;
+};
+
+export function buildPayload(input: LeadInput, kategorie: string, now = new Date()): LeadPayload {
+  return {
+    name: input.name,
+    firma: input.firma,
+    email: input.email,
+    telefon: input.telefon ?? "",
+    tool: input.tool,
+    kategorie,
+    quelle: "tools.alperna.ch",
+    zeit: now.toISOString(),
+  };
+}
+
+/** POST an den n8n-Webhook, Timeout 5 s. true bei 2xx. */
+export async function forwardToN8n(payload: LeadPayload, fetchImpl: typeof fetch = fetch): Promise<boolean> {
+  const url = process.env.N8N_WEBHOOK_URL;
+  if (!url) return false;
+  try {
+    const res = await fetchImpl(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

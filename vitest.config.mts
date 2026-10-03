@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 // Komponenten-Tests (*.test.tsx) setzen oben `// @vitest-environment jsdom`.
 export default defineConfig({
   plugins: [react()],
-  resolve: { alias: { "@": path.resolve(__dirname) } },
+  resolve: { alias: { "@": path.resolve(import.meta.dirname) } },
   test: {
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],

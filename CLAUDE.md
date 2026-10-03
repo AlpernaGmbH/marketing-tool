@@ -72,7 +72,8 @@ DocumentExport, ProfileBanner, LeadGate, ScoreBadge, ResultCard, CopyButton,
 LegalDisclaimer, AlpernaPitch, RelatedTools
 - components/site/ – Header, Footer, Search, PathCard, ToolCard, TrustLine,
 Breadcrumbs
-- lib/registry.ts – defineTool(), getTools(), getToolsByCategory(), getTool()
+- lib/define-tool.ts – defineTool(), zod-Schema, Typen (getrennt von der Registry, sonst Zirkelimport)
+- lib/registry.ts – getTools(), getToolsByCategory(), getTool(), getRelated(), getPath()
 - lib/access.ts – ipHash(), readGateCookie(), writeGateCookie(), canStart(),
 markComplete(), unlock()
 - lib/redis.ts – Upstash-Client, Key-Helfer, TTLs
@@ -212,7 +213,7 @@ Fortschritt aus dem lokalen Profil, ToolCards, SEO-Abschnitt 500 Wörter, FAQ,
 AlpernaPitch lang.
 
 ## Tool-Anatomie: tool.config.ts
-    import { defineTool } from '@/lib/registry'
+    import { defineTool } from '@/lib/define-tool'
     export default defineTool({
       slug: 'icp-builder',
       name: 'ICP-Builder',
