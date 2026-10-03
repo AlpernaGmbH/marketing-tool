@@ -1,5 +1,6 @@
 import type { ToolConfig } from "@/lib/define-tool";
 import smokeTool from "./_smoke/tool.config";
+// new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
 // Reihenfolge: Etappen-Reihenfolge, nicht alphabetisch.
