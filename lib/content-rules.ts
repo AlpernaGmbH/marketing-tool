@@ -38,6 +38,26 @@ const BANNED: Banned[] = [
 
 const SOURCE_RE = /\([^)]*(?:Quelle|BFS|Bundesamt|SECO|EDÖB|digiMONITOR|https?:|\b20\d{2}\b)[^)]*\)/i;
 
+/** Platzhalter dürfen nie auf eine öffentliche Seite. `extra` sind weitere Texte, z. B. Kopfdaten. */
+export function todoIssues(body: string, extra: string[] = []): Issue[] {
+  if (!/\bTODO\b/.test([body, ...extra].join("\n"))) return [];
+  const line = body.slice(0, Math.max(body.search(/\bTODO\b/), 0)).split("\n").length;
+  return [err("todo-left", `Platzhalter «TODO» steht noch im Text (Textzeile ${line}) oder in den Kopfdaten`)];
+}
+
+/** Stilregeln aus CLAUDE.md (Ton, Rechtschreibung, Formate). */
+export function styleIssues(body: string): Issue[] {
+  const out: Issue[] = [];
+  for (const { re, what } of BANNED) {
+    const m = re.exec(body);
+    if (m) {
+      const line = body.slice(0, m.index).split("\n").length;
+      out.push(err("style", `${what} (Textzeile ${line}: «${m[0]}»)`));
+    }
+  }
+  return out;
+}
+
 /** Alle Prüfungen für einen Seitentext. `keyword` und `audience` kommen aus der Tool-Konfiguration. */
 export function checkToolContent(parsed: ParsedToolContent): Issue[] {
   const issues: Issue[] = [];
@@ -107,22 +127,8 @@ export function checkToolContent(parsed: ParsedToolContent): Issue[] {
   const words = countWords(parsed.body);
   if (words < 800 || words > 1200) issues.push(err("total-words", `Der Text hat ${words} Wörter (800 bis 1'200)`));
 
-  // Platzhalter dürfen nie auf eine öffentliche Seite
-  const raw = [parsed.body, ...Object.values(parsed.frontmatter)].join("\n");
-  const todo = /\bTODO\b/.exec(raw);
-  if (todo) {
-    const line = parsed.body.slice(0, Math.max(parsed.body.search(/\bTODO\b/), 0)).split("\n").length;
-    issues.push(err("todo-left", `Platzhalter «TODO» steht noch im Text (Textzeile ${line}) oder in den Kopfdaten`));
-  }
-
-  // Stil (CLAUDE.md, Design System, Ton)
-  for (const { re, what } of BANNED) {
-    const m = re.exec(parsed.body);
-    if (m) {
-      const line = parsed.body.slice(0, m.index).split("\n").length;
-      issues.push(err("style", `${what} (Textzeile ${line}: «${m[0]}»)`));
-    }
-  }
+  issues.push(...todoIssues(parsed.body, Object.values(parsed.frontmatter)));
+  issues.push(...styleIssues(parsed.body));
 
   // Zahlen mit Quelle: Hinweis, kein Fehler (heuristisch). Das Beispiel ist fiktiv und ausgenommen.
   const sourced = Object.entries(parsed.sections)

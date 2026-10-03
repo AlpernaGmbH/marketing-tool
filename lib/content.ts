@@ -67,7 +67,7 @@ export function splitH2(body: string): { title: string; content: string }[] {
   return out;
 }
 
-function parseFaq(content: string): Faq[] {
+export function parseFaq(content: string): Faq[] {
   const faq: Faq[] = [];
   let q: string | null = null;
   let lines: string[] = [];
@@ -140,6 +140,13 @@ export function readToolContent(slug: string): ParsedToolContent {
 export async function markdownToHtml(md: string): Promise<string> {
   const file = await remark().use(html).process(md);
   return String(file);
+}
+
+export type FaqHtml = { question: string; html: string };
+
+/** Fragen und Antworten für die Anzeige: Antworten als HTML, ohne Alperna-Schlüsselzeilen. */
+export async function faqToHtml(faq: Faq[]): Promise<FaqHtml[]> {
+  return Promise.all(faq.map(async (f) => ({ question: f.question, html: await markdownToHtml(stripAlpernaFields(f.answer)) })));
 }
 
 /** Abschnitt ohne die Alperna-Schlüsselzeilen, zum Anzeigen. */
