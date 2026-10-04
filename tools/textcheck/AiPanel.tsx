@@ -45,11 +45,12 @@ export function AiPanel({ source }: { source: string }) {
   const tooLong = source.length > MAX_INPUT_CHARS;
 
   async function run() {
+    if (!(await ctx.ensureEmail())) return;
     setStatus({ kind: "loading" });
     let outcome = await requestRewrite({ text: source, styleId: "pruefen", anrede: "wie-im-text" });
-    // Der freie Durchlauf ist mit der Prüfung im Browser gebraucht: erst das Formular, dann einmal wiederholen.
+    // Der Server kennt keine Adresse (Cookie fehlt): erst das Fenster, dann einmal wiederholen.
     if (!outcome.ok && outcome.reason === "gate") {
-      if (!(await ctx.requestStart())) return setStatus({ kind: "idle" });
+      if (!(await ctx.renewEmail())) return setStatus({ kind: "idle" });
       outcome = await requestRewrite({ text: source, styleId: "pruefen", anrede: "wie-im-text" });
     }
     setStatus(outcome.ok ? { kind: "done", text: outcome.text } : { kind: "error", message: FAIL_MESSAGES[outcome.reason] });
@@ -63,7 +64,7 @@ export function AiPanel({ source }: { source: string }) {
       <h4 id="tc-ai">Rechtschreibung und Grammatik mit KI</h4>
       <p className="text-sm text-muted-foreground">
         Der Textcheck oben kennt keine Wörter. Die KI liest den Text wie eine Lektorin: Sie sucht Rechtschreib- und Grammatikfehler und schlägt Verbesserungen vor.
-        Dafür geht dein Text an unseren Server und von dort an unseren KI-Anbieter. Wir speichern ihn nicht. Gib nichts Vertrauliches ein.
+        Dafür geht dein Text an unseren Server und von dort an unseren KI-Anbieter. Unser Server speichert ihn nicht. Gib nichts Vertrauliches ein.
       </p>
 
       {tooLong ? (
@@ -73,7 +74,7 @@ export function AiPanel({ source }: { source: string }) {
       ) : (
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" onClick={() => void run()} disabled={status.kind === "loading"}>
-            {status.kind === "loading" ? "Die KI liest …" : status.kind === "done" ? "Noch einmal prüfen" : ctx.unlocked ? "Mit KI prüfen" : "Mit KI prüfen (kurzes Formular)"}
+            {status.kind === "loading" ? "Die KI liest …" : status.kind === "done" ? "Noch einmal prüfen" : "Mit KI prüfen"}
           </Button>
         </div>
       )}

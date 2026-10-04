@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryStore, SECRET, post } from "@/tests/helpers";
+import { MemoryStore, SECRET, gateCookie, post } from "@/tests/helpers";
 
 const store = new MemoryStore();
 const limit = vi.hoisted(() => ({ allow: true }));
@@ -10,155 +10,139 @@ vi.mock("@/lib/access", async (orig) => ({
 }));
 vi.mock("@/lib/ratelimit", () => ({ withinLimit: async () => limit.allow }));
 
-import { POST as access } from "@/app/api/access/route";
-import { POST as complete } from "@/app/api/access/complete/route";
 import { POST as lead } from "@/app/api/lead/route";
+import { POST as result } from "@/app/api/result/route";
 
 const TOOL = "digitaler-auftritt-check";
-const form = { name: "Anna Keller", firma: "Malerei Keller", email: "anna@keller.ch", consent: true, tool: TOOL };
 const IP = "198.51.100.20";
+const form = { email: "Anna@Keller.ch", consent: true, tool: TOOL, honeypot: "" };
+const ergebnis = { tool: TOOL, eingabe: "Website: keller.ch\nBranche: Handwerk", ausgabe: "# Ergebnis\n\n38 von 100", firma: "Malerei Keller" };
 
 /** Cookie aus der Antwort als Request-Header-Wert. */
 function cookieOf(res: Response): string {
-  const set = res.headers.get("set-cookie") ?? "";
-  return set.split(";")[0];
+  return (res.headers.get("set-cookie") ?? "").split(";")[0];
 }
+
+let logs: string[];
 
 beforeEach(() => {
   process.env.GATE_SECRET = SECRET;
   delete process.env.N8N_WEBHOOK_URL;
-  store.runs.clear();
-  store.unlockedSet.clear();
   store.popular.clear();
   store.leads.length = 0;
   store.failing = false;
   limit.allow = true;
-  vi.spyOn(console, "log").mockImplementation(() => {});
+  logs = [];
+  vi.spyOn(console, "log").mockImplementation((...a) => void logs.push(a.join(" ")));
 });
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
-describe("POST /api/access", () => {
-  it("erlaubt eine frische IP", async () => {
-    const res = await access(post("/api/access", { tool: TOOL }, { ip: IP }));
+describe("POST /api/lead (Adresse angeben)", () => {
+  it("setzt das signierte Cookie mit der Adresse und schickt noch nichts ins CRM", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const res = await lead(post("/api/lead", form, { ip: IP }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ allowed: true, unlocked: false, reason: "free_run", login: null, signedIn: false });
+    const set = res.headers.get("set-cookie") ?? "";
+    expect(set).toMatch(/^mt_gate=/);
+    expect(set).toMatch(/HttpOnly/i);
+    expect(set).toMatch(/SameSite=lax/i);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(store.leads).toHaveLength(0);
   });
-  it("lehnt unbekannte Tools und kaputte Bodies mit 400 ab", async () => {
-    expect((await access(post("/api/access", { tool: "gibt-es-nicht" }, { ip: IP }))).status).toBe(400);
-    expect((await access(post("/api/access", {}, { ip: IP }))).status).toBe(400);
-    expect((await access(post("/api/access", "kein json", { ip: IP }))).status).toBe(400);
+  it("antwortet 400 bei fehlender Einwilligung, ungültiger Adresse, Honeypot und unbekanntem Werkzeug", async () => {
+    for (const bad of [{ ...form, consent: false }, { ...form, email: "keller" }, { ...form, honeypot: "spam" }, { ...form, tool: "gibt-es-nicht" }, "kein json"]) {
+      const res = await lead(post("/api/lead", bad, { ip: IP }));
+      expect(res.status).toBe(400);
+      expect(res.headers.get("set-cookie")).toBeNull();
+    }
   });
-  it("antwortet 429 bei überschrittenem Limit", async () => {
+  it("antwortet 429 beim Stundenlimit und 503 ohne GATE_SECRET", async () => {
     limit.allow = false;
-    expect((await access(post("/api/access", { tool: TOOL }, { ip: IP }))).status).toBe(429);
-  });
-  it("sperrt niemanden aus, wenn GATE_SECRET fehlt", async () => {
+    expect((await lead(post("/api/lead", form, { ip: IP }))).status).toBe(429);
+    limit.allow = true;
     delete process.env.GATE_SECRET;
-    const body = await (await access(post("/api/access", { tool: TOOL }, { ip: IP }))).json();
-    expect(body).toEqual({ allowed: true, unlocked: true, reason: "gate_disabled", login: null, signedIn: false });
+    expect((await lead(post("/api/lead", form, { ip: IP }))).status).toBe(503);
   });
 });
 
-describe("Zugangsfolge: frei, gebraucht, Formular, offen", () => {
-  it("läuft wie in CLAUDE.md beschrieben", async () => {
-    // 1. frisch: erlaubt
-    expect((await (await access(post("/api/access", { tool: TOOL }, { ip: IP }))).json()).allowed).toBe(true);
-
-    // 2. Durchlauf abgeschlossen: gezählt, Cookie gesetzt
-    const done = await complete(post("/api/access/complete", { tool: TOOL }, { ip: IP }));
-    expect(done.status).toBe(200);
-    expect(store.popular.get(TOOL)).toBe(1);
-    const gate = cookieOf(done);
-    expect(gate).toMatch(/^mt_gate=/);
-    expect(done.headers.get("set-cookie")).toMatch(/HttpOnly/i);
-    expect(done.headers.get("set-cookie")).toMatch(/SameSite=lax/i);
-
-    // 3. zweiter Start: gesperrt, mit IP (Redis) und mit Cookie
-    expect((await (await access(post("/api/access", { tool: TOOL }, { ip: IP }))).json()).allowed).toBe(false);
-    const otherIpWithCookie = await access(post("/api/access", { tool: TOOL }, { ip: "203.0.113.99", cookie: gate }));
-    expect((await otherIpWithCookie.json()).reason).toBe("free_run_used");
-
-    // 4. Lead: Redis-Pfad, ohne n8n -> in lead_queue, trotzdem freigeschaltet
-    const leadRes = await lead(post("/api/lead", form, { ip: IP, cookie: gate }));
-    expect(leadRes.status).toBe(200);
-    expect(store.leads).toHaveLength(1);
-    const unlockedCookie = cookieOf(leadRes);
-
-    // 5. danach offen, über IP und über Cookie
-    expect((await (await access(post("/api/access", { tool: TOOL }, { ip: IP }))).json()).unlocked).toBe(true);
-    const viaCookie = await access(post("/api/access", { tool: TOOL }, { ip: "203.0.113.55", cookie: unlockedCookie }));
-    expect((await viaCookie.json()).unlocked).toBe(true);
+describe("POST /api/result (Ergebnis ins CRM)", () => {
+  it("verlangt das Cookie: ohne Adresse 403, mit gefälschtem Cookie 403", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const none = await result(post("/api/result", ergebnis, { ip: IP }));
+    expect(none.status).toBe(403);
+    expect(await none.json()).toEqual({ error: "gate" });
+    const forged = `mt_gate=${Buffer.from(JSON.stringify({ email: "chef@konkurrenz.ch", iat: 1 })).toString("base64url")}.AAAA`;
+    expect((await result(post("/api/result", ergebnis, { ip: IP, cookie: forged }))).status).toBe(403);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(store.leads).toHaveLength(0);
   });
 
-  it("funktioniert bei Redis-Ausfall nur mit dem Cookie", async () => {
-    store.failing = true;
-    const done = await complete(post("/api/access/complete", { tool: TOOL }, { ip: IP }));
-    expect(done.status).toBe(200);
-    const gate = cookieOf(done);
-    expect((await (await access(post("/api/access", { tool: TOOL }, { ip: IP, cookie: gate }))).json()).allowed).toBe(false);
-    expect((await (await access(post("/api/access", { tool: TOOL }, { ip: IP }))).json()).allowed).toBe(true);
-    const leadRes = await lead(post("/api/lead", form, { ip: IP, cookie: gate }));
-    expect(leadRes.status).toBe(200);
-    const unlocked = cookieOf(leadRes);
-    expect((await (await access(post("/api/access", { tool: TOOL }, { ip: IP, cookie: unlocked }))).json()).unlocked).toBe(true);
-  });
-
-  it("ignoriert ein gefälschtes Cookie", async () => {
-    const forged = `mt_gate=${Buffer.from(JSON.stringify({ runs: 0, unlocked: true, iat: 1 })).toString("base64url")}.AAAA`;
-    const res = await access(post("/api/access", { tool: TOOL }, { ip: IP, cookie: forged }));
-    expect((await res.json()).unlocked).toBe(false);
-  });
-});
-
-describe("POST /api/lead", () => {
-  it("leitet nur die erlaubten Felder an n8n weiter und schaltet frei", async () => {
+  it("schickt Adresse aus dem Cookie, Werkzeug, Eingabe und Ausgabe an n8n und zählt das Werkzeug", async () => {
     process.env.N8N_WEBHOOK_URL = "https://n8n.example/webhook/tools-lead";
     const f = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", f);
-    const res = await lead(post("/api/lead", { ...form, telefon: "071 123 45 67" }, { ip: IP }));
+    const cookie = cookieOf(await lead(post("/api/lead", form, { ip: IP })));
+    const res = await result(post("/api/result", ergebnis, { ip: IP, cookie }));
     expect(res.status).toBe(200);
     const sent = JSON.parse(f.mock.calls[0][1].body);
-    expect(Object.keys(sent).sort()).toEqual(
-      ["email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"].sort(),
-    );
-    expect(sent).toMatchObject({ tool: TOOL, kategorie: "strategie", quelle: "tools.alperna.ch" });
+    expect(Object.keys(sent).sort()).toEqual(["ausgabe", "eingabe", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"].sort());
+    expect(sent).toMatchObject({ email: "anna@keller.ch", firma: "Malerei Keller", tool: TOOL, kategorie: "strategie", quelle: "tools.alperna.ch", eingabe: ergebnis.eingabe, ausgabe: ergebnis.ausgabe, name: "", telefon: "" });
     expect(store.leads).toHaveLength(0); // n8n hat geantwortet: keine Queue
-    expect(store.unlockedSet.size).toBe(1);
+    expect(store.popular.get(TOOL)).toBe(1);
   });
-  it("legt den Lead bei n8n-Fehler in lead_queue ab und schaltet trotzdem frei", async () => {
+
+  it("nimmt die Adresse nur aus dem Cookie, nie aus dem Body", async () => {
+    process.env.N8N_WEBHOOK_URL = "https://n8n.example/webhook/tools-lead";
+    const f = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", f);
+    await result(post("/api/result", { ...ergebnis, email: "fremd@example.ch" }, { ip: IP, cookie: gateCookie("anna@keller.ch") }));
+    expect(JSON.parse(f.mock.calls[0][1].body).email).toBe("anna@keller.ch");
+  });
+
+  it("legt das Ergebnis bei n8n-Fehler in lead_queue ab und antwortet trotzdem 200", async () => {
     process.env.N8N_WEBHOOK_URL = "https://n8n.example/webhook/tools-lead";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
-    const res = await lead(post("/api/lead", form, { ip: IP }));
+    const res = await result(post("/api/result", ergebnis, { ip: IP, cookie: gateCookie() }));
     expect(res.status).toBe(200);
     expect(store.leads).toHaveLength(1);
-    expect(JSON.parse(store.leads[0]).email).toBe("anna@keller.ch");
-    expect(store.unlockedSet.size).toBe(1);
+    expect(JSON.parse(store.leads[0])).toMatchObject({ email: "anna@keller.ch", eingabe: ergebnis.eingabe });
   });
-  it("antwortet 400 nur bei Validierungsfehlern", async () => {
-    for (const bad of [
-      { ...form, consent: false },
-      { ...form, email: "keller" },
-      { ...form, honeypot: "spam" },
-      { ...form, tool: "gibt-es-nicht" },
-    ]) {
-      expect((await lead(post("/api/lead", bad, { ip: IP }))).status).toBe(400);
-    }
-    expect(store.unlockedSet.size).toBe(0);
-    expect(store.leads).toHaveLength(0);
+
+  it("kürzt Eingabe und Ausgabe auf 1'900 Zeichen für das CRM", async () => {
+    process.env.N8N_WEBHOOK_URL = "https://n8n.example/webhook/tools-lead";
+    const f = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", f);
+    await result(post("/api/result", { ...ergebnis, ausgabe: "x".repeat(5000) }, { ip: IP, cookie: gateCookie() }));
+    const sent = JSON.parse(f.mock.calls[0][1].body);
+    expect(sent.ausgabe.length).toBeLessThanOrEqual(1900);
+    expect(sent.ausgabe.endsWith("…")).toBe(true);
   });
-  it("antwortet 429 bei überschrittenem Stundenlimit", async () => {
+
+  it("antwortet 400 bei kaputtem Body und unbekanntem Werkzeug, 429 beim Limit, 503 ohne GATE_SECRET", async () => {
+    const cookie = gateCookie();
+    expect((await result(post("/api/result", { tool: TOOL }, { ip: IP, cookie }))).status).toBe(400);
+    expect((await result(post("/api/result", { ...ergebnis, tool: "gibt-es-nicht" }, { ip: IP, cookie }))).status).toBe(400);
+    expect((await result(post("/api/result", { ...ergebnis, ausgabe: "x".repeat(20_001) }, { ip: IP, cookie }))).status).toBe(400);
     limit.allow = false;
-    expect((await lead(post("/api/lead", form, { ip: IP }))).status).toBe(429);
+    expect((await result(post("/api/result", ergebnis, { ip: IP, cookie }))).status).toBe(429);
+    limit.allow = true;
+    delete process.env.GATE_SECRET;
+    expect((await result(post("/api/result", ergebnis, { ip: IP, cookie }))).status).toBe(503);
   });
-  it("loggt weder Inhalte noch Klartext-IP", async () => {
-    const log = vi.spyOn(console, "log");
-    await lead(post("/api/lead", form, { ip: IP }));
-    const out = log.mock.calls.flat().join("\n");
-    expect(out).not.toContain(IP);
-    expect(out).not.toContain("anna@keller.ch");
-    expect(out).not.toContain("Malerei Keller");
+
+  it("läuft ohne Redis weiter und loggt weder Inhalte noch Adresse noch IP", async () => {
+    process.env.N8N_WEBHOOK_URL = "https://n8n.example/webhook/tools-lead";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    store.failing = true;
+    expect((await result(post("/api/result", ergebnis, { ip: IP, cookie: gateCookie() }))).status).toBe(200);
+    const all = logs.join("\n");
+    expect(all).toContain('"route":"/api/result"');
+    expect(all).not.toContain(IP);
+    expect(all).not.toContain("anna@keller.ch");
+    expect(all).not.toContain("Malerei");
+    expect(all).not.toContain("38 von 100");
   });
 });

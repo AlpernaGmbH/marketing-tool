@@ -163,7 +163,9 @@ export default function Tool() {
         slug={config.slug}
         questions={questions}
         scoreFn={evaluate}
-        intro={<p>TODO Einleitung: was passiert, wie lange dauert es.</p>}
+        intro={<p>TODO Einleitung: was passiert, wie lange dauert es, was mit Eingaben und Ergebnis geschieht.</p>}
+        // Zugang v3: Das Ergebnis geht als Text ins CRM. TODO lesbar machen (Markdown), sonst geht JSON.
+        resultText={(result) => JSON.stringify(result, null, 1)}
         renderResult={(result) => (
           <ResultCard title="Ergebnis">
             <pre className="overflow-x-auto text-sm">{JSON.stringify(result, null, 2)}</pre>

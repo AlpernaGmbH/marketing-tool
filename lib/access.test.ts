@@ -1,21 +1,10 @@
 import { describe, expect, it } from "vitest";
-import {
-  accountHash,
-  canStart,
-  clientIp,
-  ipHash,
-  markComplete,
-  redisStore,
-  signGate,
-  unlock,
-  verifyGate,
-  type GateState,
-} from "@/lib/access";
-import { MemoryStore, SECRET } from "@/tests/helpers";
+import { accountHash, clientIp, ipHash, signGate, verifyGate, type GateState } from "@/lib/access";
+import { SECRET } from "@/tests/helpers";
 
 const NOW = Date.UTC(2026, 9, 3, 12, 0, 0);
 const iat = Math.floor(NOW / 1000);
-const cookie = (over: Partial<GateState> = {}): GateState => ({ runs: 0, unlocked: false, iat, ...over });
+const cookie = (over: Partial<GateState> = {}): GateState => ({ email: "anna@keller.ch", iat, ...over });
 
 describe("ipHash", () => {
   it("liefert 16 Byte als 32 Hex-Zeichen und enthält die IP nicht im Klartext", () => {
@@ -30,6 +19,14 @@ describe("ipHash", () => {
   });
 });
 
+describe("accountHash", () => {
+  it("hängt an der klein geschriebenen Adresse, nie an der Schreibweise, und verrät sie nicht", () => {
+    expect(accountHash("Anna@Keller.ch ", SECRET)).toBe(accountHash("anna@keller.ch", SECRET));
+    expect(accountHash("anna@keller.ch", SECRET)).not.toContain("anna");
+    expect(accountHash("anna@keller.ch", SECRET)).not.toBe(ipHash("anna@keller.ch", SECRET));
+  });
+});
+
 describe("clientIp", () => {
   it("nimmt das erste Element von x-forwarded-for", () => {
     const h = new Headers({ "x-forwarded-for": "198.51.100.1, 10.0.0.2, 10.0.0.3" });
@@ -41,258 +38,31 @@ describe("clientIp", () => {
   });
 });
 
-describe("Cookie mt_gate", () => {
+describe("Cookie mt_gate (Zugang v3: die Adresse der Person)", () => {
   it("überlebt Signieren und Prüfen", () => {
-    const s = cookie({ runs: 2, unlocked: true });
+    const s = cookie();
     expect(verifyGate(signGate(s, SECRET), SECRET, NOW)).toEqual(s);
   });
   it("ist ungültig bei falschem Secret", () => {
     expect(verifyGate(signGate(cookie(), SECRET), `${SECRET}x`, NOW)).toBeNull();
   });
-  it("ist ungültig bei verändertem Inhalt (unlocked von Hand gesetzt)", () => {
+  it("ist ungültig bei verändertem Inhalt (andere Adresse von Hand gesetzt)", () => {
     const [, sig] = signGate(cookie(), SECRET).split(".");
-    const forged = Buffer.from(JSON.stringify(cookie({ unlocked: true }))).toString("base64url");
-    expect(verifyGate(`${forged}.${sig}`, SECRET, NOW)).toBeNull();
+    const forged = `${Buffer.from(JSON.stringify(cookie({ email: "chef@konkurrenz.ch" }))).toString("base64url")}.${sig}`;
+    expect(verifyGate(forged, SECRET, NOW)).toBeNull();
   });
-  it("ist ungültig bei Müll, leerem Wert und zu vielen Teilen", () => {
-    for (const bad of [undefined, "", "abc", "a.b.c", ".", "x."]) {
-      expect(verifyGate(bad, SECRET, NOW)).toBeNull();
-    }
-  });
-  it("läuft nach 365 Tagen ab", () => {
-    const v = signGate(cookie(), SECRET);
-    expect(verifyGate(v, SECRET, NOW + 364 * 86400_000)).not.toBeNull();
-    expect(verifyGate(v, SECRET, NOW + 366 * 86400_000)).toBeNull();
-  });
-  it("ist ungültig bei falsch typisiertem Inhalt", () => {
-    const payload = Buffer.from(JSON.stringify({ runs: "1", unlocked: false, iat })).toString("base64url");
-    // gültige Signatur über falsch typisierten Payload
-    const v = signGate({ runs: "1" as unknown as number, unlocked: false, iat }, SECRET);
-    expect(payload).toBeTruthy();
-    expect(verifyGate(v, SECRET, NOW)).toBeNull();
-  });
-});
-
-describe("canStart", () => {
-  it("erlaubt den ersten Durchlauf eines frischen Besuchers", async () => {
-    const d = await canStart(new MemoryStore(), "h1", null);
-    expect(d).toEqual({ allowed: true, unlocked: false, reason: "free_run" });
-  });
-  it("sperrt, wenn das Cookie einen Durchlauf zählt", async () => {
-    const d = await canStart(new MemoryStore(), "h1", cookie({ runs: 1 }));
-    expect(d).toEqual({ allowed: false, unlocked: false, reason: "free_run_used" });
-  });
-  it("sperrt, wenn Redis einen Durchlauf zählt, auch ohne Cookie", async () => {
-    const store = new MemoryStore();
-    store.runs.set("h1", 1);
-    expect((await canStart(store, "h1", null)).allowed).toBe(false);
-  });
-  it("schaltet frei, wenn Redis ODER Cookie freigeschaltet sind", async () => {
-    const store = new MemoryStore();
-    store.unlockedSet.add("h1");
-    expect((await canStart(store, "h1", cookie({ runs: 3 }))).unlocked).toBe(true);
-    expect((await canStart(new MemoryStore(), "h2", cookie({ runs: 3, unlocked: true }))).allowed).toBe(true);
-  });
-  it("wertet bei Redis-Ausfall nur das Cookie, ohne zu werfen", async () => {
-    const store = new MemoryStore();
-    store.failing = true;
-    expect((await canStart(store, "h1", null)).allowed).toBe(true);
-    expect((await canStart(store, "h1", cookie({ runs: 1 }))).allowed).toBe(false);
-    expect((await canStart(store, "h1", cookie({ unlocked: true }))).unlocked).toBe(true);
-  });
-  it("funktioniert ganz ohne Redis (nicht konfiguriert)", async () => {
-    expect((await canStart(null, "h1", null)).allowed).toBe(true);
-    expect((await canStart(null, "h1", cookie({ runs: 1 }))).allowed).toBe(false);
-  });
-});
-
-describe("markComplete mit Konto", () => {
-  it("zählt für ein freigeschaltetes Konto keinen freien Durchlauf, auch auf einem neuen Gerät", async () => {
-    const store = new MemoryStore();
-    store.accounts.add("acc1");
-    const s = await markComplete(store, "neue-ip", "persona", null, NOW, "acc1");
-    expect(s.unlocked).toBe(true);
-    expect(store.runs.size).toBe(0);
-    expect(store.popular.get("persona")).toBe(1);
-  });
-
-  it("zählt ohne Konto weiter wie bisher", async () => {
-    const store = new MemoryStore();
-    const s = await markComplete(store, "neue-ip", "persona", null, NOW);
-    expect(s.unlocked).toBe(false);
-    expect(store.runs.get("neue-ip")).toBe(1);
-  });
-});
-
-describe("markComplete", () => {
-  it("zählt run und popular und erhöht runs im Cookie", async () => {
-    const store = new MemoryStore();
-    const s = await markComplete(store, "h1", "icp-builder", null, NOW);
-    expect(store.runs.get("h1")).toBe(1);
-    expect(store.popular.get("icp-builder")).toBe(1);
-    expect(s).toEqual({ runs: 1, unlocked: false, iat });
-    expect((await canStart(store, "h1", s)).allowed).toBe(false);
-  });
-  it("zählt run für Freigeschaltete nicht, popular aber schon", async () => {
-    const store = new MemoryStore();
-    store.unlockedSet.add("h1");
-    const s = await markComplete(store, "h1", "persona", null, NOW);
-    expect(store.runs.has("h1")).toBe(false);
-    expect(store.popular.get("persona")).toBe(1);
-    expect(s.unlocked).toBe(true);
-  });
-  it("liefert bei Redis-Ausfall trotzdem den Cookie-Zustand", async () => {
-    const store = new MemoryStore();
-    store.failing = true;
-    const s = await markComplete(store, "h1", "persona", cookie({ runs: 1 }), NOW);
-    expect(s.runs).toBe(2);
-  });
-});
-
-describe("unlock", () => {
-  it("setzt unlocked in Redis und im Cookie, behält runs", async () => {
-    const store = new MemoryStore();
-    const s = await unlock(store, "h1", cookie({ runs: 1 }), NOW);
-    expect(store.unlockedSet.has("h1")).toBe(true);
-    expect(s).toEqual({ runs: 1, unlocked: true, iat });
-  });
-  it("schaltet auch bei Redis-Ausfall über das Cookie frei", async () => {
-    const store = new MemoryStore();
-    store.failing = true;
-    expect((await unlock(store, "h1", null, NOW)).unlocked).toBe(true);
-  });
-});
-
-describe("Konto (acct:<hash>)", () => {
-  it("accountHash ist stabil, unabhängig von Gross- und Kleinschreibung, 32 Hex-Zeichen und nie die Adresse", () => {
-    const h = accountHash("Anna@Keller.ch ", SECRET);
-    expect(h).toBe(accountHash("anna@keller.ch", SECRET));
-    expect(h).toMatch(/^[0-9a-f]{32}$/);
-    expect(h).not.toContain("anna");
-    expect(h).not.toBe(accountHash("anna@keller.ch", SECRET + "x"));
-  });
-
-  it("accountHash und ipHash kollidieren nicht, auch bei gleichem Text", () => {
-    expect(accountHash("1.2.3.4", SECRET)).not.toBe(ipHash("1.2.3.4", SECRET));
-  });
-
-  it("canStart: ein freigeschaltetes Konto öffnet, auch wenn IP und Cookie als gebraucht gelten", async () => {
-    const store = new MemoryStore();
-    store.runs.set("h1", 2);
-    store.accounts.add("acc1");
-    expect(await canStart(store, "h1", cookie({ runs: 2 }), "acc1")).toEqual({ allowed: true, unlocked: true, reason: "unlocked" });
-    expect((await canStart(store, "h1", cookie({ runs: 2 }), "anderes-konto")).allowed).toBe(false);
-    expect((await canStart(store, "h1", cookie({ runs: 2 }), null)).allowed).toBe(false);
-  });
-
-  it("canStart: fällt Redis aus, gilt nur das Cookie (das Konto allein öffnet dann nicht)", async () => {
-    const store = new MemoryStore();
-    store.accounts.add("acc1");
-    store.failing = true;
-    expect((await canStart(store, "h1", cookie({ runs: 1 }), "acc1")).allowed).toBe(false);
-  });
-
-  it("unlock mit Konto schaltet IP und Konto frei", async () => {
-    const store = new MemoryStore();
-    const s = await unlock(store, "h1", null, NOW, "acc1");
-    expect(s.unlocked).toBe(true);
-    expect(store.unlockedSet.has("h1")).toBe(true);
-    expect(store.accounts.has("acc1")).toBe(true);
-  });
-});
-
-describe("redisStore", () => {
-  /** Kleines Double für den Upstash-Client: nur, was redisStore braucht. */
-  function fakeRedis() {
-    const data = new Map<string, unknown>();
-    const calls: string[] = [];
-    const redis = {
-      mget: async (...ks: string[]) => (calls.push(`mget ${ks.join(",")}`), ks.map((k) => data.get(k) ?? null)),
-      exists: async (k: string) => (calls.push(`exists ${k}`), data.has(k) ? 1 : 0),
-      set: async (k: string, v: unknown, opts?: { nx?: boolean }) => {
-        calls.push(`set ${k}${opts?.nx ? " nx" : ""}`);
-        if (opts?.nx && data.has(k)) return null;
-        data.set(k, v);
-        return "OK";
-      },
-      pipeline: () => {
-        const ops: (() => void)[] = [];
-        const p = {
-          set: (k: string, v: unknown) => (ops.push(() => data.set(k, v)), p),
-          incr: (k: string) => (ops.push(() => data.set(k, Number(data.get(k) ?? 0) + 1)), p),
-          expire: (k: string, s: number) => (ops.push(() => data.set(`ttl:${k}`, s)), p),
-          rpush: (k: string, v: string) => (ops.push(() => data.set(k, [...((data.get(k) as string[]) ?? []), v])), p),
-          ltrim: (k: string, a: number, b: number) =>
-            (ops.push(() => {
-              const list = (data.get(k) as string[]) ?? [];
-              data.set(k, list.slice(a < 0 ? Math.max(list.length + a, 0) : a, b === -1 ? undefined : b + 1));
-            }),
-            p),
-          exec: async () => (ops.forEach((f) => f()), []),
-        };
-        return p;
-      },
-      lrange: async (k: string, a: number, b: number) => {
-        const list = (data.get(k) as string[]) ?? [];
-        // Der echte Upstash-Client liest JSON-Texte als Objekte zurück; das Double tut es ebenso.
-        return list.slice(a, b + 1).map((v) => { try { return JSON.parse(v); } catch { return v; } });
-      },
-      ltrim: async (k: string, a: number, b: number) => {
-        const list = (data.get(k) as string[]) ?? [];
-        data.set(k, list.slice(a, b === -1 ? undefined : b + 1));
-        return "OK";
-      },
-      rpush: async (k: string, v: string) => (data.set(k, [...((data.get(k) as string[]) ?? []), v]), 1),
+  it("ist ungültig ohne Adresse, mit Müll statt Adresse oder nach 365 Tagen", () => {
+    const sign = (state: unknown) => {
+      const payload = Buffer.from(JSON.stringify(state)).toString("base64url");
+      return `${payload}.${signGate(cookie(), SECRET).split(".")[1]}`;
     };
-    return { redis: redis as unknown as Parameters<typeof redisStore>[0], data, calls };
-  }
-
-  it("liest mit Konto drei Schlüssel auf einmal und wertet die Freischaltung des Kontos mit", async () => {
-    const { redis, calls } = fakeRedis();
-    const store = redisStore(redis);
-    await store.setUnlocked("ip1", "acc1");
-    expect(await store.getState("ip2", "acc1")).toEqual({ runs: 0, unlocked: true });
-    expect(await store.getState("ip2", null)).toEqual({ runs: 0, unlocked: false });
-    expect(await store.isAccountUnlocked("acc1")).toBe(true);
-    expect(await store.isAccountUnlocked("acc2")).toBe(false);
-    expect(calls[0]).toBe("mget run:ip2,unlocked:ip2,acct:acc1");
+    expect(verifyGate(sign({ iat }), SECRET, NOW)).toBeNull();
+    expect(verifyGate(signGate({ email: "kein-mail", iat }, SECRET), SECRET, NOW)).toBeNull();
+    expect(verifyGate(signGate(cookie(), SECRET), SECRET, NOW + 366 * 24 * 60 * 60 * 1000)).toBeNull();
   });
-
-  it("claimAccount ist atomar: nur der erste Aufruf bekommt true, das Konto ist danach freigeschaltet", async () => {
-    const { redis, calls } = fakeRedis();
-    const store = redisStore(redis);
-    expect(await store.claimAccount("acc1")).toBe(true);
-    expect(await store.claimAccount("acc1")).toBe(false);
-    expect(await store.isAccountUnlocked("acc1")).toBe(true);
-    expect(calls.filter((c) => c === "set acct:acc1 nx")).toHaveLength(2);
-  });
-
-  it("peekLeads liefert die ältesten Leads wieder als Text, dropLeads entfernt genau diese", async () => {
-    const { redis } = fakeRedis();
-    const store = redisStore(redis);
-    for (const n of [1, 2, 3]) await store.pushLead(JSON.stringify({ name: `Anna ${n}`, email: `a${n}@k.ch` }));
-    const first = await store.peekLeads(2);
-    expect(first).toEqual([JSON.stringify({ name: "Anna 1", email: "a1@k.ch" }), JSON.stringify({ name: "Anna 2", email: "a2@k.ch" })]);
-    await store.dropLeads(2);
-    expect(await store.peekLeads(10)).toEqual([JSON.stringify({ name: "Anna 3", email: "a3@k.ch" })]);
-    await store.dropLeads(0);
-    expect(await store.peekLeads(10)).toHaveLength(1);
-  });
-
-  it("pushLead begrenzt die Warteschlange auf 1000 Einträge und lässt sie nach 30 Tagen verfallen", async () => {
-    const { redis, data } = fakeRedis();
-    const store = redisStore(redis);
-    for (let i = 0; i < 1003; i++) await store.pushLead(`lead-${i}`);
-    const list = data.get("lead_queue") as string[];
-    expect(list).toHaveLength(1000);
-    expect(list[0]).toBe("lead-3");
-    expect(list.at(-1)).toBe("lead-1002");
-    expect(data.get("ttl:lead_queue")).toBe(30 * 24 * 60 * 60);
-  });
-
-  it("setUnlocked ohne Konto setzt nur die IP", async () => {
-    const { redis, data } = fakeRedis();
-    await redisStore(redis).setUnlocked("ip1");
-    expect([...data.keys()]).toEqual(["unlocked:ip1"]);
+  it("verträgt leere, fremde und kaputte Werte", () => {
+    for (const v of [undefined, "", "a.b.c", "nur-ein-teil", `${"x".repeat(10)}.${"y".repeat(10)}`]) {
+      expect(verifyGate(v, SECRET, NOW)).toBeNull();
+    }
   });
 });

@@ -73,7 +73,7 @@ describe("CheckResultView", () => {
       prioritaeten: [{ schritt: id, titel, text: "Hier lohnt sich der Anfang, weil der Aufwand klein ist." }],
     });
 
-    it("zeigt ohne Konto keinen Block", () => {
+    it("zeigt ohne E-Mail-Adresse keinen Block", () => {
       render(<CheckResultView result={result} onRestart={() => {}} />);
       expect(screen.queryByTestId("einordnung")).toBeNull();
     });

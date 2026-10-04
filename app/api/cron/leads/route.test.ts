@@ -9,7 +9,7 @@ vi.mock("@/lib/access", async (orig) => ({ ...(await orig<typeof import("@/lib/a
 import { GET } from "@/app/api/cron/leads/route";
 
 const SECRET = "cron-secret-0123456789abcdef";
-const lead = JSON.stringify({ name: "Anna Keller", firma: "Keller", email: "anna@keller.ch", telefon: "", tool: "x", kategorie: "strategie", quelle: "tools.alperna.ch", zeit: "2026-10-04T10:00:00.000Z" });
+const lead = JSON.stringify({ name: "", firma: "Keller", email: "anna@keller.ch", telefon: "", tool: "x", kategorie: "strategie", quelle: "tools.alperna.ch", zeit: "2026-10-04T10:00:00.000Z", eingabe: "Website: geheim-keller.ch", ausgabe: "38 von 100" });
 const call = (auth?: string) => GET(new NextRequest("http://localhost/api/cron/leads", { headers: auth ? { authorization: auth } : {} }));
 
 let logs: string[];
@@ -82,14 +82,14 @@ describe("GET /api/cron/leads", () => {
     expect(await res.json()).toEqual({ ok: false });
   });
 
-  it("loggt weder Namen noch E-Mail noch Adresse des Webhooks", async () => {
+  it("loggt weder E-Mail noch Eingabe noch Ausgabe noch Adresse des Webhooks", async () => {
     store.leads.push(lead);
     await call(`Bearer ${SECRET}`);
     const all = logs.join("\n");
     expect(all).toContain('"route":"/api/cron/leads"');
     expect(all).not.toContain("anna@keller.ch");
-    expect(all).not.toContain("Anna");
     expect(all).not.toContain("geheim");
+    expect(all).not.toContain("38 von 100");
     expect(all).not.toContain(SECRET);
   });
 });

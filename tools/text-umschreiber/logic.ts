@@ -146,7 +146,7 @@ type FailReason = Extract<TextOutcome, { ok: false }>["reason"];
 
 /** Ein ruhiger Satz pro Grund. */
 export const FAIL_MESSAGES: Record<FailReason, string> = {
-  gate: "Dein freier Durchlauf ist gebraucht. Mit dem kurzen Formular sind alle Werkzeuge offen.",
+  gate: "Wir brauchen deine E-Mail-Adresse, bevor wir die Fassung zeigen. Versuch es noch einmal.",
   capacity: "Die KI ist heute ausgelastet. Bitte versuch es morgen noch einmal.",
   rate: "Das waren viele Anfragen in kurzer Zeit. Warte etwas und versuch es noch einmal.",
   failed: "Die KI hat keine brauchbare Fassung geliefert. Versuch es noch einmal.",

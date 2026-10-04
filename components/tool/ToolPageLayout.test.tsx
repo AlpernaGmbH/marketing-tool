@@ -46,8 +46,8 @@ describe("ToolPageLayout", () => {
     expect(html).toContain('ICP-Builder für <mark class="mark-yellow">Schweizer KMU</mark>');
     expect(html.match(/mark-yellow/g)).toHaveLength(1);
   });
-  it("zeigt Dauer in korrekter Einzahl/Mehrzahl, Kategorie und den Hinweis zum Formular", async () => {
-    expect(await render({}, fixtureTool({ estimatedMinutes: 8 }))).toContain("8 Minuten · Strategie · Ergebnis sofort, Dateien nach kurzem Formular");
+  it("zeigt Dauer in korrekter Einzahl/Mehrzahl, Kategorie und den Hinweis zur E-Mail-Adresse", async () => {
+    expect(await render({}, fixtureTool({ estimatedMinutes: 8 }))).toContain("8 Minuten · Strategie · Ergebnis und Dateien gegen deine E-Mail-Adresse");
     expect(await render({}, fixtureTool({ estimatedMinutes: 1 }))).toContain("1 Minute · Strategie");
   });
   it("baut die Brotkrumen Start → Kategorie → Tool", async () => {

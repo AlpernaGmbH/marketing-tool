@@ -3,17 +3,17 @@ title: "KI-Werkzeuge für Schweizer KMU"
 description: "Texte mit KI umschreiben und prüfen: wie die KI-Werkzeuge für Schweizer KMU funktionieren, was mit deinem Text passiert und was du prüfen musst."
 h1: "KI-Werkzeuge für Schweizer KMU"
 seoHeading: "KI im Marketing: was sie kann und was du beachten solltest"
-pfadText: "Die KI-Werkzeuge schreiben und prüfen Texte. Sie laufen ohne Konto: Der erste Durchlauf ist frei."
+pfadText: "Die KI-Werkzeuge schreiben und prüfen Texte. Ohne Konto: Du gibst deine E-Mail-Adresse an und siehst das Ergebnis."
 ---
 ## Einleitung
 KI nimmt dir Schreibarbeit ab, aber was veröffentlicht wird, entscheidest du. Das gibt es heute:
 
 - Text-Umschreiber: aus deinem Text wird ein LinkedIn-Post, eine Instagram-Caption, ein Google-Beitrag, eine Medienmitteilung, ein Newsletter oder ein Website-Text, auf Wunsch nur korrigiert, einfacher oder kürzer
 - Textcheck: Rechtschreibung und Grammatik prüft die KI auf Knopfdruck
-- Digitaler-Auftritt-Check: eine kurze KI-Einordnung zu deinem Ergebnis, wenn du angemeldet und freigeschaltet bist
-- ein erster Durchlauf pro Werkzeug, kostenlos und ohne Konto
+- Digitaler-Auftritt-Check: eine kurze KI-Einordnung zu deinem Ergebnis
+- kostenlos und ohne Konto: Du gibst deine E-Mail-Adresse an und siehst das Ergebnis
 
-Danach genügt ein kurzes Formular oder eine Anmeldung.
+Text und Ergebnis gehen mit deiner Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können.
 
 ## Hintergrund
 ### So wird der Entwurf brauchbar
@@ -26,9 +26,10 @@ Die Fassung ist nur so gut wie dein Ausgangstext.
 
 ### Wohin dein Text geht
 Dein Text geht an unseren Server und von dort an unseren KI-Anbieter.
-- Wir speichern ihn nicht und schreiben ihn nicht ins Protokoll.
+- Unser Server speichert ihn nicht und schreibt ihn nicht ins Protokoll.
+- Text und Ergebnis gehen mit deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können.
 - Gib nichts Vertrauliches ein und keine Daten Dritter, etwa von Kundschaft oder Mitgliedern.
-- Firmenprofil und Zwischenstände bleiben in deinem Browser. Wenn du angemeldet bist, liegen sie zusätzlich im Konto und stehen auf jedem Gerät bereit.
+- Firmenprofil und Zwischenstände bleiben in deinem Browser.
 
 => Danach: was die KI trotz allem falsch machen kann.
 
@@ -41,13 +42,13 @@ Die KI kann Fehler machen und Dinge erfinden, die plausibel klingen.
 
 ## Häufige Fragen
 ### Brauche ich ein Konto?
-Nein. Jedes Werkzeug kannst du einmal vollständig und kostenlos ohne Konto durchlaufen. Danach erscheint ein kurzes Formular mit Name, Firma und E-Mail, oder du meldest dich an. Dann sind alle Werkzeuge und Downloads offen.
+Nein. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du das Ergebnis, und alle Werkzeuge und Downloads sind offen. Ein Passwort gibt es nicht.
 
 ### Gibt es eine Grenze, wie oft ich die KI nutzen darf?
-Für den Text-Umschreiber und den Textcheck gibt es kein Tageslimit pro Person. Eine Schutzgrenze bremst nur viele Anfragen in kurzer Zeit. Die KI-Einordnung im Digitaler-Auftritt-Check hat ein Tageslimit pro Konto.
+Für den Text-Umschreiber und den Textcheck gibt es kein Tageslimit pro Person. Eine Schutzgrenze bremst nur viele Anfragen in kurzer Zeit. Die KI-Einordnung im Digitaler-Auftritt-Check hat ein Tageslimit pro E-Mail-Adresse.
 
 ### Was passiert mit dem, was ich eingebe?
-Dein Text geht an unseren Server und von dort an unseren KI-Anbieter. Wir speichern ihn nicht. Gib darum nichts Vertrauliches und keine Daten Dritter ein.
+Dein Text geht an unseren Server und von dort an unseren KI-Anbieter; unser Server speichert ihn nicht. Text und Ergebnis gehen mit deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Gib darum nichts Vertrauliches und keine Daten Dritter ein.
 
 ### Erfindet die KI Inhalte?
 Sie kann es. Der Text-Umschreiber warnt, wenn in der Fassung Zahlen, Links oder Platzhalter stehen, die nicht in deinem Text standen. Lies trotzdem jede Fassung selbst, bevor du sie veröffentlichst.

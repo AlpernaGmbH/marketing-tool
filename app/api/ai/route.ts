@@ -1,7 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { canStart, clientIp, defaultStore, gateSecret, ipHash, readGateCookie } from "@/lib/access";
-import { requestAccount } from "@/lib/account";
+import { accountHash, clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
 import { cacheHash, defaultAiStore, limitsFromEnv, releaseSlot, takeSlot } from "@/lib/ai-quota";
 import { describeAiError, generateRaw } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
@@ -10,8 +9,8 @@ import { verifyResult } from "@/lib/check/sign";
 import type { CheckResult } from "@/lib/check/types";
 import { withinLimit } from "@/lib/ratelimit";
 
-// KI-Einordnung zu einem Check-Ergebnis. Nur für angemeldete, freigeschaltete Personen, nur für Ergebnisse, die
-// /api/check signiert hat, mit Tageslimit pro Konto und global und 24 Stunden Zwischenspeicher.
+// KI-Einordnung zu einem Check-Ergebnis. Nur mit E-Mail-Adresse (Cookie mt_gate, Zugang v3), nur für Ergebnisse, die
+// /api/check signiert hat, mit Tageslimit pro Person (HMAC der Adresse) und global und 24 Stunden Zwischenspeicher.
 // Geloggt werden nur Statuscode und Stichwort, nie Betriebsname, Adresse oder Text der KI (Harte Regel 1).
 
 export const runtime = "nodejs";
@@ -43,16 +42,14 @@ export async function POST(req: NextRequest) {
 
   const secret = gateSecret();
   if (!secret) return respond(ROUTE, 503, { error: "ai_disabled" }, "gate_unconfigured");
+  // Erst die Adresse (403), dann die Signatur (400): ohne Adresse erzeugt die Route nie etwas, auch keine Prüfung.
+  const gate = readGateCookie(req, secret);
+  if (!gate) return respond(ROUTE, 403, { error: "gate" }, "gate_used");
   if (!verifyResult(result, secret)) return respond(ROUTE, 400, { error: "invalid" }, "invalid_body");
-
-  const who = await requestAccount(secret);
-  if (!who) return respond(ROUTE, 401, { error: "not_signed_in" }, "auth_error");
+  const acchash = accountHash(gate.email, secret);
 
   const hash = ipHash(clientIp(req.headers), secret);
   if (!(await withinLimit("ai", 20, "1 h", hash))) return respond(ROUTE, 429, { error: "rate_limited" }, "rate_limited");
-
-  const decision = await canStart(defaultStore(), hash, readGateCookie(req, secret), who.acchash);
-  if (!decision.unlocked) return respond(ROUTE, 403, { error: "gate" }, "gate_used");
 
   const store = defaultAiStore();
   const key = cacheHash(result.sig as string);
@@ -63,7 +60,7 @@ export async function POST(req: NextRequest) {
     /* Zwischenspeicher nicht erreichbar: neu erzeugen */
   }
 
-  const slot = await takeSlot(store, who.acchash, limitsFromEnv());
+  const slot = await takeSlot(store, acchash, limitsFromEnv());
   if (slot === "account_limit") return respond(ROUTE, 429, { error: "account_limit" }, "ai_limit");
   if (slot === "capacity") return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity");
 
@@ -72,11 +69,11 @@ export async function POST(req: NextRequest) {
   try {
     checked = pruefeEinordnung(await generateRaw(fakten), fakten);
   } catch (error) {
-    await releaseSlot(store, who.acchash); // ohne Einordnung kein verbrauchter Platz
+    await releaseSlot(store, acchash); // ohne Einordnung kein verbrauchter Platz
     return respond(ROUTE, 502, { error: "ai_failed" }, "ai_failed", describeAiError(error));
   }
   if (!checked.ok) {
-    await releaseSlot(store, who.acchash);
+    await releaseSlot(store, acchash);
     return respond(ROUTE, 502, { error: "ai_rejected" }, "ai_failed", `rejected:${checked.reason}`);
   }
 

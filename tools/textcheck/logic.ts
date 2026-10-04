@@ -434,8 +434,8 @@ export function reportMarkdown(report: TextReport): string {
 
 // ---- Gespeicherter Stand ---------------------------------------------------------------------------
 
-export type TextcheckState = { v: 1; phase: "edit" | "result"; text: string; counted: boolean };
-export const EMPTY_STATE: TextcheckState = { v: 1, phase: "edit", text: "", counted: false };
+export type TextcheckState = { v: 1; phase: "edit" | "result"; text: string };
+export const EMPTY_STATE: TextcheckState = { v: 1, phase: "edit", text: "" };
 
 /** Liest den gespeicherten Stand; bei kaputten Daten gilt der leere Stand. */
 export function parseTextcheckState(raw: unknown): TextcheckState {
@@ -446,7 +446,6 @@ export function parseTextcheckState(raw: unknown): TextcheckState {
     v: 1,
     phase: r.phase === "result" && wordsOf(r.text).length > 0 ? "result" : "edit",
     text: r.text.slice(0, MAX_CHARS),
-    counted: r.counted === true,
   };
 }
 

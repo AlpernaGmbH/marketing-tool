@@ -1,9 +1,6 @@
 import type { AccessStore } from "@/lib/access";
-import type { LeadInput } from "@/lib/lead-schema";
 
-export { leadSchema, type LeadInput } from "@/lib/lead-schema";
-
-/** Genau diese Felder gehen an n8n, sonst nichts (CLAUDE.md, Harte Regel 1). */
+/** Genau diese Felder gehen an n8n, sonst nichts (CLAUDE.md, Zugang v3). Name und Telefon bleiben leer; das CRM kennt die Spalten. */
 export type LeadPayload = {
   name: string;
   firma: string;
@@ -13,18 +10,32 @@ export type LeadPayload = {
   kategorie: string;
   quelle: "tools.alperna.ch";
   zeit: string;
+  eingabe: string;
+  ausgabe: string;
 };
 
-export function buildPayload(input: LeadInput, kategorie: string, now = new Date()): LeadPayload {
+/** Mehr passt nicht in ein Textfeld bei Notion (2'000 Zeichen); der Rest wird abgeschnitten und markiert. */
+export const CLIP_CHARS = 1900;
+
+export function clipText(text: string, max = CLIP_CHARS): string {
+  const t = text.replace(/\r\n?/g, "\n").trim();
+  return t.length <= max ? t : `${t.slice(0, max - 2).trimEnd()} …`;
+}
+
+export type ResultLead = { email: string; firma?: string; tool: string; eingabe: string; ausgabe: string };
+
+export function buildPayload(input: ResultLead, kategorie: string, now = new Date()): LeadPayload {
   return {
-    name: input.name,
-    firma: input.firma,
+    name: "",
+    firma: input.firma?.trim() ?? "",
     email: input.email,
-    telefon: input.telefon ?? "",
+    telefon: "",
     tool: input.tool,
     kategorie,
     quelle: "tools.alperna.ch",
     zeit: now.toISOString(),
+    eingabe: clipText(input.eingabe),
+    ausgabe: clipText(input.ausgabe),
   };
 }
 
@@ -49,7 +60,7 @@ export type LeadDelivery = "sent" | "queued" | "lost";
 
 /**
  * Gibt den Lead an n8n weiter. Fällt n8n aus, kommt er in lead_queue und wird vom Cron (`/api/cron/leads`) nachgeholt.
- * Der Besucher wird in jedem Fall freigeschaltet; «lost» heisst: weder n8n noch Redis waren erreichbar.
+ * Der Besucher sieht sein Ergebnis in jedem Fall; «lost» heisst: weder n8n noch Redis waren erreichbar.
  */
 export async function deliverLead(store: AccessStore | null, payload: LeadPayload, fetchImpl: typeof fetch = fetch): Promise<LeadDelivery> {
   if (await forwardToN8n(payload, fetchImpl)) return "sent";

@@ -1,6 +1,5 @@
 import type { NextRequest } from "next/server";
-import { canStart, clientIp, defaultStore, gateSecret, ipHash, readGateCookie } from "@/lib/access";
-import { requestAccount } from "@/lib/account";
+import { clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
 import { readJson, respond } from "@/lib/api";
 import { analyze, normalizeUrl } from "@/lib/check/analyze";
 import { signResult } from "@/lib/check/sign";
@@ -37,10 +36,9 @@ export async function POST(req: NextRequest) {
     if (!(await withinLimit("check", 8, "1 h", hash))) {
       return respond(ROUTE, 429, { error: "rate_limited", message: "Das waren viele Prüfungen in kurzer Zeit. Bitte versuche es später wieder." }, "rate_limited");
     }
-    const who = await requestAccount(secret);
-    const decision = await canStart(defaultStore(), hash, readGateCookie(req, secret), who?.acchash ?? null);
-    if (!decision.allowed) {
-      return respond(ROUTE, 403, { error: "gate", message: "Dein freier Durchlauf ist verbraucht." }, "gate_used");
+    // Zugang v3: Ergebnisse gibt es gegen eine E-Mail-Adresse (Cookie mt_gate).
+    if (!readGateCookie(req, secret)) {
+      return respond(ROUTE, 403, { error: "gate", message: "Bitte gib zuerst deine E-Mail-Adresse an." }, "gate_used");
     }
   }
 

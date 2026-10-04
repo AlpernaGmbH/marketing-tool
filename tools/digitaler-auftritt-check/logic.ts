@@ -36,7 +36,7 @@ export const EMPTY_SOCIALS: SocialForm = {
 export const EMPTY_FORM: FormState = { industry: "", socials: EMPTY_SOCIALS };
 
 /**
- * Zwischenstand unter mt:<slug>. `phase`, `step`, `answers` und `counted` entsprechen dem Format der
+ * Zwischenstand unter mt:<slug>. `phase`, `step` und `answers` entsprechen dem Format der
  * Fragebogen-Tools, damit der Fortschritt im Pfad («phase» = «result») unverändert funktioniert.
  */
 export type SavedCheck = {
@@ -44,14 +44,13 @@ export type SavedCheck = {
   phase: "intro" | "result";
   step: 0;
   answers: Record<string, never>;
-  counted: boolean;
   form: FormState;
   result?: CheckResult;
-  /** KI-Einordnung zum gespeicherten Ergebnis (nur mit Konto). Fehlt sie, bleibt der Check vollständig. */
+  /** KI-Einordnung zum gespeicherten Ergebnis (sobald eine E-Mail-Adresse bekannt ist). Fehlt sie, bleibt der Check vollständig. */
   einordnung?: Einordnung;
 };
 
-export const EMPTY_SAVED: SavedCheck = { v: 1, phase: "intro", step: 0, answers: {}, counted: false, form: EMPTY_FORM };
+export const EMPTY_SAVED: SavedCheck = { v: 1, phase: "intro", step: 0, answers: {}, form: EMPTY_FORM };
 
 const FREQS: readonly string[] = ["none", "rare", "monthly", "weekly", "several"];
 
@@ -92,13 +91,13 @@ function isResult(v: unknown): v is CheckResult {
 /** Liest den Zwischenstand. Kaputte oder alte Daten (Fragebogen-Version) fallen auf den Start zurück. */
 export function parseCheckState(raw: unknown): SavedCheck {
   if (typeof raw !== "object" || raw === null) return EMPTY_SAVED;
-  const r = raw as { phase?: unknown; counted?: unknown; form?: unknown; result?: unknown; einordnung?: unknown };
+  const r = raw as { phase?: unknown; form?: unknown; result?: unknown; einordnung?: unknown };
   const form = parseForm(r.form);
   if (r.phase === "result" && isResult(r.result)) {
     const einordnung = parseEinordnung(r.einordnung);
-    return { ...EMPTY_SAVED, phase: "result", counted: true, form, result: r.result, ...(einordnung ? { einordnung } : {}) };
+    return { ...EMPTY_SAVED, phase: "result", form, result: r.result, ...(einordnung ? { einordnung } : {}) };
   }
-  return { ...EMPTY_SAVED, counted: r.counted === true, form };
+  return { ...EMPTY_SAVED, form };
 }
 
 // ---- Eingabe -----------------------------------------------------------------------------------

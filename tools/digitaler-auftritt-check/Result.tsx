@@ -78,7 +78,7 @@ function CategoryBlock({ cat }: { cat: CheckCategory }) {
   );
 }
 
-/** Zustand der KI-Einordnung. «none»: Besucher ohne Konto, der Block erscheint nicht. */
+/** Zustand der KI-Einordnung. «none»: noch keine E-Mail-Adresse bekannt oder kein signiertes Ergebnis, der Block erscheint nicht. */
 export type AiView =
   | { status: "none" }
   | { status: "loading" }
@@ -87,7 +87,7 @@ export type AiView =
 
 const AI_UNAVAILABLE: Record<EinordnungReason, string> = {
   failed: "Die Einordnung ist gerade nicht verfügbar. Das Ergebnis unten ist vollständig.",
-  not_signed_in: "Für die Einordnung musst du angemeldet sein. Das Ergebnis unten ist vollständig.",
+  not_signed_in: "Für die Einordnung brauchen wir deine E-Mail-Adresse. Das Ergebnis unten ist vollständig.",
   limit: "Du hast heute alle Einordnungen verbraucht. Morgen geht es wieder. Das Ergebnis unten ist vollständig.",
   capacity: "Die Einordnungen sind für heute aufgebraucht. Das Ergebnis unten ist vollständig.",
 };

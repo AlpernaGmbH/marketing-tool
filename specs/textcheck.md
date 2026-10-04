@@ -31,8 +31,8 @@ Alle Regeln in `tools/textcheck/logic.ts`. Treffer werden je Regel gruppiert (An
 ## Ausgaben
 - Ergebnis (sofort, frei): Wörter, Sätze, Lesbarkeit mit Stufe, Zahl der Fundstellen; «Das fällt auf» nach Gruppen; bereinigter Text in einem lesbaren Feld.
 - Kopieren (frei): bereinigter Text; Bericht als Markdown (`reportMarkdown`).
-- Keine Dateien, kein Download, also kein Formular vor dem Ergebnis. Das LeadGate erscheint nur beim zweiten Start («Neuen Text prüfen»).
-- Stand: `mt:textcheck` (`phase`, `text`, `counted`); der Text wird 500 ms nach der letzten Eingabe gespeichert. Bei angemeldeten Personen geht er mit dem Abgleich ins Konto (`mt:`-Schlüssel, bis 150'000 Zeichen).
+- Zugang v3 (Stand 04.10.2026): Vor dem ersten Ergebnis fragt `ToolShell.ensureEmail()` nach der E-Mail-Adresse. Mit dem Ergebnis geht `POST /api/result` ab: Eingabe ist der Text, Ausgabe der Bericht als Markdown (`reportMarkdown`). Die KI-Prüfung braucht dasselbe Cookie (`/api/text`, 403 `gate` → `renewEmail()` und einmal wiederholen); ihr Ergebnis geht nicht noch einmal ins CRM.
+- Stand: `mt:textcheck` (`phase`, `text`); der Text wird 500 ms nach der letzten Eingabe gespeichert. Nur im Browser.
 
 ## Edge Cases (getestet)
 - Leerer Text, nur Leerraum, nur Zahlen, nur Satzzeichen, Emojis, Steuerzeichen: Meldung oder leeres Ergebnis, nie ein Fehler.

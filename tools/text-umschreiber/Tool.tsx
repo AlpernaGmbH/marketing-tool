@@ -26,8 +26,8 @@ function Intro() {
         Fakten.
       </p>
       <p>
-        Dein Text geht an unseren Server und von dort an unseren KI-Anbieter. Wir speichern ihn nicht. Gib keine vertraulichen Angaben und keine Daten Dritter ein. Der erste
-        Durchlauf ist frei, danach brauchst du das kurze Formular.
+        Dein Text geht an unseren Server und von dort an unseren KI-Anbieter; unser Server speichert ihn nicht. Text und Fassung gehen zusammen mit deiner
+        E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Gib keine vertraulichen Angaben und keine Daten Dritter ein.
       </p>
     </>
   );
@@ -95,30 +95,30 @@ function RewriteFlow() {
     setBusy(true);
     try {
       let outcome = await requestRewrite({ text: input, styleId, anrede });
-      // Der Server kennt den freien Durchlauf als gebraucht: erst das Formular, dann einmal wiederholen.
-      if (!outcome.ok && outcome.reason === "gate" && (await ctx.requestStart())) outcome = await requestRewrite({ text: input, styleId, anrede });
+      // Der Server kennt keine Adresse (Cookie fehlt): erst das Fenster, dann einmal wiederholen.
+      if (!outcome.ok && outcome.reason === "gate" && (await ctx.renewEmail())) outcome = await requestRewrite({ text: input, styleId, anrede });
       if (!outcome.ok) {
         setError(FAIL_MESSAGES[outcome.reason]);
         return;
       }
       const current = savedRef.current;
-      const first = !current.result;
       shouldFocus.current = true;
       setEdit(null);
       setDraft(null);
       set({ ...current, text: input, result: outcome.text, warnings: outcome.warnings });
-      if (first) void ctx.completeRun();
+      void ctx.sendResult({ eingabe: `Stil: ${getStyle(styleId)?.label ?? styleId}\nAnrede: ${anrede}\n\n${input}`, ausgabe: outcome.text });
     } finally {
       setBusy(false);
     }
   }
 
-  function start() {
+  async function start() {
     const problem = inputProblem(text, saved.styleId);
     if (problem) return setError(problem);
     setError(null);
     set({ ...saved, text });
-    void rewrite(text, saved.styleId, saved.anrede);
+    if (!(await ctx.ensureEmail())) return;
+    await rewrite(text, saved.styleId, saved.anrede);
   }
 
   return (
@@ -128,7 +128,7 @@ function RewriteFlow() {
       aria-busy={busy || !ready}
       onSubmit={(e) => {
         e.preventDefault();
-        start();
+        void start();
       }}
     >
       <div className="content">

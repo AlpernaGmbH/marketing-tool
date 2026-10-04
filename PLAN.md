@@ -69,9 +69,19 @@ Klasse C bleibt bewusst einfach: Diese Seiten bringen Suchverkehr (WhatsApp-Link
 
 Reihenfolge neu: **Analyse zuerst.** Sie zeigt, was Alperna kann, liefert das Profil für alle Generatoren und ist der stärkste Einstieg für Leads. Die Strategie-Werkstatt (alt Etappe 2 und 3) folgt danach und baut auf dem Profil auf.
 
-## Zugang v2 (entschieden am 04.10.2026)
+## Zugang v3 (entschieden und gebaut am 04.10.2026, spät; ersetzt Zugang v2)
 
-**Entscheid von Alperna:** Ein Durchlauf pro Werkzeug ist frei. Danach erscheint ein Fenster, in dem man kurz ein Konto erstellt, mit Google, Apple und weiteren Anbietern.
+**Entscheid von Alperna:** Kein Konto, keine Anmeldung. Wer ein Ergebnis will, gibt eine E-Mail-Adresse an. Eingabe, Ergebnis und Adresse werden zusammengeführt und gehen ins CRM, bei jedem Werkzeug, immer.
+
+- Werkzeug läuft ohne Hürde bis zum Ergebnis; vor dem ersten Ergebnis und vor Downloads das Fenster (E-Mail, Häkchen). Danach ein Jahr lang kein Fenster mehr (Cookie `mt_gate` mit der Adresse, signiert).
+- `POST /api/result`: Werkzeug, Eingabe, Ausgabe, Firma aus dem Profil, Adresse aus dem Cookie → n8n → Notion (Spalten Eingabe, Ausgabe) und Mail.
+- Gilt für alle kommenden Werkzeuge: `ToolShell.ensureEmail()` vor dem Ergebnis, `ToolShell.sendResult({eingabe, ausgabe})` danach; `QuestionnaireEngine` macht beides von selbst (`resultText` liefert die Ausgabe als Text).
+- Risiken und Einwände: STATUS.md, Entscheid 54 (weniger Ergebnisse, keine Adressbestätigung, Texte Dritter im CRM, Datenschutzerklärung).
+- Die KI-Werkzeuge brauchen dasselbe Cookie; es gibt keine Grenze pro Person, nur Ratenbegrenzung und die globale Tagesgrenze. Die Einordnung im Check hat 5 pro Adresse und Tag.
+
+## Zugang v2 (entschieden am 04.10.2026, **überholt durch v3**, nur noch als Verlauf)
+
+**Entscheid von Alperna (v2):** Ein Durchlauf pro Werkzeug ist frei. Danach erscheint ein Fenster, in dem man kurz ein Konto erstellt, mit Google, Apple und weiteren Anbietern.
 
 - Erster Durchlauf: frei, ohne Konto. IP-Hash und Cookie bleiben als Komfort-Schranke, nicht als Sicherheit (bekannte Lücken: gemeinsame Büro- und Mobilfunk-IPs, Browserwechsel).
 - Danach das Konto-Fenster statt des heutigen Formulars. Mit Konto: alle Werkzeuge und Downloads, Kontingente pro Person, Freischaltung auf allen Geräten.
@@ -89,7 +99,7 @@ Reihenfolge neu: **Analyse zuerst.** Sie zeigt, was Alperna kann, liefert das Pr
 **Ehrliche Grenze [Sicher]:** Gratis-Kontingente sind klein und können sich ändern. Wird die Seite erfolgreich, kippt die KI zuerst. Darum gelten fünf Regeln:
 
 1. Die Fakten und die Massnahmen-Liste des Checks entstehen **ohne KI** (Crawler plus Regeln). Die KI formuliert nur Zusammenfassung und Einordnung. Fällt sie aus, bleibt alles Wesentliche stehen.
-2. KI nur für angemeldete Personen, nie für den freien ersten Durchlauf.
+2. KI erst, wenn eine E-Mail-Adresse bekannt ist (Zugang v3; vorher: nur für angemeldete Personen).
 3. Ergebnisse je Domain 24 Stunden zwischenspeichern (Redis).
 4. Mehrere Anbieter hintereinander (siehe Tabelle) und ein globales Tageslimit. Ist es erreicht, steht dort «Heute ist das Kontingent aufgebraucht» mit WhatsApp-Knopf.
 5. Kurze Eingaben: nur das Fakten-JSON, ungefähr 3'000 Tokens statt 8'000.
@@ -120,16 +130,13 @@ Rechnung mit 8'000 Tokens Eingabe und 2'000 Tokens Ausgabe je Auswertung und den
 
 **Entscheid vom 04.10.2026 (abends): Mistral direkt, kostenloser Plan «Experiment».** Eine API-Schlüssel-Variable `MISTRAL_API_KEY` genügt; ohne sie läuft der alte Weg über das Gateway weiter (für bezahltes Guthaben). Mistral ist ein Anbieter in Frankreich, schreibt gutes Deutsch und der Plan kostet nichts (rund eine Anfrage pro Sekunde, Obergrenze rund eine Milliarde Tokens im Monat; die genauen Zahlen stehen nur im Mistral-Konto). **Preis dafür:** Im Plan «Experiment» dürfen Eingaben und Ausgaben für das Training verwendet werden (Quelle: help.mistral.ai, bereits oben genannt). Darum sagen die KI-Werkzeuge «Gib nichts Vertrauliches ein», und die Datenschutzerklärung muss es nennen. Eine Erklärung dafür, was das für Kundentexte heisst, schreibt ein Mensch (Regel 8). Wer das nicht will, kauft bei Mistral den bezahlten Plan «Scale» (Training aus) oder Guthaben beim Gateway.
 
-**Limits:** Die KI-Werkzeuge ohne Konto (Text-Umschreiber, Textcheck mit KI) haben kein Limit pro Person, nur 30 Anfragen pro Stunde und IP-Hash und eine globale Tagesgrenze (`AI_DAILY_CAP`, Standard 2'000). Grund: Die Grenze schützt den kostenlosen Plan vor einem Skript, das ihn für alle aufbraucht. Bei normaler Nutzung wird sie nie erreicht.
+**Limits:** Die KI-Werkzeuge (Text-Umschreiber, Textcheck mit KI) haben kein Limit pro Person, nur 30 Anfragen pro Stunde und IP-Hash und eine globale Tagesgrenze (`AI_DAILY_CAP`, Standard 2'000). Grund: Die Grenze schützt den kostenlosen Plan vor einem Skript, das ihn für alle aufbraucht. Bei normaler Nutzung wird sie nie erreicht.
 
 ## Wofür die Google Cloud gebraucht wird
 
-Du brauchst sie **nicht für die KI**. Es sind zwei andere Dinge:
+Seit Zugang v3 **nur noch** für eines, und das ist optional: **Google-Profil prüfen** im Marketing-Check (Etappe 3): Places API. Dafür braucht es ein Zahlungsmittel im Konto; pro Monat gibt es Gratis-Kontingente (zum Beispiel 5'000 Textsuchen und 10'000 Detailabfragen, darüber USD 17 bis 32 je 1'000 Aufrufe; Quelle: developers.google.com/maps/billing-and-pricing/pricing). Ohne diesen Schlüssel meldet der Check beim Google-Profil «nicht prüfbar». Der OAuth-Client für «Mit Google anmelden» wird nicht mehr gebraucht.
 
-1. **«Mit Google anmelden»** (Etappe 2): ein OAuth-Zugang. Kostenlos, kein Zahlungsmittel nötig. Das ist der Grund, warum jetzt eines gebraucht wird.
-2. **Google-Profil prüfen** im Marketing-Check (Etappe 3, optional): Places API. Dafür braucht es ein Zahlungsmittel im Konto; pro Monat gibt es Gratis-Kontingente (zum Beispiel 5'000 Textsuchen und 10'000 Detailabfragen, darüber USD 17 bis 32 je 1'000 Aufrufe; Quelle: developers.google.com/maps/billing-and-pricing/pricing). Ohne diesen Schlüssel meldet der Check beim Google-Profil «nicht prüfbar».
-
-## Etappe 2: Bauplan (Stand 04.10.2026)
+## Etappe 2: Bauplan (Stand 04.10.2026; Punkte 1, 2 und 7 sind durch Zugang v3 überholt)
 
 **Voraussetzungen von Alperna:** (1) Upstash-Redis (Produkt «Upstash», nicht «Redis») mit `KV_REST_API_URL` und `KV_REST_API_TOKEN` im Projekt; (2) Google-OAuth-Client (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`), Anleitung in STATUS.md. Beides ist Voraussetzung für jeden Schritt unten, der Konten oder Kontingente betrifft.
 
@@ -171,4 +178,11 @@ Diese Punkte hat Alperna genannt. Sie gehören nicht zur laufenden Etappe.
 
 ## Nächster Schritt
 
-Etappe 1c ist gebaut (04.10.2026): Marketing-Check mit Crawler, ohne KI und ohne Konto, gleiche Bewertung wie das Agentur-Tool. Als Nächstes Etappe 2: Zugang v2 und KI. Voraussetzungen von Alperna: Upstash mit dem Projekt verbunden, Google-OAuth-Zugang (Schritte in STATUS.md). Für die KI braucht es nichts: Vercel AI Gateway läuft im vorhandenen Team.
+Stand 04.10.2026 (spät): Etappe 1c, Etappe 2 (KI über Mistral direkt) und Zugang v3 sind gebaut; Textcheck und Text-Umschreiber aus Etappe 3 beziehungsweise 6 ebenfalls. Als Nächstes die Etappen 3 bis 6 in dieser Reihenfolge, je Werkzeug Spec → `logic.ts` mit Tests → `Tool.tsx` → Seitentext → `npm run check`:
+
+- **Etappe 3 (Analyse):** newsletter-check, ideen-aus-website, reifegrad-check, wettbewerbsvergleich; gbp-check nur mit Places-Schlüssel, sonst als «nicht prüfbar» verschoben.
+- **Etappe 4 (Strategie und Marke, Generatoren):** icp-builder, persona, positionierung, nutzenversprechen, markenplattform, botschaften, swot, strategie-einseiter.
+- **Etappe 5 (Rechner und Recht):** whatsapp-link, qr-set, bewertungs-kit, gbp-feiertage, budget-planer, content-kalender; impressum, datenschutz, gewinnspiel-check, uwg-mailcheck erst mit `content/legal/` von Menschen (Regel 8).
+- **Etappe 6 (Content und Vereine):** content-saeulen, content-ideen, caption-baukasten, medienmitteilung, bewertungsantwort, post-generator; anspruchsgruppen, vereins-kommunikation, sponsoring-dossier.
+
+Voraussetzungen von Alperna: keine für den Bau. Für die Produktion: `MISTRAL_API_KEY` (gesetzt), Upstash verbunden (gesetzt), Datenschutzerklärung mit dem Stand aus `docs/DATENSCHUTZ-FAKTEN.md`.

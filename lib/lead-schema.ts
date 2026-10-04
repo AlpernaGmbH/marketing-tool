@@ -1,16 +1,8 @@
 import { z } from "zod";
 
-// Gemeinsam für Formular (Browser) und /api/lead (Server).
+// Gemeinsam für das E-Mail-Fenster (Browser) und /api/lead (Server). Zugang v3: nur die Adresse und die Einwilligung.
 export const leadSchema = z.object({
-  name: z.string().trim().min(2, "Bitte gib deinen Namen an.").max(120),
-  firma: z.string().trim().min(2, "Bitte gib deine Firma oder deinen Verein an.").max(160),
   email: z.string().trim().toLowerCase().max(254).email("Bitte gib eine gültige E-Mail-Adresse an."),
-  telefon: z
-    .string()
-    .trim()
-    .max(40)
-    .regex(/^[0-9+()/\s.-]*$/, "Bitte gib eine gültige Telefonnummer an.")
-    .optional(),
   consent: z.literal(true, { message: "Bitte stimm der Kontaktaufnahme zu." }),
   tool: z.string().min(1).max(80),
   // Honeypot: für Menschen unsichtbar, muss leer bleiben.
@@ -18,3 +10,14 @@ export const leadSchema = z.object({
 });
 
 export type LeadInput = z.infer<typeof leadSchema>;
+
+/** Ein Ergebnis für das CRM (/api/result): Werkzeug, was die Person eingegeben hat und was herauskam. */
+export const resultSchema = z.object({
+  tool: z.string().min(1).max(80),
+  eingabe: z.string().max(20_000),
+  ausgabe: z.string().max(20_000),
+  /** Firma aus dem Firmenprofil, falls vorhanden (wie shortText dort). */
+  firma: z.string().trim().max(200).optional(),
+});
+
+export type ResultInput = z.infer<typeof resultSchema>;

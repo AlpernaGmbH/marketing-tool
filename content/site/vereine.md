@@ -51,7 +51,7 @@ Neue Mitglieder suchen dort, wo alle suchen: auf Google, in der Gemeinde-App, im
 Noch nicht, sie folgen. Dein Vereinsprofil kannst du aber schon als Datei sichern und im nächsten Vereinsjahr oder für die Nachfolge im Vorstand wieder laden.
 
 ### Sind die Werkzeuge wirklich kostenlos für Vereine?
-Ja. Es gibt keinen Vertrag, und ein Konto ist freiwillig. Jedes Werkzeug kannst du einmal vollständig durchlaufen. Danach bitten wir um ein kurzes Formular mit Name, Verein oder Firma und E-Mail, oder um eine Anmeldung.
+Ja. Es gibt keinen Vertrag und kein Konto. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du das Ergebnis, und alle Werkzeuge sind offen.
 
 ### Muss ich als Vorstand Marketing-Kenntnisse haben?
 Nein. Die Werkzeuge fragen in einfachen Worten und erklären, wozu eine Angabe dient. Das Ergebnis ist ein Entwurf, den du anpassen kannst.

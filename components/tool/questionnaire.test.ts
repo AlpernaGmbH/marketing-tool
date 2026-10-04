@@ -183,14 +183,13 @@ describe("parseState", () => {
     for (const bad of [null, undefined, "x", 3, []]) expect(parseState(bad)).toEqual(EMPTY_STATE);
   });
   it("liest einen gültigen Stand und repariert einzelne kaputte Felder", () => {
-    expect(parseState({ phase: "summary", step: 3, answers: { a: "b" }, counted: true })).toEqual({
+    expect(parseState({ phase: "summary", step: 3, answers: { a: "b" } })).toEqual({
       v: 1,
       phase: "summary",
       step: 3,
       answers: { a: "b" },
-      counted: true,
     });
-    expect(parseState({ phase: "böse", step: -1, answers: [], counted: "ja" })).toEqual(EMPTY_STATE);
+    expect(parseState({ phase: "böse", step: -1, answers: [] })).toEqual(EMPTY_STATE);
   });
 });
 

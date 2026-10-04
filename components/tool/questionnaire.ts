@@ -178,10 +178,9 @@ export type SavedState = {
   step: number;
   answers: Answers;
   /** Ergebnis wurde schon über /api/access/complete gezählt (Reload zählt nicht erneut). */
-  counted: boolean;
 };
 
-export const EMPTY_STATE: SavedState = { v: 1, phase: "intro", step: 0, answers: {}, counted: false };
+export const EMPTY_STATE: SavedState = { v: 1, phase: "intro", step: 0, answers: {} };
 
 const PHASES: Phase[] = ["intro", "questions", "summary", "result"];
 
@@ -191,7 +190,7 @@ export function parseState(raw: unknown): SavedState {
   const phase = PHASES.includes(r.phase as Phase) ? (r.phase as Phase) : "intro";
   const answers = typeof r.answers === "object" && r.answers !== null && !Array.isArray(r.answers) ? (r.answers as Answers) : {};
   const step = typeof r.step === "number" && Number.isInteger(r.step) && r.step >= 0 ? r.step : 0;
-  return { v: 1, phase, step, answers, counted: r.counted === true };
+  return { v: 1, phase, step, answers };
 }
 
 // ---- Anzeige -----------------------------------------------------------------------------------

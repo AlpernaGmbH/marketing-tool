@@ -9,60 +9,54 @@ Jede Tool-Seite ist zugleich eine SEO-Landingpage mit kurzem, gegliedertem Text 
 Sprache: Deutsch (Schweiz). Zielgruppe: KMU-Entscheider 30–60,
 Vereinsvorstände, Selbständige.
 
-## Zugangsmodell (ein freier Durchlauf, danach Konto über Clerk; Zugang v2, Stand 04.10.2026)
+## Zugangsmodell (Zugang v3, Stand 04.10.2026: kein Konto, E-Mail-Adresse vor dem Ergebnis)
 - Alle Texte, Beispiele, FAQ: öffentlich, immer indexierbar.
-- Freier Durchlauf: Jeder Besucher darf ein Tool einmal vollständig
-durchlaufen. Ergebnis am Bildschirm und Text-Copy sind frei. Dateien (PDF,
-DOCX, PNG, CSV, ICS, ZIP) gibt es im freien Durchlauf nicht.
-- Lead-Formular (components/tool/LeadGate; in älteren Etappen-Texten
-EmailGate genannt): erscheint beim zweiten Tool-Start oder beim ersten
-Download. Felder: Name, Firma, E-Mail, Telefon (optional), Einwilligung
-(«Alperna darf mich zu meinem Ergebnis kontaktieren»). Honeypot-Feld. Text:
-«Dein erstes Ergebnis war gratis. Hinterlass uns Name, Firma und E-Mail –
-dann sind alle Werkzeuge und Downloads offen, und wir melden uns persönlich,
-falls du Fragen hast.»
-- Nach dem Absenden: Besucher ist freigeschaltet (alle Tools, alle
-Downloads), Lead geht über /api/lead an n8n ins CRM.
-- Konto (Zugang v2): Ist die Anmeldung eingerichtet (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-CLERK_SECRET_KEY), zeigt das LeadGate zuerst «Anmelden und freischalten» (mit dem
-Häkchen «Alperna darf mich zu meinem Ergebnis kontaktieren») und das Formular als
-Ausweg («Lieber ohne Konto?»). Die Anmeldung macht Clerk (Fenster mit Google,
-Microsoft, Apple oder E-Mail-Code, je nach Einstellung im Clerk-Dashboard). Ohne
-Einrichtung gilt nur das Formular. Nach der Rückkehr (?konto=ok)
-schaltet POST /api/lead/account frei: Name und E-Mail kommen aus dem Konto bei Clerk
-(nur bestätigte Adressen), nicht aus dem Browser. Die Freischaltung des Kontos liegt in Redis unter
-acct:<HMAC der E-Mail> (TTL 365 Tage) und gilt auf allen Geräten. Ein Konto,
-das schon freigeschaltet ist, erzeugt keinen zweiten Lead. Eine Anmeldung allein
-schaltet nicht frei: ohne die Einwilligung im Fenster gibt es keine
-Freischaltung. Sitzung: Clerk (Cookies __session und __client_uat auf unserer Domain,
-dazu Cookies von Clerk selbst; alle notwendig, kein Banner). Clerk lädt im Browser nur,
-wenn jemand «Anmelden» anklickt oder schon ein Sitzungs-Zeichen (__client_uat) trägt
-(lib/clerk-bridge.ts). Besucher ohne Konto nehmen nie Kontakt zu Clerk auf. Der Server
-prüft die Sitzung in middleware.ts (clerkMiddleware, nur für /api/...) und liest über
-lib/auth.ts die bestätigte E-Mail-Adresse; die Kennung des Kontos bleibt der HMAC dieser
-Adresse, egal über welchen Anbieter die Person sich anmeldet.
-- Zählung: lib/access.ts bildet einen HMAC-SHA256 der Client-IP (x-forwarded-
-for erstes Element) mit GATE_SECRET, gekürzt auf 16 Byte. Redis-Keys: run:
-<iphash> (Zähler, TTL 30 Tage), unlocked:<iphash> (TTL 365 Tage), acct:<acchash>
-(Konto freigeschaltet, TTL 365 Tage), popular:
-<slug> (Zähler), ai:<acchash>:<YYYY-MM-DD> (Einordnungen pro Konto), ai:global:
-<YYYY-MM-DD> und lookup:<iphash>:<YYYY-MM-DD> (TTL 2 Tage), aicache:<hash der
-Signatur> (fertige Einordnung, TTL 24 Stunden), data:<acchash> (Daten des Kontos, siehe
-«Firmenprofil», ohne Ablauf). Dazu ein signiertes Cookie mt_gate {runs, unlocked, iat}
-(HttpOnly, SameSite=Lax, 365 Tage). Gesperrt ist, wer in Redis ODER Cookie
-als gebraucht steht; freigeschaltet, wer in Redis ODER Cookie als
-freigeschaltet steht.
-- Routen: POST /api/access {tool} → {allowed, unlocked, reason}; POST
-/api/access/complete {tool} → zählt den Durchlauf und popular:<slug>; POST
-/api/lead → validiert, leitet an n8n weiter, setzt unlocked in Redis und
-Cookie.
-- Das Formular steht vor dem Start oder vor dem Download, nie vor dem
-Ergebnis eines begonnenen Durchlaufs. Ist Redis nicht erreichbar, gilt nur
-das Cookie; ist /api/lead nicht erreichbar, wird trotzdem freigeschaltet und
-der Lead in Redis-Liste lead_queue abgelegt (Vercel Cron ruft täglich
-GET /api/cron/leads auf, geschützt mit CRON_SECRET; die Route schickt wartende
-Leads an n8n und entfernt sie danach). Ein Besucher wird nie wegen unserer
-Technik blockiert.
+- Kein Konto, keine Anmeldung, kein freier Durchlauf mehr. Jedes Werkzeug
+läuft ohne Hürde bis zum Punkt, an dem das Ergebnis erscheinen würde. Dort
+(und vor jedem Download) fragt das E-Mail-Fenster (components/tool/LeadGate)
+nach der Adresse. Felder: E-Mail, Einwilligung («Alperna darf mich zu meinem
+Ergebnis kontaktieren»), Honeypot. Kein Name, keine Firma, kein Telefon.
+Titel «Dein Ergebnis ist bereit.», Text «Gib deine E-Mail-Adresse an, dann
+zeigen wir es dir. Dein Ergebnis und deine Eingaben gehen mit der Adresse an
+Alperna, damit wir dir bei Fragen weiterhelfen können.» Knöpfe «Später» und
+«Ergebnis anzeigen». «Später» lässt Formular oder Zusammenfassung stehen.
+- Nach dem Absenden: POST /api/lead {email, consent, tool} setzt das
+signierte Cookie mt_gate {email, iat} (HMAC-SHA256 mit GATE_SECRET, HttpOnly,
+SameSite=Lax, 365 Tage). Der Browser merkt die Adresse zusätzlich unter
+mt:_lead (nur für die Anzeige «Ergebnisse gehen an … · ändern»). Danach gibt
+es ein Jahr lang kein Fenster mehr, auf keinem Werkzeug.
+- Jedes Ergebnis geht ins CRM, immer: ToolShell.sendResult({eingabe,
+ausgabe}) → POST /api/result {tool, eingabe, ausgabe, firma?}. Die Adresse
+nimmt der Server aus dem Cookie, nie aus dem Body. Der Lead an n8n hat genau
+die Felder name (leer), firma (aus dem Firmenprofil), email, telefon (leer),
+tool, kategorie, quelle, zeit, eingabe, ausgabe; Eingabe und Ausgabe auf
+1'900 Zeichen gekürzt (lib/lead.ts, clipText). Ein zweites Ergebnis derselben
+Person geht erneut ins CRM.
+- Ohne Cookie antworten /api/result, /api/check, /api/text und /api/ai mit
+403 {error: "gate"}. Der Browser ruft dann ToolShell.renewEmail() (vergisst
+mt:_lead, zeigt das Fenster) und wiederholt die Anfrage einmal.
+- ToolShell-Vertrag für jedes Werkzeug: ensureEmail() vor dem ersten
+Ergebnis und vor jeder Server-Anfrage; sendResult() nach dem sichtbaren
+Ergebnis; guardDownload(action) für Download-Knöpfe; renewEmail() bei 403.
+QuestionnaireEngine macht alles davon selbst (Prop resultText liefert die
+Ausgabe als Text, sonst JSON).
+- Schutz: lib/access.ts bildet einen HMAC-SHA256 der Client-IP
+(x-forwarded-for erstes Element) mit GATE_SECRET, gekürzt auf 16 Byte, nur
+für die Ratenbegrenzung (/api/lead 10 pro Stunde, /api/result 30 pro
+Stunde, /api/text 30 pro Stunde, /api/check 8 pro Stunde). accountHash(email)
+ist der HMAC der Adresse für das Tageslimit der KI-Einordnung. Redis-Keys:
+popular:<slug> (Zähler je gesendetem Ergebnis), ai:<acchash>:<YYYY-MM-DD>
+(Einordnungen pro Adresse) und ai:global:<YYYY-MM-DD> (TTL 2 Tage),
+aicache:<hash der Signatur> (fertige Einordnung, TTL 24 Stunden), rl:<name>
+(Ratenbegrenzung), lead_queue (Liste). Keine Zähler pro Besucher, keine
+Freischaltung, keine Daten beim Server.
+- Ausfälle: Ist n8n nicht erreichbar, legt /api/result den Lead in
+lead_queue ab (Vercel Cron ruft täglich GET /api/cron/leads auf, geschützt
+mit CRON_SECRET; die Route schickt wartende Leads an n8n und entfernt sie
+danach). Ist Redis nicht erreichbar, antwortet /api/result trotzdem 200.
+Fehlt GATE_SECRET, antworten die Routen 503. Ein Besucher sieht sein
+Ergebnis in jedem Fall, sobald er die Adresse angegeben hat; der Versand ins
+CRM blockiert nie die Anzeige.
 
 ## Stack
 Next.js 15 App Router, TypeScript strict, Tailwind 4, shadcn/ui (nur
@@ -80,19 +74,19 @@ analyse, schweiz, ki, vereine
 generateStaticParams, Tool als Client-Komponente
 - app/(site)/profil/page.tsx – Firmenprofil ansehen, bearbeiten, als JSON
 exportieren/importieren, alles löschen
-- app/api/access/route.ts, app/api/access/complete/route.ts,
-app/api/lead/route.ts – Zugang und Leads
-- app/api/lead/account/route.ts – Freischalten mit Konto; app/api/account/route.ts – wer ist angemeldet (Name, E-Mail) für
-Kopfzeile und Profilseite; app/api/account/data/route.ts – Daten des Kontos (GET, PUT, DELETE)
+- app/api/lead/route.ts – E-Mail-Adresse entgegennehmen, Cookie mt_gate setzen
+(schickt noch nichts ins CRM); app/api/result/route.ts – Ergebnis mit Eingabe und
+Ausgabe an n8n (Adresse aus dem Cookie), zählt popular:<slug>
 - app/api/check/route.ts – Marketing-Check: ruft die Website des Besuchers ab
-(SSRF-Schutz in lib/check/net.ts), streamt Schritte und Ergebnis als NDJSON
-- app/api/ai/route.ts – KI-Einordnung zu einem Check-Ergebnis: nur mit Konto und
-Freischaltung, nur für von /api/check signierte Ergebnisse (lib/check/sign.ts),
-Tageslimits (lib/ai-quota.ts), 24 Stunden Zwischenspeicher, Antwort der KI wird
-geprüft (lib/check/ai.ts) und sonst verworfen
+(SSRF-Schutz in lib/check/net.ts), streamt Schritte und Ergebnis als NDJSON;
+verlangt das Cookie (403 gate)
+- app/api/ai/route.ts – KI-Einordnung zu einem Check-Ergebnis: verlangt das Cookie,
+nur für von /api/check signierte Ergebnisse (lib/check/sign.ts),
+Tageslimit pro Adresse und global (lib/ai-quota.ts), 24 Stunden Zwischenspeicher,
+Antwort der KI wird geprüft (lib/check/ai.ts) und sonst verworfen
 - app/api/text/route.ts – Text-Umschreiber und Textcheck mit KI: schreibt den Text des Besuchers
-im gewählten Stil neu oder prüft ihn (Stil «pruefen»); ohne Konto, es gilt der freie Durchlauf
-und danach das Formular; Schutz: 30 Anfragen pro Stunde und IP-Hash, globale Tagesgrenze
+im gewählten Stil neu oder prüft ihn (Stil «pruefen»); verlangt das Cookie (403 gate);
+Schutz: 30 Anfragen pro Stunde und IP-Hash, globale Tagesgrenze
 (AI_DAILY_CAP); Antwort wird geprüft (tools/text-umschreiber/logic.ts), nichts wird
 gespeichert oder mit Inhalt geloggt
 - app/api/cron/leads/route.ts – täglicher Cron: schickt Leads aus lead_queue nach
@@ -107,17 +101,15 @@ gespeichert oder mit Inhalt geloggt
 DocumentExport, ProfileBanner, LeadGate, ScoreBadge, ResultCard, CopyButton,
 LegalDisclaimer, AlpernaPitch, RelatedTools
 - components/site/ – Header, Footer, Search, PathCard, ToolCard, TrustLine,
-Breadcrumbs, AccountMenu (Konto in der Kopfzeile), SignInDialog
+Breadcrumbs
 - lib/define-tool.ts – defineTool(), zod-Schema, Typen (getrennt von der Registry, sonst Zirkelimport)
 - lib/registry.ts – getTools(), getToolsByCategory(), getTool(), getRelated(), getPath()
-- lib/access.ts – ipHash(), readGateCookie(), writeGateCookie(), canStart(),
-markComplete(), unlock()
+- lib/access.ts – ipHash(), accountHash(), signGate(), verifyGate(),
+readGateCookie(), writeGateCookie(), AccessStore (recordResult, Lead-Warteschlange)
+- lib/access-client.ts – submitEmail(), sendResult(), LEAD_KEY (Browser)
+- lib/lead-schema.ts – leadSchema (E-Mail, Einwilligung, Tool), resultSchema
+- lib/lead.ts – LeadPayload, buildPayload(), clipText(), forwardToN8n(), deliverLead(), drainLeads()
 - lib/redis.ts – Upstash-Client, Key-Helfer, TTLs
-- lib/auth.ts, lib/account.ts – Konto (Server): Person aus der Sitzung von Clerk, Kennung
-aus der bestätigten E-Mail-Adresse
-- lib/clerk-bridge.ts, lib/clerk-localization.ts, lib/konto-client.ts,
-components/site/ClerkLoader.tsx, ClerkRoot.tsx – Konto (Browser): Clerk lädt erst bei
-Bedarf; Texte der Fenster auf Deutsch in Du-Form; Merker der begonnenen Anmeldung
 - lib/profile.ts – Profil-Typen, Validierung, Export/Import JSON (rein, ohne React)
 - lib/use-profile.ts – useProfile(): localStorage-Key mt:profile
 - lib/check/ – Engine des Marketing-Checks (Port aus dem Agentur-Tool): net.ts,
@@ -126,10 +118,7 @@ sign.ts (Signatur des Ergebnisses), ai.ts (Fakten, Prompt, Prüfung der KI-Antwo
 ai-client.ts (Browser)
 - lib/ai.ts, lib/ai-quota.ts – KI: direkt bei Mistral (MISTRAL_API_KEY, kostenloser Plan) oder über
 das Vercel AI Gateway (Modelle aus AI_MODELS), Tageslimits und Zwischenspeicher
-- lib/storage.ts, lib/use-local.ts – localStorage mit Rückfall auf Arbeitsspeicher; führt
-für Schlüssel des Kontos Buch (Zeitpunkt der letzten Änderung)
-- lib/sync-keys.ts, lib/sync.ts, lib/account-data.ts, lib/account-actions.ts,
-components/site/AccountSync.tsx – Abgleich der lokalen Daten mit dem Konto
+- lib/storage.ts, lib/use-local.ts – localStorage mit Rückfall auf Arbeitsspeicher
 - lib/ch.ts – chf(), dateCH(), typoCH(), uidValid()
 - data/*.json – Schweizer Datensätze, jede Datei mit meta {source, url, asOf}
 - content/tools/<slug>.md – Seitentext mit festen Abschnitten (Vorlage unten)
@@ -142,51 +131,35 @@ formulieren
 - scripts/new-tool.ts, scripts/content-check.ts, scripts/seo-check.ts
 - PLAN.md, STATUS.md, IDEAS.md – Arbeitsdateien
 
-## Firmenprofil (lib/profile.ts; im Browser, bei Angemeldeten zusätzlich im Konto)
+## Firmenprofil (lib/profile.ts, nur im Browser)
 Felder: organisationstyp kmu|verein, firma, branche, rechtsform, ort, website, kanton,
 groesse, zielgruppen[], primaersegment, personas[], positionierung, marke
 {werte, persoenlichkeit, tonalitaet, woerter, bewertungsregeln}, kanaele[],
 budgetJahr, contentSaeulen[]. Tool-Zwischenstände unter mt:<slug>. Merkliste
-unter mt:merkliste.
-Daten beim Konto: Wer angemeldet ist und dessen Speicher (Redis) bereitsteht, dessen
-Firmenprofil, Merkliste und Zwischenstände (Schlüssel mt:profile, mt:merkliste, mt:<slug>)
-liegen im Konto (Redis data:<acchash>, kein Ablauf, bis die Person sie löscht) und folgen
-ihr auf jedes Gerät. Der Browser bleibt die Arbeitskopie; AccountSync gleicht ab (Start,
-2 Sekunden nach einer Änderung, Rückkehr in den Tab). Je Schlüssel gewinnt die jüngere
-Änderung; Löschungen werden als Grabstein 60 Tage mitgeführt. Grenzen: 60 Schlüssel, 150'000
-Zeichen je Wert, 600'000 insgesamt. Abmelden schickt alles hinauf und löscht danach die lokale
-Kopie (schlägt das fehl, bleibt sie). «Alles löschen» und «Meine Daten im Konto löschen» auf
-/profil löschen zuerst die Daten im Konto. Der Server liest die Werte nicht und loggt sie nicht.
-Ohne Anmeldung bleibt alles im Browser.
-Kopfzeile: Ist die Anmeldung eingerichtet, sehen Besucher «Anmelden» und
-«Registrieren» (bei Clerk ein Fenster für beides, die Anmeldung allein schaltet nichts
-frei und schickt nichts an Alperna). «Mein Profil» steht nur im Menü der angemeldeten
-Person, zusammen mit «Abmelden». Ohne eingerichtete Anmeldung bleibt der Link
-«Mein Profil» wie bisher. Die Seite /profil ist per Adresse erreichbar und zeigt
-oben die Konto-Karte.
+unter mt:merkliste. Merker der angegebenen E-Mail-Adresse unter mt:_lead.
+Der Server speichert davon nichts; nur die Firma geht mit jedem Ergebnis ins CRM
+(Feld firma in /api/result).
+Kopfzeile: Link «Mein Profil». Kein Anmelden, kein Konto.
 Jedes Tool mit usesProfile zeigt ProfileBanner («Dein Firmenprofil: Malerei
 Keller, Gossau – bearbeiten»). Hinweis auf /profil: «Wird nur in deinem
-Browser gespeichert. Exportiere es, wenn du es behalten willst.» Bei Angemeldeten
-mit bereitstehendem Speicher sagt die Seite stattdessen, dass das Profil in ihrem Konto liegt
-(ProfilHinweis).
+Browser gespeichert. Exportiere es, wenn du es behalten willst.»
 
 ## Harte Regeln
-1. Eingaben in Tools verlassen den Browser nicht. Ausnahmen: das Lead-
-Formular (Name, Firma, E-Mail, Telefon, Tool-Name, Kategorie – sonst nichts),
-Tools mit needsServer: true über /api/check, /api/ai, /api/text und /api/lookup und die Daten
-einer angemeldeten Person über /api/account/data (Profil, Merkliste, Zwischenstände,
-nur in ihrem Konto, bis sie sie löscht). Server-Routen
-loggen Statuscodes, nie Inhalte, nie Klartext-IPs.
+1. Eingaben in Tools verlassen den Browser nur auf zwei Wegen: (a) mit dem
+Ergebnis ins CRM über /api/result (E-Mail-Adresse, Werkzeug, Kategorie,
+Firma aus dem Profil, Eingabe, Ausgabe – sonst nichts; Zugang v3), (b) bei
+Tools mit needsServer: true über /api/check, /api/ai, /api/text und
+/api/lookup. Das übrige Firmenprofil, Merkliste und Zwischenstände bleiben
+im Browser. Server-Routen loggen Statuscodes, nie Inhalte, nie Klartext-IPs,
+nie E-Mail-Adressen.
 2. Du-Form im UI. Schweizer Rechtschreibung: ss statt ß, «» als
 Anführungszeichen, CHF 1'000.-, Datum 03.10.2026, Prozent mit Leerzeichen
 (8,1 %).
 3. Jede logic.ts hat Tests. `npm run check` (typecheck, test, content-check,
 build) ist vor jedem Commit grün.
-4. Keine externen Skripte ausser Umami und Clerk. Clerk (clerk-js, von der Clerk-Domain
-der Anwendung) lädt nur, wenn jemand sich anmeldet oder angemeldet ist, nie für Besucher
-ohne Konto. Cookies: mt_gate und, nach der Anmeldung, die Sitzung von Clerk (beide
-notwendig, in der Datenschutzerklärung erklärt, kein Banner). Fonts über next/font/local
-(Geist, Geist Mono, Instrument Serif).
+4. Keine externen Skripte ausser Umami. Einziges Cookie: mt_gate (trägt die
+E-Mail-Adresse signiert; notwendig, in der Datenschutzerklärung erklärt, kein
+Banner). Fonts über next/font/local (Geist, Geist Mono, Instrument Serif).
 5. Lighthouse mobil: Performance, SEO, Accessibility je ≥ 95 pro Tool-Seite.
 6. Ein Tool = ein Ordner. Neue Tools nur über `npm run new-tool <slug>`.
 7. Keine Zahl ohne Quelle. Benchmarks und Statistiken nur aus data/*.json mit
@@ -194,8 +167,8 @@ meta.source; fehlt die Quelle, fällt die Zahl weg. Gilt auch für Seitentexte.
 8. Rechts-Tools nehmen Formulierungen nur aus content/legal/ und zeigen
 LegalDisclaimer. Keine eigenen Rechtsaussagen, auch nicht im Seitentext.
 9. Fragebogen-Tools: höchstens 10 Fragen, Zwischenstand lokal gespeichert,
-Ergebnis sofort sichtbar. LeadGate nur vor dem zweiten Tool-Start und vor
-Downloads.
+Ergebnis sofort nach dem E-Mail-Fenster sichtbar. Das Fenster steht nur vor
+dem ersten Ergebnis und vor Downloads, nie mitten in den Fragen.
 10. Felder, die im Profil existieren, werden vorbefüllt und nie erneut
 abgefragt.
 11. Jede Seite endet mit AlpernaPitch (Vorlage unten), tool-spezifisch
@@ -239,8 +212,8 @@ Dark Mode: nein.
 
 ## Seitenaufbau Tool-Seite (Komponente ToolPageLayout, in dieser Reihenfolge)
 1. Breadcrumbs · H1 «<Tool> für Schweizer KMU» (Vereins-Tools: «… für
-Schweizer Vereine») · Tagline · MetaLine: Dauer, Kategorie, «Ergebnis sofort,
-Dateien nach kurzem Formular»
+Schweizer Vereine») · Tagline · MetaLine: Dauer, Kategorie, «Ergebnis und
+Dateien gegen deine E-Mail-Adresse»
 2. Tool (Client-Komponente). Desktop: im sichtbaren Bereich. Mobile: nach H1
 und Tagline.
 3. «In Kürze» (Kasten mit drei Punkten aus `kurz`) und Ablauf (drei Schritte
@@ -355,17 +328,20 @@ Die Registry liest tools/index.ts und erzeugt Index, Kategorieseiten, Pfade,
 Sitemap, JSON-LD und RelatedTools.
 
 ## Gemeinsame Bausteine
-- ToolShell: Kopf, Inhalt, Ergebnis, Status-Zeile («Freier Durchlauf» /
-«Freigeschaltet»).
-- LeadGate: Dialog vor Tool-Start (wenn /api/access allowed false) und vor
-jedem Download (wenn unlocked false). Felder und Text siehe Zugangsmodell.
-Nach Erfolg startet das Tool oder der Download sofort, ohne Reload.
+- ToolShell: Kopf, Inhalt, Ergebnis, Status-Zeile («Ergebnis gegen
+E-Mail-Adresse» / «Ergebnisse gehen an anna@keller.ch · ändern»). Stellt den
+Kontext {slug, email, ensureEmail, renewEmail, sendResult, guardDownload,
+changeEmail} bereit (siehe Zugangsmodell).
+- LeadGate: das E-Mail-Fenster, geöffnet von ensureEmail() vor dem ersten
+Ergebnis, vor jedem Download und nach einem 403 des Servers. Felder und Text
+siehe Zugangsmodell. Nach Erfolg erscheint das Ergebnis oder der Download
+startet sofort, ohne Reload.
 - QuestionnaireEngine: Fragetypen single, multi, text, number, scale,
 ranking, matrix; showIf; scoreFn; Zwischenstand unter mt:<slug>;
 Zurück/Weiter, Fortschritt, Zusammenfassung.
 - DocumentExport: DocumentModel → PDF (A4, Geist eingebettet,
 Kopf mit Firmenname, Fuss «Erstellt mit tools.alperna.ch»), DOCX, Markdown-
-Copy. Download-Knöpfe prüfen unlocked, sonst LeadGate.
+Copy. Download-Knöpfe laufen über guardDownload(): ohne Adresse erst das Fenster.
 - lib/ch.ts: chf(1000) → «CHF 1'000.-», dateCH(), typoCH(), uidValid().
 
 ## Daten
@@ -393,11 +369,12 @@ für Zahlen), pushen, Vercel-Preview-Link in STATUS.md.
 ## Definition of Done pro Tool
 - Spec erfüllt, Edge Cases aus der Spec getestet
 - Mobil bei 375 px geprüft, per Tastatur bedienbar, Kontrast AA
-- Ergebnis sichtbar und kopierbar, Downloads nur freigeschaltet, Profil wird
-gelesen und (wo vorgesehen) geschrieben, Durchlauf wird über
-/api/access/complete gezählt
+- Ergebnis sichtbar und kopierbar, Downloads über guardDownload(), Profil wird
+gelesen und (wo vorgesehen) geschrieben, jedes Ergebnis geht über
+sendResult() mit lesbarer Eingabe und Ausgabe ins CRM (im Test gegen den
+n8n-Stub belegt)
 - Seitentext vollständig nach Vorlage, Beispiel mit Beispielfirma, FAQ 5-7,
 AlpernaPitch befüllt, JSON-LD vollständig
-- Erster Durchlauf frei, zweiter Start und erster Download zeigen das
-LeadGate
+- Das E-Mail-Fenster erscheint vor dem ersten Ergebnis und vor dem ersten
+Download, danach nicht mehr; «Später» lässt den Stand stehen
 - Eintrag in STATUS.md

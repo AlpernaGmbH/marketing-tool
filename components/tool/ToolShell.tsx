@@ -1,26 +1,35 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { LeadGate, type LeadGateReason } from "@/components/tool/LeadGate";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { LeadGate } from "@/components/tool/LeadGate";
 import { ProfileBanner } from "@/components/tool/ProfileBanner";
-import { checkAccess, completeRun as completeRunApi, unlockWithAccount, type AccessInfo, type LoginProvider } from "@/lib/access-client";
-import { clearPending, readPending } from "@/lib/konto-client";
+import { LEAD_KEY, sendResult as sendResultApi } from "@/lib/access-client";
+import { removeLocal, writeLocal } from "@/lib/storage";
+import { useLocalRaw } from "@/lib/use-local";
+import { useProfile } from "@/lib/use-profile";
+
+export type ResultInput = { eingabe: string; ausgabe: string };
 
 type ToolContextValue = {
   slug: string;
-  /** Freigeschaltet (Formular ausgefüllt): alle Werkzeuge und Downloads offen. */
-  unlocked: boolean;
-  /** Angemeldet mit einem Konto. Nur dann gibt es die KI-Einordnung. */
-  signedIn: boolean;
+  /** Adresse, an die Ergebnisse gehen; null, solange keine angegeben ist. */
+  email: string | null;
   /**
-   * Vor dem Tool-Start aufrufen. true: starten. false: Besucher hat das Formular geschlossen.
-   * Ist der freie Durchlauf verbraucht, öffnet sich das LeadGate und die Funktion wartet darauf.
+   * Vor dem ersten Ergebnis und vor jedem Aufruf einer Server-Route aufrufen. true: Adresse bekannt (oder gerade angegeben).
+   * false: Besucher hat das Fenster geschlossen.
    */
-  requestStart: () => Promise<boolean>;
-  /** Nach dem sichtbaren Ergebnis aufrufen: zählt den Durchlauf. */
-  completeRun: () => Promise<void>;
-  /** Download-Knöpfe: führt `action` aus, sobald freigeschaltet. Sonst erst LeadGate, dann `action`. */
+  ensureEmail: () => Promise<boolean>;
+  /**
+   * Der Server kennt keine Adresse mehr (403 «gate»: Cookie fehlt oder abgelaufen), obwohl der Browser eine gemerkt hat.
+   * Vergisst den lokalen Merker und zeigt das Fenster. true: neue Adresse angegeben, Aufruf wiederholen.
+   */
+  renewEmail: () => Promise<boolean>;
+  /** Nach dem sichtbaren Ergebnis aufrufen: schickt Werkzeug, Eingabe und Ausgabe mit der Adresse an Alperna (CRM). */
+  sendResult: (r: ResultInput) => Promise<void>;
+  /** Download-Knöpfe: führt `action` aus, sobald eine Adresse bekannt ist. Sonst erst das Fenster, dann `action`. */
   guardDownload: (action: () => void | Promise<void>) => void;
+  /** Öffnet das Fenster, um die Adresse zu ändern. */
+  changeEmail: () => void;
 };
 
 const ToolContext = createContext<ToolContextValue | null>(null);
@@ -39,62 +48,13 @@ type Props = {
   children: React.ReactNode;
 };
 
-/** Rahmen jedes Tools: Kopf mit Status, Profil-Hinweis, Inhalt und das LeadGate. */
+/** Rahmen jedes Tools: Kopf mit der Adresse, Profil-Hinweis, Inhalt und das E-Mail-Fenster. */
 export function ToolShell({ slug, name, usesProfile = false, children }: Props) {
-  const [unlocked, setUnlocked] = useState(false);
-  const [login, setLogin] = useState<LoginProvider | null>(null);
-  const [signedIn, setSignedIn] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [gate, setGate] = useState<{ open: boolean; reason: LeadGateReason }>({ open: false, reason: "zweites_tool" });
+  const raw = useLocalRaw(LEAD_KEY);
+  const email = raw && raw.includes("@") ? raw : null;
+  const { profile } = useProfile();
+  const [gateOpen, setGateOpen] = useState(false);
   const waiting = useRef<((ok: boolean) => void) | null>(null);
-
-  // Eine Antwort, die nicht vom Server kam (429, 5xx, offline), ändert den bekannten Stand nicht:
-  // Wer freigeschaltet ist, soll wegen eines Limits oder Ausfalls nicht plötzlich wieder gesperrt aussehen.
-  const apply = useCallback((a: AccessInfo) => {
-    if (a.reason === "unreachable") return;
-    setUnlocked(a.unlocked);
-    setLogin(a.login);
-    setSignedIn(a.signedIn);
-  }, []);
-
-  // Status für die Kopfzeile. Schlägt der Aufruf fehl, bleibt «Freier Durchlauf» stehen.
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      // Rückkehr von der Anmeldung (?konto=ok oder ?konto=fehler): erst abschliessen, dann den Status lesen.
-      const params = new URLSearchParams(window.location.search);
-      const konto = params.get("konto");
-      if (konto === "ok" || konto === "fehler") {
-        const pending = readPending();
-        params.delete("konto");
-        const query = params.toString();
-        window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
-        if (konto === "fehler") {
-          clearPending();
-          if (alive) setNotice("Die Anmeldung hat nicht geklappt oder wurde abgebrochen. Du kannst es noch einmal versuchen.");
-        } else if (pending && pending.tool === slug) {
-          const result = await unlockWithAccount(slug, pending.firma);
-          if (result === "ok") {
-            clearPending();
-            if (alive) setNotice("Du bist angemeldet, alle Werkzeuge und Downloads sind offen.");
-          } else if (result === "not_signed_in") {
-            clearPending();
-            if (alive) setNotice("Die Anmeldung ist nicht angekommen. Du kannst es noch einmal versuchen.");
-          } else if (alive) {
-            setNotice("Das Freischalten hat nicht geklappt. Bitte melde dich noch einmal an.");
-          }
-        } else if (alive) {
-          // Der Merker ist weg (Speicher gesperrt oder älter als 15 Minuten): angemeldet, aber ohne Einwilligung kein Freischalten.
-          setNotice("Du bist angemeldet, aber noch nicht freigeschaltet. Öffne das Fenster noch einmal und setz das Häkchen zur Kontaktaufnahme.");
-        }
-      }
-      const a = await checkAccess(slug);
-      if (alive) apply(a);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [slug, apply]);
 
   const settle = useCallback((ok: boolean) => {
     waiting.current?.(ok);
@@ -102,41 +62,46 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
   }, []);
 
   const openGate = useCallback(
-    (reason: LeadGateReason) =>
+    () =>
       new Promise<boolean>((resolve) => {
         waiting.current?.(false); // ein früheres, noch offenes Warten beenden
         waiting.current = resolve;
-        setGate({ open: true, reason });
+        setGateOpen(true);
       }),
     [],
   );
 
-  const requestStart = useCallback(async () => {
-    const access = await checkAccess(slug);
-    apply(access);
-    return access.allowed ? true : openGate("zweites_tool");
-  }, [slug, openGate, apply]);
+  const ensureEmail = useCallback(async () => (email ? true : openGate()), [email, openGate]);
 
-  const completeRun = useCallback(async () => {
-    if (await completeRunApi(slug)) setUnlocked(true);
-  }, [slug]);
+  const renewEmail = useCallback(async () => {
+    removeLocal(LEAD_KEY);
+    return openGate();
+  }, [openGate]);
+
+  const sendResult = useCallback(
+    async (r: ResultInput) => {
+      const body = { ...r, tool: slug, firma: profile.firma?.trim() || undefined };
+      const first = await sendResultApi(body);
+      if (first !== "gate") return;
+      if (await renewEmail()) await sendResultApi(body);
+    },
+    [slug, profile.firma, renewEmail],
+  );
 
   const guardDownload = useCallback(
     (action: () => void | Promise<void>) => {
       void (async () => {
-        if (unlocked) return void (await action());
-        const access = await checkAccess(slug);
-        apply(access);
-        if (access.unlocked) return void (await action());
-        if (await openGate("download")) await action();
+        if (await ensureEmail()) await action();
       })();
     },
-    [unlocked, slug, openGate, apply],
+    [ensureEmail],
   );
 
+  const changeEmail = useCallback(() => void openGate(), [openGate]);
+
   const value = useMemo<ToolContextValue>(
-    () => ({ slug, unlocked, signedIn, requestStart, completeRun, guardDownload }),
-    [slug, unlocked, signedIn, requestStart, completeRun, guardDownload],
+    () => ({ slug, email, ensureEmail, renewEmail, sendResult, guardDownload, changeEmail }),
+    [slug, email, ensureEmail, renewEmail, sendResult, guardDownload, changeEmail],
   );
 
   return (
@@ -144,30 +109,33 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
       <section aria-label={name} className="overflow-hidden rounded-xl border border-line bg-paper">
         <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3 text-sm">
           <span className="font-medium">{name}</span>
-          <span aria-live="polite" data-testid="access-status" className="text-muted-foreground">
-            {unlocked ? "Freigeschaltet" : "Freier Durchlauf"}
+          <span aria-live="polite" data-testid="access-status" className="text-right text-muted-foreground">
+            {email ? (
+              <>
+                Ergebnisse gehen an <span className="text-foreground">{email}</span>
+                {" · "}
+                <button type="button" onClick={changeEmail} className="underline underline-offset-4">
+                  ändern
+                </button>
+              </>
+            ) : (
+              "Ergebnis gegen E-Mail-Adresse"
+            )}
           </span>
         </div>
-        {notice && (
-          <p role="status" className="border-b border-line bg-surface px-5 py-3 text-sm">
-            {notice}
-          </p>
-        )}
         {usesProfile && <ProfileBanner />}
         <div className="p-5 md:p-8">{children}</div>
       </section>
       <LeadGate
-        open={gate.open}
-        reason={gate.reason}
+        open={gateOpen}
         tool={slug}
-        login={login}
-        signedIn={signedIn}
+        email={email}
         onOpenChange={(open) => {
-          setGate((g) => ({ ...g, open }));
+          setGateOpen(open);
           if (!open) settle(false);
         }}
-        onSuccess={() => {
-          setUnlocked(true);
+        onSuccess={(address) => {
+          writeLocal(LEAD_KEY, address);
           settle(true);
         }}
       />

@@ -53,10 +53,10 @@ Der bereinigte Text korrigiert sechs Stellen von selbst. Die Floskeln, das doppe
 
 ## Häufige Fragen
 ### Was kostet der Textcheck?
-Nichts. Die Prüfung im Browser und die Kopierknöpfe sind frei. Die erste Prüfung brauchst du ohne Anmeldung. Für die KI-Prüfung oder einen weiteren Text bitten wir um ein kurzes Formular mit Name, Firma und E-Mail, danach sind alle Werkzeuge offen.
+Nichts. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du die Funde, den bereinigten Text und die KI-Prüfung. Ein Konto gibt es nicht.
 
 ### Wird mein Text irgendwohin gesendet?
-Die Prüfung im Browser sendet nichts. Erst wenn du «Mit KI prüfen» klickst, geht der Text an unseren Server und von dort an unseren KI-Anbieter. Wir speichern ihn nicht. Gib nichts Vertrauliches ein. Im Browser bleibt er, damit er nach dem Neuladen noch da ist.
+Ja. Mit dem Ergebnis geht der Text samt Bericht und deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Klickst du «Mit KI prüfen», geht er zusätzlich an unseren Server und von dort an unseren KI-Anbieter; unser Server speichert ihn nicht. Gib nichts Vertrauliches ein.
 
 ### Was prüft der Textcheck ohne KI?
 Doppelte Wörter, überzählige Leerzeichen, mehrfache Satzzeichen, das Eszett, falsche Anführungszeichen, Prozent ohne Leerzeichen, CHF hinter dem Betrag, Tausender mit Punkt, Floskeln aus einer Liste von Alperna und die Satzlänge. Wörterbuch und Grammatik kennt er nicht.

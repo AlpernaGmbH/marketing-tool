@@ -84,7 +84,7 @@ export function DocumentExport({ model, formats = ["pdf", "docx"] }: Props) {
           </Button>
         )}
       </div>
-      {!ctx.unlocked && <p className="text-sm text-muted-foreground">Dateien gibt es nach einem kurzen Formular. Das Ergebnis oben kannst du immer kopieren.</p>}
+      {!ctx.email && <p className="text-sm text-muted-foreground">Für Dateien brauchen wir deine E-Mail-Adresse. Das Ergebnis oben kannst du immer kopieren.</p>}
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}

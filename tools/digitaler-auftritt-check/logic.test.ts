@@ -28,32 +28,30 @@ describe("parseCheckState", () => {
 
   it("behält ein gültiges Ergebnis und zählt den Durchlauf als gezählt", async () => {
     result = await sampleResult();
-    const saved = parseCheckState(JSON.parse(JSON.stringify({ v: 1, phase: "result", counted: true, form: EMPTY_FORM, result })));
+    const saved = parseCheckState(JSON.parse(JSON.stringify({ v: 1, phase: "result", form: EMPTY_FORM, result })));
     expect(saved.phase).toBe("result");
-    expect(saved.counted).toBe(true);
     expect(saved.result?.score).toBe(result.score);
   });
 
   it("behält eine gültige Einordnung zum Ergebnis und verwirft eine kaputte", async () => {
     result = await sampleResult();
     const einordnung = { zusammenfassung: "Die Grundlagen stehen.", prioritaeten: [{ schritt: "a", titel: "Titel", text: "Text zum Schritt." }] };
-    const base = { v: 1, phase: "result", counted: true, form: EMPTY_FORM, result };
+    const base = { v: 1, phase: "result", form: EMPTY_FORM, result };
     expect(parseCheckState(JSON.parse(JSON.stringify({ ...base, einordnung }))).einordnung).toEqual(einordnung);
     expect(parseCheckState(JSON.parse(JSON.stringify({ ...base, einordnung: { zusammenfassung: 3 } }))).einordnung).toBeUndefined();
     expect(parseCheckState({ phase: "intro", einordnung }).einordnung).toBeUndefined();
   });
 
   it("verwirft ein beschädigtes Ergebnis und behält die Formulardaten", () => {
-    const saved = parseCheckState({ phase: "result", counted: true, result: { v: 1, score: "viel" }, form: { industry: "gastro" } });
+    const saved = parseCheckState({ phase: "result", result: { v: 1, score: "viel" }, form: { industry: "gastro" } });
     expect(saved.phase).toBe("intro");
     expect(saved.result).toBeUndefined();
     expect(saved.form.industry).toBe("gastro");
   });
 
   it("ignoriert den Zwischenstand der früheren Fragebogen-Version", () => {
-    const saved = parseCheckState({ v: 1, phase: "result", step: 0, answers: { bausteine: ["website"] }, counted: true });
+    const saved = parseCheckState({ v: 1, phase: "result", step: 0, answers: { bausteine: ["website"] } });
     expect(saved.phase).toBe("intro");
-    expect(saved.counted).toBe(true);
   });
 
   it("säubert das Formular: unbekannte Branche und Häufigkeit fallen weg, lange Adressen werden gekürzt", () => {

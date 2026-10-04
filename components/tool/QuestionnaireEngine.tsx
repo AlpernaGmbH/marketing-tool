@@ -33,11 +33,13 @@ type Props<R> = {
   prefill?: Answers;
   /** Nur bei einem frisch berechneten Ergebnis (nicht beim Wiederherstellen): Profil schreiben. */
   onResult?: (result: R, answers: Answers) => void;
+  /** Das Ergebnis als Text für das CRM (Zugang v3). Ohne: JSON. */
+  resultText?: (result: R) => string;
 };
 
 /**
  * Fragebogen mit Start, Fragen, Zusammenfassung und Ergebnis. Zwischenstand lokal,
- * Ergebnis sofort sichtbar. Das LeadGate erscheint nur über ToolShell.requestStart().
+ * Ergebnis sofort sichtbar. Vor dem ersten Ergebnis fragt ToolShell.ensureEmail() nach der E-Mail-Adresse (Zugang v3).
  */
 export function QuestionnaireEngine<R>({
   slug,
@@ -48,6 +50,7 @@ export function QuestionnaireEngine<R>({
   startLabel = "Starten",
   prefill,
   onResult,
+  resultText,
 }: Props<R>) {
   const ctx = useToolContext();
   const { value: state, ready, set, reset } = useLocalJson<SavedState>(`mt:${slug}`, parseState);
@@ -96,18 +99,11 @@ export function QuestionnaireEngine<R>({
     [set, state],
   );
 
-  const start = async () => {
-    setBusy(true);
-    try {
-      // Ein bereits gezählter Durchlauf wird nur fortgesetzt: kein neues Gate, keine Doppelzählung.
-      if (!state.counted && !(await ctx.requestStart())) return;
-      setError(null);
-      setCalcError(null);
-      shouldFocus.current = true;
-      set({ ...EMPTY_STATE, answers: state.answers, counted: state.counted, phase: asked.length > 0 ? "questions" : "summary" });
-    } finally {
-      setBusy(false);
-    }
+  const start = () => {
+    setError(null);
+    setCalcError(null);
+    shouldFocus.current = true;
+    set({ ...EMPTY_STATE, answers: state.answers, phase: asked.length > 0 ? "questions" : "summary" });
   };
 
   const setAnswer = (q: Question, value: AnswerValue) => {
@@ -137,7 +133,7 @@ export function QuestionnaireEngine<R>({
     patch({ phase: "intro" });
   };
 
-  const showResult = () => {
+  const showResult = async () => {
     setCalcError(null);
     // Alles prüfen, falls sich durch showIf etwas geändert hat.
     for (let i = 0; i < asked.length; i++) {
@@ -154,9 +150,18 @@ export function QuestionnaireEngine<R>({
     } catch {
       return setCalcError("Das Ergebnis konnte nicht berechnet werden. Bitte prüfe deine Antworten.");
     }
-    patch({ phase: "result", counted: true });
+    setBusy(true);
+    try {
+      if (!(await ctx.ensureEmail())) return;
+    } finally {
+      setBusy(false);
+    }
+    patch({ phase: "result" });
     onResult?.(result, plan.answers);
-    if (!state.counted) void ctx.completeRun();
+    void ctx.sendResult({
+      eingabe: asked.map((q) => `${q.label}: ${formatAnswer(q, plan.answers[q.id])}`).join("\n"),
+      ausgabe: resultText ? resultText(result) : JSON.stringify(result, null, 1),
+    });
   };
 
   const restart = () => {

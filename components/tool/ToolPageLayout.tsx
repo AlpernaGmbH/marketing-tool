@@ -41,8 +41,8 @@ export async function ToolPageLayout({ config, content, children }: Props) {
         </div>
         <p className="measure mt-3 text-lg text-muted-foreground">{fm.tagline ?? config.tagline}</p>
         <p className="mt-3 text-sm text-muted-foreground">
-          {minutesLabel(config.estimatedMinutes)} · {CATEGORY_LABELS[config.category]} · Ergebnis sofort, Dateien nach
-          kurzem Formular
+          {minutesLabel(config.estimatedMinutes)} · {CATEGORY_LABELS[config.category]} · Ergebnis und Dateien gegen deine
+          E-Mail-Adresse
         </p>
       </header>
 

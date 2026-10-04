@@ -48,7 +48,7 @@ Echte Fotos helfen, denn sie zeigen, wer dich erwartet. Es müssen keine profess
 Das hängt vom Einzelfall und von der Einwilligung der Betroffenen ab. Frage immer vorher nach und halte die Antwort fest. Bei Unsicherheit hilft eine Fachperson, denn diese Werkzeuge ersetzen keine Rechtsberatung.
 
 ### Gehen meine Texte an einen Server, und brauche ich ein Konto?
-Der Textcheck prüft in deinem Browser. Nur wenn du «Mit KI prüfen» klickst, geht der Text an unseren Server und den KI-Anbieter, beim Text-Umschreiber immer. Beide Werkzeuge kannst du einmal ohne Konto nutzen, danach genügt das kurze Formular oder eine Anmeldung.
+Der Textcheck prüft in deinem Browser; erst «Mit KI prüfen» schickt den Text an unseren Server und den KI-Anbieter, beim Text-Umschreiber immer. Ein Konto brauchst du nicht: Du gibst deine E-Mail-Adresse an, und Text und Ergebnis gehen damit an Alperna, damit wir dir bei Fragen weiterhelfen können.
 
 ### Kann ich die Texte so übernehmen?
 Lies sie immer und passe sie an deine Stimme an. Die Werkzeuge liefern Entwürfe und Korrekturen. Die Verantwortung für den Inhalt bleibt bei dir.

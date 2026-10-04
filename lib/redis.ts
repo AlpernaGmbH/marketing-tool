@@ -4,30 +4,23 @@ const DAY = 24 * 60 * 60;
 
 /** TTLs in Sekunden. */
 export const TTL = {
-  run: 30 * DAY,
-  unlocked: 365 * DAY,
   daily: 2 * DAY,
-  /** Wartende Leads (Name, E-Mail im Klartext) verfallen, falls n8n sie nie abholt. */
+  /** Wartende Leads (E-Mail, Eingabe, Ausgabe im Klartext) verfallen, falls n8n sie nie abholt. */
   leadQueue: 30 * DAY,
 } as const;
 
 /** Höchstens so viele Leads warten in lead_queue; ältere fallen weg (Schutz vor Überlauf). */
 export const LEAD_QUEUE_MAX = 1000;
 
-/** Redis-Keys. <iphash> ist nie die Klartext-IP. */
+/** Redis-Keys. <iphash> ist nie die Klartext-IP, <acchash> nie die Adresse (lib/access.ts). */
 export const keys = {
-  run: (iphash: string) => `run:${iphash}`,
-  unlocked: (iphash: string) => `unlocked:${iphash}`,
-  /** Freischaltung eines Kontos (HMAC der E-Mail-Adresse), gilt auf allen Geräten. */
-  account: (acchash: string) => `acct:${acchash}`,
   popular: (slug: string) => `popular:${slug}`,
+  /** Einordnungen je Person (HMAC der E-Mail-Adresse) und Tag. */
   ai: (acchash: string, day: string) => `ai:${acchash}:${day}`,
   lookup: (iphash: string, day: string) => `lookup:${iphash}:${day}`,
   aiGlobal: (day: string) => `ai:global:${day}`,
   /** Zwischenspeicher der KI-Einordnung je Ergebnis (Hash der Signatur), 24 Stunden. */
   aiCache: (hash: string) => `aicache:${hash}`,
-  /** Daten beim Konto (Profil, Merkliste, Zwischenstände), ein Dokument je Konto, ohne Ablauf. */
-  accountData: (acchash: string) => `data:${acchash}`,
   leadQueue: "lead_queue",
 } as const;
 

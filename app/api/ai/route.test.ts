@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryStore, SECRET, post } from "@/tests/helpers";
-import { accountHash, ipHash } from "@/lib/access";
+import { MemoryStore, SECRET, gateCookie, post } from "@/tests/helpers";
+import { ipHash } from "@/lib/access";
 import { sampleResult } from "@/lib/check/fixtures";
 import { buildFakten } from "@/lib/check/ai";
 import { signResult } from "@/lib/check/sign";
@@ -9,7 +9,6 @@ import type { AiStore } from "@/lib/ai-quota";
 
 const store = new MemoryStore();
 const limit = vi.hoisted(() => ({ allow: true }));
-const who = vi.hoisted(() => ({ account: null as null | { email: string; name: string } }));
 const gen = vi.hoisted(() => ({ fn: vi.fn() }));
 
 class MemoryAi implements AiStore {
@@ -39,13 +38,12 @@ const ai = new MemoryAi();
 vi.mock("@/lib/access", async (orig) => ({ ...(await orig<typeof import("@/lib/access")>()), defaultStore: () => store }));
 vi.mock("@/lib/ai-quota", async (orig) => ({ ...(await orig<typeof import("@/lib/ai-quota")>()), defaultAiStore: () => ai }));
 vi.mock("@/lib/ratelimit", () => ({ withinLimit: async () => limit.allow }));
-vi.mock("@/lib/auth", async (orig) => ({ ...(await orig<typeof import("@/lib/auth")>()), getAccount: async () => who.account }));
 vi.mock("@/lib/ai", async (orig) => ({ ...(await orig<typeof import("@/lib/ai")>()), generateRaw: (...a: unknown[]) => gen.fn(...a) }));
 
 import { POST } from "@/app/api/ai/route";
 
 const IP = "198.51.100.90";
-const ME = { email: "anna@keller.ch", name: "Anna Keller" };
+const COOKIE = gateCookie("anna@keller.ch");
 let signed: CheckResult;
 let logs: string[];
 
@@ -59,15 +57,10 @@ beforeEach(async () => {
   delete process.env.AI_DAILY_CAP;
   delete process.env.AI_ACCOUNT_DAILY;
   signed = signResult(await sampleResult(), SECRET);
-  store.runs.clear();
-  store.unlockedSet.clear();
-  store.accounts.clear();
-  store.accounts.add(accountHash(ME.email, SECRET));
   store.failing = false;
   ai.counters.clear();
   ai.cache.clear();
   ai.failing = false;
-  who.account = ME;
   limit.allow = true;
   gen.fn.mockReset();
   gen.fn.mockImplementation(async (f) => good(f));
@@ -76,7 +69,8 @@ beforeEach(async () => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-const call = (result: unknown = signed, ip = IP) => POST(post("/api/ai", { result }, { ip }));
+/** `cookie: null` heisst: ohne Cookie (undefined würde den Standard ziehen). */
+const call = (result: unknown = signed, ip = IP, cookie: string | null = COOKIE) => POST(post("/api/ai", { result }, { ip, cookie: cookie ?? undefined }));
 
 describe("POST /api/ai", () => {
   it("liefert eine geprüfte Einordnung für ein signiertes Ergebnis", async () => {
@@ -101,15 +95,8 @@ describe("POST /api/ai", () => {
     expect(gen.fn).not.toHaveBeenCalled();
   });
 
-  it("verlangt eine Anmeldung", async () => {
-    who.account = null;
-    expect((await call()).status).toBe(401);
-    expect(gen.fn).not.toHaveBeenCalled();
-  });
-
-  it("verlangt die Freischaltung des Kontos (Anmeldung allein genügt nicht)", async () => {
-    store.accounts.clear();
-    expect((await call()).status).toBe(403);
+  it("verlangt die Adresse (Cookie mt_gate): ohne 403", async () => {
+    expect((await call(signed, IP, null)).status).toBe(403);
     expect(gen.fn).not.toHaveBeenCalled();
   });
 
@@ -131,7 +118,7 @@ describe("POST /api/ai", () => {
     expect([...ai.counters.values()].every((n) => n === 1)).toBe(true);
   });
 
-  it("begrenzt pro Konto und Tag (Standard 5) und meldet 429", async () => {
+  it("begrenzt pro Person (Adresse) und Tag (Standard 5) und meldet 429", async () => {
     process.env.AI_ACCOUNT_DAILY = "2";
     const r1 = signResult(await sampleResult({ company: "Eins" }), SECRET);
     const r2 = signResult(await sampleResult({ company: "Zwei" }), SECRET);

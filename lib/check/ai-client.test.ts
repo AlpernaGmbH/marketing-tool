@@ -46,7 +46,8 @@ describe("fetchEinordnung", () => {
     expect(await fetchEinordnung(result, fetchOf(json({ error: "rate_limited" }, 429)))).toEqual({ ok: false, reason: "failed" });
     expect(await fetchEinordnung(result, fetchOf(json({ error: "capacity" }, 503)))).toEqual({ ok: false, reason: "capacity" });
     expect(await fetchEinordnung(result, fetchOf(json({ error: "ai_rejected" }, 502)))).toEqual({ ok: false, reason: "failed" });
-    expect(await fetchEinordnung(result, fetchOf(json({ error: "gate" }, 403)))).toEqual({ ok: false, reason: "failed" });
+    // Zugang v3: ohne Cookie antwortet die Route 403 «gate»; das heisst für den Browser «Adresse fehlt».
+    expect(await fetchEinordnung(result, fetchOf(json({ error: "gate" }, 403)))).toEqual({ ok: false, reason: "not_signed_in" });
   });
 
   it("wirft nie: Netzfehler, kaputtes JSON und unbrauchbare Antworten werden zu «failed»", async () => {

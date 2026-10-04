@@ -36,7 +36,7 @@ Der Text-Umschreiber macht aus einem Text, den du schon hast, die Fassung für d
 - **Ein Ausgangstext ohne Fakten.** Die KI füllt Lücken mit Allgemeinplätzen, also schreibe selbst hinein, wer, was, wann und wo.
 - **Die Fassung ungeprüft veröffentlichen.** Eine KI erfindet Aussagen, die gut klingen, also lies jeden Satz gegen deinen Text.
 - **Ein Stil für alle Kanäle.** Ein LinkedIn-Post wirkt auf Instagram fremd, also wähle den Stil pro Kanal.
-- **Vertrauliches einfügen.** Dein Text geht an einen KI-Anbieter, also lass Kundennamen, interne Zahlen und Verträge weg.
+- **Vertrauliches einfügen.** Dein Text geht an einen KI-Anbieter und an Alperna, also lass Kundennamen, interne Zahlen und Verträge weg.
 - **Platzhalter stehen lassen.** Sonst steht «[Datum]» auf deiner Website, also suche vor dem Kopieren nach eckigen Klammern.
 
 ## Beispiel
@@ -58,10 +58,10 @@ Der erste Satz trägt die Neuigkeit, am Schluss steht eine Frage, alle Angaben s
 
 ## Häufige Fragen
 ### Was kostet der Text-Umschreiber?
-Nichts. Der erste Durchlauf ist frei und braucht kein Konto. Für weitere Fassungen bitten wir um ein kurzes Formular mit Name, Firma und E-Mail. Danach sind alle Werkzeuge offen. Ein Limit pro Person gibt es nicht, nur eine Bremse gegen Missbrauch.
+Nichts. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du die Fassung. Ein Konto gibt es nicht, ein Limit pro Person auch nicht, nur eine Bremse gegen Missbrauch.
 
 ### Wohin geht mein Text?
-Der Text geht an unseren Server und von dort an unseren KI-Anbieter, der die Fassung schreibt. Wir speichern ihn nicht. In deinem Browser bleibt er, damit er nach dem Neuladen noch da ist. Mit Konto liegt er zusätzlich in deinem Konto. Gib nichts Vertrauliches ein.
+Der Text geht an unseren Server und von dort an unseren KI-Anbieter, der die Fassung schreibt; unser Server speichert ihn nicht. Text und Fassung gehen mit deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Gib nichts Vertrauliches ein.
 
 ### Erfindet die KI Inhalte?
 Sie hat die Anweisung, nichts zu erfinden, und das Werkzeug warnt bei neuen Zahlen und Links. Ein Fehler bleibt möglich, zum Beispiel bei einer Aussage, die im Ausgangstext nur angedeutet war. Lies die Fassung darum immer selbst, bevor du sie veröffentlichst.

@@ -54,8 +54,8 @@ export type Slot = "ok" | "account_limit" | "capacity";
 export type Limits = { perAccount: number; global: number };
 
 /**
- * Art der Anfrage. «einordnung»: KI-Einordnung zum Check, nur mit Konto, mit Tageslimit pro Konto.
- * «text»: Text-Umschreiber und Textcheck, ohne Konto und ohne Limit pro Person; es gilt nur die globale Tagesgrenze
+ * Art der Anfrage. «einordnung»: KI-Einordnung zum Check, mit Tageslimit pro E-Mail-Adresse (HMAC, `acchash`).
+ * «text»: Text-Umschreiber und Textcheck, ohne Limit pro Person; es gilt nur die globale Tagesgrenze
  * (Schutz davor, dass ein Skript den kostenlosen Plan des Anbieters aufbraucht) und die Ratenbegrenzung pro IP-Hash in der Route.
  */
 export type Scope = "einordnung" | "text";
@@ -66,7 +66,7 @@ export function limitsFromEnv(env: Record<string, string | undefined> = process.
 }
 
 /**
- * Reserviert eine Anfrage. Bei «einordnung» erst das Tageslimit des Kontos, dann das globale Tageslimit; bei «text» nur das globale.
+ * Reserviert eine Anfrage. Bei «einordnung» erst das Tageslimit der Adresse, dann das globale Tageslimit; bei «text» nur das globale.
  * Fällt Redis aus, geht die Anfrage durch.
  */
 export async function takeSlot(store: AiStore | null, acchash: string | null, limits: Limits, now = new Date(), scope: Scope = "einordnung"): Promise<Slot> {

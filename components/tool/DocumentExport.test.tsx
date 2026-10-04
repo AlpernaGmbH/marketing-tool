@@ -7,9 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DocumentExport } from "@/components/tool/DocumentExport";
 import { resetPdfFontCache } from "@/lib/export/fonts";
 import { ToolShell } from "@/components/tool/ToolShell";
+import { LEAD_KEY } from "@/lib/access-client";
 import type { DocumentModel } from "@/lib/export/model";
 import { PROFILE_KEY } from "@/lib/profile";
-import { clearAllLocal, writeLocal } from "@/lib/storage";
+import { clearAllLocal, readLocal, writeLocal } from "@/lib/storage";
 
 const model: DocumentModel = {
   title: "Idealkundenprofil",
@@ -17,18 +18,14 @@ const model: DocumentModel = {
   blocks: [{ type: "paragraph", text: "Hallo Welt" }],
 };
 
-function mockFetch(opts: { unlocked: boolean }) {
-  const state = { unlocked: opts.unlocked };
+/** Schriften kommen aus public/fonts; /api/lead antwortet mit ok. Alles andere 404. */
+function mockFetch() {
   const fetchMock = vi.fn(async (url: string): Promise<Partial<Response>> => {
     if (url.startsWith("/fonts/")) {
       const bytes = fs.readFileSync(path.join(process.cwd(), "public", url));
       return { ok: true, status: 200, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) };
     }
-    if (url === "/api/access") return { ok: true, status: 200, json: async () => ({ allowed: true, unlocked: state.unlocked, reason: "x" }) };
-    if (url === "/api/lead") {
-      state.unlocked = true;
-      return { ok: true, status: 200, json: async () => ({ ok: true }) };
-    }
+    if (url === "/api/lead") return { ok: true, status: 200, json: async () => ({ ok: true }) };
     return { ok: false, status: 404, json: async () => ({}) };
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -61,12 +58,13 @@ const renderExport = () =>
     </ToolShell>,
   );
 
-describe("DocumentExport", () => {
-  it("lädt für Freigeschaltete sofort ein PDF mit sauberem Dateinamen", async () => {
-    mockFetch({ unlocked: true });
+describe("DocumentExport (Zugang v3: Dateien gegen E-Mail-Adresse)", () => {
+  it("lädt mit bekannter Adresse sofort ein PDF mit sauberem Dateinamen", async () => {
+    mockFetch();
+    writeLocal(LEAD_KEY, "anna@keller.ch");
     const u = userEvent.setup();
     renderExport();
-    await waitFor(() => expect(screen.getByTestId("access-status")).toHaveTextContent("Freigeschaltet"));
+    await waitFor(() => expect(screen.getByTestId("access-status")).toHaveTextContent("Ergebnisse gehen an anna@keller.ch"));
     await u.click(screen.getByRole("button", { name: "PDF herunterladen" }));
     await waitFor(() => expect(downloads).toHaveLength(1));
     expect(downloads[0].download).toBe("malerei-keller-gossau.pdf");
@@ -74,45 +72,51 @@ describe("DocumentExport", () => {
   });
 
   it("lädt Word als .docx", async () => {
-    mockFetch({ unlocked: true });
+    mockFetch();
+    writeLocal(LEAD_KEY, "anna@keller.ch");
     const u = userEvent.setup();
     renderExport();
-    await waitFor(() => expect(screen.getByTestId("access-status")).toHaveTextContent("Freigeschaltet"));
+    await waitFor(() => expect(screen.getByTestId("access-status")).toHaveTextContent("Ergebnisse gehen an"));
     await u.click(screen.getByRole("button", { name: "Word herunterladen" }));
     await waitFor(() => expect(downloads).toHaveLength(1));
     expect(downloads[0].download).toBe("malerei-keller-gossau.docx");
   });
 
-  it("zeigt vor dem ersten Download das LeadGate und lädt danach ohne weiteren Klick", async () => {
-    mockFetch({ unlocked: false });
+  it("fragt ohne Adresse zuerst nach ihr und lädt danach ohne weiteren Klick", async () => {
+    const f = mockFetch();
     const u = userEvent.setup();
     renderExport();
-    await u.click(await screen.findByRole("button", { name: "PDF herunterladen" }));
+    expect(await screen.findByTestId("access-status")).toHaveTextContent("Ergebnis gegen E-Mail-Adresse");
+    expect(screen.getByText(/Für Dateien brauchen wir deine E-Mail-Adresse/)).toBeInTheDocument();
+    await u.click(screen.getByRole("button", { name: "PDF herunterladen" }));
 
     const dialog = await screen.findByRole("dialog");
     expect(downloads).toHaveLength(0);
-    await u.type(within(dialog).getByLabelText("Name"), "Anna Keller");
-    await u.type(within(dialog).getByLabelText("Firma"), "Malerei Keller");
+    expect(within(dialog).queryByLabelText("Name")).toBeNull();
     await u.type(within(dialog).getByLabelText("E-Mail"), "anna@keller.ch");
     await u.click(within(dialog).getByRole("checkbox"));
-    await u.click(within(dialog).getByRole("button", { name: "Freischalten" }));
+    await u.click(within(dialog).getByRole("button", { name: "Ergebnis anzeigen" }));
 
     await waitFor(() => expect(downloads).toHaveLength(1));
     expect(downloads[0].download).toBe("malerei-keller-gossau.pdf");
+    expect(f.mock.calls.filter((c) => c[0] === "/api/lead")).toHaveLength(1);
+    expect(readLocal(LEAD_KEY)).toBe("anna@keller.ch");
+    await waitFor(() => expect(screen.getByTestId("access-status")).toHaveTextContent("Ergebnisse gehen an anna@keller.ch"));
   });
 
-  it("lädt nichts, wenn der Besucher das Formular schliesst", async () => {
-    mockFetch({ unlocked: false });
+  it("lädt nichts, wenn der Besucher das Fenster schliesst", async () => {
+    mockFetch();
     const u = userEvent.setup();
     renderExport();
     await u.click(await screen.findByRole("button", { name: "Word herunterladen" }));
     await u.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Später" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(downloads).toHaveLength(0);
+    expect(readLocal(LEAD_KEY)).toBeNull();
   });
 
-  it("lässt «Text kopieren» immer zu, auch ohne Freischaltung", async () => {
-    mockFetch({ unlocked: false });
+  it("lässt «Text kopieren» immer zu, auch ohne Adresse", async () => {
+    mockFetch();
     const u = userEvent.setup(); // ersetzt navigator.clipboard durch einen Stub mit readText()
     renderExport();
     await u.click(await screen.findByRole("button", { name: "Text kopieren" }));
@@ -121,7 +125,7 @@ describe("DocumentExport", () => {
   });
 
   it("nimmt den Firmennamen aus dem Profil in den Export", async () => {
-    mockFetch({ unlocked: true });
+    mockFetch();
     writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Malerei Keller" }));
     const u = userEvent.setup();
     renderExport();
@@ -130,16 +134,23 @@ describe("DocumentExport", () => {
     await waitFor(async () => expect(await navigator.clipboard.readText()).toContain("Hallo Welt"));
   });
 
-  it("meldet einen fehlgeschlagenen Download ruhig", async () => {
-    const f = mockFetch({ unlocked: true });
-    f.mockImplementation(async (url: string) =>
-      url === "/api/access"
-        ? { ok: true, status: 200, json: async () => ({ allowed: true, unlocked: true, reason: "x" }) }
-        : { ok: false, status: 500, json: async () => ({}) },
-    );
+  it("«ändern» in der Statuszeile öffnet das Fenster mit der bekannten Adresse", async () => {
+    mockFetch();
+    writeLocal(LEAD_KEY, "anna@keller.ch");
     const u = userEvent.setup();
     renderExport();
-    await waitFor(() => expect(screen.getByTestId("access-status")).toHaveTextContent("Freigeschaltet"));
+    await u.click(await screen.findByRole("button", { name: "ändern" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByLabelText("E-Mail")).toHaveValue("anna@keller.ch");
+  });
+
+  it("meldet einen fehlgeschlagenen Download ruhig", async () => {
+    const f = mockFetch();
+    f.mockImplementation(async () => ({ ok: false, status: 500, json: async () => ({}) }));
+    writeLocal(LEAD_KEY, "anna@keller.ch");
+    const u = userEvent.setup();
+    renderExport();
+    await waitFor(() => expect(screen.getByTestId("access-status")).toHaveTextContent("Ergebnisse gehen an"));
     await u.click(screen.getByRole("button", { name: "PDF herunterladen" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Der Download hat nicht geklappt");
     expect(downloads).toHaveLength(0);

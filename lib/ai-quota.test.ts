@@ -29,10 +29,10 @@ describe("limitsFromEnv", () => {
   });
 });
 
-describe("takeSlot für die Einordnung (mit Konto)", () => {
+describe("takeSlot für die Einordnung (pro E-Mail-Adresse)", () => {
   const limits: Limits = { perAccount: 2, global: 4 };
 
-  it("begrenzt je Konto und je Tag, andere Konten bleiben unberührt", async () => {
+  it("begrenzt je Adresse und je Tag, andere Adressen bleiben unberührt", async () => {
     const store = new Memory();
     expect(await takeSlot(store, "a", limits, NOW)).toBe("ok");
     expect(await takeSlot(store, "a", limits, NOW)).toBe("ok");
@@ -42,7 +42,7 @@ describe("takeSlot für die Einordnung (mit Konto)", () => {
     expect(await takeSlot(store, "a", limits, new Date("2026-10-05T10:00:00Z"))).toBe("ok");
   });
 
-  it("bucht bei Ablehnung durch die globale Grenze auch das Konto zurück", async () => {
+  it("bucht bei Ablehnung durch die globale Grenze auch die Adresse zurück", async () => {
     const store = new Memory();
     const tight: Limits = { perAccount: 5, global: 1 };
     expect(await takeSlot(store, "a", tight, NOW)).toBe("ok");
@@ -59,10 +59,10 @@ describe("takeSlot für die Einordnung (mit Konto)", () => {
   });
 });
 
-describe("takeSlot für Texte (ohne Konto, ohne Limit pro Person)", () => {
+describe("takeSlot für Texte (ohne Limit pro Person)", () => {
   const limits: Limits = { perAccount: 1, global: 3 };
 
-  it("zählt nur die globale Tagesgrenze und kennt weder Konto noch Person", async () => {
+  it("zählt nur die globale Tagesgrenze und kennt keine Person", async () => {
     const store = new Memory();
     for (let i = 0; i < 3; i++) expect(await takeSlot(store, null, limits, NOW, "text")).toBe("ok");
     expect(await takeSlot(store, null, limits, NOW, "text")).toBe("capacity");
@@ -70,7 +70,7 @@ describe("takeSlot für Texte (ohne Konto, ohne Limit pro Person)", () => {
     expect(store.counters.get(keysOf(store)[0])).toBe(3); // die abgelehnte Anfrage ist zurückgebucht
   });
 
-  it("ignoriert ein übergebenes Konto: kein Limit pro Person", async () => {
+  it("ignoriert eine übergebene Adresse: kein Limit pro Person", async () => {
     const store = new Memory();
     const wide: Limits = { perAccount: 1, global: 100 };
     for (let i = 0; i < 5; i++) expect(await takeSlot(store, "a", wide, NOW, "text")).toBe("ok");

@@ -1,81 +1,52 @@
-// Browser-seitige Helfer für /api/access. Ein Fehler hier blockiert nie einen Besucher:
-// Bei jedem technischen Problem gilt «erlaubt».
+// Browser-seitige Helfer für /api/lead und /api/result. Keine Funktion wirft.
 
-export type LoginProvider = "clerk";
-export type AccessInfo = {
-  allowed: boolean;
-  unlocked: boolean;
-  reason: string;
-  /** Angebotener Anmeldeweg; null: nur das Formular. */
-  login: LoginProvider | null;
-  /** Es gibt eine gültige Sitzung (angemeldet), auch wenn noch nicht freigeschaltet. */
-  signedIn: boolean;
-};
+import type { LeadInput } from "@/lib/lead-schema";
 
-const FALLBACK: AccessInfo = { allowed: true, unlocked: false, reason: "unreachable", login: null, signedIn: false };
+/** Lokaler Merker der angegebenen Adresse (nur für die Anzeige; was gilt, entscheidet das Cookie des Servers). */
+export const LEAD_KEY = "mt:_lead";
 
-async function postJson(path: string, body: unknown, fetchImpl: typeof fetch): Promise<Response | null> {
+type Reply = { ok: boolean; status: number };
+
+async function postJson(path: string, body: unknown, fetchImpl: typeof fetch): Promise<Reply | null> {
   try {
-    return await fetchImpl(path, {
+    const res = await fetchImpl(path, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
       credentials: "same-origin",
     });
+    // Den Body immer lesen: Eine Antwort, deren Body niemand liest, hält die Anfrage im Browser offen.
+    try {
+      await res.text();
+    } catch {
+      /* Inhalt ist nicht nötig */
+    }
+    return { ok: res.ok, status: res.status };
   } catch {
     return null;
   }
 }
 
-/** Darf der Besucher dieses Tool jetzt starten? */
-export async function checkAccess(tool: string, fetchImpl: typeof fetch = fetch): Promise<AccessInfo> {
-  const res = await postJson("/api/access", { tool }, fetchImpl);
-  if (!res || !res.ok) return FALLBACK;
-  try {
-    const data = (await res.json()) as Partial<AccessInfo>;
-    return {
-      allowed: data.allowed !== false,
-      unlocked: data.unlocked === true,
-      reason: typeof data.reason === "string" ? data.reason : "unknown",
-      login: data.login === "clerk" ? "clerk" : null,
-      signedIn: data.signedIn === true,
-    };
-  } catch {
-    return FALLBACK;
-  }
-}
+export type GateResult = { ok: true } | { ok: false; reason: "invalid" | "rate_limited" | "network" };
 
-/** Meldet einen abgeschlossenen Durchlauf. Gibt zurück, ob der Besucher freigeschaltet ist. */
-export async function completeRun(tool: string, fetchImpl: typeof fetch = fetch): Promise<boolean> {
-  const res = await postJson("/api/access/complete", { tool }, fetchImpl);
-  if (!res || !res.ok) return false;
-  try {
-    return ((await res.json()) as { unlocked?: boolean }).unlocked === true;
-  } catch {
-    return false;
-  }
-}
-
-export type LeadResult =
-  | { ok: true }
-  | { ok: false; reason: "invalid" | "rate_limited" | "network" };
-
-/** Sendet das Lead-Formular. */
-export async function submitLead(data: Record<string, unknown>, fetchImpl: typeof fetch = fetch): Promise<LeadResult> {
-  const res = await postJson("/api/lead", data, fetchImpl);
+/** Gibt die Adresse an den Server; danach trägt der Browser das Cookie mt_gate. */
+export async function submitEmail(input: LeadInput, fetchImpl: typeof fetch = fetch): Promise<GateResult> {
+  const res = await postJson("/api/lead", input, fetchImpl);
   if (!res) return { ok: false, reason: "network" };
   if (res.ok) return { ok: true };
-  if (res.status === 429) return { ok: false, reason: "rate_limited" };
   if (res.status === 400) return { ok: false, reason: "invalid" };
+  if (res.status === 429) return { ok: false, reason: "rate_limited" };
   return { ok: false, reason: "network" };
 }
 
-export type AccountResult = "ok" | "not_signed_in" | "failed";
+export type ResultBody = { tool: string; eingabe: string; ausgabe: string; firma?: string };
+/** «gate»: der Server kennt keine Adresse (Cookie fehlt oder abgelaufen); dann das Fenster zeigen und noch einmal senden. */
+export type ResultDelivery = "ok" | "gate" | "failed";
 
-/** Schaltet nach der Anmeldung frei (Name und E-Mail kommen aus dem Konto, nicht aus dem Browser). */
-export async function unlockWithAccount(tool: string, firma: string | undefined, fetchImpl: typeof fetch = fetch): Promise<AccountResult> {
-  const res = await postJson("/api/lead/account", { tool, consent: true, ...(firma ? { firma } : {}) }, fetchImpl);
+/** Schickt Werkzeug, Eingabe und Ausgabe an Alperna (CRM). */
+export async function sendResult(body: ResultBody, fetchImpl: typeof fetch = fetch): Promise<ResultDelivery> {
+  const res = await postJson("/api/result", body, fetchImpl);
   if (!res) return "failed";
   if (res.ok) return "ok";
-  return res.status === 401 ? "not_signed_in" : "failed";
+  return res.status === 403 ? "gate" : "failed";
 }

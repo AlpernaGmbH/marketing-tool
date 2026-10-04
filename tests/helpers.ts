@@ -1,13 +1,10 @@
 import { NextRequest } from "next/server";
-import type { AccessStore, StoredState } from "@/lib/access";
+import { signGate, type AccessStore } from "@/lib/access";
 
 export const SECRET = "test-secret-0123456789abcdef0123456789abcdef";
 
 /** In-Memory-Ersatz für Redis. `failing` simuliert einen Ausfall. */
 export class MemoryStore implements AccessStore {
-  runs = new Map<string, number>();
-  unlockedSet = new Set<string>();
-  accounts = new Set<string>();
   popular = new Map<string, number>();
   leads: string[] = [];
   failing = false;
@@ -15,32 +12,9 @@ export class MemoryStore implements AccessStore {
   private guard() {
     if (this.failing) throw new Error("redis down");
   }
-  async getState(iphash: string, acchash?: string | null): Promise<StoredState> {
-    this.guard();
-    return {
-      runs: this.runs.get(iphash) ?? 0,
-      unlocked: this.unlockedSet.has(iphash) || Boolean(acchash && this.accounts.has(acchash)),
-    };
-  }
-  async isAccountUnlocked(acchash: string) {
-    this.guard();
-    return this.accounts.has(acchash);
-  }
-  async claimAccount(acchash: string) {
-    this.guard();
-    if (this.accounts.has(acchash)) return false;
-    this.accounts.add(acchash);
-    return true;
-  }
-  async recordCompletion(iphash: string, slug: string, countRun: boolean) {
+  async recordResult(slug: string) {
     this.guard();
     this.popular.set(slug, (this.popular.get(slug) ?? 0) + 1);
-    if (countRun) this.runs.set(iphash, (this.runs.get(iphash) ?? 0) + 1);
-  }
-  async setUnlocked(iphash: string, acchash?: string | null) {
-    this.guard();
-    this.unlockedSet.add(iphash);
-    if (acchash) this.accounts.add(acchash);
   }
   async pushLead(json: string) {
     this.guard();
@@ -67,27 +41,6 @@ export function post(path: string, body: unknown, init: { ip?: string; cookie?: 
   });
 }
 
-/** In-Memory-Ersatz für den Speicher beim Konto (lib/account-data.ts). */
-export class MemoryDataStore {
-  docs = new Map<string, Record<string, { value: string | null; at: number }>>();
-  failing = false;
-  private guard() {
-    if (this.failing) throw new Error("redis down");
-  }
-  async get(acchash: string) {
-    this.guard();
-    return structuredClone(this.docs.get(acchash) ?? {});
-  }
-  async set(acchash: string, entries: Record<string, { value: string | null; at: number }>) {
-    this.guard();
-    this.docs.set(acchash, structuredClone(entries));
-  }
-  async del(acchash: string) {
-    this.guard();
-    this.docs.delete(acchash);
-  }
-}
-
 export function put(path: string, body: unknown, init: { ip?: string; cookie?: string } = {}): NextRequest {
   return method("PUT", path, body, init);
 }
@@ -101,4 +54,9 @@ export function method(verb: string, path: string, body: unknown, init: { ip?: s
     headers,
     ...(body === undefined ? {} : { body: typeof body === "string" ? body : JSON.stringify(body) }),
   });
+}
+
+/** Cookie-Header mit einer gültig signierten Adresse (Zugang v3). */
+export function gateCookie(email = "anna@keller.ch", secret = SECRET, now = Date.now()): string {
+  return `mt_gate=${signGate({ email, iat: Math.floor(now / 1000) }, secret)}`;
 }

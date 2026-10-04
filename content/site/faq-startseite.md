@@ -2,16 +2,16 @@
 title: "Häufige Fragen zu den Marketing-Werkzeugen"
 ---
 ### Was kostet es?
-Nichts. Du kannst jedes Werkzeug einmal vollständig und ohne Konto durchlaufen, das Ergebnis am Bildschirm ansehen und den Text kopieren. Für Dateien wie PDF oder Word und für weitere Durchläufe bitten wir um ein kurzes Formular mit Name, Firma und E-Mail oder um eine Anmeldung. Danach sind alle Werkzeuge und Downloads offen.
+Nichts. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du das Ergebnis, kannst den Text kopieren und Dateien wie PDF oder Word herunterladen. Alle Werkzeuge sind offen, ein Konto gibt es nicht.
 
-### Warum gibt es ein Formular?
-Wir finanzieren die Werkzeuge nicht mit Werbung und nicht mit Abos. Das Formular ist unsere Gegenleistung: So können wir uns persönlich melden, falls du Fragen hast. Du wählst, ob du das Formular ausfüllst oder dich anmeldest, und beides schaltet frei, wenn du dem Kontakt zustimmst.
+### Warum fragen wir nach der E-Mail-Adresse?
+Wir finanzieren die Werkzeuge nicht mit Werbung und nicht mit Abos. Die Adresse ist unsere Gegenleistung: Dein Ergebnis und deine Eingaben gehen damit an Alperna, und wir melden uns persönlich, falls du Fragen hast. Das Häkchen dazu ist Pflicht, denn ohne deine Einwilligung dürfen wir dich nicht kontaktieren.
 
 ### Was passiert mit meinen Angaben und meinem Firmenprofil?
-Was du eingibst, bleibt in deinem Browser, ebenso dein Firmenprofil und deine Zwischenstände. Wenn du dich anmeldest, liegen Profil und Zwischenstände zusätzlich in deinem Konto und folgen dir auf jedes Gerät. An Alperna gehen nur die Angaben im Formular oder Name und E-Mail aus deinem Konto, wenn du dem Kontakt zustimmst.
+Dein Firmenprofil und deine Zwischenstände bleiben in deinem Browser. An Alperna gehen deine E-Mail-Adresse, das Werkzeug, deine Eingaben und das Ergebnis, damit wir dir bei Fragen weiterhelfen können. Mehr nicht: kein Passwort, kein Konto, kein Zugriff auf deinen Browser.
 
 ### Was gilt bei den KI-Werkzeugen?
-Text-Umschreiber und Textcheck mit KI laufen ohne Konto. Dein Text geht an unseren Server und an den KI-Anbieter, wird aber nicht gespeichert. Gib nichts Vertrauliches ein. Der Marketing-Check gibt Angemeldeten zusätzlich eine KI-Einordnung.
+Text-Umschreiber und Textcheck mit KI schicken deinen Text an unseren Server und an den KI-Anbieter; unser Server speichert ihn nicht. Gib nichts Vertrauliches ein. Der Marketing-Check schreibt zusätzlich eine kurze KI-Einordnung zu deinem Ergebnis.
 
 ### Wer steckt dahinter?
 Die Werkzeuge stammen von der Alperna GmbH aus Speicher im Kanton Appenzell Ausserrhoden. Wir sind Partner für den digitalen Auftritt von Ostschweizer KMU: Website, Google-Profil, Social Media, Online-Shop und Buchungstool. Mehr über uns findest du auf der Seite «Über diese Werkzeuge».

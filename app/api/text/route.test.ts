@@ -1,11 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryStore, SECRET, post } from "@/tests/helpers";
-import { accountHash, ipHash } from "@/lib/access";
+import { MemoryStore, SECRET, gateCookie, post } from "@/tests/helpers";
 import type { AiStore } from "@/lib/ai-quota";
 
 const store = new MemoryStore();
 const limit = vi.hoisted(() => ({ allow: true }));
-const who = vi.hoisted(() => ({ account: null as null | { email: string; name: string } }));
 const gen = vi.hoisted(() => ({ fn: vi.fn() }));
 
 class MemoryAi implements AiStore {
@@ -29,29 +27,25 @@ const ai = new MemoryAi();
 vi.mock("@/lib/access", async (orig) => ({ ...(await orig<typeof import("@/lib/access")>()), defaultStore: () => store }));
 vi.mock("@/lib/ai-quota", async (orig) => ({ ...(await orig<typeof import("@/lib/ai-quota")>()), defaultAiStore: () => ai }));
 vi.mock("@/lib/ratelimit", () => ({ withinLimit: async () => limit.allow }));
-vi.mock("@/lib/auth", async (orig) => ({ ...(await orig<typeof import("@/lib/auth")>()), getAccount: async () => who.account }));
 vi.mock("@/lib/ai", async (orig) => ({ ...(await orig<typeof import("@/lib/ai")>()), generateFreeText: (...a: unknown[]) => gen.fn(...a) }));
 
 import { POST } from "@/app/api/text/route";
 
-const ME = { email: "anna@keller.ch", name: "Anna Keller" };
+const COOKIE = gateCookie("anna@keller.ch");
 const IP = "198.51.100.77";
 const TEXT = "Wir streichen Wände und Fassaden in Gossau. Termine gibt es ab Montag, 3 Zimmer in einem Tag.";
 let logs: string[];
 
 const body = (over: Record<string, unknown> = {}) => ({ text: TEXT, style: "linkedin", anrede: "du", ...over });
-const call = (b: unknown = body(), ip = IP) => POST(post("/api/text", b, { ip }));
+/** `cookie: null` heisst: ohne Cookie (undefined würde den Standard ziehen). */
+const call = (b: unknown = body(), ip = IP, cookie: string | null = COOKIE) => POST(post("/api/text", b, { ip, cookie: cookie ?? undefined }));
 
 beforeEach(() => {
   process.env.GATE_SECRET = SECRET;
   delete process.env.AI_DAILY_CAP;
-  store.runs.clear();
-  store.unlockedSet.clear();
-  store.accounts.clear();
   store.failing = false;
   ai.counters.clear();
   ai.failing = false;
-  who.account = null;
   limit.allow = true;
   gen.fn.mockReset();
   gen.fn.mockResolvedValue("Wir streichen Wände und Fassaden in Gossau.\n\nTermine gibt es ab Montag.");
@@ -89,27 +83,12 @@ describe("POST /api/text", () => {
     expect(gen.fn).not.toHaveBeenCalled();
   });
 
-  it("braucht kein Konto: der erste Durchlauf ist frei", async () => {
-    expect((await call()).status).toBe(200);
-    expect(gen.fn).toHaveBeenCalledTimes(1);
-  });
-
-  it("sperrt nach dem freien Durchlauf, bis das Formular ausgefüllt ist", async () => {
-    store.runs.set(ipHash(IP, SECRET), 1);
-    const res = await call();
-    expect(res.status).toBe(403);
-    expect(await res.json()).toEqual({ error: "gate" });
+  it("verlangt die Adresse (Cookie mt_gate): ohne 403, mit 200", async () => {
+    const none = await call(body(), IP, null);
+    expect(none.status).toBe(403);
+    expect(await none.json()).toEqual({ error: "gate" });
     expect(gen.fn).not.toHaveBeenCalled();
-
-    store.unlockedSet.add(ipHash(IP, SECRET));
     expect((await call()).status).toBe(200);
-  });
-
-  it("lässt ein freigeschaltetes Konto durch, auch von einer neuen IP", async () => {
-    store.runs.set(ipHash("203.0.113.9", SECRET), 1);
-    store.accounts.add(accountHash(ME.email, SECRET));
-    who.account = ME;
-    expect((await call(body(), "203.0.113.9")).status).toBe(200);
   });
 
   it("ist ohne GATE_SECRET aus", async () => {

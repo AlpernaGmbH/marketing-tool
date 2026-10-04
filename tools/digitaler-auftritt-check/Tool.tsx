@@ -10,10 +10,10 @@ import { aiTried, fetchEinordnung, markAiTried, type EinordnungReason } from "@/
 import { runCheck } from "@/lib/check/client";
 import { CHECK_STEPS, INDUSTRY_KEYS, INDUSTRY_LABELS, POSTING_FREQUENCIES, SOCIAL_NETWORKS, type CheckStepId, type IndustryKey } from "@/lib/check/types";
 import { useLocalJson } from "@/lib/use-local";
-import { useAccount } from "@/lib/use-account";
 import { useProfile } from "@/lib/use-profile";
 import { CheckResultView, type AiView } from "./Result";
-import { EMPTY_FORM, SLUG, buildInput, formProblem, host, industryFor, parseCheckState, profilePatch, type FormState } from "./logic";
+import { toMarkdown } from "@/lib/export/model";
+import { EMPTY_FORM, SLUG, buildInput, formProblem, host, industryFor, parseCheckState, profilePatch, toDocument, type FormState } from "./logic";
 import config from "./tool.config";
 
 const selectClass =
@@ -23,7 +23,7 @@ type StepState = "wait" | "run" | "done";
 const STEP_TEXT: Record<StepState, string> = { wait: "wartet", run: "läuft", done: "fertig" };
 const freshSteps = (): Record<CheckStepId, StepState> => Object.fromEntries(CHECK_STEPS.map((s) => [s.id, "wait"])) as Record<CheckStepId, StepState>;
 
-function Intro({ withAi, inAccount }: { withAi: boolean; inAccount: boolean }) {
+function Intro() {
   return (
     <>
       <p>
@@ -32,14 +32,13 @@ function Intro({ withAi, inAccount }: { withAi: boolean; inAccount: boolean }) {
         geordnet nach Wirkung.
       </p>
       <p>
-        Die Adresse geht an unseren Server, der die Seite abruft. Wir speichern sie nicht. {inAccount ? "Das Ergebnis wird in deinem Konto gespeichert, damit du es auf jedem Gerät wiederfindest." : "Das Ergebnis bleibt in deinem Browser. Mit Konto bleibt es auf jedem Gerät erhalten."}
+        Die Adresse geht an unseren Server, der die Seite abruft; er speichert sie nicht. Das Ergebnis geht zusammen mit deinen Angaben und deiner E-Mail-Adresse an
+        Alperna, damit wir dir bei Fragen weiterhelfen können.
       </p>
-      {withAi && (
-        <p>
-          Du bist angemeldet: Eine KI schreibt zusätzlich eine kurze Einordnung. Dafür gehen Betrieb, Ort, Branche, die Domain und die Messwerte des Checks
-          an unseren KI-Anbieter, nicht die Seite selbst.
-        </p>
-      )}
+      <p>
+        Eine KI schreibt zusätzlich eine kurze Einordnung. Dafür gehen Betrieb, Ort, Branche, die Domain und die Messwerte des Checks an unseren KI-Anbieter, nicht
+        die Seite selbst.
+      </p>
     </>
   );
 }
@@ -47,8 +46,6 @@ function Intro({ withAi, inAccount }: { withAi: boolean; inAccount: boolean }) {
 function CheckFlow() {
   const ctx = useToolContext();
   const { profile, update } = useProfile();
-  const account = useAccount();
-  const inAccount = Boolean(account?.account && account.storage);
   const { value: saved, ready, set } = useLocalJson(`mt:${SLUG}`, parseCheckState);
 
   // Änderungen am Formular leben im Entwurf, bis der Check startet; vorher gilt der gespeicherte Stand.
@@ -62,7 +59,7 @@ function CheckFlow() {
   const [error, setError] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  // KI-Einordnung: nur mit Konto und Freischaltung, einmal pro Ergebnis (Kennung = Signatur des Servers).
+  // KI-Einordnung: sobald eine Adresse bekannt ist, einmal pro Ergebnis (Kennung = Signatur des Servers).
   // Der Zwischenspeicher im Browser hält sie fest, der Server hält sie 24 Stunden vor.
   const [aiFailed, setAiFailed] = useState<{ sig: string; reason: EinordnungReason } | null>(null);
   const [aiTry, setAiTry] = useState(0);
@@ -72,7 +69,7 @@ function CheckFlow() {
   }, [saved]);
   const requested = useRef<string | null>(null);
   const sig = saved.result?.sig;
-  const canAi = ready && ctx.signedIn && ctx.unlocked && saved.phase === "result" && !!sig && !saved.einordnung;
+  const canAi = ready && Boolean(ctx.email) && saved.phase === "result" && !!sig && !saved.einordnung;
 
   useEffect(() => {
     if (!canAi || !sig || requested.current === `${sig}:${aiTry}`) return;
@@ -98,7 +95,7 @@ function CheckFlow() {
     });
   }, [canAi, sig, aiTry, set]);
 
-  const ai: AiView = !ctx.signedIn || !ctx.unlocked || !sig
+  const ai: AiView = !ctx.email || !sig
     ? { status: "none" }
     : saved.einordnung
       ? { status: "ok", einordnung: saved.einordnung }
@@ -130,8 +127,7 @@ function CheckFlow() {
     setError(null);
     setBusy(true);
     try {
-      // Ein bereits gezählter Durchlauf wird nur fortgesetzt: kein neues Gate, keine Doppelzählung.
-      if (!saved.counted && !(await ctx.requestStart())) return;
+      if (!(await ctx.ensureEmail())) return;
       const keepForm: FormState = { ...form, industry: industry || "other" };
       set({ ...saved, form: keepForm });
       setSteps(freshSteps());
@@ -139,8 +135,8 @@ function CheckFlow() {
       setRunning(true);
 
       let outcome = await runCheck(input, onStep);
-      // Der Server kennt den Durchlauf als verbraucht, der Browser nicht: Formular zeigen, dann einmal wiederholen.
-      if (!outcome.ok && outcome.code === "gate" && (await ctx.requestStart())) {
+      // Der Server kennt keine Adresse (Cookie fehlt): Fenster zeigen, dann einmal wiederholen.
+      if (!outcome.ok && outcome.code === "gate" && (await ctx.renewEmail())) {
         setSteps(freshSteps());
         outcome = await runCheck(input, onStep);
       }
@@ -150,10 +146,16 @@ function CheckFlow() {
         setError(outcome.message);
         return;
       }
-      set({ v: 1, phase: "result", step: 0, answers: {}, counted: true, form: keepForm, result: outcome.result });
+      set({ v: 1, phase: "result", step: 0, answers: {}, form: keepForm, result: outcome.result });
       update(profilePatch(profile, outcome.result));
       setDraft(null);
-      if (!saved.counted) void ctx.completeRun();
+      const socials = SOCIAL_NETWORKS.map((n) => (keepForm.socials[n.key].url ? `${n.label}: ${keepForm.socials[n.key].url} (${keepForm.socials[n.key].freq || "keine Angabe"})` : ""))
+        .filter(Boolean)
+        .join("\n");
+      void ctx.sendResult({
+        eingabe: [`Website: ${input.website}`, `Betrieb: ${input.company}`, `Ort: ${input.city}`, `Branche: ${INDUSTRY_LABELS[keepForm.industry as IndustryKey] ?? keepForm.industry}`, socials].filter(Boolean).join("\n"),
+        ausgabe: toMarkdown(toDocument(outcome.result)),
+      });
     } finally {
       setRunning(false);
       setBusy(false);
@@ -164,7 +166,7 @@ function CheckFlow() {
     shouldFocus.current = true;
     setError(null);
     setDraft(null);
-    set({ v: 1, phase: "intro", step: 0, answers: {}, counted: false, form: saved.form });
+    set({ v: 1, phase: "intro", step: 0, answers: {}, form: saved.form });
   };
 
   // ---- Ergebnis --------------------------------------------------------------------------------
@@ -219,7 +221,7 @@ function CheckFlow() {
       }}
     >
       <div className="content">
-        <Intro withAi={ctx.signedIn && ctx.unlocked} inAccount={inAccount} />
+        <Intro />
       </div>
 
       <fieldset className="grid gap-4 rounded-xl border border-line p-4 md:grid-cols-2">
@@ -236,7 +238,7 @@ function CheckFlow() {
             ))}
           </select>
           <p id="dac-industry-help" className="text-sm text-muted-foreground">
-            Sie entscheidet, ob Online-Shop und Online-Buchung für dich zählen. Firma, Website und Ort speichern wir in deinem Firmenprofil{inAccount ? ", in deinem Konto" : ", in deinem Browser"}.
+            Sie entscheidet, ob Online-Shop und Online-Buchung für dich zählen. Firma, Website und Ort speichern wir in deinem Firmenprofil, in deinem Browser.
           </p>
         </div>
       </fieldset>

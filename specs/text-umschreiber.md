@@ -12,10 +12,11 @@ Schreibt ins Profil: nichts
 Verwandte Tools: textcheck, digitaler-auftritt-check; newsletter-check entsteht später (die Seite verlinkt nur, was es gibt)
 `needsServer: true`: der Text geht an `/api/text` (Ausnahme in Harte Regel 1).
 
-## Zugang (geändert am 04.10.2026 abends)
-- **Ohne Konto.** Es gilt das Zugangsmodell wie bei jedem Werkzeug: erster Durchlauf frei, danach antwortet die Route mit 403 und das Werkzeug öffnet das LeadGate (`requestStart`), danach wiederholt es die Anfrage einmal. Wer ein freigeschaltetes Konto hat, kommt wie überall durch.
+## Zugang (Zugang v3, Stand 04.10.2026)
+- **Ohne Konto, E-Mail vor dem Ergebnis.** Vor dem ersten Umschreiben fragt `ToolShell.ensureEmail()` nach der Adresse (Fenster, `POST /api/lead` setzt das Cookie `mt_gate`). `/api/text` verlangt das Cookie; antwortet die Route mit 403 `gate`, zeigt das Werkzeug über `renewEmail()` das Fenster und wiederholt die Anfrage einmal.
+- **Jede Fassung geht ins CRM:** `POST /api/result` mit Stil, Anrede und Text (Eingabe) und der Fassung (Ausgabe).
 - **Kein Limit pro Person.** Der Schutz vor Missbrauch sind 30 Anfragen pro Stunde und IP-Hash und die globale Tagesgrenze `AI_DAILY_CAP` (Standard 2'000).
-- Begründung: Der Entscheid vom Vorabend (nur mit Konto, wegen der Kosten) fiel weg, weil der kostenlose Plan von Mistral die Kosten trägt und ein Konto die Hürde für Leads erhöhte. Die Anmeldung ist nicht Voraussetzung eines KI-Werkzeugs.
+- Begründung: Der kostenlose Plan von Mistral trägt die Kosten; ein Konto erhöhte die Hürde für Leads, darum nur die Adresse.
 
 ## Eingaben
 | Feld | Typ | Pflicht | Vorbefüllung | Validierung | Hilfetext |
@@ -34,13 +35,13 @@ Verwandte Tools: textcheck, digitaler-auftritt-check; newsletter-check entsteht 
 
 ## Ausgaben
 - Ergebnis (nach Klick): Fassung in einem Feld, das der Besucher ändern darf (Platzhalter ausfüllen); Kennzeichnung «Von einer KI formuliert»; Warnungen als Liste.
-- Kopieren: Fassung (mit den Änderungen des Besuchers). Keine Dateien, kein Download. Das Formular steht vor dem Start, nie vor dem Ergebnis eines begonnenen Durchlaufs.
-- Stand: `mt:text-umschreiber` (`styleId`, `anrede`, `text`, `result`, `warnings`); der Text wird 500 ms nach der letzten Eingabe gespeichert, Stil und Anrede sofort. Angemeldete: Abgleich mit dem Konto. Änderungen des Besuchers am Ergebnisfeld werden nicht gespeichert.
-- Zählung: `completeRun` beim ersten Ergebnis eines Textes.
+- Kopieren: Fassung (mit den Änderungen des Besuchers). Keine Dateien, kein Download. Das Fenster für die Adresse steht vor dem Start, nie vor einer schon laufenden Anfrage.
+- Stand: `mt:text-umschreiber` (`styleId`, `anrede`, `text`, `result`, `warnings`); der Text wird 500 ms nach der letzten Eingabe gespeichert, Stil und Anrede sofort. Nur im Browser. Änderungen des Besuchers am Ergebnisfeld werden nicht gespeichert.
+- Zählung: `popular:<slug>` über `/api/result` bei jeder Fassung.
 
 ## Edge Cases (getestet)
 - Leerer Text, zu kurz, zu lang, unbekannter Stil: Meldung im Werkzeug, 400 in der Route, nie ein Aufruf der KI.
-- Kein `GATE_SECRET`: 503. Freier Durchlauf gebraucht und nicht freigeschaltet: 403. Ratenbegrenzung: 429. Globale Tagesgrenze erreicht: 503 `capacity`.
+- Kein `GATE_SECRET`: 503. Kein gültiges Cookie `mt_gate`: 403 `gate`. Ratenbegrenzung: 429. Globale Tagesgrenze erreicht: 503 `capacity`.
 - KI wirft oder liefert leer/zu lang: 502, Platz zurückgegeben, im Protokoll nur Fehlerklasse, nie der Text.
 - Antwort mit Codeblock oder Anführungszeichen um das Ganze: ausgepackt.
 - Neue Zahl, neuer Link, Platzhalter: Warnung, Antwort bleibt.

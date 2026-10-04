@@ -7,7 +7,6 @@ import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useAccount } from "@/lib/use-account";
 import { useLocalJson } from "@/lib/use-local";
 import {
   LONG_SENTENCE_WORDS,
@@ -31,7 +30,7 @@ import config from "./tool.config";
 const KINDS: FindingKind[] = ["fehler", "schreibweise", "floskel", "satz"];
 const MAX_LABEL = MAX_CHARS.toLocaleString("en-US").replace(/,/g, "'");
 
-function Intro({ inAccount }: { inAccount: boolean }) {
+function Intro() {
   return (
     <>
       <p>
@@ -39,11 +38,9 @@ function Intro({ inAccount }: { inAccount: boolean }) {
         Schreibweise, markiert Floskeln und misst, wie leicht sich der Text lesen lässt. Du bekommst den Text mit den sicheren Korrekturen zurück.
       </p>
       <p>
-        Die Prüfung läuft in deinem Browser. Der Text geht an keinen Server, solange du nicht selbst «Mit KI prüfen» klickst. Rechtschreibung und Grammatik prüft die
-        KI auf Knopfdruck; dein Browser unterstreicht unbekannte Wörter schon beim Schreiben.{" "}
-        {inAccount
-          ? "Du bist angemeldet: Der Text wird in deinem Konto gespeichert, damit du ihn auf jedem Gerät wiederfindest."
-          : "Der Text bleibt in deinem Browser. Mit Konto bleibt er auf jedem Gerät erhalten."}
+        Die Prüfung läuft in deinem Browser. Dein Ergebnis geht zusammen mit deinem Text und deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen
+        weiterhelfen können. Rechtschreibung und Grammatik prüft die KI auf Knopfdruck; erst dann geht der Text an unseren KI-Anbieter. Dein Browser
+        unterstreicht unbekannte Wörter schon beim Schreiben.
       </p>
     </>
   );
@@ -178,8 +175,6 @@ function ResultView({
 
 function TextFlow() {
   const ctx = useToolContext();
-  const account = useAccount();
-  const inAccount = Boolean(account?.account && account.storage);
   const { value: saved, ready, set } = useLocalJson(`mt:${SLUG}`, parseTextcheckState);
 
   // Der Entwurf lebt im Feld, der Speicher folgt mit etwas Verzögerung (nicht bei jedem Tastendruck).
@@ -217,12 +212,11 @@ function TextFlow() {
     setError(null);
     setBusy(true);
     try {
-      // Ein bereits gezählter Durchlauf wird nur fortgesetzt: kein neues Gate, keine Doppelzählung.
-      if (!saved.counted && !(await ctx.requestStart())) return;
+      if (!(await ctx.ensureEmail())) return;
       shouldFocus.current = "heading";
-      set({ v: 1, phase: "result", text, counted: true });
+      set({ v: 1, phase: "result", text });
       setDraft(null);
-      if (!saved.counted) void ctx.completeRun();
+      void ctx.sendResult({ eingabe: text, ausgabe: reportMarkdown(analyzeText(text)) });
     } finally {
       setBusy(false);
     }
@@ -242,7 +236,7 @@ function TextFlow() {
           shouldFocus.current = "area";
           setError(null);
           setDraft(null);
-          set({ v: 1, phase: "edit", text: "", counted: false });
+          set({ v: 1, phase: "edit", text: "" });
         }}
       />
     );
@@ -259,7 +253,7 @@ function TextFlow() {
       }}
     >
       <div className="content">
-        <Intro inAccount={inAccount} />
+        <Intro />
       </div>
 
       <div className="grid gap-2">

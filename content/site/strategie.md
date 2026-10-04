@@ -55,10 +55,10 @@ Ja, aber eine kleine. Es genügt, wenn du auf einer Seite festhältst, für wen 
 Beginne mit dem Digitaler-Auftritt-Check. Danach folgen Zielgruppe, Positionierung, Botschaften und Kanäle, sobald die Werkzeuge bereitstehen. Der Pfad auf dieser Seite zeigt die Reihenfolge, du kannst aber an jeder Stelle einsteigen.
 
 ### Brauche ich ein Konto?
-Nein. Jedes Werkzeug kannst du einmal vollständig und kostenlos ohne Konto durchlaufen. Danach erscheint ein kurzes Formular mit Name, Firma und E-Mail, oder du meldest dich an. Dann sind alle Werkzeuge und Downloads offen.
+Nein. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du das Ergebnis, und alle Werkzeuge und Downloads sind offen. Ein Passwort gibt es nicht.
 
 ### Wer sieht meine Eingaben?
-Dein Firmenprofil und die Zwischenstände bleiben in deinem Browser, mit Konto liegen sie zusätzlich dort und folgen dir auf jedes Gerät. Der Digitaler-Auftritt-Check schickt die Adresse deiner Website an unseren Server, weil er die Startseite liest. An Alperna geht nur das Formular oder, mit deiner Zustimmung, Name und E-Mail aus deinem Konto.
+Dein Firmenprofil und die Zwischenstände bleiben in deinem Browser. Der Digitaler-Auftritt-Check schickt die Adresse deiner Website an unseren Server, weil er die Startseite liest. An Alperna gehen deine E-Mail-Adresse, deine Eingaben und das Ergebnis, damit wir dir bei Fragen weiterhelfen können.
 
 ### Was mache ich mit dem Ergebnis?
-Du kannst es kopieren und Mitarbeitenden, einer Beraterin oder deiner Bank zeigen. Dateien wie PDF oder Word gibt es nach dem kurzen Formular. Wenn du Hilfe bei der Umsetzung möchtest, ist Alperna als Partner für den digitalen Auftritt ein möglicher Weg.
+Du kannst es kopieren, als PDF oder Word speichern und Mitarbeitenden, einer Beraterin oder deiner Bank zeigen. Wenn du Hilfe bei der Umsetzung möchtest, ist Alperna als Partner für den digitalen Auftritt ein möglicher Weg.

@@ -272,12 +272,12 @@ describe("textcheck: Eingabe und Stand", () => {
     expect(parseTextcheckState("text")).toEqual(EMPTY_STATE);
     expect(parseTextcheckState({ v: 2, text: "x" })).toEqual(EMPTY_STATE);
     expect(parseTextcheckState({ v: 1, text: 5 })).toEqual(EMPTY_STATE);
-    expect(parseTextcheckState({ v: 1, phase: "result", text: "Ein Satz.", counted: true })).toEqual({ v: 1, phase: "result", text: "Ein Satz.", counted: true });
+    expect(parseTextcheckState({ v: 1, phase: "result", text: "Ein Satz." })).toEqual({ v: 1, phase: "result", text: "Ein Satz." });
   });
 
   it("zeigt kein Ergebnis für einen Text ohne Wörter und kürzt zu lange gespeicherte Texte", () => {
-    expect(parseTextcheckState({ v: 1, phase: "result", text: "  ", counted: true }).phase).toBe("edit");
-    expect(parseTextcheckState({ v: 1, phase: "edit", text: "wort ".repeat(10000), counted: false }).text.length).toBe(MAX_CHARS);
+    expect(parseTextcheckState({ v: 1, phase: "result", text: "  " }).phase).toBe("edit");
+    expect(parseTextcheckState({ v: 1, phase: "edit", text: "wort ".repeat(10000) }).text.length).toBe(MAX_CHARS);
   });
 });
 

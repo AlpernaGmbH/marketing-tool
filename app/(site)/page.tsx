@@ -88,7 +88,7 @@ export default async function HomePage() {
         <p className="eyebrow">Pfade</p>
         <h2 id="pfade" className="mt-3">Such dir einen Pfad aus</h2>
         <p className="measure mt-2 text-muted-foreground">
-          Jeder Pfad ordnet die Werkzeuge in einer sinnvollen Reihenfolge. Was du erledigt hast, merkt sich dein Browser, mit Konto auch dein Konto.
+          Jeder Pfad ordnet die Werkzeuge in einer sinnvollen Reihenfolge. Was du erledigt hast, merkt sich dein Browser.
         </p>
         <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PATH_CARDS.map((page) => (

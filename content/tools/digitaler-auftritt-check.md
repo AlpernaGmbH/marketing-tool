@@ -53,13 +53,13 @@ Erste Schritte, alle mit kleinem Aufwand: den Eintrag bei Google Maps prüfen, e
 
 ## Häufige Fragen
 ### Was kostet der Digitaler-Auftritt-Check?
-Nichts. Das Ergebnis am Bildschirm und das Kopieren des Textes sind kostenlos. PDF und Word gibt es nach einem kurzen Formular mit Name, Firma und E-Mail.
+Nichts. Du gibst deine E-Mail-Adresse an, dann siehst du das Ergebnis, kannst den Text kopieren und PDF oder Word herunterladen. Ein Konto gibt es nicht.
 
 ### Was prüft der Check genau?
 Er ruft die Startseite, die robots.txt und die sitemap.xml ab und liest daraus 16 Punkte zu Technik und Suchmaschinen. Dazu erkennt er Newsletter, Shop, Buchung, Besucherzahlen-Messung und verlinkte Social-Media-Kanäle. Unterseiten liest er nicht.
 
 ### Was passiert mit meiner Website-Adresse und meinen Angaben?
-Die Adresse geht an unseren Server, der die Seite abruft. Wir speichern sie nicht und schreiben sie nicht ins Protokoll. Das Ergebnis liegt in deinem Browser, mit Konto zusätzlich im Konto. Schreibt eine KI die Einordnung (nur mit Konto und Freischaltung), gehen Betrieb, Ort, Branche, Domain und Messwerte an unseren KI-Anbieter, nicht die Seite selbst.
+Die Adresse geht an unseren Server, der die Seite abruft; er speichert sie nicht und schreibt sie nicht ins Protokoll. Das Ergebnis liegt in deinem Browser und geht mit deinen Angaben und deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Für die KI-Einordnung gehen Betrieb, Ort, Branche, Domain und Messwerte an unseren KI-Anbieter, nicht die Seite selbst.
 
 ### Warum bestätigt der Check mein Google-Profil nicht?
 Er bestätigt das Profil nur mit Zugang zur Schnittstelle von Google. Ohne sieht er nur, ob deine Website auf Google Maps verlinkt, und das ist ein Hinweis, keine Bestätigung. Prüfe den Eintrag darum selbst in Google Maps.

@@ -1,7 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { canStart, clientIp, defaultStore, gateSecret, ipHash, readGateCookie } from "@/lib/access";
-import { requestAccount } from "@/lib/account";
+import { clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
 import { defaultAiStore, limitsFromEnv, releaseSlot, takeSlot } from "@/lib/ai-quota";
 import { describeAiError, generateFreeText } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
@@ -10,8 +9,8 @@ import { buildSystemPrompt, buildUserPrompt, checkOutput, inputProblem, MAX_INPU
 import { STYLE_IDS, getStyle } from "@/tools/text-umschreiber/styles";
 
 // Schreibt den Text des Besuchers im gewählten Stil neu (Text-Umschreiber) oder prüft ihn (Textcheck, Stil «pruefen»).
-// Ohne Konto: Es gilt das Zugangsmodell wie bei jedem Werkzeug (ein freier Durchlauf, danach das Formular). Als Schutz vor
-// Missbrauch dienen die Ratenbegrenzung pro IP-Hash und die globale Tagesgrenze, nicht ein Limit pro Person.
+// Zugang v3: Ergebnisse gibt es gegen eine E-Mail-Adresse (Cookie mt_gate). Als Schutz vor Missbrauch dienen die
+// Ratenbegrenzung pro IP-Hash und die globale Tagesgrenze, nicht ein Limit pro Person.
 // Geloggt werden nur Statuscode und Stichwort, nie der Text (Harte Regel 1). Die Antwort der KI wird nie ungeprüft
 // weitergegeben (checkOutput) und nirgends gespeichert.
 
@@ -40,10 +39,7 @@ export async function POST(req: NextRequest) {
   const hash = ipHash(clientIp(req.headers), secret);
   if (!(await withinLimit("text", 30, "1 h", hash))) return respond(ROUTE, 429, { error: "rate_limited" }, "rate_limited");
 
-  // Konto ist nicht nötig. Wer eines hat und freigeschaltet ist, kommt wie überall durch.
-  const who = await requestAccount(secret);
-  const decision = await canStart(defaultStore(), hash, readGateCookie(req, secret), who?.acchash ?? null);
-  if (!decision.allowed) return respond(ROUTE, 403, { error: "gate" }, "gate_used");
+  if (!readGateCookie(req, secret)) return respond(ROUTE, 403, { error: "gate" }, "gate_used");
 
   const store = defaultAiStore();
   const slot = await takeSlot(store, null, limitsFromEnv(), new Date(), "text");

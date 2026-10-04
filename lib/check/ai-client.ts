@@ -46,7 +46,8 @@ export async function fetchEinordnung(result: CheckResult, fetchImpl: typeof fet
     const einordnung = parseEinordnung(data.einordnung);
     return einordnung ? { ok: true, einordnung } : { ok: false, reason: "failed" };
   }
-  if (res.status === 401) return { ok: false, reason: "not_signed_in" };
+  // 403 «gate»: der Server kennt keine E-Mail-Adresse (Zugang v3). 401 bleibt aus Verträglichkeit mit älteren Antworten.
+  if (res.status === 401 || res.status === 403) return { ok: false, reason: "not_signed_in" };
   if (res.status === 429) return { ok: false, reason: data.error === "account_limit" ? "limit" : "failed" };
   if (res.status === 503 && data.error === "capacity") return { ok: false, reason: "capacity" };
   return { ok: false, reason: "failed" };

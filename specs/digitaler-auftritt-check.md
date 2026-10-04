@@ -23,12 +23,12 @@ Alle Felder ausser Branche und Social Media kommen aus dem Firmenprofil und werd
 | industry | Auswahl, Vorschlag aus `profil.branche` (`guessIndustry`) | ja | 12 Branchen; bestimmt, ob Shop und Buchung zählen |
 | Social-Media-Kanäle | nur dieses Werkzeug | nein | pro Kanal Adresse und Häufigkeit; ohne Häufigkeit gilt «etwa monatlich» als Annahme |
 
-## Ablauf
-1. `ToolShell.requestStart()` prüft den freien Durchlauf (`/api/access`).
+## Ablauf (Zugang v3, Stand 04.10.2026)
+1. `ToolShell.ensureEmail()`: Ohne bekannte E-Mail-Adresse öffnet sich das Fenster (Adresse, Einwilligung); `POST /api/lead` setzt das signierte Cookie `mt_gate`. Schliesst die Person das Fenster, bleibt das Formular stehen.
 2. `POST /api/check` streamt NDJSON: `step` (start/done) für `fetch`, `seo`, `gbp`, `social`, `detect`, `score`, dann `result` oder `error`. Der Fortschritt im Browser folgt diesen Ereignissen und ist nicht erfunden.
-3. Der Server prüft vor dem Abruf Eingabe, Limit (8 pro Stunde und IP-Hash) und `canStart`. Ohne `GATE_SECRET` oder bei Redis-Ausfall wird niemand gesperrt.
-4. Ergebnis wird in `mt:digitaler-auftritt-check` gespeichert (`phase: "result"`, damit der Pfad-Fortschritt weiter funktioniert) und über `/api/access/complete` gezählt.
-5. «Erneut prüfen» setzt auf den Start zurück, `counted` wird false: der nächste Start zeigt das LeadGate.
+3. Der Server prüft vor dem Abruf Eingabe, Limit (8 pro Stunde und IP-Hash) und das Cookie (sonst 403 `gate`; der Browser zeigt dann über `renewEmail()` das Fenster und wiederholt einmal). Ohne `GATE_SECRET` wird niemand gesperrt.
+4. Ergebnis wird in `mt:digitaler-auftritt-check` gespeichert (`phase: "result"`, damit der Pfad-Fortschritt weiter funktioniert). Danach `ToolShell.sendResult()`: `POST /api/result` schickt Website, Betrieb, Ort, Branche, Social-Angaben (Eingabe) und das Ergebnis als Markdown (Ausgabe) mit der Adresse aus dem Cookie an n8n (CRM) und zählt `popular:<slug>`.
+5. «Erneut prüfen» setzt auf den Start zurück; ein weiterer Durchlauf fragt nicht erneut nach der Adresse.
 
 ## Logik (lib/check)
 - Abruf nur über `safeFetch`: Host auflösen, jede Adresse prüfen, Verbindung an die geprüfte Adresse binden, jede Weiterleitung neu prüfen, höchstens 2,5 MB, 12 s je Station und 25 s insgesamt, fünf Weiterleitungen. Nach dem Grössenlimit wird auch der Entpacker beendet. Die Analyse liest höchstens 1 MB HTML, und jedes Muster läuft linear (`lib/check/html.ts`, Test `redos.test.ts`): Böswilliges HTML mit Hunderttausenden offenen Tags hält den Server nicht fest. `ms` im Ergebnis ist die Dauer der letzten Station. Ports nur 80 und 443. Gesperrt: private, Loopback-, Link-Local-, Carrier-NAT-, Dokumentations- und Multicast-Adressen, auch als IPv4-in-IPv6.
@@ -44,10 +44,10 @@ Alle Felder ausser Branche und Social Media kommen aus dem Firmenprofil und werd
 ## Ausgaben
 - Ergebnis: Punktzahl mit Stufe (`ScoreBadge`), erfüllte Prüfpunkte, die ersten acht Schritte, alle Bereiche mit Prüfpunkten (aufklappbar), Kasten «Was gemessen ist und was nicht».
 - Kopieren (frei): Markdown aus dem DocumentModel.
-- Export (hinter dem LeadGate): PDF und DOCX mit Kopf, Punktzahl, Bereichstabelle, allen Schritten, allen Prüfpunkten und den Messhinweisen.
+- Export (sobald eine Adresse bekannt ist, sonst erst das Fenster): PDF und DOCX mit Kopf, Punktzahl, Bereichstabelle, allen Schritten, allen Prüfpunkten und den Messhinweisen.
 
 ## Edge Cases (getestet)
-- Website nicht erreichbar, Fehlerseite, HTTP 403/429 (Bot-Sperre): verständliche Meldung, freier Durchlauf bleibt unverbraucht.
+- Website nicht erreichbar, Fehlerseite, HTTP 403/429 (Bot-Sperre): verständliche Meldung, nichts geht ins CRM, das Formular bleibt stehen.
 - https scheitert: einmal http versuchen.
 - Adresse zeigt auf eine interne IP: `blocked`, ohne Hinweis auf die Adresse.
 - Zu viele Weiterleitungen, zu grosse oder zu langsame Antwort: abgebrochen beziehungsweise gekappt.
@@ -57,16 +57,16 @@ Alle Felder ausser Branche und Social Media kommen aus dem Firmenprofil und werd
 - Zwischenstand der Fragebogen-Version oder beschädigte Daten: Start, nichts geht verloren.
 
 ## Nicht Teil dieses Werkzeugs
-- Die Punktzahl, die Bereiche und die Schritte sind regelbasiert und entstehen ohne KI. Nur die Einordnung (siehe unten) schreibt eine KI, und nur für angemeldete, freigeschaltete Personen.
+- Die Punktzahl, die Bereiche und die Schritte sind regelbasiert und entstehen ohne KI. Nur die Einordnung (siehe unten) schreibt eine KI.
 - Kein Zwischenspeicher je Domain (braucht Redis, die Integration ist noch nicht verbunden).
 - Keine Unterseiten, kein Rendern von JavaScript, keine PageSpeed-Messung. Eine Website, die Inhalte erst im Browser lädt, erscheint leerer, als sie ist.
 - Kein Auslesen von Instagram, LinkedIn, TikTok oder Google ohne Schnittstelle.
 
 ## KI-Einordnung (Etappe 2)
-- Voraussetzung: Konto (Google) und Freischaltung; das Ergebnis trägt die Signatur des Servers (`sig`). Ohne eines davon erscheint der Block nicht und der Browser ruft `/api/ai` gar nicht erst auf.
+- Voraussetzung: bekannte E-Mail-Adresse (Cookie `mt_gate`, Zugang v3); das Ergebnis trägt die Signatur des Servers (`sig`). Ohne eines davon erscheint der Block nicht und der Browser ruft `/api/ai` gar nicht erst auf.
 - Inhalt: zwei bis drei Sätze Zusammenfassung und bis zu drei Prioritäten, je mit Verweis auf einen Schritt aus der Liste und ein bis zwei Sätzen Begründung. Das Modell sieht nur das Fakten-JSON (`buildFakten`), keine Seite und keine Eingaben ausser Betrieb, Ort, Branche und Host.
 - Prüfung vor der Anzeige: Schema, Länge, nur Zahlen aus den Fakten, nur bekannte Schrittkennungen, Alperna-Sperrliste, keine Ausrufezeichen, Emojis, Links. Sonst verworfen.
-- Grenzen: 5 pro Konto und Tag, 200 pro Tag insgesamt, 20 pro Stunde und IP-Hash. Fertige Einordnungen liegen 24 Stunden im Zwischenspeicher.
+- Grenzen: 5 pro E-Mail-Adresse und Tag (`AI_ACCOUNT_DAILY`), `AI_DAILY_CAP` pro Tag insgesamt, 20 pro Stunde und IP-Hash. Fertige Einordnungen liegen 24 Stunden im Zwischenspeicher.
 - Fehlerbild: Der Check bleibt vollständig. Der Block sagt ruhig, dass die Einordnung gerade nicht verfügbar ist, und bietet einen neuen Versuch (nicht bei verbrauchtem Tageslimit).
 - Export: Die Einordnung steht im Dokument unter «Einordnung (von einer KI formuliert)», wenn sie vorhanden ist.
 - Tests: `lib/check/{ai,ai-client,sign}.test.ts`, `lib/ai-quota` über `app/api/ai/route.test.ts`, `Result.test.tsx`, Smoke-Tests «KI-Einordnung im Browser».

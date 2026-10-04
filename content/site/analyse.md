@@ -10,7 +10,7 @@ Bevor du etwas verbesserst, willst du wissen, wo du stehst. Eine Analyse zeigt, 
 
 - Der Digitaler-Auftritt-Check liest die Startseite deiner Website und bewertet Technik, Grundlagen für Suchmaschinen, Google-Profil und Social Media
 - Du bekommst eine Liste, was du zuerst angehst
-- Angemeldete, freigeschaltete Personen erhalten zusätzlich eine kurze KI-Einordnung
+- Eine KI schreibt zusätzlich eine kurze Einordnung zu deinem Ergebnis
 - Weitere Analysen zu Bewertungen, LinkedIn, Suchbegriffen und Newsletter folgen
 
 ## Hintergrund
@@ -52,10 +52,10 @@ Nein. Kein Werkzeug meldet sich bei deinen Konten an. Der Digitaler-Auftritt-Che
 Alle paar Monate genügt. Wiederhole sie nach grösseren Änderungen, etwa nach einem Relaunch der Website oder einer neuen Kampagne. So erkennst du, was gewirkt hat.
 
 ### Brauche ich ein Konto?
-Nein. Jedes Werkzeug kannst du einmal vollständig und kostenlos ohne Konto durchlaufen. Danach erscheint ein kurzes Formular mit Name, Firma und E-Mail, oder du meldest dich an. Dann sind alle Werkzeuge und Downloads offen.
+Nein. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du das Ergebnis, und alle Werkzeuge und Downloads sind offen. Ein Passwort gibt es nicht.
 
 ### Kann ich die Ergebnisse weitergeben?
-Ja. Du kannst den Text kopieren und, nach dem kurzen Formular, einen Report als Datei herunterladen. Schicke ihn zum Beispiel deinem Team oder deiner Beraterin.
+Ja. Du kannst den Text kopieren und einen Report als PDF oder Word herunterladen. Schicke ihn zum Beispiel deinem Team oder deiner Beraterin.
 
 ### Reicht eine Analyse ohne Strategie?
 Sie zeigt dir, wo du stehst, aber nicht, wohin du willst. Am besten kombinierst du beides: erst ein Blick auf die Lage, dann die Strategie, dann gezielte Massnahmen.
