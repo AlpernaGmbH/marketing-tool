@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { LeadGate } from "@/components/tool/LeadGate";
 import { ProfileBanner } from "@/components/tool/ProfileBanner";
 import { LEAD_KEY, sendResult as sendResultApi } from "@/lib/access-client";
@@ -52,6 +52,12 @@ type Props = {
 export function ToolShell({ slug, name, usesProfile = false, children }: Props) {
   const raw = useLocalRaw(LEAD_KEY);
   const email = raw && raw.includes("@") ? raw : null;
+  // Die bekannte Adresse zusätzlich als Ref: Ein Handler, der vor dem Fenster erzeugt wurde (alte Closure), fragt sonst
+  // nach dem Absenden ein zweites Mal (zum Beispiel ensureEmail() im Werkzeug und gleich danach in useGenerator).
+  const known = useRef<string | null>(email);
+  useEffect(() => {
+    known.current = email;
+  }, [email]);
   const { profile } = useProfile();
   const [gateOpen, setGateOpen] = useState(false);
   const waiting = useRef<((ok: boolean) => void) | null>(null);
@@ -71,9 +77,10 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
     [],
   );
 
-  const ensureEmail = useCallback(async () => (email ? true : openGate()), [email, openGate]);
+  const ensureEmail = useCallback(async () => (known.current ? true : openGate()), [openGate]);
 
   const renewEmail = useCallback(async () => {
+    known.current = null;
     removeLocal(LEAD_KEY);
     return openGate();
   }, [openGate]);
@@ -135,6 +142,7 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
           if (!open) settle(false);
         }}
         onSuccess={(address) => {
+          known.current = address;
           writeLocal(LEAD_KEY, address);
           settle(true);
         }}

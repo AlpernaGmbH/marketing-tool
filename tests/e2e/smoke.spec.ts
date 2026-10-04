@@ -180,11 +180,17 @@ test.describe("Kategorieseiten", () => {
     await expect(page.getByRole("note")).toContainText("Dieser Bereich ist im Aufbau");
   });
 
-  test("/vereine ist ehrlich leer, solange kein Vereins-Werkzeug existiert", async ({ page }) => {
+  test("/vereine zeigt die Werkzeuge mit audience verein oder beide, sonst ist die Seite ehrlich leer", async ({ page }) => {
+    const vereinsTools = tools.filter((t) => t.audience !== "kmu");
     await page.goto("/vereine");
-    await expect(page.getByRole("note")).toContainText("noch kein Werkzeug");
-    await expect(sec(page, "pfad")).toHaveCount(0);
-    await expect(sec(page, "werkzeuge")).toHaveCount(0);
+    if (vereinsTools.length === 0) {
+      await expect(page.getByRole("note")).toContainText("noch kein Werkzeug");
+      await expect(sec(page, "werkzeuge")).toHaveCount(0);
+      return;
+    }
+    await expect(sec(page, "werkzeuge").locator(":scope > ul > li")).toHaveCount(vereinsTools.length);
+    for (const t of vereinsTools) await expect(sec(page, "werkzeuge").getByRole("link", { name: new RegExp(t.name) })).toBeVisible();
+    if (vereinsTools.length < 3) await expect(page.getByRole("note")).toContainText("im Aufbau");
   });
 
   test("unbekannte Seiten sind 404", async ({ page }) => {

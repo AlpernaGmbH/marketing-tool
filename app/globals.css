@@ -137,6 +137,10 @@
     font-size: clamp(2.4rem, 1.5rem + 3.6vw, 4.5rem);
     line-height: 1.02;
     letter-spacing: -0.04em;
+    /* Lange Wörter («Wettbewerbsvergleich») bei 375 px: trennen, wo die Sprache es erlaubt, sonst umbrechen statt überlaufen. */
+    hyphens: auto;
+    hyphenate-limit-chars: 14 6 6;
+    overflow-wrap: break-word;
   }
   h2 {
     font-size: clamp(1.9rem, 1.4rem + 1.8vw, 3rem);

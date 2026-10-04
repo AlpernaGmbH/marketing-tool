@@ -53,10 +53,10 @@ import { dataPrompt, defineGenerator } from "@/lib/generator";
 
 export const personaInput = z.object({
   betrieb: z.string().trim().min(1).max(120),
-  branche: z.string().trim().max(120).default(""),
-  ort: z.string().trim().max(80).default(""),
+  branche: z.string().trim().max(120),
+  ort: z.string().trim().max(80),
   angebot: z.string().trim().min(10).max(1500),
-  kundschaft: z.string().trim().max(600).default(""),
+  kundschaft: z.string().trim().max(600),
 });
 export type PersonaInput = z.infer<typeof personaInput>;
 
@@ -82,7 +82,7 @@ Form: {"name": "…", "kurzprofil": "…", "ziele": ["…"], …}`,
 
 - Die Regeln der Alperna-Stimme, «nichts erfinden», «Platzhalter in eckigen Klammern», «nur JSON» stehen schon in `GENERATOR_RULES`; wiederhole sie nicht, beschreibe nur Aufgabe und Form.
 - Eingaben nur in `prompt` (Nutzernachricht), nie in `instruction`. `dataPrompt()` kennzeichnet sie als Daten.
-- Schemas mit Grenzen (`min`, `max`); die Route prüft Eingaben und Ausgaben damit, der Browser die Ausgabe noch einmal. Was die KI zusätzlich liefert, fällt weg (zod lässt unbekannte Felder weg).
+- Schemas mit Grenzen (`min`, `max`); die Route prüft Eingaben und Ausgaben damit, der Browser die Ausgabe noch einmal. Was die KI zusätzlich liefert, fällt weg (zod lässt unbekannte Felder weg). Kein `.default()` und kein `.transform()` im Eingabeschema: Ein- und Ausgabetyp müssen gleich sein (`z.ZodType<I>`), sonst scheitert `defineGenerator` am Typ. Leere Felder liefert `toInput()` als leere Zeichenkette.
 - `check` für Prüfungen, die nur das Werkzeug kennt (zum Beispiel: keine Zahlen, die nicht in den Angaben stehen; `numbersIn` aus `tools/text-umschreiber/logic.ts` als Vorbild).
 - Der Generator steht in `tools/generators.ts` (trägt der Hauptagent ein). Ohne Eintrag antwortet `/api/generate` mit 400.
 - Eingaben an die KI: Betrieb, Branche, Ort, Angebot und was die Person tippt. Nie E-Mail, nie Name der Person, nie das ganze Profil. Die Seite sagt vor dem Knopf, was an die KI geht («Dafür gehen … an unseren KI-Anbieter. Gib nichts Vertrauliches ein.»).
