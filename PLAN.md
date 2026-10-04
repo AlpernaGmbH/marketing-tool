@@ -123,6 +123,22 @@ Du brauchst sie **nicht für die KI**. Es sind zwei andere Dinge:
 1. **«Mit Google anmelden»** (Etappe 2): ein OAuth-Zugang. Kostenlos, kein Zahlungsmittel nötig. Das ist der Grund, warum jetzt eines gebraucht wird.
 2. **Google-Profil prüfen** im Marketing-Check (Etappe 3, optional): Places API. Dafür braucht es ein Zahlungsmittel im Konto; pro Monat gibt es Gratis-Kontingente (zum Beispiel 5'000 Textsuchen und 10'000 Detailabfragen, darüber USD 17 bis 32 je 1'000 Aufrufe; Quelle: developers.google.com/maps/billing-and-pricing/pricing). Ohne diesen Schlüssel meldet der Check beim Google-Profil «nicht prüfbar».
 
+## Etappe 2: Bauplan (Stand 04.10.2026)
+
+**Voraussetzungen von Alperna:** (1) Upstash-Redis (Produkt «Upstash», nicht «Redis») mit `KV_REST_API_URL` und `KV_REST_API_TOKEN` im Projekt; (2) Google-OAuth-Client (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`), Anleitung in STATUS.md. Beides ist Voraussetzung für jeden Schritt unten, der Konten oder Kontingente betrifft.
+
+**Bibliothek: Better Auth im Stateless-Modus** [Wahrscheinlich]. Ohne Datenbank, die Sitzung steckt in einem verschlüsselten Cookie (JWE); Google-Anmeldung eingebaut (Quelle: better-auth.com/docs/concepts/session-management). Auth.js wird nicht verwendet, weil Better Auth das Projekt Auth.js übernommen hat und für neue Projekte empfiehlt [Vermutung, vor dem Bau prüfen]. Serverseitig liegen nur Kennung, Freischaltung und Kontingente in Redis.
+
+Reihenfolge, jeder Schritt mit Tests und `npm run check`:
+
+1. **Konto:** `lib/auth.ts`, Route `/api/auth/[...all]`, Variablen `BETTER_AUTH_SECRET` (erzeuge ich) und `BETTER_AUTH_URL`. Neue Abhängigkeit `better-auth` (Eintrag in STATUS.md). CLAUDE.md, Regel 4 («einziges Cookie mt_gate») wird angepasst: die Sitzung ist ein zweites, notwendiges Cookie.
+2. **Zugang v2:** Das LeadGate-Formular wird durch ein Konto-Fenster ersetzt (Google-Knopf, Häkchen «Alperna darf mich zu meinem Ergebnis kontaktieren», Firma und Telefon freiwillig). Nach der Anmeldung: `unlocked:<kontohash>` in Redis, Lead über `/api/lead` an n8n (Name und E-Mail vom Konto). Der freie erste Durchlauf bleibt. Fällt Redis oder n8n aus, wird trotzdem freigeschaltet (Regel «nie wegen unserer Technik blockiert»); der Lead landet in `lead_queue`.
+3. **n8n-Workflow «Tools-Lead-Queue»:** stündlich `lead_queue` über die Upstash-REST-Schnittstelle leeren und jeden Eintrag an den Workflow «Tools-Lead» weitergeben. Braucht in n8n einen Zugang (Header-Auth mit dem Upstash-Token), den Alperna einmal anlegt.
+4. **`/api/ai`:** Vercel AI Gateway (siehe «KI ohne Kosten»), nur für angemeldete Personen, Tageslimit pro Konto und global, Zwischenspeicher je Domain 24 Stunden, Eingabe nur das Fakten-JSON des Checks. Neue Abhängigkeit `ai` (AI SDK). Jede Aussage der KI verweist auf eine Fakt-Kennung; Texte mit Zahlen, die nicht in den Fakten stehen, werden verworfen.
+5. **Marketing-Check:** Abschnitt «Einordnung» im Ergebnis, bei Ausfall der KI unsichtbar.
+6. **Texte:** «kein Konto nötig» in TrustLine, Seitentexten und CLAUDE.md; Antworten im FAQ; Datenschutzerklärung als Entwurf für den Menschen, der sie schreibt (Regel 8).
+7. **E-Mail-Link als zweiter Weg** für alle ohne Google (Versand über n8n und Gmail): erst danach, als Etappe 2b.
+
 ## Nächster Schritt
 
 Etappe 1c ist gebaut (04.10.2026): Marketing-Check mit Crawler, ohne KI und ohne Konto, gleiche Bewertung wie das Agentur-Tool. Als Nächstes Etappe 2: Zugang v2 und KI. Voraussetzungen von Alperna: Upstash mit dem Projekt verbunden, Google-OAuth-Zugang (Schritte in STATUS.md). Für die KI braucht es nichts: Vercel AI Gateway läuft im vorhandenen Team.
