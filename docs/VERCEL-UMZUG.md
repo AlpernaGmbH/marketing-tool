@@ -46,3 +46,12 @@ Nicht mitnehmen: `REDIS_URL` (Redis Inc., vom Code nicht genutzt).
 - **Zwei Projekte am selben Repo** bauen beide bei jedem Push, bis das alte getrennt ist. Harmlos, aber doppelt.
 - **Deployment-Schutz** bleibt an, bis die Domain steht. Google-Login funktioniert auf geschützten Adressen nur für Team-Mitglieder.
 - **Ob die laufende Claude-Sitzung den neuen Zugang übernimmt, ist offen** [Vermutung]. Zeigt `list_teams` noch das alte Team, eine neue Sitzung starten. Alles Nötige steht in dieser Datei und in STATUS.md.
+
+## Ergebnis (04.10.2026)
+
+Umgezogen. Neues Projekt `marketing-tool` (ID `prj_BcSr7GQ57uQIpQ9bbuSNJr4dXeFI`) im Account `alpernagmbh` (persönlicher Scope `website-dbed`, Hobby), Git-Verbindung zu `AlpernaGmbH/marketing-tool` funktioniert, Auto-Deploy aus `main`. Adresse: `https://marketing-tool-gold.vercel.app`.
+
+- Der MCP-Zugang des neuen Accounts arbeitet nur **ohne** `teamId` (der persönliche Scope lehnt die Team-ID ab). `list_teams` ist leer. Projekte werden mit `create_project` angelegt, nicht mit `create_git_project`.
+- Zum Testen wurde kurz ein Bypass-Secret für den Deployment-Schutz erzeugt und danach widerrufen. Der Schutz ist unverändert an.
+- Dasselbe Konto hostet auch die Projekte des Agentur-Tools (`tool`, `tool-dksu`, `tool-otyv`, `website`, `alperna-tool`, alle aus dem Repo `AlpernaGmbH/tool`). Bei jedem Push dorthin laufen fünf Builds. Auf Hobby ist nur ein Build gleichzeitig möglich; deshalb kann ein Build hier einige Minuten in der Warteschlange stehen.
+- Offen von Hand im alten Account: Projekt trennen oder löschen, Redis-Inc.-Speicher löschen.
