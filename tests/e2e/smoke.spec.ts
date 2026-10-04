@@ -1139,6 +1139,104 @@ test.describe("Welle 2b im Browser (Strategie-Generatoren II)", () => {
     await expect(page.getByRole("region", { name: "Deine Markenplattform" })).toBeVisible();
     expect(calls).toEqual({ read: 1, generate: 1 });
   });
+
+  const SWOT = {
+    einSatz: "Die Malerei Keller hat eine starke Website und eine treue Kundschaft, aber zu wenig Sichtbarkeit bei Google.",
+    staerken: [
+      { punkt: "Beratung am Haus mit Farbmustern", warum: "Kundschaft entscheidet schneller und zufriedener." },
+      { punkt: "Offerte ohne Nachträge", warum: "Vertrauen, das weiterempfohlen wird." },
+      { punkt: "Website ist aktuell und schnell", warum: "Laut Marketing-Check ein starker Bereich." },
+    ],
+    schwaechen: [
+      { punkt: "Google-Unternehmensprofil fast leer", warum: "Wer in Gossau nach Maler sucht, sieht den Betrieb kaum." },
+      { punkt: "Keine Bewertungen gesammelt", warum: "Neue Kundschaft hat keinen Beleg für die Qualität." },
+      { punkt: "Niemand ist für Beiträge zuständig", warum: "Der Auftritt bleibt stehen, sobald die Saison beginnt." },
+    ],
+    chancen: [
+      { punkt: "Viele ältere Einfamilienhäuser in der Region", warum: "Fassaden werden fällig, Beratung ist gefragt." },
+      { punkt: "Empfehlungen aus der Nachbarschaft", warum: "Ein sichtbares Projekt bringt die nächsten." },
+      { punkt: "Verwaltungen suchen verlässliche Betriebe", warum: "Planbare Aufträge über das Jahr." },
+    ],
+    risiken: [
+      { punkt: "Grosse Anbieter mit Online-Werbung", warum: "Sie belegen die Suche nach Maler in der Region." },
+      { punkt: "Fachkräfte sind schwer zu finden", warum: "Wachstum hängt an wenigen Leuten." },
+    ],
+    folgerungen: [
+      { massnahme: "Google-Unternehmensprofil mit Fotos und Leistungen füllen", nutzt: "Beratung am Haus", behebt: "Google-Profil fast leer", aufwand: "klein" },
+      { massnahme: "Nach jedem Auftrag um eine Bewertung bitten", nutzt: "Treue Kundschaft", behebt: "Keine Bewertungen", aufwand: "klein" },
+      { massnahme: "Eine Person im Team für Beiträge pro Woche einteilen", nutzt: "Website ist aktuell", behebt: "Niemand zuständig", aufwand: "mittel" },
+    ],
+  };
+  const SAEULEN = {
+    saeulen: [
+      { name: "Fassaden vorher und nachher", beschreibung: "Fertige Fassaden aus Gossau und Umgebung, mit einem Satz zu Dauer und Material.", ziel: "sichtbarkeit", beispiele: ["Fassade in Gossau, vorher und nachher", "Das Team vor dem fertigen Haus", "Farbmuster am Haus"], anteil: 30 },
+      { name: "Fragen der Kundschaft", beschreibung: "Die häufigsten Fragen aus Beratungen, je in drei Sätzen beantwortet.", ziel: "vertrauen", beispiele: ["Wie lange hält eine Fassade?", "Was kostet ein Anstrich?", "Welche Farbe passt zum Dach?"], anteil: 25 },
+      { name: "Aus dem Alltag", beschreibung: "Werkstatt, Werkzeug, Wege und Leute, ohne Inszenierung.", ziel: "bindung", beispiele: ["Morgen in der Werkstatt", "Die Leiter am Hang", "Znüni auf der Baustelle"], anteil: 25 },
+      { name: "Angebot und Termine", beschreibung: "Freie Termine, saisonale Angebote und der Weg zur Offerte.", ziel: "anfragen", beispiele: ["Freie Termine im Herbst", "So läuft die Offerte", "Beratung am Haus buchen"], anteil: 20 },
+    ],
+    rhythmus: {
+      satz: "Zwei Beiträge pro Woche: einer zeigt Arbeit, einer beantwortet eine Frage; die anderen Säulen wechseln sich ab.",
+      wochenplan: [
+        { tag: "Dienstag", saeule: "Fassaden vorher und nachher", kanal: "Instagram" },
+        { tag: "Freitag", saeule: "Fragen der Kundschaft", kanal: "Google-Beitrag" },
+      ],
+    },
+    niemals: ["Fotos von Kundschaft ohne Einverständnis", "Preise ohne Besichtigung versprechen"],
+  };
+
+  test("SWOT-Analyse: Angaben, Entwurf mit Vier-Felder-Raster und Folgerungen, Lead, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubs(page, SWOT);
+    await page.goto("/tools/swot");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Branche", { exact: true }).fill("Malerei");
+    await page.getByLabel("Ort", { exact: true }).fill("Gossau");
+    await page.getByLabel("Stärken: Was läuft gut?").fill("Beratung am Haus mit Farbmustern, Offerte ohne Nachträge.");
+    const start = page.getByRole("button", { name: "SWOT erstellen" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine SWOT-Analyse" })).toBeVisible();
+    await expect(page.getByTestId("swot-raster").locator("section")).toHaveCount(4);
+    await expect(page.getByTestId("folgerungen").locator("tbody tr")).toHaveCount(3);
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls).toEqual({ read: 0, generate: 1 });
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("swot");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Beratung am Haus");
+    expect(lead.ausgabe).toContain(SWOT.einSatz);
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine SWOT-Analyse" })).toBeVisible();
+    expect(calls).toEqual({ read: 0, generate: 1 });
+  });
+
+  test("Content-Säulen: Angaben, Kanäle, Entwurf mit Wochenplan, Lead, Säulen im Profil, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubs(page, SAEULEN);
+    await page.goto("/tools/content-saeulen");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Branche", { exact: true }).fill("Malerei");
+    await page.getByLabel("Ort", { exact: true }).fill("Gossau");
+    await page.getByLabel("Was bietest du an, und was fragt dich die Kundschaft am häufigsten?").fill("Fassaden und Innenräume; die Kundschaft fragt nach Dauer, Preis und Farbe.");
+    await expect(page.getByLabel("Instagram", { exact: true })).toBeChecked();
+    await expect(page.getByLabel("Google-Beitrag", { exact: true })).toBeChecked();
+    await page.getByLabel("Wie viele Beiträge pro Woche sind realistisch?").selectOption("2");
+    const start = page.getByRole("button", { name: "Säulen erstellen" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Content-Säulen" })).toBeVisible();
+    await expect(page.getByTestId("saeulen").getByRole("heading", { name: "1. Fassaden vorher und nachher" })).toBeVisible();
+    await expect(page.getByTestId("saeulen").locator("tbody tr")).toHaveCount(2);
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls).toEqual({ read: 0, generate: 1 });
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("content-saeulen");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Fassaden und Innenräume");
+    expect(lead.ausgabe).toContain("Fassaden vorher und nachher");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("mt:profile") ?? "")).toContain("Fassaden vorher und nachher");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Content-Säulen" })).toBeVisible();
+    expect(calls).toEqual({ read: 0, generate: 1 });
+  });
 });
 
 test.describe("Zugang v3 über die Routen", () => {

@@ -13,6 +13,7 @@ import positionierungConfig from "./positionierung/tool.config";
 import botschaftenConfig from "./botschaften/tool.config";
 import markenplattformConfig from "./markenplattform/tool.config";
 import swotConfig from "./swot/tool.config";
+import contentSaeulenConfig from "./content-saeulen/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -32,5 +33,6 @@ export const tools: ToolConfig[] = [
   botschaftenConfig,
   markenplattformConfig,
   swotConfig,
+  contentSaeulenConfig,
   // new-tool:configs
 ];
