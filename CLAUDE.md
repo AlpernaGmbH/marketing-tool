@@ -159,6 +159,10 @@ keine Bilder. Höhenlinien (SVG, 4 % Deckkraft) als Hintergrundmotiv auf
 Startseite und Kategorieseiten.
 Ton: ruhig, konkret, belegbar. Keine Ausrufezeichen, keine Emojis, keine
 Superlative, kein «jetzt», «nur noch», «garantiert», «Nr. 1». Kurze Sätze.
+Alperna-Stimme und Sperrliste: docs/MARKE.md und lib/brand-rules.ts (aus den
+Alperna-Dokumenten BRAND-VOICE-CORE und ANTI-PATTERNS). Alperna ist «Partner für
+den digitalen Auftritt», nie «Agentur»; kein Gedankenstrich «—»; Google Ads wird
+nicht aktiv angeboten. Fakten über Alperna nur aus docs/MARKE.md.
 Dark Mode: nein.
 
 ## Seitenaufbau Tool-Seite (Komponente ToolPageLayout, in dieser Reihenfolge)
@@ -210,7 +214,8 @@ content/tools/<slug>.md (problem, baustein, beweis), dazu der Bausteintext
 aus content/pitch/bausteine.md. Zwei Knöpfe: WhatsApp («Kurz schreiben»,
 wa.me mit vorausgefülltem Text, der das Tool nennt) und «Kostenloses
 Erstgespräch» (NEXT_PUBLIC_ERSTGESPRAECH_URL). Kein Formular, keine Preise
-ausser dem Einstiegsangebot, wenn der Baustein «Website» ist. Auf Startseite
+ausser dem Einstiegsangebot, wenn der Baustein «Website» ist. Bausteine ohne
+Text erscheinen nicht (heute Google Ads). Auf Startseite
 und Kategorieseiten die lange Fassung mit allen sechs Bausteinen.
 
 ## Startseite (app/(site)/page.tsx)

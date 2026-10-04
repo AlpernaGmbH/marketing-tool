@@ -26,7 +26,7 @@ Stand: 04.10.2026. **Etappe 1b ist fertig und deployt** (hinter Vercel-Login, no
 
 | Was | Stand |
 |---|---|
-| Repo | `AlpernaGmbH/marketing-tool`, privat, Branch `main`. `AlpernaGmbH` ist ein **persönlicher GitHub-Account**, keine Organisation. Der Name weicht vom Plan ab (`marketing-tools` mit s). |
+| Repo | `AlpernaGmbH/marketing-tool`, **öffentlich** (am 04.10.2026 geprüft; geplant war privat), Branch `main`. `AlpernaGmbH` ist ein **persönlicher GitHub-Account**, keine Organisation. Der Name weicht vom Plan ab (`marketing-tools` mit s). |
 | Vercel | Projekt `marketing-tool` (Team `alpernatoolv1`, Hobby), mit dem Repo verknüpft, Auto-Deploy aus `main`, Region `fra1`. `*.vercel.app` ist durch Vercel-Login geschützt (nicht öffentlich, nicht indexierbar). |
 | Vercel-Variablen | Gesetzt: `GATE_SECRET` (neu erzeugt, sensitiv), `N8N_WEBHOOK_URL` (sensitiv), `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_ERSTGESPRAECH_URL` (Calendly «Kennenlern-Gespräch»). |
 | n8n | Workflow **«Tools-Lead»** (`BC48H0mAidcbY4zH`) ist aktiv: Webhook → Notion-Eintrag → Mail an `kontakt@alperna.ch` → Antwort 200. Echter Testlauf bestanden (Eintrag mit allen Feldern, Mail). Der Testeintrag steht in Notion mit Status «Verloren» und kann gelöscht werden. Der Webhook-Pfad ist ein langer Zufallspfad (Secret). |
@@ -36,16 +36,15 @@ Stand: 04.10.2026. **Etappe 1b ist fertig und deployt** (hinter Vercel-Login, no
 
 | Was | Stand |
 |---|---|
-| **Entscheid Zugang** | IP-Gate oder E-Mail-Bestätigung (Entwurf «Zugang v2» in PLAN.md). Blockiert Etappe 2, nicht Etappe 1c. |
-| Upstash Redis | Lässt sich nicht per Schnittstelle anlegen (Marketplace verlangt Zustimmung im Dashboard). Weg: vercel.com/alpernatoolv1/marketing-tool/stores → «Create Database» → Upstash (Redis) → Region EU → Free → mit Projekt `marketing-tool` verbinden. Wird in jedem Fall gebraucht (Zähler, Kontingente, Zwischenspeicher, bei Konten auch die Konten). |
-| Gemini-Schlüssel | Fehlt. Für Etappe 2. Empfehlung: bezahlter Schlüssel mit Tageslimit statt Free Tier (siehe PLAN.md, Kosten). |
-| Google-Cloud-Schlüssel | Fehlt. Für Places API (Google-Profil) und PageSpeed. Braucht ein Konto mit Zahlungsmittel; Gratisgrenzen siehe PLAN.md. Ohne ihn meldet der Check beim Google-Profil «nicht prüfbar». |
-| `content/pitch/bausteine.md` | **Entwurf aus alperna.ch** liegt da: Website, Social Media und Google Ads (Text) sowie Beweise für Website und Social Media sind belegt. Offen: Einstiegsangebot, Google-Profil (Beweis), Online-Shop, Buchungstool, Google Ads (Beweis). Fragen unten. |
+| **Upstash Redis** | Die Integration `redis` ist im Vercel-Team installiert (04.10.2026, 06:47 UTC), aber **keinem Projekt zugewiesen**. Im Projekt `marketing-tool` gibt es keine Variablen `UPSTASH_REDIS_REST_URL`/`_TOKEN` (oder `KV_REST_API_*`). Zu tun: Vercel → Projekt → Storage → die Datenbank öffnen → «Connect Project» → `marketing-tool`, alle Umgebungen. Danach neu deployen (läuft mit jedem Push). Zu prüfen: Es muss «Upstash for Redis» sein (REST-Schnittstelle), nicht «Redis» von Redis Inc. (das liefert `REDIS_URL` über TCP; der Integrations-Name heisst auffällig `redis`). |
+| Zugang v2, Etappe 2 | Entschieden (PLAN.md). Offen sind die Zugangsdaten: Google OAuth (Login) und E-Mail-Versand über n8n. |
+| KI-Anbieter (gratis) | Entschieden: nur Gratis-Anbieter (PLAN.md, «KI ohne Kosten»). Für Etappe 2 nötig: Cloudflare-Konto mit API-Token für Workers AI, Groq-Konto mit API-Key; optional OpenRouter und Gemini. |
+| Google Cloud | Nur für «Mit Google anmelden» (OAuth, kostenlos) in Etappe 2. Der Places-Schlüssel für das Google-Profil ist optional (Etappe 3, braucht Zahlungsmittel). |
+| `content/pitch/bausteine.md` | Gefüllt aus COMPANY-MASTER und alperna.ch: Website (mit Einstiegsangebot), Google-Profil (Text), Social Media, Online-Shop und Buchungstool (Text). Offen: Beweise für Google-Profil, Online-Shop, Buchungstool; Google Ads bleibt ohne Text (COMPANY-MASTER 3.9). |
 | `specs/digitaler-auftritt-check.md` | Gilt nur noch für den Fragebogen-Check und wird mit Etappe 1c ersetzt. |
 | Rechtsabsatz in den Seitentexten | `content/site/marketing-schweiz.md` (UWG, revDSG, PBV) und `content/site/schweiz.md` stammen von mir. Nach Regel 8 muss ein Mensch gegenlesen, bevor die Seite öffentlich wird. |
 | Texte mit «ohne Konto» | `content/site/*.md`, TrustLine und CLAUDE.md sagen «kein Konto». Ändern, falls Zugang v2 kommt. |
-| Logo | Nachgezeichnete Bildmarke von alperna.ch. Original-SVG liefern, dann ersetzen (`assets/brand/`). |
-| Notion-Testeintrag | In «Tools-Leads (tools.alperna.ch)», Seite «Test …» mit Status «Verloren»: https://www.notion.so/3ee6be186e9b81d69bb2cad258b0f6d1 (Seite öffnen, oben rechts «…» → Löschen). |
+| Logo | Nachzeichnung der Original-PNG (liegt in `assets/brand/`). Ein Vektor-Original ersetzt sie. |
 | n8n-Workflow «Tools-Lead-Queue» | Fehlt noch (stündlich `lead_queue` aus Redis leeren). Braucht Upstash. |
 | Altes Repo | `AlpernaGmbH/alperna-website-v2` enthält den alten Stand. Kann archiviert werden. |
 | DNS `tools.alperna.ch` | Ganz am Schluss (Entscheid vom 04.10.2026): CNAME `tools` → `cname.vercel-dns.com`, Domain im Vercel-Projekt eintragen. |
@@ -53,15 +52,14 @@ Stand: 04.10.2026. **Etappe 1b ist fertig und deployt** (hinter Vercel-Login, no
 
 Erledigt am 04.10.2026: `NEXT_PUBLIC_WHATSAPP_NUMBER` in Vercel gesetzt (Production, Preview, Development); der Knopf «Kurz schreiben» erscheint mit dem nächsten Build. Branding v3.
 
-### Fragen an Alperna (für bausteine.md)
+### Offene Fragen an Alperna
 
-1. Was genau kostet **CHF 180** auf alperna.ch («Digitaler Auftritt aus einer Hand, Einstieg ab CHF 180»)? Welche Leistung, einmalig oder monatlich? Das wird der Satz im Feld `einstiegsangebot` und erscheint nur beim Baustein «Website».
-2. **Google-Profil:** Gibt es einen belegbaren Fall (Betrieb, was vorher/nachher, in welcher Zeit)? Sonst bleibt das Feld leer.
-3. **Online-Shop:** Baut Alperna Shops? Wenn ja: welches System (Shopify, WooCommerce) und ein Beispiel. Wenn nein, streichen wir den Baustein.
-4. **Buchungstool:** Richtet Alperna Buchungssysteme ein (Calendly, Reservierung)? Welches, welches Beispiel? Sonst streichen.
-5. **Google Ads:** Ein Beispiel mit Zahl und Zeitraum (zum Beispiel Kosten pro Anfrage). Die Texte auf alperna.ch nennen keinen.
-6. Sind die Projektzahlen von alperna.ch (BC Trogen Speicher, Regina Massagen) für die Verwendung auf tools.alperna.ch freigegeben?
-7. **Agentur-Tool:** Darf Etappe 1c die Analyse-Engine aus `AlpernaGmbH/tool` (`lib/marketing-check/analyzer.mjs`) kopieren? Ich habe das Repo lesend eingebunden und nichts verändert.
+1. **Repo öffentlich:** `marketing-tool` ist auf GitHub öffentlich. Es liegen keine Geheimnisse darin (geprüft: kein `GATE_SECRET`, kein Webhook-Pfad im Verlauf). Trotzdem Empfehlung: privat stellen (GitHub → Settings → Danger Zone → Change visibility), weil STATUS.md und die Pitch-Texte Interna enthalten. Vercel deployt auch aus privaten Repos.
+2. **Partnerzahl:** COMPANY-MASTER nennt 17 (2.2) und 21 (8.2), alperna.ch nennt 28. Welche gilt? Bis dahin steht keine Partnerzahl auf den Seiten.
+3. **«Einstieg ab CHF 180» auf alperna.ch:** Laut COMPANY-MASTER ist das der Einzelbeitrag, der Einstieg ist die Website (rund CHF 1'000.-). Gewollt so, oder soll die Website-Seite angepasst werden?
+4. **Beweise** für Google-Profil, Online-Shop und Buchungstool: gibt es belegbare Fälle? Sonst bleiben die Felder leer.
+5. **Agentur-Tool:** Der Lead «Alperna GmbH» aus meiner Probe (siehe Entscheid 28) ist noch zu löschen.
+6. **Gedankenstrich:** ANTI-PATTERNS verbietet «—». Den Halbgeviertstrich « – » (in Titeln wie «Marketing in der Schweiz – was anders ist») habe ich stehen lassen. Soll er auch weg?
 
 ## Entscheide (Abweichungen vom Plan und Auslegungen)
 
@@ -88,6 +86,11 @@ Erledigt am 04.10.2026: `NEXT_PUBLIC_WHATSAPP_NUMBER` in Vercel gesetzt (Product
 28. **Nebenwirkung meiner Probe im Agentur-Tool:** Ich habe die öffentliche Analyse-Schnittstelle (`alperna-tool.vercel.app/api/website/analyze`) einmal mit `alperna.ch` aufgerufen, um das Ergebnisformat zu sehen. Laut Code (`lib/marketing-check/leads.ts`) legt jeder erfolgreiche Check dort eine Firma mit Status «Lead» an (oder ergänzt eine passende Firma mit gleicher Domain oder gleichem Namen) und speichert Ergebnis und Timeline-Notiz. Mein Aufruf hat also vermutlich eine Firma «Alperna GmbH» (Quelle Website-Check, Zeit 04.10.2026, 05:47 UTC) erzeugt oder ergänzt. **Bitte im Agentur-Tool prüfen und löschen.** Ich hätte vorher fragen sollen. Für den Marketing-Check hier gilt: Ein Check speichert keine Firma und keinen Lead, solange niemand eingewilligt hat.
 29. **Branding:** «weisser Hintergrund» ausgelegt als Papier `#F3F1EC` für die Seite und `#FFFDF8` für Karten (die neue Website nutzt Papier). Wenn reines Weiss gemeint war, ist es eine Zeile in `app/globals.css` (`--page`).
 30. **Performance nach dem Redesign:** Der Startbildschirm der Tools baut die Einleitung beim Hydrieren nicht mehr neu auf (sonst verschiebt sich der LCP), Mono- und Serif-Schrift werden nicht vorgeladen, Geist 600 entfällt (Titel sind 500).
+
+31. **Zugang v2 entschieden (04.10.2026):** ein freier Durchlauf, danach Konto-Fenster mit Google u. a. Das Lead-Formular entfällt in Etappe 2; die Einwilligung bleibt als Häkchen. Apple nur, wenn Alperna das Entwicklerkonto zahlt. Einzelheiten in PLAN.md.
+32. **KI nur gratis (04.10.2026):** Fakten und Massnahmen ohne KI, KI nur für Angemeldete, Zwischenspeicher, mehrere Gratis-Anbieter, Tageslimit. Rechnung und Quellen in PLAN.md. Gemini ist kein Fundament mehr.
+33. **Alperna-Dokumente als Wahrheitsquelle (04.10.2026):** COMPANY-MASTER, BRAND-VOICE-CORE und ANTI-PATTERNS liegen nur bei Alperna (sie enthalten interne Finanzzahlen). Im Repo steht der Auszug `docs/MARKE.md`; die Sperrliste läuft als Code in `lib/brand-rules.ts` (41 Tests) und prüft Seitentexte und Pitch-Bausteine bei jedem `content-check`. Folgen: Die Texte «Warum kostenlos» und die Antwort «Wer steckt dahinter» sind neu geschrieben («Agentur» fällt weg). **Mein Entwurf von gestern liess Google Ads aktiv anbieten; das widersprach COMPANY-MASTER 3.9** und ist entfernt. Das geplante Werkzeug «customer-journey» heisst «kundenweg», weil «Customer Journey» auf der Sperrliste steht.
+34. **Logo (04.10.2026):** neu nachgezeichnet aus der Original-PNG von Alperna statt aus der Framer-Version (sauberere Kanten, Gold exakt `#FFD700`).
 
 ## Neue Abhängigkeiten (Begründung)
 

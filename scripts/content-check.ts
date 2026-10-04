@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { CONTENT_DIR, readToolContent, toolContentPath } from "@/lib/content";
+import { brandHits } from "@/lib/brand-rules";
 import { checkToolContent, type Issue } from "@/lib/content-rules";
 import { loadBausteine } from "@/lib/pitch";
 import { getTools } from "@/lib/registry";
@@ -87,6 +88,22 @@ if (!bausteine) {
     "pitch",
     bausteine.issues.map((m) => ({ level: "error" as const, code: "bausteine", message: m })),
   );
+  // Sperrliste aus ANTI-PATTERNS.md auch auf die Pitch-Texte anwenden (nur ausgefüllte Felder).
+  const pitchTexts: [string, string][] = [
+    ["einstiegsangebot", bausteine.einstiegsangebot],
+    ...bausteine.items.flatMap((b): [string, string][] => [[`${b.name}.text`, b.text], [`${b.name}.beweis`, b.beweis]]),
+  ];
+  for (const [field, text] of pitchTexts) {
+    if (!text || /^todo\b/i.test(text.trim())) continue;
+    report(
+      "pitch",
+      brandHits(text).map((h) => ({
+        level: h.level === "hart" ? ("error" as const) : ("warn" as const),
+        code: "voice",
+        message: `bausteine.md, ${field}: ${h.what} («${h.text}»)`,
+      })),
+    );
+  }
   if (bausteine.open.length > 0) {
     report("pitch", [
       {

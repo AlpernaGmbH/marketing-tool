@@ -37,7 +37,7 @@ Klasse C bleibt bewusst einfach: Diese Seiten bringen Suchverkehr (WhatsApp-Link
 | linkedin-profil | B | LinkedIn lässt sich nicht crawlen. Besucher fügt Profiltext ein, KI bewertet nach Raster |
 | engagement-rate | C | Instagram und TikTok lassen sich nicht auslesen: Besucher tippt Zahlen ein |
 | ideen-aus-website | A | war schon Etappe 8; wird früh gebaut, weil es die Website-Import-Funktion testet |
-| icp-builder, persona, nutzenversprechen, markenplattform, botschaften, swot, kampagnen-planer, kpi-baum, customer-journey, strategie-einseiter | B | Entwurf aus Profil und Check-Ergebnis; Besucher bestätigt oder korrigiert statt bei null zu beginnen |
+| icp-builder, persona, nutzenversprechen, markenplattform, botschaften, swot, kampagnen-planer, kpi-baum, kundenweg (heisst im Bauplan «customer-journey»; der Begriff steht auf der Sperrliste), strategie-einseiter | B | Entwurf aus Profil und Check-Ergebnis; Besucher bestätigt oder korrigiert statt bei null zu beginnen |
 | content-saeulen, content-ideen, caption-baukasten, story-post, medienmitteilung, content-strategie | B | KI-Entwurf in der Tonalität der Website des Besuchers |
 | bewertungsantwort, post-generator | B | wie im Bauplan (Etappe 8) |
 | zielgruppen-segmente, kanalstrategie, budget-planer, angebotsarchitektur, marktpotenzial | C | wie im Bauplan; Daten nur mit Quelle |
@@ -51,7 +51,7 @@ Klasse C bleibt bewusst einfach: Diese Seiten bringen Suchverkehr (WhatsApp-Link
 2. **Ablauf in Schritten statt einem langen Aufruf:** Website laden, SEO und Technik, Google-Profil, Social-Verknüpfung, Tracking/Newsletter/Shop/Buchung, Bewertung. Jeder Schritt ist ein eigener Request, der Fortschritt im Browser ist echt (die Vorlage zeigt eine erfundene Prozentkurve). Vercel Hobby erlaubt bis 300 s je Aufruf (Quelle: vercel.com/docs/functions/limitations); die Schritte bleiben trotzdem kurz.
 3. **Zwischenspeicher:** Ergebnis je Domain 24 Stunden in Redis. Mehrfach geprüfte Adressen kosten nichts.
 4. **Quellen:** eigener Abruf der Seite; PageSpeed-Schnittstelle (optional); Google Places API (New) für das Profil; Social-Kanäle nur über Links auf der Website und öffentliche Meta-Daten, kein Scraping von Instagram, LinkedIn oder TikTok.
-5. **KI-Schicht** (`/api/ai`, Gemini): bekommt nur das Fakten-JSON. Ausgabe: Zusammenfassung und Massnahmen, jede mit Verweis auf mindestens eine Fakt-ID. Eine Prüfung verwirft Massnahmen ohne Verweis und Texte mit Zahlen, die nicht in den Fakten stehen. Danach `typoCH`. Fällt die KI aus, bleibt das Fakten-Ergebnis stehen.
+5. **KI-Schicht** (`/api/ai`, nur Gratis-Anbieter, siehe «KI ohne Kosten»): bekommt nur das Fakten-JSON. Ausgabe: Zusammenfassung und Massnahmen, jede mit Verweis auf mindestens eine Fakt-ID. Eine Prüfung verwirft Massnahmen ohne Verweis und Texte mit Zahlen, die nicht in den Fakten stehen. Danach `typoCH`. Fällt die KI aus, bleibt das Fakten-Ergebnis stehen.
 6. **Profil-Autofill:** Ein Check schreibt Branche, Ort, Kanäle und Tonalitäts-Hinweise ins Firmenprofil. Alle weiteren Tools starten vorbefüllt (Regel 10).
 7. **Schutz:** Zugriffe auf private Adressen blocken (in der Engine vorhanden), Grösse und Zeit begrenzen, Rate-Limit über Upstash statt im Arbeitsspeicher (Serverless teilt keinen Speicher), robots.txt bei Fremdseiten (Wettbewerb) beachten, Kennung im User-Agent.
 
@@ -60,7 +60,7 @@ Klasse C bleibt bewusst einfach: Diese Seiten bringen Suchverkehr (WhatsApp-Link
 | Etappe | Inhalt | Voraussetzung |
 |---|---|---|
 | **1c** | Marketing-Check mit Crawler (Engine-Port, Schritte, Zwischenspeicher, Ergebnisansicht im neuen Design, Export PDF/Word). Ersetzt den Fragebogen. Profil-Autofill. Ohne KI. | Zugriff auf `AlpernaGmbH/tool` (ist da); optional Places-Schlüssel |
-| **2** | Zugang v2 (siehe unten), `/api/ai` mit Gemini, KI-Auswertung im Marketing-Check, Tageskontingente | Entscheid Konto, Gemini-Schlüssel, Upstash |
+| **2** | Zugang v2 (Konto per Google u. a., siehe unten), `/api/ai` mit Gratis-Anbietern, KI-Auswertung im Marketing-Check, Tageskontingente | Upstash verbunden, Google-Login-Daten, Cloudflare- und Groq-Schlüssel |
 | **3** | Klasse A: gbp-check, wettbewerbsvergleich, newsletter-check, textcheck, reifegrad-check, ideen-aus-website | Places-Schlüssel |
 | **4** | Klasse B Strategie und Marke: icp-builder, persona, positionierung, markenplattform, botschaften, nutzenversprechen, swot, strategie-einseiter | Etappe 2 |
 | **5** | Klasse C und Rechts-Tools: whatsapp-link, qr-set, bewertungs-kit, Feiertage, Budget, Kalender, Impressum, Datenschutz, Gewinnspiel, UWG-Mailcheck | `content/legal/` von Menschen |
@@ -69,31 +69,51 @@ Klasse C bleibt bewusst einfach: Diese Seiten bringen Suchverkehr (WhatsApp-Link
 
 Reihenfolge neu: **Analyse zuerst.** Sie zeigt, was Alperna kann, liefert das Profil für alle Generatoren und ist der stärkste Einstieg für Leads. Die Strategie-Werkstatt (alt Etappe 2 und 3) folgt danach und baut auf dem Profil auf.
 
-## Zugang v2: Entwurf, wartet auf Entscheid
+## Zugang v2 (entschieden am 04.10.2026)
 
-**Befund.** IP-Hash plus Cookie ist als Schranke schwach und zugleich ungerecht. Der Bauplan nennt die Grenzen selbst: Büro- und Mobilfunk-IPs teilen sich den freien Durchlauf, und wer Browser oder Netz wechselt, bekommt einen neuen. Für Werkzeuge ohne Kosten ist das tragbar. Bei Crawling und KI kostet jeder Aufruf Geld und Rechenzeit, und die Sperre lässt sich mit einem Browserwechsel umgehen.
+**Entscheid von Alperna:** Ein Durchlauf pro Werkzeug ist frei. Danach erscheint ein Fenster, in dem man kurz ein Konto erstellt, mit Google, Apple und weiteren Anbietern.
 
-**Vorschlag: Hybrid mit E-Mail-Bestätigung, ohne Passwort.**
+- Erster Durchlauf: frei, ohne Konto. IP-Hash und Cookie bleiben als Komfort-Schranke, nicht als Sicherheit (bekannte Lücken: gemeinsame Büro- und Mobilfunk-IPs, Browserwechsel).
+- Danach das Konto-Fenster statt des heutigen Formulars. Mit Konto: alle Werkzeuge und Downloads, Kontingente pro Person, Freischaltung auf allen Geräten.
+- Lead: Name und E-Mail kommen vom Anbieter. Das Häkchen «Alperna darf mich zu meinem Ergebnis kontaktieren» bleibt im Fenster, weil eine Anmeldung keine Einwilligung zur Kontaktaufnahme ist (revDSG). Firma und Telefon sind freiwillig. Der Lead geht wie bisher über n8n ins CRM.
+- Das Firmenprofil bleibt im Browser (Regel 1). Serverseitig liegen nur Konto-Kennung, Freischaltung und Kontingente in Redis.
+- **Anbieter, in dieser Reihenfolge:** Google (kostenlos, braucht einen OAuth-Zugang in der Google Cloud, kein Zahlungsmittel), E-Mail-Link für alle ohne Google (Versand über n8n und Gmail), danach Microsoft und LinkedIn (kostenlos). **Apple** ist möglich, kostet aber ein Entwicklerkonto (Apple Developer Program, nach meinem Wissen USD 99 pro Jahr; vor dem Kauf prüfen). Vorschlag: zuerst ohne Apple starten.
+- **Bibliothek:** Wahl am Anfang von Etappe 2 nach kurzer Prüfung (Kandidaten Better Auth, Auth.js, Supabase Auth, Clerk). Kriterien: kostenlos, Social-Login, Sitzung ohne eigene Datenbank oder mit Upstash.
+- **Texte:** «kein Konto nötig» in TrustLine, Seitentexten und CLAUDE.md wird mit Etappe 2 angepasst, ebenso die Datenschutzerklärung (E-Mail wird gespeichert, Löschfunktion nötig).
+- **Risiko:** Jede Hürde nach dem ersten Durchlauf senkt die Zahl der Leads. Wie stark, ist eine Vermutung; messbar erst nach dem Start.
 
-- Der erste Durchlauf bleibt frei und ohne Konto (Einstieg über Suchmaschinen).
-- Wer weitermacht, bestätigt seine E-Mail mit einem Link oder Code. Das ersetzt das heutige Formular und macht den Lead echt (heute genügt «a@b.ch»).
-- Mit bestätigter E-Mail: alle Werkzeuge, Downloads, Tageskontingente pro Person, Freischaltung auf allen Geräten.
-- KI- und Crawl-Werkzeuge nur mit bestätigter E-Mail, Kontingent pro Person und global.
-- Die IP bleibt als Rate-Limit gegen Missbrauch, nicht als Tür.
-- Das Firmenprofil bleibt im Browser (Regel 1). «Im Konto speichern» wäre eine spätere, freiwillige Funktion.
+## KI ohne Kosten (entschieden am 04.10.2026)
 
-**Technik.** Magic-Link als signiertes Token (HMAC, 15 Minuten), Sitzung als signiertes Cookie, Konten und Kontingente in Upstash Redis, Versand der Mail über n8n und Gmail (vorhanden, kein neuer Anbieter). Supabase wäre die Alternative, wenn gespeicherte Ergebnisse und Verlauf wichtig werden; es kostet einen weiteren Dienst, eine Datenbank und eigenen SMTP.
+**Entscheid von Alperna:** Bezahlte KI kommt nicht in Frage, es braucht Gratis-Lösungen.
 
-**Folgen.** CLAUDE.md (Zugangsmodell, «kein Login»), Datenschutzerklärung (E-Mail wird serverseitig gespeichert, Löschfunktion nötig), Texte mit «ohne Konto» und «kein Konto nötig», TrustLine.
+**Ehrliche Grenze [Sicher]:** Gratis-Kontingente sind klein und können sich ändern. Wird die Seite erfolgreich, kippt die KI zuerst. Darum gelten fünf Regeln:
 
-**Risiko.** Jede Hürde vor dem zweiten Werkzeug senkt die Zahl der Leads. Wie stark, ist eine Vermutung; messbar erst nach dem Start (Umami: Anteil, der das Formular schliesst).
+1. Die Fakten und die Massnahmen-Liste des Checks entstehen **ohne KI** (Crawler plus Regeln). Die KI formuliert nur Zusammenfassung und Einordnung. Fällt sie aus, bleibt alles Wesentliche stehen.
+2. KI nur für angemeldete Personen, nie für den freien ersten Durchlauf.
+3. Ergebnisse je Domain 24 Stunden zwischenspeichern (Redis).
+4. Mehrere Anbieter hintereinander (siehe Tabelle) und ein globales Tageslimit. Ist es erreicht, steht dort «Heute ist das Kontingent aufgebraucht» mit WhatsApp-Knopf.
+5. Kurze Eingaben: nur das Fakten-JSON, ungefähr 3'000 Tokens statt 8'000.
 
-## Kosten pro Aufruf (Stand 04.10.2026, mit Quelle)
+**Gratis-Anbieter, Stand 04.10.2026** (Annahme für die Rechnung: 8'000 Tokens Eingabe und 2'000 Tokens Ausgabe je Auswertung):
 
-- Gemini 2.5 Flash, bezahlt: USD 0.30 je Million Eingabe-Tokens und USD 2.50 je Million Ausgabe-Tokens (Quelle: ai.google.dev/gemini-api/docs/pricing). Ein Check mit 8'000 Tokens Eingabe und 2'000 Tokens Ausgabe kostet nach dieser Rechnung rund USD 0.007.
-- Gemini Free Tier: kein Fundament. Ein Forum-Beitrag meldet eine Kürzung auf 20 Anfragen pro Tag; offiziell bestätigt habe ich das nicht. Die offizielle Seite nennt keine Zahl im Auszug.
-- Places API (New): Gratisgrenze pro Monat je Abfrageart, zum Beispiel 5'000 für Text Search Pro und 10'000 für Place Details Essentials; darüber USD 17 bis 32 je 1'000 Aufrufe (Quelle: developers.google.com/maps/billing-and-pricing/pricing). Ein Google-Cloud-Konto mit Zahlungsmittel ist nötig.
+| Anbieter | Gratis-Grenze | Auswertungen pro Tag | Quelle |
+|---|---|---|---|
+| Cloudflare Workers AI | 10'000 Neurons pro Tag | rund 97 mit Llama 3.1 8B, 78 mit Gemma 4 26B, 50 mit gpt-oss-20b, 25 mit gpt-oss-120b, 16 mit Llama 3.3 70B | developers.cloudflare.com/workers-ai/platform/pricing |
+| Groq | Basislimit 1'000 Anfragen und 200'000 Tokens pro Tag, 8'000 Tokens pro Minute (gpt-oss, Qwen) | rund 20 | console.groq.com/docs/rate-limits |
+| OpenRouter, Modelle mit «:free» | 20 pro Minute, 50 pro Tag (1'000 pro Tag nach einmaligem Kauf von Guthaben im Wert von 10 Dollar) | bis 50 | openrouter.ai/docs/api-reference/limits |
+| Gemini (Google AI Studio) | Gratis-Stufe vorhanden, Zahlen stehen auf der offiziellen Seite nur im Konto | unklar | ai.google.dev/gemini-api/docs/rate-limits |
+
+Zusammen sind das **rund 100 bis 170 Auswertungen pro Tag**, wenn alle Anbieter laufen [Wahrscheinlich]. Für den Start reicht das. Kleinere Modelle schreiben schwächeres Deutsch; welches Modell die Texte trägt, entscheidet ein Test mit echten Checks in Etappe 2.
+
+**Datenschutz:** Die Fakten (öffentliche Seiteninhalte, keine Angaben zur Person) gehen an US-Anbieter. Das gehört in die Datenschutzerklärung.
+
+## Wofür die Google Cloud gebraucht wird
+
+Du brauchst sie **nicht für die KI**. Es sind zwei andere Dinge:
+
+1. **«Mit Google anmelden»** (Etappe 2): ein OAuth-Zugang. Kostenlos, kein Zahlungsmittel nötig. Das ist der Grund, warum jetzt eines gebraucht wird.
+2. **Google-Profil prüfen** im Marketing-Check (Etappe 3, optional): Places API. Dafür braucht es ein Zahlungsmittel im Konto; pro Monat gibt es Gratis-Kontingente (zum Beispiel 5'000 Textsuchen und 10'000 Detailabfragen, darüber USD 17 bis 32 je 1'000 Aufrufe; Quelle: developers.google.com/maps/billing-and-pricing/pricing). Ohne diesen Schlüssel meldet der Check beim Google-Profil «nicht prüfbar».
 
 ## Nächster Schritt
 
-Etappe 1c, sobald der Zugriff auf die Engine bestätigt ist (er ist es) und du die offenen Fragen in STATUS.md beantwortet hast. Der Zugang v2 wird erst gebaut, wenn du den Entwurf bestätigst.
+Etappe 1c läuft: Marketing-Check mit Crawler, ohne KI und ohne Konto. Zugang v2 und KI folgen in Etappe 2.

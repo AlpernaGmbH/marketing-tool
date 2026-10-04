@@ -1,8 +1,8 @@
 ---
 title: "Warum diese Werkzeuge kostenlos sind"
 ---
-Diese Werkzeuge sind kostenlos, weil wir finden, dass Marketing in der Schweiz verständlicher werden darf. Wer seine Zielgruppe kennt, sein Angebot klar benennen kann und weiss, wo er gefunden wird, trifft bessere Entscheidungen. Das gilt für den Malerbetrieb in Gossau genauso wie für den Verein im Appenzellerland. Du bekommst Werkzeuge, die du direkt nutzen kannst, ohne Konto und ohne Vertrag.
+Wir sind Alperna, dein Partner für den digitalen Auftritt in der Ostschweiz. Diese Werkzeuge sind unser Schaufenster: Du siehst, wie wir arbeiten, und kannst es selbst ausprobieren, ohne etwas zu bezahlen. Das gilt für den Malerbetrieb in Gossau genauso wie für den Verein im Appenzellerland.
 
-Wir sind eine Agentur aus Speicher. Unsere Erfahrung ist, dass jemand, der sein Marketing versteht, besser mit einer Agentur zusammenarbeitet. Er stellt die richtigen Fragen, gibt klare Aufträge und erkennt gute Arbeit. Und wer manches selbst erledigen kann, soll es selbst erledigen. Dafür sind diese Werkzeuge gedacht.
+Wir sind frisch gegründet und studieren beide BWL mit Marketing-Fokus. Deshalb sind unsere Preise fair. Bei null fangen wir trotzdem nicht an: Wir haben über 25'000 Beiträge für unsere Partner erstellt (Quelle: alperna.ch). Wer sein Marketing versteht, arbeitet am Ende auch besser mit uns zusammen. Und was du selbst erledigen kannst, sollst du selbst erledigen.
 
-Dein erstes Ergebnis ist ohne Formular frei. Für Dateien und weitere Werkzeuge bitten wir um Name, Firma und E-Mail, damit wir uns persönlich melden können, falls du Fragen hast. Wenn du etwas lieber abgibst, findest du am Ende jeder Seite einen Weg zu uns. Die Werkzeuge funktionieren auch, wenn du nie mit uns sprichst.
+Dein erstes Ergebnis ist frei. Für Dateien und weitere Werkzeuge bitten wir um ein paar Angaben zu dir und deiner Firma, damit wir uns melden können, falls du Fragen hast. Wenn du etwas lieber abgibst, findest du am Ende jeder Seite einen Weg zu uns. Die Werkzeuge funktionieren auch, wenn du nie mit uns sprichst.

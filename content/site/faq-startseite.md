@@ -14,7 +14,7 @@ Was du in einem Werkzeug eingibst, bleibt in deinem Browser. Nur die Angaben im 
 Dein Firmenprofil liegt nur in deinem Browser. Es verbindet die Werkzeuge miteinander, damit du Angaben nicht mehrfach eingeben musst. Auf der Seite «Mein Profil» kannst du es ansehen, bearbeiten, als Datei sichern, wieder laden und löschen. Wechselst du den Browser oder das Gerät, nimmst du es als Datei mit.
 
 ### Wer steckt dahinter?
-Die Werkzeuge stammen von der Alperna GmbH aus Speicher im Kanton Appenzell Ausserrhoden. Wir sind eine Agentur für Websites, Google Business Profile, Social Media, Online-Shops, Buchungstools und Google Ads. Mehr über uns findest du auf der Seite «Über diese Werkzeuge».
+Die Werkzeuge stammen von der Alperna GmbH aus Speicher im Kanton Appenzell Ausserrhoden. Wir sind Partner für den digitalen Auftritt von Ostschweizer KMU: Website, Google-Profil, Social Media, Online-Shop und Buchungstool. Mehr über uns findest du auf der Seite «Über diese Werkzeuge».
 
 ### Sind die Werkzeuge auch für Vereine geeignet?
 Ja. Vereine haben eine eigene Karte auf der Startseite und eine eigene Kategorie. Die Begriffe passen sich an, es geht dann um Mitglieder statt Kunden und um den Vorstand statt die Geschäftsleitung. Für den Anfang eignen sich die Werkzeuge der Kategorie «Für Vereine».

@@ -1,3 +1,4 @@
+import { brandHits } from "@/lib/brand-rules";
 import { SECTION_ORDER, SECTION_TITLES, type ParsedToolContent } from "@/lib/content";
 import { BAUSTEIN_NAMES } from "@/lib/pitch";
 
@@ -54,6 +55,11 @@ export function styleIssues(body: string): Issue[] {
       const line = body.slice(0, m.index).split("\n").length;
       out.push(err("style", `${what} (Textzeile ${line}: «${m[0]}»)`));
     }
+  }
+  // Sperrliste aus ANTI-PATTERNS.md und BRAND-VOICE-CORE.md
+  for (const h of brandHits(body)) {
+    const message = `Alperna-Voice: ${h.what} (Textzeile ${h.line}: «${h.text}»)`;
+    out.push(h.level === "hart" ? err("voice", message) : warn("voice-soft", message));
   }
   return out;
 }
