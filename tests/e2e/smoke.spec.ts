@@ -984,6 +984,163 @@ test.describe("Welle 2a im Browser (Strategie-Generatoren)", () => {
   });
 });
 
+test.describe("Welle 2b im Browser (Strategie-Generatoren II)", () => {
+  const SEITE = {
+    url: "https://malerei-keller.ch/",
+    host: "malerei-keller.ch",
+    title: "Malerei Keller Gossau",
+    description: "Maler in Gossau",
+    headings: ["Fassaden", "Innenräume"],
+    text: "Wir streichen Fassaden und Innenräume in Gossau und Umgebung. Für Hausbesitzer in der Region. Referenzen auf Anfrage. Wir sind Ihr Partner für alles rund ums Haus.",
+    truncated: false,
+  };
+  const POSITIONIERUNG = {
+    kernsatz: "Malerei Keller streicht Fassaden für Hausbesitzer in Gossau und erklärt die Farbwahl vor Ort.",
+    fuerWen: "Eigentümer älterer Einfamilienhäuser in Gossau und den Nachbargemeinden.",
+    wasAnders: "Beratung vor Ort mit Farbmustern am Haus, eine Offerte ohne Nachträge und ein Termin, der eingehalten wird.",
+    beweise: ["[Zahl der Fassaden seit der Gründung]", "Referenzen auf Anfrage, wie die Website sagt."],
+    varianten: [
+      { stil: "kurz", satz: "Fassaden in Gossau, beraten am Haus, gestrichen zum Termin." },
+      { stil: "konkret", satz: "Wir streichen Fassaden von Einfamilienhäusern in Gossau und zeigen die Farbe vorher am Haus." },
+      { stil: "persoenlich", satz: "Du bekommst eine Fassade, die hält, und eine Beratung, die du verstehst." },
+    ],
+    streichen: ["Ihr Partner für alles rund ums Haus", "Umgebung"],
+    naechsterSchritt: "Setz den Kernsatz als erste Zeile auf die Startseite und nenne Gossau im Titel.",
+  };
+  const BOTSCHAFTEN = {
+    hauptbotschaft: "Malerei Keller hält, was die Offerte verspricht: Termin, Preis und eine Fassade, die lange hält.",
+    botschaften: [
+      { fuer: "Hausbesitzer in Gossau", satz: "Du bekommst eine Offerte ohne Nachträge und einen Termin, der steht.", beleg: "Offerte und Rechnung stimmen überein." },
+      { fuer: "Verwaltungen", satz: "Wir koordinieren die Arbeiten mit den Mietenden und räumen jeden Abend auf.", beleg: "Referenzen von Liegenschaftsverwaltungen auf Anfrage." },
+      { fuer: "Nach dem Auftrag", satz: "Wir kommen nach zwei Jahren vorbei und schauen die Fassade an.", beleg: "Kontrollbesuch als Teil des Angebots." },
+    ],
+    kanaele: {
+      website: "Malerei Keller in Gossau: Fassaden und Innenräume, beraten am Haus, gestrichen zum Termin.",
+      googleProfil: "Malerei Keller streicht Fassaden und Innenräume in Gossau und Umgebung. Beratung vor Ort, Offerte ohne Nachträge, Termin, der steht.",
+      instagram: "Malerei in Gossau. Fassaden, Innenräume, Farbberatung am Haus.",
+      offerteOderMail: "Vielen Dank für dein Interesse. In der Offerte steht alles, was wir machen, mit Termin und Preis. Nachträge gibt es bei uns nicht, und wir räumen jeden Abend auf.",
+    },
+    telefonsatz: "Wir streichen Fassaden und Innenräume in Gossau, mit Beratung am Haus und einer Offerte, die hält.",
+    nichtSagen: ["Alles aus einer Hand", "Günstigster Anbieter", "Rund um die Uhr erreichbar"],
+  };
+  const MARKE = {
+    versprechen: "Malerei Keller hält Termine, erklärt die Farbwahl am Haus und hinterlässt die Baustelle sauber.",
+    werte: [
+      { name: "Verlässlichkeit", satz: "Was in der Offerte steht, gilt: Termin, Preis und Umfang." },
+      { name: "Nähe", satz: "Wir beraten am Haus in Gossau, nicht am Telefon." },
+      { name: "Sorgfalt", satz: "Jeder Abend endet mit einer aufgeräumten Baustelle." },
+    ],
+    persoenlichkeit: ["ruhig", "handfest", "verbindlich"],
+    tonalitaet: {
+      so: "Kurze Sätze, konkrete Angaben zu Dauer und Preis, Du-Form, Beispiele vom Haus statt Fachwörter.",
+      nichtSo: "Keine Superlative, keine Werbesprache, keine Fachbegriffe aus der Farbtechnik ohne Erklärung.",
+      beispielSatz: "Du bekommst die Farbmuster am Haus zu sehen, bevor wir anfangen.",
+    },
+    woerter: { verwenden: ["am Haus", "Termin", "hält", "verständlich", "sauber"], vermeiden: ["Fassadensanierung", "Premium", "Lösung", "ganzheitlich", "Rundum-sorglos"] },
+    geschichte: "Die Malerei Keller begann als Einmannbetrieb in Gossau. Weil die Kundschaft die ehrliche Beratung weiterempfahl, wuchs der Betrieb langsam, ohne Werbung. Bis heute gilt: Wir sagen, was wir machen, und machen, was wir sagen.",
+    bewertungsregeln: ["Bedank dich für die konkrete Beobachtung in der Bewertung.", "Bei Kritik: Bedauern, Gesprächsangebot, kein Rechtfertigen.", "Keine Rabatte oder Versprechen in der Antwort."],
+    heutigerTon: "Die Startseite spricht von Partnern und Rundum-Angeboten; sie sagt nicht, für wen der Betrieb da ist.",
+  };
+
+  async function stubs(page: Page, output: unknown) {
+    const calls = { read: 0, generate: 0 };
+    await page.route("**/api/read", (route) => {
+      calls.read++;
+      return route.fulfill(json({ ok: true, page: SEITE }));
+    });
+    await page.route("**/api/generate", (route) => {
+      calls.generate++;
+      return route.fulfill(json({ ok: true, output }));
+    });
+    return calls;
+  }
+
+  test("Positionierungs-Check: Website lesen, Check im Browser, Entwurf, Lead, Profil, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubs(page, POSITIONIERUNG);
+    await page.goto("/tools/positionierung");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Website", { exact: true }).fill("malerei-keller.ch");
+    await page.getByLabel("Ort", { exact: true }).fill("Gossau");
+    await page.getByLabel("Branche", { exact: true }).fill("Malerei");
+    await page.getByRole("button", { name: "Positionierung prüfen" }).click();
+    const email = await giveEmail(page);
+    const region = page.getByRole("region", { name: "Deine Positionierung" });
+    await expect(region).toBeVisible();
+    await expect(region.getByRole("meter", { name: "Positionierung auf der Startseite" })).toBeVisible();
+    await expect(region.getByRole("list", { name: "Funde nach Gruppen" }).getByRole("listitem")).toHaveCount(6);
+    await expect(region.getByRole("heading", { name: "Kernsatz" })).toBeVisible();
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls).toEqual({ read: 1, generate: 1 });
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("positionierung");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Website: malerei-keller.ch");
+    expect(lead.ausgabe).toContain("# Positionierungs-Check");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("mt:profile") ?? "")).toContain(POSITIONIERUNG.kernsatz);
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Positionierung" })).toBeVisible();
+    expect(calls).toEqual({ read: 1, generate: 1 });
+  });
+
+  test("Kernbotschaften: Angaben mit Anrede, Entwurf mit Texten je Kanal, Lead, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubs(page, BOTSCHAFTEN);
+    await page.goto("/tools/botschaften");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Branche", { exact: true }).fill("Malerei");
+    await page.getByLabel("Ort", { exact: true }).fill("Gossau");
+    await page.getByLabel("Für wen?", { exact: true }).fill("Hausbesitzer in der Region Gossau");
+    await page.getByLabel("Was bietest du an?").fill("Fassaden streichen, Innenräume renovieren, Farbberatung vor Ort.");
+    await page.getByLabel("Was soll die Kundschaft nach dem Kontakt mit dir denken?").fill("Die halten, was sie versprechen.");
+    await page.getByLabel("Anrede", { exact: true }).selectOption("du");
+    const start = page.getByRole("button", { name: "Botschaften erstellen" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Botschaften" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Texte je Kanal" }).getByRole("listitem")).toHaveCount(5);
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls).toEqual({ read: 0, generate: 1 });
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("botschaften");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Fassaden streichen");
+    expect(lead.ausgabe).toContain(BOTSCHAFTEN.hauptbotschaft);
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Botschaften" })).toBeVisible();
+    expect(calls).toEqual({ read: 0, generate: 1 });
+  });
+
+  test("Markenplattform: Angaben, Website lesen, Entwurf, Lead, Marke im Profil, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubs(page, MARKE);
+    await page.goto("/tools/markenplattform");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Branche", { exact: true }).fill("Malerei");
+    await page.getByLabel("Ort", { exact: true }).fill("Gossau");
+    await page.getByLabel("Website", { exact: true }).fill("malerei-keller.ch");
+    await page.getByLabel("Wofür steht dein Betrieb?").fill("Für Fassaden, die halten, und eine Beratung am Haus, die man versteht.");
+    await page.getByLabel("Drei Wörter, mit denen Kundschaft dich beschreiben soll").fill("verlässlich, nah, sorgfältig");
+    await page.getByLabel("Anrede deiner Kundschaft").selectOption("du");
+    await page.getByLabel("Website für den heutigen Ton lesen").check();
+    const start = page.getByRole("button", { name: "Markenplattform erstellen" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    const email = await giveEmail(page);
+    const region = page.getByRole("region", { name: "Deine Markenplattform" });
+    await expect(region).toBeVisible();
+    await expect(page.getByTestId("website-gelesen")).toContainText("malerei-keller.ch");
+    await expect(region.getByRole("heading", { name: "Versprechen" })).toBeVisible();
+    await expect(region.getByRole("heading", { name: "Werte" })).toBeVisible();
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls).toEqual({ read: 1, generate: 1 });
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("markenplattform");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Malerei Keller");
+    expect(lead.ausgabe).toContain(MARKE.versprechen);
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("mt:profile") ?? "")).toContain("Verlässlichkeit");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Markenplattform" })).toBeVisible();
+    expect(calls).toEqual({ read: 1, generate: 1 });
+  });
+});
+
 test.describe("Zugang v3 über die Routen", () => {
   /** Eigener Kontext ohne Cookies; mt_gate wird wie in einem Browser von Hand mitgeführt (der Cookie-Jar der Fixture schickt «Secure»-Cookies nicht über http). */
   async function client(playwright: PlaywrightWorkerArgs["playwright"]) {

@@ -11,6 +11,7 @@ import nutzenversprechenConfig from "./nutzenversprechen/tool.config";
 import personaConfig from "./persona/tool.config";
 import positionierungConfig from "./positionierung/tool.config";
 import botschaftenConfig from "./botschaften/tool.config";
+import markenplattformConfig from "./markenplattform/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -28,5 +29,6 @@ export const tools: ToolConfig[] = [
   personaConfig,
   positionierungConfig,
   botschaftenConfig,
+  markenplattformConfig,
   // new-tool:configs
 ];

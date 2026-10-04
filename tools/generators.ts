@@ -5,6 +5,7 @@ import nutzenversprechenGenerator from "./nutzenversprechen/generator";
 import personaGenerator from "./persona/generator";
 import positionierungGenerator from "./positionierung/generator";
 import botschaftenGenerator from "./botschaften/generator";
+import markenplattformGenerator from "./markenplattform/generator";
 // new-tool:generator-imports
 
 // Explizite Liste aller Generatoren (kein Glob), wie tools/index.ts. Jeder Eintrag ist tools/<slug>/generator.ts.
@@ -20,6 +21,7 @@ export const generators: AnyGenerator[] = [
   personaGenerator,
   positionierungGenerator,
   botschaftenGenerator,
+  markenplattformGenerator,
   // new-tool:generators
 ];
 
