@@ -90,7 +90,7 @@ export function PathGraphic({ steps }: Props) {
       </ol>
 
       <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">
-        {ready ? `${summary.done} von ${summary.total} erledigt. Der Stand bleibt in deinem Browser.` : " "}
+        {ready ? `${summary.done} von ${summary.total} erledigt. Der Stand bleibt in deinem Browser, mit Konto in deinem Konto.` : " "}
       </p>
     </div>
   );

@@ -13,12 +13,13 @@ beforeEach(() => {
 
 describe("fetchAccountInfo", () => {
   it("liest angemeldet und abgemeldet", async () => {
-    expect(await fetchAccountInfo(fetchOf(json({ login: "google", account: { name: "Anna", email: "a@k.ch" } })))).toEqual({
+    expect(await fetchAccountInfo(fetchOf(json({ login: "google", account: { name: "Anna", email: "a@k.ch" }, storage: true })))).toEqual({
       login: "google",
       account: { name: "Anna", email: "a@k.ch" },
+      storage: true,
     });
-    expect(await fetchAccountInfo(fetchOf(json({ login: "google", account: null })))).toEqual({ login: "google", account: null });
-    expect(await fetchAccountInfo(fetchOf(json({ login: null, account: null })))).toEqual({ login: null, account: null });
+    expect(await fetchAccountInfo(fetchOf(json({ login: "google", account: null })))).toEqual({ login: "google", account: null, storage: false });
+    expect(await fetchAccountInfo(fetchOf(json({ login: null, account: null, storage: "ja" })))).toEqual({ login: null, account: null, storage: false });
   });
 
   it("wirft nie und gibt bei Fehlern null zurück", async () => {
@@ -28,7 +29,7 @@ describe("fetchAccountInfo", () => {
   });
 
   it("ignoriert unvollständige Kontodaten und fremde Anmeldewege", async () => {
-    expect(await fetchAccountInfo(fetchOf(json({ login: "facebook", account: { name: 3 } })))).toEqual({ login: null, account: null });
+    expect(await fetchAccountInfo(fetchOf(json({ login: "facebook", account: { name: 3 } })))).toEqual({ login: null, account: null, storage: false });
   });
 });
 

@@ -4,6 +4,8 @@ export type AccountInfo = {
   /** Angebotener Anmeldeweg; null: Anmeldung ist nicht eingerichtet. */
   login: "google" | null;
   account: { name: string; email: string } | null;
+  /** Die Daten (Profil, Merkliste, Zwischenstände) können beim Konto liegen. Sonst bleiben sie im Browser. */
+  storage: boolean;
 };
 
 export async function fetchAccountInfo(fetchImpl: typeof fetch = fetch): Promise<AccountInfo | null> {
@@ -13,7 +15,7 @@ export async function fetchAccountInfo(fetchImpl: typeof fetch = fetch): Promise
     const data = (await res.json()) as Partial<AccountInfo>;
     const a = data.account;
     const account = a && typeof a.name === "string" && typeof a.email === "string" ? { name: a.name, email: a.email } : null;
-    return { login: data.login === "google" ? "google" : null, account };
+    return { login: data.login === "google" ? "google" : null, account, storage: data.storage === true };
   } catch {
     return null;
   }

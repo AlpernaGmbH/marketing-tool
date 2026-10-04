@@ -10,6 +10,7 @@ import { aiTried, fetchEinordnung, markAiTried, type EinordnungReason } from "@/
 import { runCheck } from "@/lib/check/client";
 import { CHECK_STEPS, INDUSTRY_KEYS, INDUSTRY_LABELS, POSTING_FREQUENCIES, SOCIAL_NETWORKS, type CheckStepId, type IndustryKey } from "@/lib/check/types";
 import { useLocalJson } from "@/lib/use-local";
+import { useAccount } from "@/lib/use-account";
 import { useProfile } from "@/lib/use-profile";
 import { CheckResultView, type AiView } from "./Result";
 import { EMPTY_FORM, SLUG, buildInput, formProblem, host, industryFor, parseCheckState, profilePatch, type FormState } from "./logic";
@@ -22,7 +23,7 @@ type StepState = "wait" | "run" | "done";
 const STEP_TEXT: Record<StepState, string> = { wait: "wartet", run: "läuft", done: "fertig" };
 const freshSteps = (): Record<CheckStepId, StepState> => Object.fromEntries(CHECK_STEPS.map((s) => [s.id, "wait"])) as Record<CheckStepId, StepState>;
 
-function Intro({ withAi }: { withAi: boolean }) {
+function Intro({ withAi, inAccount }: { withAi: boolean; inAccount: boolean }) {
   return (
     <>
       <p>
@@ -31,7 +32,7 @@ function Intro({ withAi }: { withAi: boolean }) {
         geordnet nach Wirkung.
       </p>
       <p>
-        Die Adresse geht an unseren Server, der die Seite abruft. Wir speichern sie nicht. Das Ergebnis bleibt in deinem Browser.
+        Die Adresse geht an unseren Server, der die Seite abruft. Wir speichern sie nicht. {inAccount ? "Das Ergebnis wird in deinem Konto gespeichert, damit du es auf jedem Gerät wiederfindest." : "Das Ergebnis bleibt in deinem Browser. Mit Konto bleibt es auf jedem Gerät erhalten."}
       </p>
       {withAi && (
         <p>
@@ -46,6 +47,8 @@ function Intro({ withAi }: { withAi: boolean }) {
 function CheckFlow() {
   const ctx = useToolContext();
   const { profile, update } = useProfile();
+  const account = useAccount();
+  const inAccount = Boolean(account?.account && account.storage);
   const { value: saved, ready, set } = useLocalJson(`mt:${SLUG}`, parseCheckState);
 
   // Änderungen am Formular leben im Entwurf, bis der Check startet; vorher gilt der gespeicherte Stand.
@@ -216,7 +219,7 @@ function CheckFlow() {
       }}
     >
       <div className="content">
-        <Intro withAi={ctx.signedIn && ctx.unlocked} />
+        <Intro withAi={ctx.signedIn && ctx.unlocked} inAccount={inAccount} />
       </div>
 
       <fieldset className="grid gap-4 rounded-xl border border-line p-4 md:grid-cols-2">
@@ -233,7 +236,7 @@ function CheckFlow() {
             ))}
           </select>
           <p id="dac-industry-help" className="text-sm text-muted-foreground">
-            Sie entscheidet, ob Online-Shop und Online-Buchung für dich zählen. Firma, Website und Ort speichern wir in deinem Firmenprofil, nur in deinem Browser.
+            Sie entscheidet, ob Online-Shop und Online-Buchung für dich zählen. Firma, Website und Ort speichern wir in deinem Firmenprofil{inAccount ? ", in deinem Konto" : ", in deinem Browser"}.
           </p>
         </div>
       </fieldset>

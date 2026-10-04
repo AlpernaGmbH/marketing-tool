@@ -14,6 +14,8 @@ import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { chf } from "@/lib/ch";
 import { downloadBytes } from "@/lib/download";
 import { isProfileEmpty, type Profile } from "@/lib/profile";
+import { deleteAccountData } from "@/lib/sync";
+import { useAccount } from "@/lib/use-account";
 import { useProfile } from "@/lib/use-profile";
 
 type Notice = { kind: "ok" | "error"; text: string } | null;
@@ -36,6 +38,8 @@ export function summaryRows(p: Profile): { label: string; value: string }[] {
 
 export function ProfilEditor() {
   const { profile, clearEverything, exportJson, importFrom } = useProfile();
+  const info = useAccount();
+  const inAccount = Boolean(info?.account && info.storage);
   const [notice, setNotice] = useState<Notice>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pendingImport, setPendingImport] = useState<string | null>(null);
@@ -81,7 +85,9 @@ export function ProfilEditor() {
         <h2 id="grunddaten">Grunddaten</h2>
 
         <ProfileFieldsForm fields={["organisationstyp", "firma", "branche", "rechtsform", "ort", "website", "kanton", "groesse"]} />
-        <p className="text-sm text-muted-foreground">Änderungen werden sofort in deinem Browser gespeichert.</p>
+        <p className="text-sm text-muted-foreground">
+          {inAccount ? "Änderungen werden sofort in deinem Konto gespeichert." : "Änderungen werden sofort in deinem Browser gespeichert."}
+        </p>
       </section>
 
       <section aria-labelledby="aus-werkzeugen" className="max-w-2xl">
@@ -123,7 +129,9 @@ export function ProfilEditor() {
           <DialogHeader>
             <DialogTitle>Alles löschen?</DialogTitle>
             <DialogDescription>
-              Das löscht dein Firmenprofil, deine Zwischenstände und deine Merkliste in diesem Browser. Das lässt sich nicht rückgängig machen.
+              {inAccount
+                ? "Das löscht dein Firmenprofil, deine Zwischenstände und deine Merkliste in deinem Konto und auf diesem Gerät. Das lässt sich nicht rückgängig machen."
+                : "Das löscht dein Firmenprofil, deine Zwischenstände und deine Merkliste in diesem Browser. Das lässt sich nicht rückgängig machen."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -131,7 +139,12 @@ export function ProfilEditor() {
               Abbrechen
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
+                // Liegen die Daten beim Konto, zuerst dort löschen: sonst holt der nächste Abgleich sie zurück.
+                if (inAccount && !(await deleteAccountData())) {
+                  setConfirmDelete(false);
+                  return setNotice({ kind: "error", text: "Das Löschen beim Konto hat nicht geklappt. Es wurde nichts gelöscht. Bitte versuch es noch einmal." });
+                }
                 clearEverything();
                 setConfirmDelete(false);
                 setNotice({ kind: "ok", text: "Alles gelöscht." });

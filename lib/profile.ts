@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { dateCH } from "@/lib/ch";
 
-// Firmenprofil: lebt nur im Browser (localStorage, Schlüssel mt:profile).
+// Firmenprofil: lebt im Browser (localStorage, Schlüssel mt:profile). Wer angemeldet ist, bei dem gleicht
+// components/site/AccountSync das Profil mit dem Konto ab (lib/sync.ts); dieses Modul weiss davon nichts.
 // Reine Typen und Funktionen, damit Tools und Tests sie ohne React nutzen können.
 // Der Hook dazu steht in lib/use-profile.ts.
 

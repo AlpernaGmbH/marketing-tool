@@ -66,3 +66,39 @@ export function post(path: string, body: unknown, init: { ip?: string; cookie?: 
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
+
+/** In-Memory-Ersatz für den Speicher beim Konto (lib/account-data.ts). */
+export class MemoryDataStore {
+  docs = new Map<string, Record<string, { value: string | null; at: number }>>();
+  failing = false;
+  private guard() {
+    if (this.failing) throw new Error("redis down");
+  }
+  async get(acchash: string) {
+    this.guard();
+    return structuredClone(this.docs.get(acchash) ?? {});
+  }
+  async set(acchash: string, entries: Record<string, { value: string | null; at: number }>) {
+    this.guard();
+    this.docs.set(acchash, structuredClone(entries));
+  }
+  async del(acchash: string) {
+    this.guard();
+    this.docs.delete(acchash);
+  }
+}
+
+export function put(path: string, body: unknown, init: { ip?: string; cookie?: string } = {}): NextRequest {
+  return method("PUT", path, body, init);
+}
+
+export function method(verb: string, path: string, body: unknown, init: { ip?: string; cookie?: string } = {}): NextRequest {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (init.ip) headers["x-forwarded-for"] = init.ip;
+  if (init.cookie) headers.cookie = init.cookie;
+  return new NextRequest(`http://localhost${path}`, {
+    method: verb,
+    headers,
+    ...(body === undefined ? {} : { body: typeof body === "string" ? body : JSON.stringify(body) }),
+  });
+}

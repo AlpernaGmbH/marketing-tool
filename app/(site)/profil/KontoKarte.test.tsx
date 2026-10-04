@@ -30,12 +30,12 @@ describe("KontoKarte", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("bietet Besuchern Anmelden und Registrieren an und sagt, dass das Firmenprofil im Browser bleibt", async () => {
+  it("bietet Besuchern Anmelden und Registrieren an und sagt, wo die Daten ohne Konto liegen", async () => {
     stub({ login: "google", account: null });
     render(<KontoKarte />);
     expect(await screen.findByRole("button", { name: "Anmelden" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Registrieren" })).toBeInTheDocument();
-    expect(screen.getByTestId("konto-karte")).toHaveTextContent("bleibt in diesem Browser");
+    expect(screen.getByTestId("konto-karte")).toHaveTextContent("Ohne Konto bleiben die Daten in diesem Browser");
   });
 
   it("zeigt Angemeldeten Name, E-Mail und «Abmelden»", async () => {

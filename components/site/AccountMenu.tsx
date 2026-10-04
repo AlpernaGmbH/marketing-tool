@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { SignInMode } from "@/components/site/SignInDialog";
 import { Button } from "@/components/ui/button";
-import { initialOf, signOutAccount } from "@/lib/account-client";
+import { signOutAndForget } from "@/lib/account-actions";
+import { initialOf } from "@/lib/account-client";
 import { useAccount } from "@/lib/use-account";
 
 // Das Fenster (Dialog-Bibliothek) wird erst geladen, wenn jemand «Anmelden» anklickt: Es soll keine Seite verlangsamen.
@@ -65,7 +66,7 @@ export function AccountMenu() {
 
   async function signOut() {
     setSignOutError(false);
-    if (await signOutAccount()) window.location.reload();
+    if (await signOutAndForget(info?.storage === true)) window.location.reload();
     else setSignOutError(true);
   }
 

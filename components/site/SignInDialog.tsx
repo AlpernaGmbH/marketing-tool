@@ -52,8 +52,8 @@ export function SignInDialog({ open, mode, onOpenChange }: { open: boolean; mode
         </DialogHeader>
         <div className="grid gap-4">
           <p className="text-sm text-muted-foreground">
-            Mit Konto bleibst du auf jedem Gerät freigeschaltet und bekommst zu deinem Check eine kurze Einordnung. Wir übernehmen nur Name und
-            E-Mail-Adresse aus deinem Google-Konto. Mehr dazu in der{" "}
+            Mit Konto liegen dein Firmenprofil und deine Ergebnisse bei deinem Konto, du findest sie auf jedem Gerät wieder, bleibst freigeschaltet
+            und bekommst zu deinem Check eine kurze Einordnung. Von Google übernehmen wir nur Name und E-Mail-Adresse. Mehr dazu in der{" "}
             <Link href="/datenschutz" className="underline underline-offset-4">
               Datenschutzerklärung
             </Link>

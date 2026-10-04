@@ -26,6 +26,8 @@ export const keys = {
   aiGlobal: (day: string) => `ai:global:${day}`,
   /** Zwischenspeicher der KI-Einordnung je Ergebnis (Hash der Signatur), 24 Stunden. */
   aiCache: (hash: string) => `aicache:${hash}`,
+  /** Daten beim Konto (Profil, Merkliste, Zwischenstände), ein Dokument je Konto, ohne Ablauf. */
+  accountData: (acchash: string) => `data:${acchash}`,
   leadQueue: "lead_queue",
 } as const;
 

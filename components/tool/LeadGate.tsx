@@ -261,7 +261,7 @@ export function LeadGate({ open, onOpenChange, tool, reason, login = null, signe
               </Button>
             )}
             <p className="text-sm text-muted-foreground">
-              Wir erhalten von Google deinen Namen und deine E-Mail-Adresse, sonst nichts. Deine Eingaben im Werkzeug bleiben in deinem Browser.
+              Wir erhalten von Google deinen Namen und deine E-Mail-Adresse. Deine Eingaben im Werkzeug speichern wir in deinem Konto, damit du sie auf jedem Gerät wiederfindest.
             </p>
           </div>
         )}

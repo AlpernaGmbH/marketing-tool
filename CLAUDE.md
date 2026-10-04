@@ -42,7 +42,8 @@ for erstes Element) mit GATE_SECRET, gekürzt auf 16 Byte. Redis-Keys: run:
 (Konto freigeschaltet, TTL 365 Tage), popular:
 <slug> (Zähler), ai:<acchash>:<YYYY-MM-DD> (Einordnungen pro Konto), ai:global:
 <YYYY-MM-DD> und lookup:<iphash>:<YYYY-MM-DD> (TTL 2 Tage), aicache:<hash der
-Signatur> (fertige Einordnung, TTL 24 Stunden). Dazu ein signiertes Cookie mt_gate {runs, unlocked, iat}
+Signatur> (fertige Einordnung, TTL 24 Stunden), data:<acchash> (Daten des Kontos, siehe
+«Firmenprofil», ohne Ablauf). Dazu ein signiertes Cookie mt_gate {runs, unlocked, iat}
 (HttpOnly, SameSite=Lax, 365 Tage). Gesperrt ist, wer in Redis ODER Cookie
 als gebraucht steht; freigeschaltet, wer in Redis ODER Cookie als
 freigeschaltet steht.
@@ -78,7 +79,7 @@ exportieren/importieren, alles löschen
 app/api/lead/route.ts – Zugang und Leads
 - app/api/auth/[...all]/route.ts – Anmeldung (Better Auth, Google); app/api/lead/account/route.ts –
 Freischalten mit Konto; app/api/account/route.ts – wer ist angemeldet (Name, E-Mail) für
-Kopfzeile und Profilseite
+Kopfzeile und Profilseite; app/api/account/data/route.ts – Daten des Kontos (GET, PUT, DELETE)
 - app/api/check/route.ts – Marketing-Check: ruft die Website des Besuchers ab
 (SSRF-Schutz in lib/check/net.ts), streamt Schritte und Ergebnis als NDJSON
 - app/api/ai/route.ts – KI-Einordnung zu einem Check-Ergebnis: nur mit Konto und
@@ -113,7 +114,10 @@ sign.ts (Signatur des Ergebnisses), ai.ts (Fakten, Prompt, Prüfung der KI-Antwo
 ai-client.ts (Browser)
 - lib/ai.ts, lib/ai-quota.ts – KI über das Vercel AI Gateway (Modelle aus
 AI_MODELS), Tageslimits und Zwischenspeicher
-- lib/storage.ts, lib/use-local.ts – localStorage mit Rückfall auf Arbeitsspeicher
+- lib/storage.ts, lib/use-local.ts – localStorage mit Rückfall auf Arbeitsspeicher; führt
+für Schlüssel des Kontos Buch (Zeitpunkt der letzten Änderung)
+- lib/sync-keys.ts, lib/sync.ts, lib/account-data.ts, lib/account-actions.ts,
+components/site/AccountSync.tsx – Abgleich der lokalen Daten mit dem Konto
 - lib/ch.ts – chf(), dateCH(), typoCH(), uidValid()
 - data/*.json – Schweizer Datensätze, jede Datei mit meta {source, url, asOf}
 - content/tools/<slug>.md – Seitentext mit festen Abschnitten (Vorlage unten)
@@ -126,12 +130,22 @@ formulieren
 - scripts/new-tool.ts, scripts/content-check.ts, scripts/seo-check.ts
 - PLAN.md, STATUS.md, IDEAS.md – Arbeitsdateien
 
-## Firmenprofil (lib/profile.ts, nur im Browser)
+## Firmenprofil (lib/profile.ts; im Browser, bei Angemeldeten zusätzlich im Konto)
 Felder: organisationstyp kmu|verein, firma, branche, rechtsform, ort, website, kanton,
 groesse, zielgruppen[], primaersegment, personas[], positionierung, marke
 {werte, persoenlichkeit, tonalitaet, woerter, bewertungsregeln}, kanaele[],
 budgetJahr, contentSaeulen[]. Tool-Zwischenstände unter mt:<slug>. Merkliste
 unter mt:merkliste.
+Daten beim Konto: Wer angemeldet ist und dessen Speicher (Redis) bereitsteht, dessen
+Firmenprofil, Merkliste und Zwischenstände (Schlüssel mt:profile, mt:merkliste, mt:<slug>)
+liegen im Konto (Redis data:<acchash>, kein Ablauf, bis die Person sie löscht) und folgen
+ihr auf jedes Gerät. Der Browser bleibt die Arbeitskopie; AccountSync gleicht ab (Start,
+2 Sekunden nach einer Änderung, Rückkehr in den Tab). Je Schlüssel gewinnt die jüngere
+Änderung; Löschungen werden als Grabstein 60 Tage mitgeführt. Grenzen: 60 Schlüssel, 150'000
+Zeichen je Wert, 600'000 insgesamt. Abmelden schickt alles hinauf und löscht danach die lokale
+Kopie (schlägt das fehl, bleibt sie). «Alles löschen» und «Meine Daten im Konto löschen» auf
+/profil löschen zuerst die Daten im Konto. Der Server liest die Werte nicht und loggt sie nicht.
+Ohne Anmeldung bleibt alles im Browser.
 Kopfzeile: Ist die Anmeldung eingerichtet, sehen Besucher «Anmelden» und
 «Registrieren» (bei Google derselbe Vorgang, die Anmeldung allein schaltet nichts
 frei und schickt nichts an Alperna). «Mein Profil» steht nur im Menü der angemeldeten
@@ -140,12 +154,16 @@ Person, zusammen mit «Abmelden». Ohne eingerichtete Anmeldung bleibt der Link
 oben die Konto-Karte.
 Jedes Tool mit usesProfile zeigt ProfileBanner («Dein Firmenprofil: Malerei
 Keller, Gossau – bearbeiten»). Hinweis auf /profil: «Wird nur in deinem
-Browser gespeichert. Exportiere es, wenn du es behalten willst.»
+Browser gespeichert. Exportiere es, wenn du es behalten willst.» Bei Angemeldeten
+mit bereitstehendem Speicher sagt die Seite stattdessen, dass das Profil in ihrem Konto liegt
+(ProfilHinweis).
 
 ## Harte Regeln
 1. Eingaben in Tools verlassen den Browser nicht. Ausnahmen: das Lead-
-Formular (Name, Firma, E-Mail, Telefon, Tool-Name, Kategorie – sonst nichts)
-und Tools mit needsServer: true über /api/check, /api/ai und /api/lookup. Server-Routen
+Formular (Name, Firma, E-Mail, Telefon, Tool-Name, Kategorie – sonst nichts),
+Tools mit needsServer: true über /api/check, /api/ai und /api/lookup und die Daten
+einer angemeldeten Person über /api/account/data (Profil, Merkliste, Zwischenstände,
+nur in ihrem Konto, bis sie sie löscht). Server-Routen
 loggen Statuscodes, nie Inhalte, nie Klartext-IPs.
 2. Du-Form im UI. Schweizer Rechtschreibung: ss statt ß, «» als
 Anführungszeichen, CHF 1'000.-, Datum 03.10.2026, Prozent mit Leerzeichen

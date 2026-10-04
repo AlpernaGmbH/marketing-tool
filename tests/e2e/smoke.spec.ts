@@ -424,6 +424,12 @@ test.describe("Zugang: ein freier Durchlauf, dann Formular", () => {
     expect((await request.post("/api/ai", { data: "kein json" })).status()).toBe(400);
   });
 
+  test("/api/account/data: ohne Sitzung 401 bei allen drei Verben, nichts wird gelesen oder gelöscht", async ({ request }) => {
+    expect((await request.get("/api/account/data")).status()).toBe(401);
+    expect((await request.put("/api/account/data", { data: { entries: {} } })).status()).toBe(401);
+    expect((await request.delete("/api/account/data")).status()).toBe(401);
+  });
+
   test("/api/cron/leads: ohne Secret von Vercel antwortet die Route 401 und fasst nichts an", async ({ request }) => {
     expect((await request.get("/api/cron/leads")).status()).toBe(401);
     expect((await request.get("/api/cron/leads", { headers: { authorization: "Bearer erraten" } })).status()).toBe(401);

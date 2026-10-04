@@ -10,8 +10,9 @@ Stand 04.10.2026. Das ist **kein Rechtstext** (Harte Regel 8: Rechtstexte schrei
 | Lead-Formular | Name, Firma, E-Mail, Telefon (freiwillig), Tool-Name, Kategorie, Zeitpunkt, Quelle | Eigener Server, dann n8n (Alperna, CRM) | Beim Absenden des Formulars oder nach Google-Anmeldung mit Einwilligung | `lib/lead.ts`, `app/api/lead*/route.ts` |
 | Google-Anmeldung (ab Einrichtung) | Google bestätigt Name und E-Mail-Adresse, Auswahl des Kontos | Google, danach zurück zu uns | Beim Klick auf «Mit Google anmelden» | `lib/auth.ts` |
 | KI-Einordnung (ab Einrichtung, nur angemeldet und freigeschaltet) | Betrieb, Ort, Branche, Host der Website, Punktzahlen, offene Prüfpunkte mit Befund, die ersten acht Schritte. Kein Seiteninhalt, keine E-Mail, kein Name der Person | Eigener Server, dann Vercel AI Gateway (USA), dann Modellanbieter (Standard: Mistral; Liste in `AI_MODELS`) | Automatisch nach dem Ergebnis | `lib/check/ai.ts` (`buildFakten`), `lib/ai.ts` |
+| Daten beim Konto (nur angemeldet, nur wenn Redis bereitsteht) | Firmenprofil (Betrieb, Branche, Ort, Website, Zielgruppen, Marke und weitere Felder), Merkliste, Zwischenstände der Werkzeuge (Antworten, Ergebnisse) | Eigener Server, dann Redis (Upstash) | Beim Laden der Seite, 2 Sekunden nach einer Änderung, beim Zurückkehren in den Tab und beim Abmelden | `app/api/account/data/route.ts`, `lib/sync.ts`, `components/site/AccountSync.tsx` |
 
-Alle anderen Eingaben in Werkzeugen bleiben im Browser (localStorage: Firmenprofil `mt:profile`, Zwischenstände `mt:<slug>`, Merkliste, `mt:_konto`).
+Ohne Anmeldung bleiben alle Eingaben in Werkzeugen im Browser (localStorage: Firmenprofil `mt:profile`, Zwischenstände `mt:<slug>`, Merkliste `mt:merkliste`, Abgleich-Buchhaltung `mt:_sync`, `mt:_konto`). Mit Anmeldung liegt eine Kopie im Konto (siehe Zeile oben).
 
 ## 2. Was auf dem Server gespeichert wird (Redis, Upstash; Region noch offen)
 
@@ -22,11 +23,14 @@ Alle anderen Eingaben in Werkzeugen bleiben im Browser (localStorage: Firmenprof
 | `acct:<acchash>` | Freischaltung eines Kontos | 365 Tage |
 | `popular:<slug>` | Aufrufzähler pro Werkzeug, ohne Personenbezug | unbegrenzt |
 | `ai:<acchash>:<Tag>`, `ai:global:<Tag>` | Zähler der Einordnungen | 2 Tage |
+| `data:<acchash>` | **Daten des Kontos**: Firmenprofil, Merkliste und Zwischenstände der Werkzeuge als JSON, je Schlüssel mit Zeitpunkt der letzten Änderung. Der Server liest die Werte nicht und loggt sie nicht. Löschungen bleiben als leerer Eintrag 60 Tage stehen. Höchstens 60 Schlüssel, 600'000 Zeichen. **Nicht verschlüsselt auf Anwendungsebene** (Upstash verschlüsselt im Ruhezustand [Vermutung, bei Upstash zu prüfen]) | **Kein Ablauf**: bis die Person sie unter «Meine Daten im Konto löschen» (oder «Alles löschen») entfernt |
 | `aicache:<hash>` | Fertige Einordnung (Text kann den Betriebsnamen enthalten) | 24 Stunden |
 | `rl:<name>` | Zähler der Ratenbegrenzung pro `iphash` | wenige Minuten bis Stunden |
 | `lead_queue` | **Leads im Klartext** (Name, E-Mail, Telefon), wenn n8n nicht erreichbar ist | Liste verfällt 30 Tage nach dem letzten Eintrag, höchstens 1000 Einträge; sonst bis n8n sie leert |
 
-`<iphash>` ist ein HMAC-SHA256 der IP mit einem geheimen Schlüssel, auf 16 Byte gekürzt. `<acchash>` ist ein HMAC der von Google bestätigten E-Mail-Adresse. Klartext-IP und Klartext-E-Mail stehen nirgends in Redis ausser im Lead in `lead_queue`.
+`<iphash>` ist ein HMAC-SHA256 der IP mit einem geheimen Schlüssel, auf 16 Byte gekürzt. `<acchash>` ist ein HMAC der von Google bestätigten E-Mail-Adresse. Klartext-IP und Klartext-E-Mail stehen nirgends in Redis ausser im Lead in `lead_queue`. Die Daten des Kontos können Namen und Angaben des Betriebs im Klartext enthalten (sie gehören der Person, die sie eingibt).
+
+**Offen für die Rechtsprüfung (Daten beim Konto):** Aufbewahrung ohne Ablauf; Löschung nur durch die Person selbst (es gibt keinen automatischen Ablauf bei Inaktivität); Auskunft und Export (Profil lässt sich auf `/profil` exportieren, die übrigen Schlüssel nicht); Region von Upstash; ob das Speichern von Eingaben zusätzlich in der Erklärung zum Konto genannt werden muss.
 
 ## 3. Cookies und Speicher im Browser
 
@@ -34,7 +38,7 @@ Alle anderen Eingaben in Werkzeugen bleiben im Browser (localStorage: Firmenprof
 |---|---|---|---|
 | `mt_gate` | Zählt den freien Durchlauf und die Freischaltung | 365 Tage, HttpOnly, SameSite=Lax | `{runs, unlocked, iat}`, signiert |
 | Sitzung von Better Auth: `better-auth.session_token`, `better-auth.session_data`, `better-auth.account_data` | Angemeldet bleiben | je 30 Tage (`session.expiresIn`, durch Test belegt), nur nach Anmeldung | Sitzungskennung, Name, E-Mail, Konto-Kennung und Angaben des Google-Kontos, verschlüsselt (JWE) |
-| localStorage | Firmenprofil, Zwischenstände | bis der Besucher löscht | siehe oben |
+| localStorage | Firmenprofil, Zwischenstände, Merkliste, Abgleich-Buchhaltung `mt:_sync` | bis der Besucher löscht; bei angemeldeten Personen löscht das Abmelden die Kopie auf dem Gerät, sobald sie im Konto liegt | siehe oben |
 
 Kein Banner, weil beide Cookies für den Dienst nötig sind (Entscheid in CLAUDE.md Regel 4; rechtlich zu bestätigen).
 
