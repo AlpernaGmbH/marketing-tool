@@ -48,7 +48,9 @@ Server-Routen loggen Route, Statuscode und ein Stichwort (`lib/log.ts`). Nie Inh
 |---|---|---|---|
 | Vercel | Hosting, Funktionen `fra1`, AI Gateway | Funktionen Frankfurt; Gateway und Firma USA | `vercel.json`, Plan |
 | Upstash | Redis | Region noch festzulegen (Frankfurt vorgesehen) | STATUS.md |
-| n8n | CRM-Weiterleitung der Leads | **offen: Hosting und Standort von n8n bei Alperna klären** | Alperna |
+| n8n | CRM-Weiterleitung der Leads (Notion, Mail) | Adresse `n8n-ufvf.srv1747595.hstgr.cloud`, also bei Hostinger; Standort des Servers **offen** | Workflow «Tools-Lead» |
+| Notion | CRM: jeder Lead (Name, Firma, E-Mail, Telefon, Werkzeug) wird dort als Eintrag angelegt | USA, Standort laut Vertrag zu prüfen | Workflow «Tools-Lead» |
+| Google (Gmail) | Benachrichtigungsmail an kontakt@alperna.ch mit den Angaben des Leads | USA | Workflow «Tools-Lead» |
 | Google | Anmeldung (OAuth) | USA | `lib/auth.ts` |
 | Mistral AI | Modellanbieter der KI (Standard) | EU | `lib/ai.ts` |
 | Umami | Statistik: im Code nur als Ereignis-Markierungen, **kein Skript geladen** | offen | `components/tool/DocumentExport.tsx` |

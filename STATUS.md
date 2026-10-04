@@ -96,7 +96,7 @@ Bewusst nicht behoben:
 | Rechtsabsatz in den Seitentexten | `content/site/marketing-schweiz.md` (UWG, revDSG, PBV) und `content/site/schweiz.md` stammen von mir. Nach Regel 8 muss ein Mensch gegenlesen, bevor die Seite öffentlich wird. |
 | Texte mit «ohne Konto» | `content/site/*.md`, TrustLine und CLAUDE.md sagen «kein Konto». Ändern, falls Zugang v2 kommt. |
 | Logo | Nachzeichnung der Original-PNG (liegt in `assets/brand/`). Ein Vektor-Original ersetzt sie. |
-| n8n-Workflow «Tools-Lead-Queue» | Fehlt noch (stündlich `lead_queue` aus Redis leeren). Braucht Upstash. |
+| Warteschlange der Leads | Erledigt am 04.10.2026 als Vercel Cron (`/api/cron/leads`, täglich 04:17 UTC) statt n8n-Workflow. Offen: Lauf in den Vercel-Logs nach dem ersten Morgen prüfen; ob der Cron die Deployment-Schutzfunktion von Vercel passiert, ist [Vermutung]. Mit der Domain tools.alperna.ch (ausgenommen vom Schutz) entfällt die Frage. |
 | Altes Repo | `AlpernaGmbH/alperna-website-v2` enthält den alten Stand. Kann archiviert werden. |
 | DNS `tools.alperna.ch` | Ganz am Schluss (Entscheid vom 04.10.2026): CNAME `tools` → `cname.vercel-dns.com`, Domain im Vercel-Projekt eintragen. |
 | Umami | Etappe 7. |
@@ -178,6 +178,7 @@ Hinweise: URIs brauchen fünf Minuten bis einige Stunden, bis sie gelten. Meldet
 43. **Sitzung 30 Tage:** `session.expiresIn` ist gesetzt, damit CLAUDE.md, die Datenschutzerklärung und das Verhalten übereinstimmen. Better Auth setzt drei Cookies: `better-auth.session_token`, `session_data`, `account_data` (je 30 Tage). Liste im Faktenblatt `docs/DATENSCHUTZ-FAKTEN.md`.
 44. **Grenzen des Checks:** Die Analyse sieht höchstens 1 MB HTML, ein Abruf dauert höchstens 25 s mit allen Weiterleitungen. Wer eine Website mit mehr als 1 MB HTML prüft, bekommt das Ergebnis für den Anfang der Seite. Das ist in der Praxis selten und verhindert, dass ein Angreifer den Server bindet.
 45. **KI-Prüfung strenger:** Zahlen in der Einordnung müssen aus Messwerten oder Befunden stammen. Das kann gute Texte verwerfen (zum Beispiel «Schritt 2» als Verweis ist erlaubt, «seit 2019» nicht). Bei zu vielen Verwerfungen im echten Betrieb lockern wir die Regel gezielt, nicht pauschal. Verworfene Antworten kosten kein Kontingent mehr.
+46. **Leads nachholen per Cron statt n8n (04.10.2026):** `GET /api/cron/leads` (Vercel Cron, täglich) schickt wartende Leads aus `lead_queue` der Reihe nach an den Workflow «Tools-Lead» und entfernt sie danach. Bricht beim ersten Fehler ab, damit n8n nicht bei jedem Lead neu angeklopft wird. Geschützt mit `CRON_SECRET` (Vercel sendet es als Bearer-Header), ohne Secret antwortet die Route 401. Höchstens 50 Leads je Lauf. Mögliche Doppelzustellung, wenn der Versand klappt, das Entfernen aber nicht; im CRM zu erkennen an gleicher E-Mail und gleichem Werkzeug. Der Plan sah einen n8n-Workflow vor; der Entwurf (`Tools-Lead-Queue`) wurde nicht angelegt. `CRON_SECRET` stand im Chat: bei der Geheimnis-Runde vor dem Start mit erneuern.
 42. **Signatur statt Vertrauen:** Ohne `sig` fragt der Browser die KI nicht. Ändert sich `GATE_SECRET`, sind gespeicherte Ergebnisse für die KI ungültig; der Check bleibt sichtbar, «Erneut prüfen» erzeugt ein neues. Der Zwischenspeicher der Einordnung hängt an der Signatur, nicht am Betrieb.
 
 ## Neue Abhängigkeiten (Begründung)
@@ -222,7 +223,7 @@ Keine. Bisher enthält kein Seitentext Zahlen.
 - [ ] `/profil` Export und «Alles löschen» funktionieren
 - [ ] Impressum, Datenschutz, Über live
 - [ ] `GATE_SECRET` in Production gesetzt
-- [ ] Geheimnisse neu erzeugen, die in Chat-Verläufen standen: `GATE_SECRET`, `BETTER_AUTH_SECRET`, Webhook-Pfad von «Tools-Lead» (und `N8N_WEBHOOK_URL` anpassen), `GOOGLE_CLIENT_SECRET` (die heruntergeladene Datei mit dem Secret lag am 04.10.2026 im Chat; in der Google Console beim Client ein neues Secret erzeugen, in Vercel eintragen, das alte deaktivieren)
+- [ ] Geheimnisse neu erzeugen, die in Chat-Verläufen standen: `GATE_SECRET`, `BETTER_AUTH_SECRET`, Webhook-Pfad von «Tools-Lead» (und `N8N_WEBHOOK_URL` anpassen), `CRON_SECRET`, `GOOGLE_CLIENT_SECRET` (die heruntergeladene Datei mit dem Secret lag am 04.10.2026 im Chat; in der Google Console beim Client ein neues Secret erzeugen, in Vercel eintragen, das alte deaktivieren)
 - [ ] Google: `alperna.ch` in der Search Console bestätigt, Branding geprüft und veröffentlicht, App-Status «In production», `BETTER_AUTH_URL` auf `https://tools.alperna.ch`
 - [ ] Vercel-Plan Pro (Hobby ist für nicht gewerbliche Nutzung gedacht)
 - [ ] Upstash (nicht «Redis») verbunden, `KV_REST_API_*` im Projekt

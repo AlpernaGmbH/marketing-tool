@@ -376,6 +376,11 @@ test.describe("Zugang: ein freier Durchlauf, dann Formular", () => {
     expect((await request.post("/api/ai", { data: "kein json" })).status()).toBe(400);
   });
 
+  test("/api/cron/leads: ohne Secret von Vercel antwortet die Route 401 und fasst nichts an", async ({ request }) => {
+    expect((await request.get("/api/cron/leads")).status()).toBe(401);
+    expect((await request.get("/api/cron/leads", { headers: { authorization: "Bearer erraten" } })).status()).toBe(401);
+  });
+
   test("Konto-Anmeldung ist ohne Einrichtung aus: /api/auth 404, /api/lead/account 401, /api/access bietet nur das Formular", async ({ request }) => {
     expect((await request.get("/api/auth/get-session")).status()).toBe(404);
     const noSession = await request.post("/api/lead/account", { data: { tool: TOOL, consent: true } });

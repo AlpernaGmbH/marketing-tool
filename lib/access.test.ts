@@ -232,6 +232,16 @@ describe("redisStore", () => {
         };
         return p;
       },
+      lrange: async (k: string, a: number, b: number) => {
+        const list = (data.get(k) as string[]) ?? [];
+        // Der echte Upstash-Client liest JSON-Texte als Objekte zurück; das Double tut es ebenso.
+        return list.slice(a, b + 1).map((v) => { try { return JSON.parse(v); } catch { return v; } });
+      },
+      ltrim: async (k: string, a: number, b: number) => {
+        const list = (data.get(k) as string[]) ?? [];
+        data.set(k, list.slice(a, b === -1 ? undefined : b + 1));
+        return "OK";
+      },
       rpush: async (k: string, v: string) => (data.set(k, [...((data.get(k) as string[]) ?? []), v]), 1),
     };
     return { redis: redis as unknown as Parameters<typeof redisStore>[0], data, calls };
@@ -255,6 +265,18 @@ describe("redisStore", () => {
     expect(await store.claimAccount("acc1")).toBe(false);
     expect(await store.isAccountUnlocked("acc1")).toBe(true);
     expect(calls.filter((c) => c === "set acct:acc1 nx")).toHaveLength(2);
+  });
+
+  it("peekLeads liefert die ältesten Leads wieder als Text, dropLeads entfernt genau diese", async () => {
+    const { redis } = fakeRedis();
+    const store = redisStore(redis);
+    for (const n of [1, 2, 3]) await store.pushLead(JSON.stringify({ name: `Anna ${n}`, email: `a${n}@k.ch` }));
+    const first = await store.peekLeads(2);
+    expect(first).toEqual([JSON.stringify({ name: "Anna 1", email: "a1@k.ch" }), JSON.stringify({ name: "Anna 2", email: "a2@k.ch" })]);
+    await store.dropLeads(2);
+    expect(await store.peekLeads(10)).toEqual([JSON.stringify({ name: "Anna 3", email: "a3@k.ch" })]);
+    await store.dropLeads(0);
+    expect(await store.peekLeads(10)).toHaveLength(1);
   });
 
   it("pushLead begrenzt die Warteschlange auf 1000 Einträge und lässt sie nach 30 Tagen verfallen", async () => {

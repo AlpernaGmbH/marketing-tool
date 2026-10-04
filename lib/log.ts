@@ -10,6 +10,7 @@ export type LogNote =
   | "webhook_failed"
   | "lead_queued"
   | "lead_lost"
+  | "lead_drained"
   | "honeypot"
   | "check_ok"
   | "check_error"

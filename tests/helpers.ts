@@ -46,6 +46,14 @@ export class MemoryStore implements AccessStore {
     this.guard();
     this.leads.push(json);
   }
+  async peekLeads(max: number) {
+    this.guard();
+    return this.leads.slice(0, max);
+  }
+  async dropLeads(count: number) {
+    this.guard();
+    this.leads.splice(0, count);
+  }
 }
 
 export function post(path: string, body: unknown, init: { ip?: string; cookie?: string } = {}): NextRequest {

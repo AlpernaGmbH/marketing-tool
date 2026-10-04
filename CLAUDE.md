@@ -53,9 +53,10 @@ Cookie.
 - Das Formular steht vor dem Start oder vor dem Download, nie vor dem
 Ergebnis eines begonnenen Durchlaufs. Ist Redis nicht erreichbar, gilt nur
 das Cookie; ist /api/lead nicht erreichbar, wird trotzdem freigeschaltet und
-der Lead in Redis-Liste lead_queue abgelegt (n8n liest sie stündlich über die
-Upstash-REST-API leer). Ein Besucher wird nie wegen unserer Technik
-blockiert.
+der Lead in Redis-Liste lead_queue abgelegt (Vercel Cron ruft täglich
+GET /api/cron/leads auf, geschützt mit CRON_SECRET; die Route schickt wartende
+Leads an n8n und entfernt sie danach). Ein Besucher wird nie wegen unserer
+Technik blockiert.
 
 ## Stack
 Next.js 15 App Router, TypeScript strict, Tailwind 4, shadcn/ui (nur
@@ -83,6 +84,7 @@ Freischalten mit Konto
 Freischaltung, nur für von /api/check signierte Ergebnisse (lib/check/sign.ts),
 Tageslimits (lib/ai-quota.ts), 24 Stunden Zwischenspeicher, Antwort der KI wird
 geprüft (lib/check/ai.ts) und sonst verworfen
+- app/api/cron/leads/route.ts – täglicher Cron: schickt Leads aus lead_queue nach
 - app/api/lookup/route.ts – Etappe 3
 - app/sitemap.ts, app/robots.ts, app/opengraph-image.tsx
 - tools/<slug>/tool.config.ts – Metadaten (Schema unten)

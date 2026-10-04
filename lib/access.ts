@@ -34,6 +34,10 @@ export interface AccessStore {
   /** Schaltet die IP frei und, falls angegeben, das Konto. */
   setUnlocked(iphash: string, acchash?: string | null): Promise<void>;
   pushLead(json: string): Promise<void>;
+  /** Die ältesten wartenden Leads (als JSON-Text), höchstens `max`. */
+  peekLeads(max: number): Promise<string[]>;
+  /** Entfernt die ältesten `count` Leads aus lead_queue (nach erfolgreichem Versand). */
+  dropLeads(count: number): Promise<void>;
 }
 
 export function gateSecret(): string | null {
@@ -218,6 +222,14 @@ export function redisStore(redis: Redis): AccessStore {
       p.set(keys.unlocked(iphash), 1, { ex: TTL.unlocked });
       if (acchash) p.set(keys.account(acchash), 1, { ex: TTL.unlocked });
       await withTimeout(p.exec());
+    },
+    async peekLeads(max) {
+      const list = await withTimeout(redis.lrange<unknown>(keys.leadQueue, 0, max - 1));
+      // Der Upstash-Client liest JSON-Texte als Objekte zurück; hier wollen wir wieder den Text.
+      return (list ?? []).map((v) => (typeof v === "string" ? v : JSON.stringify(v)));
+    },
+    async dropLeads(count) {
+      if (count > 0) await withTimeout(redis.ltrim(keys.leadQueue, count, -1));
     },
     async pushLead(json) {
       // Personendaten im Klartext: Ablauf und Obergrenze, damit nichts unbegrenzt in Redis liegt, wenn n8n ausfällt.
