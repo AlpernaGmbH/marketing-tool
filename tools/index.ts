@@ -5,6 +5,7 @@ import textUmschreiberConfig from "./text-umschreiber/tool.config";
 import newsletterCheckConfig from "./newsletter-check/tool.config";
 import reifegradCheckConfig from "./reifegrad-check/tool.config";
 import wettbewerbsvergleichConfig from "./wettbewerbsvergleich/tool.config";
+import ideenAusWebsiteConfig from "./ideen-aus-website/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -16,5 +17,6 @@ export const tools: ToolConfig[] = [
   newsletterCheckConfig,
   reifegradCheckConfig,
   wettbewerbsvergleichConfig,
+  ideenAusWebsiteConfig,
   // new-tool:configs
 ];

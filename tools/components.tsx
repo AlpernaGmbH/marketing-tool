@@ -11,5 +11,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "newsletter-check": dynamic(() => import("./newsletter-check/Tool")),
   "reifegrad-check": dynamic(() => import("./reifegrad-check/Tool")),
   "wettbewerbsvergleich": dynamic(() => import("./wettbewerbsvergleich/Tool")),
+  "ideen-aus-website": dynamic(() => import("./ideen-aus-website/Tool")),
   // new-tool:components
 };

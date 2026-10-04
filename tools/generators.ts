@@ -1,4 +1,5 @@
 import type { GeneratorDef } from "@/lib/generator";
+import ideenAusWebsiteGenerator from "./ideen-aus-website/generator";
 // new-tool:generator-imports
 
 // Explizite Liste aller Generatoren (kein Glob), wie tools/index.ts. Jeder Eintrag ist tools/<slug>/generator.ts.
@@ -8,6 +9,7 @@ import type { GeneratorDef } from "@/lib/generator";
 export type AnyGenerator = GeneratorDef<any, any>;
 
 export const generators: AnyGenerator[] = [
+  ideenAusWebsiteGenerator,
   // new-tool:generators
 ];
 

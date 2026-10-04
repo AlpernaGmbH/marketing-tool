@@ -711,6 +711,113 @@ test.describe("Text-Umschreiber im Browser", () => {
   });
 });
 
+test.describe("Welle 1 im Browser", () => {
+  test("Newsletter-Check: Beispiel prüfen, Fenster vor dem Ergebnis, Punktzahl und Funde, Lead mit Text und Bericht", async ({ page, request }) => {
+    await page.goto("/tools/newsletter-check");
+    await expect(page.getByRole("button", { name: "Newsletter prüfen" })).toBeEnabled();
+    await page.getByRole("button", { name: "Beispiel einfügen" }).click();
+    await expect(page.getByLabel("Dein Newsletter")).toHaveValue(/Malerei Keller/);
+    await page.getByRole("button", { name: "Newsletter prüfen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Newsletter-Check" })).toBeVisible();
+    await expect(page.getByRole("meter").first()).toBeVisible();
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("newsletter-check");
+    const got = (await received(request)).find((l) => l.email === email)!;
+    expect(got.eingabe).toContain("Betreff:");
+    expect(got.ausgabe).toContain("von 100");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Newsletter-Check" })).toBeVisible();
+  });
+
+  test("Reifegrad-Check: zehn Fragen, Fenster vor dem Ergebnis, Reifegrad mit Dimensionen, Lead mit Fragen und Antworten", async ({ page, request }) => {
+    await page.goto("/tools/reifegrad-check");
+    await page.getByRole("button", { name: "Starten" }).click();
+    for (let i = 0; i < 10; i++) {
+      await expect(page.getByText(`Frage ${i + 1} von 10`)).toBeVisible();
+      const radios = page.getByRole("radio");
+      if ((await radios.count()) > 0) await radios.last().check();
+      else await page.getByRole("checkbox").first().check();
+      await page.getByRole("button", { name: /^(Weiter|Zur Zusammenfassung)$/ }).click();
+    }
+    await expect(page.getByRole("heading", { name: "Zusammenfassung" })).toBeVisible();
+    await page.getByRole("button", { name: "Ergebnis anzeigen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Marketing-Reifegrad" })).toBeVisible();
+    await expect(page.getByRole("meter").first()).toBeVisible();
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("reifegrad-check");
+    const got = (await received(request)).find((l) => l.email === email)!;
+    expect(got.eingabe).toContain("Sind deine Marketingziele schriftlich festgehalten?");
+    expect(got.ausgabe).toContain("von 100");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Marketing-Reifegrad" })).toBeVisible();
+  });
+
+  test("Wettbewerbsvergleich: eigene Website und Mitbewerber laufen durch den Check, Tabelle, Lead mit Mitbewerber", async ({ page, request }) => {
+    const checked: string[] = [];
+    const sample = await sampleResult();
+    await page.route("**/api/check", (route) => {
+      const body = JSON.parse(route.request().postData() ?? "{}") as { website: string };
+      checked.push(body.website);
+      const events = [
+        { type: "step", id: "fetch", state: "start" },
+        { type: "step", id: "fetch", state: "done" },
+        { type: "result", result: { ...sample, url: body.website, company: body.website } },
+      ];
+      return route.fulfill({ status: 200, contentType: "application/x-ndjson", body: events.map((e) => JSON.stringify(e)).join("\n") + "\n" });
+    });
+    await page.goto("/tools/wettbewerbsvergleich");
+    await expect(page.getByRole("button", { name: "Vergleichen" })).toBeEnabled();
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Website", { exact: true }).fill("malerei-keller.ch");
+    await page.getByLabel("Branche", { exact: true }).selectOption("craft");
+    await page.getByLabel("Mitbewerber 1").fill("malerei-brunner.ch");
+    await page.getByRole("button", { name: "Vergleichen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Vergleich" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Gesamt" })).toBeVisible();
+    expect(checked.map((u) => new URL(u).hostname)).toEqual(["malerei-keller.ch", "malerei-brunner.ch"]);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("wettbewerbsvergleich");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("malerei-brunner.ch");
+  });
+
+  test("Ideen aus deiner Website: Website lesen, Entwurf, acht Ideen, Lead, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = { read: 0, generate: 0 };
+    await page.route("**/api/read", (route) => {
+      calls.read++;
+      return route.fulfill(
+        json({ ok: true, page: { url: "https://malerei-keller.ch/", host: "malerei-keller.ch", title: "Malerei Keller Gossau", description: "Maler in Gossau", headings: ["Fassaden", "Innenräume"], text: "Wir streichen Fassaden und Innenräume in Gossau und Umgebung. Seit 1998.", truncated: false } }),
+      );
+    });
+    const idee = (n: number, kanal: string) => ({
+      titel: `Fassade Nummer ${n}`.replace(/\d/g, "") + " in Gossau",
+      kanal,
+      format: kanal === "instagram" ? "foto" : "text",
+      worum: "Eine fertige Fassade in Gossau, vorher und nachher, mit dem Team der Malerei Keller davor und einem Satz zur Dauer.",
+      hook: "So sah die Fassade vorher aus.",
+    });
+    const kanaele = ["instagram", "linkedin", "google", "newsletter", "website"];
+    await page.route("**/api/generate", (route) => {
+      calls.generate++;
+      return route.fulfill(json({ ok: true, output: { themen: ["Fassaden", "Innenräume", "Beratung vor Ort"], ideen: Array.from({ length: 8 }, (_, i) => idee(i, kanaele[i % 5])) } }));
+    });
+    await page.goto("/tools/ideen-aus-website");
+    await expect(page.getByRole("button", { name: "Ideen finden" })).toBeEnabled();
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Website", { exact: true }).fill("malerei-keller.ch");
+    await page.getByRole("button", { name: "Ideen finden" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Ideen" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Ideen für Beiträge" }).getByRole("listitem")).toHaveCount(8);
+    await expect(page.getByTestId("ki-hinweis")).toContainText("Von einer KI formuliert");
+    expect(calls).toEqual({ read: 1, generate: 1 });
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("ideen-aus-website");
+    expect((await received(request)).find((l) => l.email === email)!.ausgabe).toContain("Gossau");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Ideen" })).toBeVisible();
+    expect(calls).toEqual({ read: 1, generate: 1 });
+  });
+});
+
 test.describe("Zugang v3 über die Routen", () => {
   /** Eigener Kontext ohne Cookies; mt_gate wird wie in einem Browser von Hand mitgeführt (der Cookie-Jar der Fixture schickt «Secure»-Cookies nicht über http). */
   async function client(playwright: PlaywrightWorkerArgs["playwright"]) {
