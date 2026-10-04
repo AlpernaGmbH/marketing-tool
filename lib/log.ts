@@ -14,7 +14,10 @@ export type LogNote =
   | "check_ok"
   | "check_error"
   | "check_blocked"
-  | "gate_used";
+  | "gate_used"
+  | "auth_disabled"
+  | "auth_error"
+  | "account_unlocked";
 
 export function logStatus(route: string, status: number, note: LogNote = "ok"): void {
   console.log(JSON.stringify({ route, status, note }));
