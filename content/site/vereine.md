@@ -10,9 +10,9 @@ Vereine tragen das Leben in vielen Gemeinden. Turnvereine, Musikgesellschaften, 
 
 Die Werkzeuge in dieser Kategorie sind für Vereinsvorstände gebaut. Sie sind kurz, verständlich und brauchen keine Vorkenntnisse. Du beschreibst deinen Verein, deine Anlässe und deine Ziele, und das Werkzeug macht daraus Entwürfe: ein Kommunikationskonzept für die Generalversammlung, ein Sponsoring-Dossier mit Paketen, eine Übersicht der Anspruchsgruppen. Die Begriffe passen sich an, es geht um Mitglieder statt Kunden und um den Vorstand statt die Geschäftsleitung.
 
-Dein Vereinsprofil bleibt in deinem Browser. Du kannst es als Datei sichern und im nächsten Vereinsjahr, in einem anderen Browser oder für die Nachfolge im Vorstand wieder laden. So geht nichts verloren, wenn die Zuständigkeit wechselt.
+Dein Vereinsprofil bleibt in deinem Browser, mit einem Konto liegt es zusätzlich dort. Du kannst es als Datei sichern und im nächsten Vereinsjahr, in einem anderen Browser oder für die Nachfolge im Vorstand wieder laden. So geht nichts verloren, wenn die Zuständigkeit wechselt.
 
-Das Ergebnis siehst du immer sofort. Dateien wie PDF oder Word gibt es nach einem kurzen Formular. Die Werkzeuge sind kostenlos, ohne Konto und ohne Vertrag.
+Das Ergebnis siehst du immer sofort. Dateien wie PDF oder Word gibt es nach einem kurzen Formular oder einer Anmeldung. Die Werkzeuge sind kostenlos und ohne Vertrag, ein Konto ist freiwillig.
 
 Die Werkzeuge sind so gebaut, dass du sie auch in einer Vorstandssitzung gemeinsam durchlaufen kannst. Mehrere Köpfe sehen mehr, und die Ergebnisse lassen sich direkt am Bildschirm besprechen. Was ihr festhaltet, kann als PDF an das Protokoll der nächsten Sitzung gehängt oder an der Generalversammlung vorgestellt werden.
 
@@ -35,7 +35,7 @@ Bei Anlässen hilft die Planung rückwärts. Beginne beim Datum des Dorffests, d
 
 ## Häufige Fragen
 ### Sind die Werkzeuge wirklich kostenlos für Vereine?
-Ja. Es gibt kein Konto und keinen Vertrag. Für Dateien und weitere Werkzeuge bitten wir um ein kurzes Formular mit Name, Firma oder Verein und E-Mail.
+Ja. Es gibt keinen Vertrag, und ein Konto ist freiwillig. Für Dateien und weitere Werkzeuge bitten wir um ein kurzes Formular mit Name, Firma oder Verein und E-Mail, oder um eine Anmeldung.
 
 ### Muss ich als Vorstand Marketing-Kenntnisse haben?
 Nein. Die Werkzeuge fragen in einfachen Worten und erklären, wozu eine Angabe dient. Das Ergebnis ist ein Entwurf, den du anpassen kannst.

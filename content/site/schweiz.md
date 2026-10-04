@@ -10,7 +10,7 @@ Manche Marketingfragen sind typisch schweizerisch. Wie gestaltest du einen Whats
 
 Diese Kategorie sammelt zwei Arten von Werkzeugen. Die einen sind praktisch: Sie erzeugen Links, QR-Codes, Druckvorlagen und Listen, die du sofort einsetzen kannst, am Schaufenster, auf dem Flyer oder im Profil. Die anderen führen dich durch Rechtsfragen, etwa zu Impressum, Werbe-E-Mails, Gewinnspielen und Datenschutzerklärung. Bei diesen Werkzeugen stammen alle Formulierungen aus geprüften Rechtstexten, die ein Mensch freigegeben hat. Das Werkzeug selbst formuliert keine Rechtsaussagen.
 
-Alle Werkzeuge lesen Firmenname, Ort und Kanton aus deinem Firmenprofil, damit du nichts doppelt eintragen musst. Das Profil liegt nur in deinem Browser.
+Alle Werkzeuge lesen Firmenname, Ort und Kanton aus deinem Firmenprofil, damit du nichts doppelt eintragen musst. Das Profil liegt in deinem Browser, mit einem Konto zusätzlich bei deinem Konto.
 
 Das Ergebnis siehst du immer sofort. Druckvorlagen und Dateien gibt es nach einem kurzen Formular. Rechtliche Hinweise ersetzen keine Beratung im Einzelfall.
 

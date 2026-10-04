@@ -125,7 +125,7 @@ Bewusst nicht behoben:
 | Zwischenspeicher je Domain | Fehlt. Plan v2 sieht 24 Stunden in Redis vor; geht erst, wenn Upstash verbunden ist. Bis dahin ruft jeder Check die Website neu ab. |
 | Google-Profil im Check | Ohne `GOOGLE_PLACES_API_KEY` bleibt der Bereich «nicht bestätigt» (Annahme 0,25 oder 0,5). Der Schlüssel braucht ein Zahlungsmittel in der Google Cloud (PLAN.md). |
 | Rechtsabsatz in den Seitentexten | `content/site/marketing-schweiz.md` (UWG, revDSG, PBV) und `content/site/schweiz.md` stammen von mir. Nach Regel 8 muss ein Mensch gegenlesen, bevor die Seite öffentlich wird. |
-| Texte mit «ohne Konto» | `content/site/*.md`, TrustLine und CLAUDE.md sagen «kein Konto». Ändern, falls Zugang v2 kommt. |
+| Texte mit «ohne Konto» | Erledigt am 04.10.2026: Die Seitentexte (Startseiten-FAQ, Strategie, Schweiz, Vereine, KI, Check) sagen nun, dass Profil und Zwischenstände mit einem Konto zusätzlich beim Konto liegen und dass Formular oder Anmeldung gleichwertig sind. «Kein Konto nötig» in der TrustLine und «ohne Konto» in den Beschreibungen bleiben, weil das Formular ohne Konto weiter geht. **Die Datenschutzerklärung (Mensch, Regel 8) muss denselben Stand nennen.** |
 | Logo | Nachzeichnung der Original-PNG (liegt in `assets/brand/`). Ein Vektor-Original ersetzt sie. |
 | Warteschlange der Leads | Erledigt am 04.10.2026 als Vercel Cron (`/api/cron/leads`, täglich 04:17 UTC) statt n8n-Workflow. Offen: Lauf in den Vercel-Logs nach dem ersten Morgen prüfen; ob der Cron die Deployment-Schutzfunktion von Vercel passiert, ist [Vermutung]. Mit der Domain tools.alperna.ch (ausgenommen vom Schutz) entfällt die Frage. |
 | Altes Repo | `AlpernaGmbH/alperna-website-v2` enthält den alten Stand. Kann archiviert werden. |

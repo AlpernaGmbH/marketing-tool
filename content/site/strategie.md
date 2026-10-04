@@ -10,7 +10,7 @@ Eine Strategie klingt gross. Für ein KMU heisst sie etwas Einfaches: Du weisst,
 
 Die Werkzeuge in dieser Kategorie führen dich Schritt für Schritt durch diese Klärung. Du beginnst mit einem Blick auf deinen heutigen Auftritt, legst dann deine Zielgruppe fest, schärfst deine Positionierung, formulierst deine Botschaften und planst Kanäle, Budget und Kampagnen. Am Ende steht eine Marketingstrategie auf einer Seite, die du Mitarbeitenden, einer Agentur oder deiner Bank zeigen kannst.
 
-Jedes Werkzeug schreibt seine Ergebnisse in dein Firmenprofil. Das Profil liegt nur in deinem Browser. Die nächsten Werkzeuge lesen daraus und befüllen sich vor, sodass du nichts doppelt eingeben musst. Der Pfad unten zeigt, wo du stehst.
+Jedes Werkzeug schreibt seine Ergebnisse in dein Firmenprofil. Das Profil liegt in deinem Browser, mit einem Konto zusätzlich bei deinem Konto. Die nächsten Werkzeuge lesen daraus und befüllen sich vor, sodass du nichts doppelt eingeben musst. Der Pfad unten zeigt, wo du stehst.
 
 Du kannst jedes Werkzeug einmal vollständig durchlaufen und das Ergebnis am Bildschirm ansehen, ohne etwas auszufüllen. Für Dateien und weitere Werkzeuge bitten wir um ein kurzes Formular. Wenn du beim Weg lieber Begleitung hast, findest du unten, wie Alperna dich dabei unterstützt.
 
@@ -44,7 +44,7 @@ Beginne mit dem Digitaler-Auftritt-Check. Danach folgen Zielgruppe, Positionieru
 Nein. Jedes Werkzeug fragt nur, was es braucht. Was du schon im Firmenprofil hinterlegt hast, wird vorbefüllt. Das Ergebnis siehst du immer sofort am Bildschirm.
 
 ### Wer sieht meine Eingaben?
-Niemand ausser dir. Eingaben in den Werkzeugen bleiben in deinem Browser. Nur das Formular für Dateien und weitere Werkzeuge geht an Alperna.
+Niemand ausser dir. Eingaben in den Werkzeugen bleiben in deinem Browser. Meldest du dich mit einem Konto an, liegen sie zusätzlich in deinem Konto. An Alperna geht nur das Formular für Dateien und weitere Werkzeuge, oder Name und E-Mail aus deinem Konto, wenn du dem Kontakt zustimmst.
 
 ### Was mache ich mit dem Ergebnis?
 Du kannst es kopieren, als PDF oder Word speichern und weitergeben, zum Beispiel an Mitarbeitende, an eine Agentur oder an eine Beraterin. Wenn du Hilfe bei der Umsetzung möchtest, ist Alperna ein möglicher Weg.

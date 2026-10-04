@@ -49,7 +49,7 @@ Nichts. Das Ergebnis am Bildschirm und das Kopieren des Textes sind kostenlos. P
 Er ruft die Startseite, die robots.txt und die sitemap.xml deiner Website ab. Daraus liest er 16 Punkte zu Technik und Suchmaschinen. Er erkennt Newsletter-Formulare, Shop- und Buchungssysteme sowie Werkzeuge zur Messung von Besucherzahlen und prüft, ob Social-Media-Kanäle verlinkt sind. Unterseiten und geschützte Bereiche liest er nicht.
 
 ### Was passiert mit meiner Website-Adresse und meinen Angaben?
-Die Adresse und deine Angaben gehen an unseren Server, der die Seite abruft und das Ergebnis zurückschickt. Wir speichern sie nicht und schreiben sie nicht ins Protokoll. Das Ergebnis liegt danach nur in deinem Browser. Das Formular für den Download, also Name, Firma, E-Mail und optional Telefon, geht an Alperna, wenn du es abschickst.
+Die Adresse und deine Angaben gehen an unseren Server, der die Seite abruft und das Ergebnis zurückschickt. Wir speichern sie nicht und schreiben sie nicht ins Protokoll. Das Ergebnis liegt danach in deinem Browser, bei angemeldeten Personen zusätzlich in ihrem Konto. Das Formular für den Download, also Name, Firma, E-Mail und optional Telefon, geht an Alperna, wenn du es abschickst.
 
 ### Warum bestätigt der Check mein Google-Profil nicht?
 Der Check prüft das Google-Profil nur, wenn er Zugang zur Schnittstelle von Google hat. Fehlt er, sieht der Check nur, ob deine Website auf Google Maps verlinkt. Das ist ein Hinweis und keine Bestätigung. Im Ergebnis steht der Bereich darum als Annahme, und der erste Schritt lautet, den Eintrag selbst in Google Maps zu prüfen.

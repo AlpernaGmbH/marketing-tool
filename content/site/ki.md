@@ -38,10 +38,10 @@ Auch der Ton verlangt Aufmerksamkeit. KI-Texte neigen zu Superlativen, zu Floske
 Diese Kategorie ist im Aufbau. Sobald ein Werkzeug bereit ist, erscheint es hier mit allen Hinweisen zu Datenschutz und Limit.
 
 ### Was passiert mit dem, was ich eingebe?
-Die Eingaben werden zur Verarbeitung an einen externen Anbieter übermittelt. Gib darum keine Firmengeheimnisse und keine Personendaten Dritter ein. Die Werkzeuge speichern deine Eingaben nicht.
+Die Eingaben werden zur Verarbeitung an einen externen Anbieter übermittelt. Gib darum keine Firmengeheimnisse und keine Personendaten Dritter ein. Die Werkzeuge speichern deine Eingaben nicht auf unserem Server. Ausnahme: Wenn du angemeldet bist, liegt dein Zwischenstand in deinem Konto, damit du ihn auf jedem Gerät findest.
 
-### Warum brauche ich dafür das Formular?
-Die KI-Werkzeuge verursachen laufende Kosten. Darum stehen sie erst nach dem kurzen Formular zur Verfügung. So bleiben sie für alle kostenlos.
+### Warum brauche ich dafür das Formular oder eine Anmeldung?
+Die KI-Werkzeuge verursachen laufende Kosten. Darum stehen sie erst nach dem kurzen Formular oder der Anmeldung zur Verfügung. So bleiben sie für alle kostenlos.
 
 ### Was ist, wenn das Tageslimit erreicht ist?
 Dann zeigt das Werkzeug einen ruhigen Hinweis, und du kannst am nächsten Tag weiterarbeiten. Wo es passt, gibt es statische Vorlagen als Ersatz.
