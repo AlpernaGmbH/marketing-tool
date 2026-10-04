@@ -23,7 +23,9 @@ export type LogNote =
   | "ai_cached"
   | "ai_failed"
   | "ai_limit"
-  | "ai_capacity";
+  | "ai_capacity"
+  | "read_ok"
+  | "read_error";
 
 /** Nur Buchstaben, Ziffern und `_ . : > -`, höchstens 80 Zeichen: Eine Fehlerart, nie ein Text. */
 export function safeDetail(detail: string): string {

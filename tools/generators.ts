@@ -1,0 +1,16 @@
+import type { GeneratorDef } from "@/lib/generator";
+// new-tool:generator-imports
+
+// Explizite Liste aller Generatoren (kein Glob), wie tools/index.ts. Jeder Eintrag ist tools/<slug>/generator.ts.
+// Die Route /api/generate findet den Generator über den Slug; Werkzeuge ohne KI-Entwurf stehen hier nicht.
+// Ein- und Ausgabetypen sind je Generator verschieden; die Route arbeitet nur über die Schemas des Eintrags.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AnyGenerator = GeneratorDef<any, any>;
+
+export const generators: AnyGenerator[] = [
+  // new-tool:generators
+];
+
+export function getGenerator(slug: string): AnyGenerator | undefined {
+  return generators.find((g) => g.slug === slug);
+}

@@ -1,5 +1,6 @@
 import { generateText, Output } from "ai";
 import { SYSTEM_PROMPT, einordnungSchema, userPrompt, type Fakten } from "@/lib/check/ai";
+import { parseJsonObject } from "@/lib/generator";
 
 // Aufruf der KI. Zwei Wege:
 //  1. MISTRAL_API_KEY gesetzt: direkt bei Mistral AI (Frankreich), im kostenlosen Plan «Experiment». Das ist der Standard,
@@ -158,6 +159,36 @@ export const generateRaw: GenerateRaw = async (fakten) => {
     providerOptions: fallbacks.length > 0 ? { gateway: { models: fallbacks } } : undefined,
   });
   return output;
+};
+
+/**
+ * JSON-Objekt ohne festes Schema beim Anbieter: für die Generatoren (lib/generator.ts). Die Form prüft danach
+ * checkGenerated; hier wird nur das Objekt aus der Antwort gelesen. Wirft bei Fehlern des Anbieters oder bei Antworten
+ * ohne JSON (Fehlerart «AiBadJson», nie der Text).
+ */
+export type GenerateJson = (args: { system: string; prompt: string; maxOutputTokens: number; temperature?: number }) => Promise<unknown>;
+
+export const generateJson: GenerateJson = async ({ system, prompt, maxOutputTokens, temperature = 0.4 }) => {
+  let text: string;
+  if (usesMistral()) {
+    text = await mistralChat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000 });
+  } else {
+    const [model, ...fallbacks] = modelsFromEnv();
+    const out = await generateText({
+      model,
+      system,
+      prompt,
+      temperature,
+      maxOutputTokens,
+      abortSignal: AbortSignal.timeout(40_000),
+      maxRetries: 1,
+      providerOptions: fallbacks.length > 0 ? { gateway: { models: fallbacks } } : undefined,
+    });
+    text = out.text;
+  }
+  const value = parseJsonObject(text);
+  if (value === null) throw new MistralError("AiBadJson");
+  return value;
 };
 
 /** Freier Text statt strukturierter Ausgabe: für Text-Umschreiber und Textcheck. Gleicher Weg wie die Einordnung (Mistral direkt oder Gateway). */
