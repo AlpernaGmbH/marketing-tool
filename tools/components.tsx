@@ -15,5 +15,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "icp-builder": dynamic(() => import("./icp-builder/Tool")),
   "nutzenversprechen": dynamic(() => import("./nutzenversprechen/Tool")),
   "persona": dynamic(() => import("./persona/Tool")),
+  "positionierung": dynamic(() => import("./positionierung/Tool")),
   // new-tool:components
 };

@@ -9,6 +9,7 @@ import ideenAusWebsiteConfig from "./ideen-aus-website/tool.config";
 import icpBuilderConfig from "./icp-builder/tool.config";
 import nutzenversprechenConfig from "./nutzenversprechen/tool.config";
 import personaConfig from "./persona/tool.config";
+import positionierungConfig from "./positionierung/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -24,5 +25,6 @@ export const tools: ToolConfig[] = [
   icpBuilderConfig,
   nutzenversprechenConfig,
   personaConfig,
+  positionierungConfig,
   // new-tool:configs
 ];
