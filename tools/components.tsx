@@ -16,5 +16,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "nutzenversprechen": dynamic(() => import("./nutzenversprechen/Tool")),
   "persona": dynamic(() => import("./persona/Tool")),
   "positionierung": dynamic(() => import("./positionierung/Tool")),
+  "botschaften": dynamic(() => import("./botschaften/Tool")),
   // new-tool:components
 };

@@ -4,6 +4,7 @@ import icpBuilderGenerator from "./icp-builder/generator";
 import nutzenversprechenGenerator from "./nutzenversprechen/generator";
 import personaGenerator from "./persona/generator";
 import positionierungGenerator from "./positionierung/generator";
+import botschaftenGenerator from "./botschaften/generator";
 // new-tool:generator-imports
 
 // Explizite Liste aller Generatoren (kein Glob), wie tools/index.ts. Jeder Eintrag ist tools/<slug>/generator.ts.
@@ -18,6 +19,7 @@ export const generators: AnyGenerator[] = [
   nutzenversprechenGenerator,
   personaGenerator,
   positionierungGenerator,
+  botschaftenGenerator,
   // new-tool:generators
 ];
 

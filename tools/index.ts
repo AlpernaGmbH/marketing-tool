@@ -10,6 +10,7 @@ import icpBuilderConfig from "./icp-builder/tool.config";
 import nutzenversprechenConfig from "./nutzenversprechen/tool.config";
 import personaConfig from "./persona/tool.config";
 import positionierungConfig from "./positionierung/tool.config";
+import botschaftenConfig from "./botschaften/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -26,5 +27,6 @@ export const tools: ToolConfig[] = [
   nutzenversprechenConfig,
   personaConfig,
   positionierungConfig,
+  botschaftenConfig,
   // new-tool:configs
 ];
