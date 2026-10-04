@@ -2,6 +2,7 @@ import type { ToolConfig } from "@/lib/define-tool";
 import digitalerAuftrittCheckConfig from "./digitaler-auftritt-check/tool.config";
 import textcheckConfig from "./textcheck/tool.config";
 import textUmschreiberConfig from "./text-umschreiber/tool.config";
+import reifegradCheckConfig from "./reifegrad-check/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -10,5 +11,6 @@ export const tools: ToolConfig[] = [
   digitalerAuftrittCheckConfig,
   textcheckConfig,
   textUmschreiberConfig,
+  reifegradCheckConfig,
   // new-tool:configs
 ];
