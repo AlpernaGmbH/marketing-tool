@@ -4,6 +4,11 @@ Stand: 04.10.2026. **Etappe 1c ist gebaut** (Marketing-Check mit Crawler ersetzt
 
 ## Fertig
 
+**Nachbesserung Textcheck und KI-Protokoll (04.10.2026)**
+
+- **Rückmeldung Alperna:** Der Textcheck meldete bei Texten mit absichtlichen Rechtschreibfehlern «nichts gefunden». Ursache: Er prüft Rechtschreibung einzelner Wörter und Grammatik gar nicht (kein Wörterbuch), und Tagline und Ergebnis haben das nicht klar gesagt. Das Wort «Tippfehler» in Tagline, Beschreibung und Einleitung war irreführend und ist durch «Formfehler» ersetzt. Das Ergebnis zeigt jetzt immer, was geprüft und was nicht geprüft wurde; bei null Funden steht «Zu den geprüften Punkten ist nichts aufgefallen» samt Hinweis. Das Textfeld hat die Rechtschreibprüfung des Browsers eingeschaltet (`lang="de-CH"`), sie unterstreicht unbekannte Wörter beim Eingeben.
+- **KI-Fehlerquote 80 % (Dashboard, Alperna):** Ursache nicht bestätigt. Geprüft: Beide Modelle (`mistral/mistral-small`, `mistral/mistral-nemo`) stehen in der Modellliste des Gateways. Die Anfrage unserer Funktion ist wohlgeformt (mit einer lokalen Attrappe nachgestellt: Modell, JSON-Schema, Parameter). Gefunden: Die Bibliothek wiederholte jeden Fehler **zwei Mal** (3 Anfragen pro Aufruf), jede davon zählt im Dashboard als Fehler. Das ist jetzt auf einen Wiederholungsversuch begrenzt (`maxRetries: 1`). Neu im Protokoll: die **Fehlerart** (zum Beispiel `RetryError>GatewayInternalServerError:500`), nie die Meldung. Den Vercel-Zugang für Protokolle habe ich nicht (403, persönliches Konto); die echte Meldung steht im Dashboard unter der fehlgeschlagenen Anfrage.
+
 **Textcheck (04.10.2026): erstes Werkzeug der Kategorie «Content»**
 
 - **Was es tut:** Text einfügen, sofort sehen: Fehler (doppelte Wörter, Leerzeichen, Satzzeichen), Schweizer Schreibweise (Eszett, Anführungszeichen, Prozent, CHF-Stellung, Tausender), Floskeln und lange Sätze, Lesbarkeitsindex nach Amstad. Dazu ein bereinigter Text zum Kopieren und ein Bericht. Spec: `specs/textcheck.md`.

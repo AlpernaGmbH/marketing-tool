@@ -40,7 +40,7 @@ vi.mock("@/lib/access", async (orig) => ({ ...(await orig<typeof import("@/lib/a
 vi.mock("@/lib/ai-quota", async (orig) => ({ ...(await orig<typeof import("@/lib/ai-quota")>()), defaultAiStore: () => ai }));
 vi.mock("@/lib/ratelimit", () => ({ withinLimit: async () => limit.allow }));
 vi.mock("@/lib/auth", async (orig) => ({ ...(await orig<typeof import("@/lib/auth")>()), getAccount: async () => who.account }));
-vi.mock("@/lib/ai", () => ({ generateRaw: (...a: unknown[]) => gen.fn(...a), AI_MODELS: ["m"] }));
+vi.mock("@/lib/ai", async (orig) => ({ ...(await orig<typeof import("@/lib/ai")>()), generateRaw: (...a: unknown[]) => gen.fn(...a) }));
 
 import { POST } from "@/app/api/ai/route";
 
@@ -159,6 +159,21 @@ describe("POST /api/ai", () => {
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ error: "ai_failed" });
     expect(ai.cache.size).toBe(0);
+  });
+
+  it("loggt bei einem Ausfall die Fehlerart, aber nie die Meldung des Anbieters", async () => {
+    const err = Object.assign(new Error("Meldung mit Malerei Keller"), { name: "GatewayRateLimitError", statusCode: 429 });
+    gen.fn.mockRejectedValue(err);
+    await call();
+    const all = logs.join("\n");
+    expect(all).toContain('"detail":"GatewayRateLimitError:429"');
+    expect(all).not.toContain("Malerei");
+  });
+
+  it("loggt bei einer verworfenen Ausgabe den Grund als Stichwort", async () => {
+    gen.fn.mockResolvedValue({ zusammenfassung: "x", prioritaeten: [] });
+    await call();
+    expect(logs.join("\n")).toMatch(/"detail":"rejected:[a-z_]+"/);
   });
 
   it("bucht den Platz nach einem Fehlversuch zurück: Ausfälle verbrauchen das Tageslimit nicht", async () => {

@@ -1,12 +1,12 @@
 ---
 title: "Textcheck Schweiz: Floskeln und Lesbarkeit prüfen"
-description: "Füge deinen Text ein: Der Textcheck findet Floskeln und Tippfehler, prüft die Schweizer Schreibweise und misst die Lesbarkeit. Kostenlos."
+description: "Füge deinen Text ein: Der Textcheck findet Floskeln und Formfehler, prüft die Schweizer Schreibweise und misst die Lesbarkeit. Kostenlos."
 h1: "Textcheck für Schweizer KMU"
-tagline: "Wir finden Floskeln und Tippfehler, prüfen die Schweizer Schreibweise und messen die Lesbarkeit."
+tagline: "Wir finden Floskeln und Formfehler, prüfen die Schweizer Schreibweise und messen die Lesbarkeit."
 beispielFirma: "Malerei Keller, Gossau"
 ---
 ## Warum das wichtig ist
-Ein Text auf deiner Website entscheidet in wenigen Sekunden, ob jemand weiterliest. Der Textcheck zeigt dir, wo dein Text stolpert, bevor es Kundinnen und Kunden merken. Er prüft vier Dinge: Tippfehler, Schweizer Schreibweise, Floskeln und Lesbarkeit.
+Ein Text auf deiner Website entscheidet in wenigen Sekunden, ob jemand weiterliest. Der Textcheck zeigt dir, wo dein Text stolpert, bevor es Kundinnen und Kunden merken. Er prüft vier Dinge: Formfehler wie doppelte Wörter und falsche Leerzeichen, Schweizer Schreibweise, Floskeln und Lesbarkeit. Die Rechtschreibung einzelner Wörter prüft er nicht.
 
 In der Schweiz fällt eine fremde Schreibweise auf. Das Eszett gibt es hier nicht, und Anführungszeichen setzt man als Guillemets, also «so». Wer Texte aus Deutschland übernimmt oder mit einem Programm schreibt, das auf deutsche Einstellungen läuft, liefert Seiten, die importiert wirken. Als Vorlage dienen die Schreibweisungen der Bundeskanzlei. Sie sind für amtliche Texte des Bundes geschrieben und für Firmen nicht verbindlich, aber öffentlich und gut lesbar (Quelle: bk.admin.ch/de/schreibweisungen).
 
@@ -19,7 +19,7 @@ Schliesslich zählt die Lesbarkeit. Lange Sätze und lange Wörter machen einen 
 2. Gehe die Floskeln der Reihe nach durch. Streiche sie oder ersetze sie durch eine konkrete Angabe. Der Vorschlag in der Liste ist ein Anfang, nicht die Lösung.
 3. Teile lange Sätze. Meist genügt ein Punkt an der Stelle, an der ein «und» steht.
 4. Prüfe Beträge und doppelte Wörter von Hand. Schreibe CHF vor den Betrag und trenne die Tausender mit einem Apostroph.
-5. Lies den Text vor der Veröffentlichung einmal laut. Das findet, was kein Programm findet.
+5. Lies den Text vor der Veröffentlichung einmal laut und lass die Rechtschreibprüfung deines Textprogramms darüber laufen. Das findet, was dieses Werkzeug nicht findet.
 
 ## Häufige Fehler
 - Den Index als Urteil über den Text lesen. Er misst nur die Länge von Sätzen und Wörtern, also nimm ihn als Hinweis und lies den Text selbst.

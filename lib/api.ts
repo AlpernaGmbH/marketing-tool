@@ -15,7 +15,7 @@ export async function readJson(req: Request): Promise<unknown> {
 }
 
 /** Antwort mit Statuscode-Log (ohne Inhalte). */
-export function respond(route: string, status: number, body: unknown, note: LogNote = "ok"): NextResponse {
-  logStatus(route, status, note);
+export function respond(route: string, status: number, body: unknown, note: LogNote = "ok", detail?: string): NextResponse {
+  logStatus(route, status, note, detail);
   return NextResponse.json(body, { status, headers: { "cache-control": "no-store" } });
 }

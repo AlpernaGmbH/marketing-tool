@@ -34,11 +34,12 @@ function Intro({ inAccount }: { inAccount: boolean }) {
   return (
     <>
       <p>
-        Füge einen Text ein, zum Beispiel von deiner Website, aus einem Newsletter oder für einen Beitrag. Der Textcheck sucht Tippfehler, prüft die Schweizer
+        Füge einen Text ein, zum Beispiel von deiner Website, aus einem Newsletter oder für einen Beitrag. Der Textcheck sucht Formfehler wie doppelte Wörter und falsche Leerzeichen, prüft die Schweizer
         Schreibweise, markiert Floskeln und misst, wie leicht sich der Text lesen lässt. Du bekommst den Text mit den sicheren Korrekturen zurück.
       </p>
       <p>
-        Die Prüfung läuft in deinem Browser. Der Text geht an keinen Server und an keine KI.{" "}
+        Die Prüfung läuft in deinem Browser. Der Text geht an keinen Server und an keine KI. Rechtschreibung einzelner Wörter und Grammatik prüft der
+        Textcheck nicht: Dafür unterstreicht dein Browser unbekannte Wörter im Textfeld.{" "}
         {inAccount
           ? "Du bist angemeldet: Der Text wird in deinem Konto gespeichert, damit du ihn auf jedem Gerät wiederfindest."
           : "Der Text bleibt in deinem Browser. Mit Konto bleibt er auf jedem Gerät erhalten."}
@@ -127,10 +128,18 @@ function ResultView({
         </p>
       )}
 
+      <p className="text-sm text-muted-foreground">
+        Geprüft: doppelte Wörter, Leerzeichen und Satzzeichen, Schweizer Schreibweise, Floskeln aus unserer Liste, Satzlänge und Lesbarkeit. Nicht geprüft:
+        Rechtschreibung einzelner Wörter und Grammatik.
+      </p>
+
       <div className="grid gap-4">
         <h4>Das fällt auf</h4>
         {byKind.length === 0 ? (
-          <p>Es ist nichts aufgefallen. Der Text hat weder die geprüften Fehler noch Floskeln aus unserer Liste.</p>
+          <p>
+            Zu den geprüften Punkten ist nichts aufgefallen. Das heisst nicht, dass der Text fehlerfrei ist: Tippfehler in einzelnen Wörtern und Grammatik prüft der
+            Textcheck nicht.
+          </p>
         ) : (
           byKind.map((g) => (
             <section key={g.kind} aria-label={kindTitle(g.kind)} className="grid gap-2">
@@ -261,7 +270,8 @@ function TextFlow() {
           }}
           aria-describedby="tc-count tc-error"
           aria-invalid={Boolean(error)}
-          spellCheck={false}
+          lang="de-CH"
+          spellCheck
           disabled={!ready}
         />
         <p id="tc-count" className="mono text-sm text-muted-foreground">

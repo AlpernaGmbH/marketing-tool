@@ -19,6 +19,20 @@ export function modelsFromEnv(raw: string | undefined = process.env.AI_MODELS): 
   return list.length > 0 ? list : DEFAULT_AI_MODELS;
 }
 
+/**
+ * Beschreibt einen Fehler der KI-Schicht als kurze Fehlerart für das Protokoll, zum Beispiel
+ * «RetryError>GatewayInternalServerError:500». Enthält nie die Meldung, weil die Texte der Anbieter Eingaben enthalten können.
+ */
+export function describeAiError(error: unknown, depth = 0): string {
+  if (typeof error !== "object" || error === null) return "unbekannt";
+  const e = error as { name?: unknown; statusCode?: unknown; lastError?: unknown; cause?: unknown; finishReason?: unknown };
+  const name = typeof e.name === "string" && e.name ? e.name : "Error";
+  const status = typeof e.statusCode === "number" ? `:${e.statusCode}` : "";
+  const finish = typeof e.finishReason === "string" ? `:${e.finishReason}` : "";
+  const inner = depth < 2 ? (e.lastError ?? e.cause) : undefined;
+  return `${name}${status}${finish}${inner ? `>${describeAiError(inner, depth + 1)}` : ""}`;
+}
+
 export type GenerateRaw = (fakten: Fakten) => Promise<unknown>;
 
 export const generateRaw: GenerateRaw = async (fakten) => {
@@ -35,6 +49,8 @@ export const generateRaw: GenerateRaw = async (fakten) => {
     temperature: 0.3,
     maxOutputTokens: 700,
     abortSignal: AbortSignal.timeout(25_000),
+    // Ein Wiederholungsversuch genügt: Jeder weitere zählt im Gateway als eigene fehlgeschlagene Anfrage und verlängert die Wartezeit.
+    maxRetries: 1,
     providerOptions: fallbacks.length > 0 ? { gateway: { models: fallbacks } } : undefined,
   });
   return output;

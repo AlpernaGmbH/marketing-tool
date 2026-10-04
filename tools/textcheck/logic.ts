@@ -415,7 +415,7 @@ export function reportMarkdown(report: TextReport): string {
   }
   lines.push("");
   if (report.findings.length === 0) {
-    lines.push("Es ist nichts aufgefallen.");
+    lines.push("Zu den geprüften Punkten ist nichts aufgefallen. Rechtschreibung einzelner Wörter und Grammatik prüft der Textcheck nicht.");
     return lines.join("\n");
   }
   lines.push("## Das fällt auf", "");

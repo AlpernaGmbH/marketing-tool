@@ -3,7 +3,7 @@ import { z } from "zod";
 import { canStart, clientIp, defaultStore, gateSecret, ipHash, readGateCookie } from "@/lib/access";
 import { requestAccount } from "@/lib/account";
 import { cacheHash, defaultAiStore, limitsFromEnv, releaseSlot, takeSlot } from "@/lib/ai-quota";
-import { generateRaw } from "@/lib/ai";
+import { describeAiError, generateRaw } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
 import { buildFakten, pruefeEinordnung } from "@/lib/check/ai";
 import { verifyResult } from "@/lib/check/sign";
@@ -71,13 +71,13 @@ export async function POST(req: NextRequest) {
   let checked;
   try {
     checked = pruefeEinordnung(await generateRaw(fakten), fakten);
-  } catch {
+  } catch (error) {
     await releaseSlot(store, who.acchash); // ohne Einordnung kein verbrauchter Platz
-    return respond(ROUTE, 502, { error: "ai_failed" }, "ai_failed");
+    return respond(ROUTE, 502, { error: "ai_failed" }, "ai_failed", describeAiError(error));
   }
   if (!checked.ok) {
     await releaseSlot(store, who.acchash);
-    return respond(ROUTE, 502, { error: "ai_rejected" }, "ai_failed");
+    return respond(ROUTE, 502, { error: "ai_rejected" }, "ai_failed", `rejected:${checked.reason}`);
   }
 
   try {

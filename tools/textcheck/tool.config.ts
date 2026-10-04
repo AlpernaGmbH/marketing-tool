@@ -5,7 +5,7 @@ export default defineTool({
   name: "Textcheck",
   category: "content",
   audience: "kmu",
-  tagline: "Wir finden Floskeln und Tippfehler, prüfen die Schweizer Schreibweise und messen die Lesbarkeit.",
+  tagline: "Wir finden Floskeln und Formfehler, prüfen die Schweizer Schreibweise und messen die Lesbarkeit.",
   keyword: "Textcheck",
   related: ["digitaler-auftritt-check", "newsletter-check", "ideen-aus-website"],
   needsServer: false,

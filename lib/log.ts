@@ -1,5 +1,5 @@
-// Server-Logs enthalten nur Route, Statuscode und ein festes Stichwort.
-// Nie Eingaben, nie Klartext-IPs, nie E-Mail-Adressen.
+// Server-Logs enthalten nur Route, Statuscode und ein festes Stichwort, bei Fehlern der KI zusätzlich den Namen der
+// Fehlerart (zum Beispiel «GatewayRateLimitError:429»). Nie Eingaben, nie Klartext-IPs, nie E-Mail-Adressen.
 export type LogNote =
   | "ok"
   | "invalid_body"
@@ -25,6 +25,11 @@ export type LogNote =
   | "ai_limit"
   | "ai_capacity";
 
-export function logStatus(route: string, status: number, note: LogNote = "ok"): void {
-  console.log(JSON.stringify({ route, status, note }));
+/** Nur Buchstaben, Ziffern und `_ . : > -`, höchstens 80 Zeichen: Eine Fehlerart, nie ein Text. */
+export function safeDetail(detail: string): string {
+  return detail.replace(/[^A-Za-z0-9_.:>-]/g, "").slice(0, 80);
+}
+
+export function logStatus(route: string, status: number, note: LogNote = "ok", detail?: string): void {
+  console.log(JSON.stringify(detail ? { route, status, note, detail: safeDetail(detail) } : { route, status, note }));
 }

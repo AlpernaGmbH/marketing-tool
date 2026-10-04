@@ -238,7 +238,8 @@ describe("textcheck: Gesamtbericht", () => {
     const text = "Wir streichen Wände und Fassaden in Gossau und Herisau. Ein Termin ist meist innert einer Woche möglich. Du schreibst uns, wir kommen vorbei und machen eine Offerte.";
     const r = analyzeText(text);
     expect(r.findings).toEqual([]);
-    expect(reportMarkdown(r)).toContain("Es ist nichts aufgefallen.");
+    expect(reportMarkdown(r)).toContain("nichts aufgefallen");
+    expect(reportMarkdown(r)).toContain("Rechtschreibung einzelner Wörter und Grammatik prüft der Textcheck nicht");
   });
 
   it("der Bericht zum Kopieren nennt Zahlen, Gruppen und Beispiele, mit Komma als Dezimalzeichen", () => {

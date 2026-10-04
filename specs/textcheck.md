@@ -44,7 +44,7 @@ Alle Regeln in `tools/textcheck/logic.ts`. Treffer werden je Regel gruppiert (An
 - Kaputte Muster in `floskeln.json`: der Eintrag fällt weg, der Rest läuft.
 
 ## Texte
-- Tagline: «Wir finden Floskeln und Tippfehler, prüfen die Schweizer Schreibweise und messen die Lesbarkeit.» (96 Zeichen)
+- Tagline: «Wir finden Floskeln und Formfehler, prüfen die Schweizer Schreibweise und messen die Lesbarkeit.» (96 Zeichen)
 - SEO-Title: «Textcheck Schweiz: Floskeln und Lesbarkeit prüfen»; Meta-Description in `content/tools/textcheck.md`
 - Erklärtext, FAQ (6) und Alperna-Satz: `content/tools/textcheck.md`. Wörter und Beispiele im Seitentext dürfen die Sperrliste und die Stilregeln der Seitentexte nicht verletzen (kein Eszett, keine geraden Anführungszeichen, kein Leerzeichen vor Satzzeichen); deshalb zeigt die Seite die Fehlerarten beschrieben statt wörtlich.
 
