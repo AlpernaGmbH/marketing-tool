@@ -1067,7 +1067,7 @@ test.describe("Welle 2b im Browser (Strategie-Generatoren II)", () => {
     const region = page.getByRole("region", { name: "Deine Positionierung" });
     await expect(region).toBeVisible();
     await expect(region.getByRole("meter", { name: "Positionierung auf der Startseite" })).toBeVisible();
-    await expect(region.getByRole("list", { name: "Funde nach Gruppen" }).getByRole("listitem")).toHaveCount(6);
+    await expect(region.getByRole("list", { name: "Funde nach Gruppen" }).locator(":scope > li")).toHaveCount(6);
     await expect(region.getByRole("heading", { name: "Kernsatz" })).toBeVisible();
     await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
     expect(calls).toEqual({ read: 1, generate: 1 });
@@ -1118,7 +1118,7 @@ test.describe("Welle 2b im Browser (Strategie-Generatoren II)", () => {
     await page.getByLabel("Wofür steht dein Betrieb?").fill("Für Fassaden, die halten, und eine Beratung am Haus, die man versteht.");
     await page.getByLabel("Drei Wörter, mit denen Kundschaft dich beschreiben soll").fill("verlässlich, nah, sorgfältig");
     await page.getByLabel("Anrede deiner Kundschaft").selectOption("du");
-    await page.getByLabel("Website für den heutigen Ton lesen").check();
+    await page.getByRole("checkbox", { name: "Website für den heutigen Ton lesen" }).check();
     const start = page.getByRole("button", { name: "Markenplattform erstellen" });
     await expect(start).toBeEnabled();
     await start.click();
@@ -1216,8 +1216,8 @@ test.describe("Welle 2b im Browser (Strategie-Generatoren II)", () => {
     await page.getByLabel("Branche", { exact: true }).fill("Malerei");
     await page.getByLabel("Ort", { exact: true }).fill("Gossau");
     await page.getByLabel("Was bietest du an, und was fragt dich die Kundschaft am häufigsten?").fill("Fassaden und Innenräume; die Kundschaft fragt nach Dauer, Preis und Farbe.");
-    await expect(page.getByLabel("Instagram", { exact: true })).toBeChecked();
-    await expect(page.getByLabel("Google-Beitrag", { exact: true })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Instagram", exact: true })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Google-Beitrag", exact: true })).toBeChecked();
     await page.getByLabel("Wie viele Beiträge pro Woche sind realistisch?").selectOption("2");
     const start = page.getByRole("button", { name: "Säulen erstellen" });
     await expect(start).toBeEnabled();
