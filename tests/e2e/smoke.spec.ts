@@ -301,6 +301,14 @@ test.describe("Zugang: ein freier Durchlauf, dann Formular", () => {
     expect((await used.json()).error).toBe("gate");
   });
 
+  test("Konto-Anmeldung ist ohne Einrichtung aus: /api/auth 404, /api/lead/account 401, /api/access bietet nur das Formular", async ({ request }) => {
+    expect((await request.get("/api/auth/get-session")).status()).toBe(404);
+    const noSession = await request.post("/api/lead/account", { data: { tool: TOOL, consent: true } });
+    expect(noSession.status()).toBe(401);
+    const access = await (await request.post("/api/access", { data: { tool: TOOL } })).json();
+    expect(access).toMatchObject({ login: null, signedIn: false });
+  });
+
   test("ein Cookie von woanders ändert nichts: ohne Cookie gilt der freie Durchlauf", async ({ playwright }) => {
     const fresh = await playwright.request.newContext({ baseURL: "http://127.0.0.1:3100" });
     const res = await fresh.post("/api/access", { data: { tool: TOOL } });

@@ -9,7 +9,7 @@ Jede Tool-Seite ist zugleich eine SEO-Landingpage mit 800-1'200 Wörtern Text.
 Sprache: Deutsch (Schweiz). Zielgruppe: KMU-Entscheider 30–60,
 Vereinsvorstände, Selbständige.
 
-## Zugangsmodell (kein Login, keine Konten)
+## Zugangsmodell (ein freier Durchlauf, danach Konto per Google; Zugang v2, Stand 04.10.2026)
 - Alle Texte, Beispiele, FAQ: öffentlich, immer indexierbar.
 - Freier Durchlauf: Jeder Besucher darf ein Tool einmal vollständig
 durchlaufen. Ergebnis am Bildschirm und Text-Copy sind frei. Dateien (PDF,
@@ -23,9 +23,22 @@ dann sind alle Werkzeuge und Downloads offen, und wir melden uns persönlich,
 falls du Fragen hast.»
 - Nach dem Absenden: Besucher ist freigeschaltet (alle Tools, alle
 Downloads), Lead geht über /api/lead an n8n ins CRM.
+- Konto (Zugang v2): Ist die Anmeldung eingerichtet (GOOGLE_CLIENT_ID,
+GOOGLE_CLIENT_SECRET, BETTER_AUTH_SECRET), zeigt das LeadGate zuerst «Mit Google
+anmelden» (mit dem Häkchen «Alperna darf mich zu meinem Ergebnis
+kontaktieren») und das Formular als Ausweg («Lieber ohne Google-Konto?»). Ohne
+Einrichtung gilt nur das Formular. Nach der Rückkehr von Google (?konto=ok)
+schaltet POST /api/lead/account frei: Name und E-Mail kommen aus dem Konto,
+nicht aus dem Browser. Die Freischaltung des Kontos liegt in Redis unter
+acct:<HMAC der E-Mail> (TTL 365 Tage) und gilt auf allen Geräten. Ein Konto,
+das schon freigeschaltet ist, erzeugt keinen zweiten Lead. Eine Anmeldung allein
+schaltet nicht frei: ohne die Einwilligung im Fenster gibt es keine
+Freischaltung. Sitzung: Better Auth im Stateless-Modus (Cookie
+better-auth.session_data, notwendig, 30 Tage, kein Banner), keine Datenbank.
 - Zählung: lib/access.ts bildet einen HMAC-SHA256 der Client-IP (x-forwarded-
 for erstes Element) mit GATE_SECRET, gekürzt auf 16 Byte. Redis-Keys: run:
-<iphash> (Zähler, TTL 30 Tage), unlocked:<iphash> (TTL 365 Tage), popular:
+<iphash> (Zähler, TTL 30 Tage), unlocked:<iphash> (TTL 365 Tage), acct:<acchash>
+(Konto freigeschaltet, TTL 365 Tage), popular:
 <slug> (Zähler), ai:<iphash>:<YYYY-MM-DD> und lookup:<iphash>:<YYYY-MM-DD>
 (TTL 2 Tage). Dazu ein signiertes Cookie mt_gate {runs, unlocked, iat}
 (HttpOnly, SameSite=Lax, 365 Tage). Gesperrt ist, wer in Redis ODER Cookie
@@ -60,6 +73,8 @@ generateStaticParams, Tool als Client-Komponente
 exportieren/importieren, alles löschen
 - app/api/access/route.ts, app/api/access/complete/route.ts,
 app/api/lead/route.ts – Zugang und Leads
+- app/api/auth/[...all]/route.ts – Anmeldung (Better Auth, Google); app/api/lead/account/route.ts –
+Freischalten mit Konto
 - app/api/check/route.ts – Marketing-Check: ruft die Website des Besuchers ab
 (SSRF-Schutz in lib/check/net.ts), streamt Schritte und Ergebnis als NDJSON
 - app/api/ai/route.ts, app/api/lookup/route.ts – Etappe 2
@@ -79,6 +94,8 @@ Breadcrumbs
 - lib/access.ts – ipHash(), readGateCookie(), writeGateCookie(), canStart(),
 markComplete(), unlock()
 - lib/redis.ts – Upstash-Client, Key-Helfer, TTLs
+- lib/auth.ts, lib/account.ts, lib/konto-client.ts – Konto: Better Auth (Server), Kennung
+aus der Sitzung, Rückkehr von Google (Browser)
 - lib/profile.ts – Profil-Typen, Validierung, Export/Import JSON (rein, ohne React)
 - lib/use-profile.ts – useProfile(): localStorage-Key mt:profile
 - lib/check/ – Engine des Marketing-Checks (Port aus dem Agentur-Tool): net.ts,
@@ -116,8 +133,9 @@ Anführungszeichen, CHF 1'000.-, Datum 03.10.2026, Prozent mit Leerzeichen
 (8,1 %).
 3. Jede logic.ts hat Tests. `npm run check` (typecheck, test, content-check,
 build) ist vor jedem Commit grün.
-4. Keine externen Skripte ausser Umami. Einziges Cookie: mt_gate (notwendig,
-in der Datenschutzerklärung erklärt, kein Banner). Fonts über next/font/local
+4. Keine externen Skripte ausser Umami. Cookies: mt_gate und, nach der Anmeldung,
+die Sitzung von Better Auth (beide notwendig, in der Datenschutzerklärung
+erklärt, kein Banner). Fonts über next/font/local
 (Geist, Geist Mono, Instrument Serif).
 5. Lighthouse mobil: Performance, SEO, Accessibility je ≥ 95 pro Tool-Seite.
 6. Ein Tool = ein Ordner. Neue Tools nur über `npm run new-tool <slug>`.

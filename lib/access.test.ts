@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  accountHash,
   canStart,
   clientIp,
   ipHash,
   markComplete,
+  redisStore,
   signGate,
   unlock,
   verifyGate,
@@ -140,5 +142,84 @@ describe("unlock", () => {
     const store = new MemoryStore();
     store.failing = true;
     expect((await unlock(store, "h1", null, NOW)).unlocked).toBe(true);
+  });
+});
+
+describe("Konto (acct:<hash>)", () => {
+  it("accountHash ist stabil, unabhängig von Gross- und Kleinschreibung, 32 Hex-Zeichen und nie die Adresse", () => {
+    const h = accountHash("Anna@Keller.ch ", SECRET);
+    expect(h).toBe(accountHash("anna@keller.ch", SECRET));
+    expect(h).toMatch(/^[0-9a-f]{32}$/);
+    expect(h).not.toContain("anna");
+    expect(h).not.toBe(accountHash("anna@keller.ch", SECRET + "x"));
+  });
+
+  it("accountHash und ipHash kollidieren nicht, auch bei gleichem Text", () => {
+    expect(accountHash("1.2.3.4", SECRET)).not.toBe(ipHash("1.2.3.4", SECRET));
+  });
+
+  it("canStart: ein freigeschaltetes Konto öffnet, auch wenn IP und Cookie als gebraucht gelten", async () => {
+    const store = new MemoryStore();
+    store.runs.set("h1", 2);
+    store.accounts.add("acc1");
+    expect(await canStart(store, "h1", cookie({ runs: 2 }), "acc1")).toEqual({ allowed: true, unlocked: true, reason: "unlocked" });
+    expect((await canStart(store, "h1", cookie({ runs: 2 }), "anderes-konto")).allowed).toBe(false);
+    expect((await canStart(store, "h1", cookie({ runs: 2 }), null)).allowed).toBe(false);
+  });
+
+  it("canStart: fällt Redis aus, gilt nur das Cookie (das Konto allein öffnet dann nicht)", async () => {
+    const store = new MemoryStore();
+    store.accounts.add("acc1");
+    store.failing = true;
+    expect((await canStart(store, "h1", cookie({ runs: 1 }), "acc1")).allowed).toBe(false);
+  });
+
+  it("unlock mit Konto schaltet IP und Konto frei", async () => {
+    const store = new MemoryStore();
+    const s = await unlock(store, "h1", null, NOW, "acc1");
+    expect(s.unlocked).toBe(true);
+    expect(store.unlockedSet.has("h1")).toBe(true);
+    expect(store.accounts.has("acc1")).toBe(true);
+  });
+});
+
+describe("redisStore", () => {
+  /** Kleines Double für den Upstash-Client: nur, was redisStore braucht. */
+  function fakeRedis() {
+    const data = new Map<string, unknown>();
+    const calls: string[] = [];
+    const redis = {
+      mget: async (...ks: string[]) => (calls.push(`mget ${ks.join(",")}`), ks.map((k) => data.get(k) ?? null)),
+      exists: async (k: string) => (calls.push(`exists ${k}`), data.has(k) ? 1 : 0),
+      pipeline: () => {
+        const ops: (() => void)[] = [];
+        const p = {
+          set: (k: string, v: unknown) => (ops.push(() => data.set(k, v)), p),
+          incr: (k: string) => (ops.push(() => data.set(k, Number(data.get(k) ?? 0) + 1)), p),
+          expire: () => p,
+          exec: async () => (ops.forEach((f) => f()), []),
+        };
+        return p;
+      },
+      rpush: async (k: string, v: string) => (data.set(k, [...((data.get(k) as string[]) ?? []), v]), 1),
+    };
+    return { redis: redis as unknown as Parameters<typeof redisStore>[0], data, calls };
+  }
+
+  it("liest mit Konto drei Schlüssel auf einmal und wertet die Freischaltung des Kontos mit", async () => {
+    const { redis, calls } = fakeRedis();
+    const store = redisStore(redis);
+    await store.setUnlocked("ip1", "acc1");
+    expect(await store.getState("ip2", "acc1")).toEqual({ runs: 0, unlocked: true });
+    expect(await store.getState("ip2", null)).toEqual({ runs: 0, unlocked: false });
+    expect(await store.isAccountUnlocked("acc1")).toBe(true);
+    expect(await store.isAccountUnlocked("acc2")).toBe(false);
+    expect(calls[0]).toBe("mget run:ip2,unlocked:ip2,acct:acc1");
+  });
+
+  it("setUnlocked ohne Konto setzt nur die IP", async () => {
+    const { redis, data } = fakeRedis();
+    await redisStore(redis).setUnlocked("ip1");
+    expect([...data.keys()]).toEqual(["unlocked:ip1"]);
   });
 });

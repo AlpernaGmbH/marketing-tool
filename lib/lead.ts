@@ -1,3 +1,4 @@
+import type { AccessStore } from "@/lib/access";
 import type { LeadInput } from "@/lib/lead-schema";
 
 export { leadSchema, type LeadInput } from "@/lib/lead-schema";
@@ -42,4 +43,23 @@ export async function forwardToN8n(payload: LeadPayload, fetchImpl: typeof fetch
   } catch {
     return false;
   }
+}
+
+export type LeadDelivery = "sent" | "queued" | "lost";
+
+/**
+ * Gibt den Lead an n8n weiter. Fällt n8n aus, kommt er in lead_queue und wird stündlich nachgeholt.
+ * Der Besucher wird in jedem Fall freigeschaltet; «lost» heisst: weder n8n noch Redis waren erreichbar.
+ */
+export async function deliverLead(store: AccessStore | null, payload: LeadPayload, fetchImpl: typeof fetch = fetch): Promise<LeadDelivery> {
+  if (await forwardToN8n(payload, fetchImpl)) return "sent";
+  if (store) {
+    try {
+      await store.pushLead(JSON.stringify(payload));
+      return "queued";
+    } catch {
+      /* siehe unten */
+    }
+  }
+  return "lost";
 }

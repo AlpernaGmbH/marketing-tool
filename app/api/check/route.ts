@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { canStart, clientIp, defaultStore, gateSecret, ipHash, readGateCookie } from "@/lib/access";
+import { requestAccount } from "@/lib/account";
 import { readJson, respond } from "@/lib/api";
 import { analyze, normalizeUrl } from "@/lib/check/analyze";
 import { CheckError, checkInputSchema, type CheckEvent } from "@/lib/check/types";
@@ -35,7 +36,8 @@ export async function POST(req: NextRequest) {
     if (!(await withinLimit("check", 8, "1 h", hash))) {
       return respond(ROUTE, 429, { error: "rate_limited", message: "Das waren viele Prüfungen in kurzer Zeit. Bitte versuche es später wieder." }, "rate_limited");
     }
-    const decision = await canStart(defaultStore(), hash, readGateCookie(req, secret));
+    const who = await requestAccount(req.headers, secret);
+    const decision = await canStart(defaultStore(), hash, readGateCookie(req, secret), who?.acchash ?? null);
     if (!decision.allowed) {
       return respond(ROUTE, 403, { error: "gate", message: "Dein freier Durchlauf ist verbraucht." }, "gate_used");
     }

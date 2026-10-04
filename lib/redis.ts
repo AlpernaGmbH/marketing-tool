@@ -13,6 +13,8 @@ export const TTL = {
 export const keys = {
   run: (iphash: string) => `run:${iphash}`,
   unlocked: (iphash: string) => `unlocked:${iphash}`,
+  /** Freischaltung eines Kontos (HMAC der E-Mail-Adresse), gilt auf allen Geräten. */
+  account: (acchash: string) => `acct:${acchash}`,
   popular: (slug: string) => `popular:${slug}`,
   ai: (iphash: string, day: string) => `ai:${iphash}:${day}`,
   lookup: (iphash: string, day: string) => `lookup:${iphash}:${day}`,

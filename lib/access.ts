@@ -20,16 +20,28 @@ export type StoredState = { runs: number; unlocked: boolean };
  * fangen das ab und werten dann nur das Cookie.
  */
 export interface AccessStore {
-  getState(iphash: string): Promise<StoredState>;
+  /** Mit `acchash` zählt auch die Freischaltung des Kontos (acct:<acchash>). */
+  getState(iphash: string, acchash?: string | null): Promise<StoredState>;
+  /** Ist dieses Konto schon freigeschaltet? Verhindert doppelte Leads bei jeder neuen Anmeldung. */
+  isAccountUnlocked(acchash: string): Promise<boolean>;
   /** Zählt einen abgeschlossenen Durchlauf: popular:<slug> immer, run:<iphash> nur wenn countRun. */
   recordCompletion(iphash: string, slug: string, countRun: boolean): Promise<void>;
-  setUnlocked(iphash: string): Promise<void>;
+  /** Schaltet die IP frei und, falls angegeben, das Konto. */
+  setUnlocked(iphash: string, acchash?: string | null): Promise<void>;
   pushLead(json: string): Promise<void>;
 }
 
 export function gateSecret(): string | null {
   const s = process.env.GATE_SECRET;
   return s && s.length >= 16 ? s : null;
+}
+
+/**
+ * Kennung eines Kontos: HMAC-SHA256 der E-Mail-Adresse (klein geschrieben) mit GATE_SECRET, auf 16 Byte gekürzt.
+ * In Redis steht nie die Adresse selbst. Das Präfix trennt sie vom IP-Hash.
+ */
+export function accountHash(email: string, secret: string): string {
+  return createHmac("sha256", secret).update(`acct:${email.trim().toLowerCase()}`).digest().subarray(0, 16).toString("hex");
 }
 
 /** HMAC-SHA256 der Client-IP mit GATE_SECRET, auf 16 Byte gekürzt (32 Hex-Zeichen). */
@@ -104,10 +116,10 @@ function merge(stored: StoredState | null, cookie: GateState | null): StoredStat
   };
 }
 
-async function readStored(store: AccessStore | null, iphash: string): Promise<StoredState | null> {
+async function readStored(store: AccessStore | null, iphash: string, acchash: string | null): Promise<StoredState | null> {
   if (!store) return null;
   try {
-    return await store.getState(iphash);
+    return await store.getState(iphash, acchash);
   } catch {
     return null; // Redis nicht erreichbar: nur das Cookie gilt
   }
@@ -121,8 +133,9 @@ export async function canStart(
   store: AccessStore | null,
   iphash: string,
   cookie: GateState | null,
+  acchash: string | null = null,
 ): Promise<AccessDecision> {
-  const state = merge(await readStored(store, iphash), cookie);
+  const state = merge(await readStored(store, iphash, acchash), cookie);
   if (state.unlocked) return { allowed: true, unlocked: true, reason: "unlocked" };
   if (state.runs === 0) return { allowed: true, unlocked: false, reason: "free_run" };
   return { allowed: false, unlocked: false, reason: "free_run_used" };
@@ -136,7 +149,7 @@ export async function markComplete(
   cookie: GateState | null,
   now = Date.now(),
 ): Promise<GateState> {
-  const before = merge(await readStored(store, iphash), cookie);
+  const before = merge(await readStored(store, iphash, null), cookie);
   if (store) {
     try {
       // Für Freigeschaltete zählt run: nicht mehr, das spart Redis-Befehle im Free Tier.
@@ -158,10 +171,11 @@ export async function unlock(
   iphash: string,
   cookie: GateState | null,
   now = Date.now(),
+  acchash: string | null = null,
 ): Promise<GateState> {
   if (store) {
     try {
-      await store.setUnlocked(iphash);
+      await store.setUnlocked(iphash, acchash);
     } catch {
       /* Cookie genügt */
     }
@@ -172,11 +186,14 @@ export async function unlock(
 /** AccessStore auf Upstash Redis. */
 export function redisStore(redis: Redis): AccessStore {
   return {
-    async getState(iphash) {
-      const [runs, unlocked] = await withTimeout(
-        redis.mget<[number | null, number | string | null]>(keys.run(iphash), keys.unlocked(iphash)),
-      );
-      return { runs: Number(runs ?? 0), unlocked: unlocked !== null && unlocked !== undefined };
+    async getState(iphash, acchash) {
+      const wanted = [keys.run(iphash), keys.unlocked(iphash), ...(acchash ? [keys.account(acchash)] : [])];
+      const [runs, unlocked, account] = await withTimeout(redis.mget<(number | string | null)[]>(...wanted));
+      const has = (v: unknown) => v !== null && v !== undefined;
+      return { runs: Number(runs ?? 0), unlocked: has(unlocked) || has(account) };
+    },
+    async isAccountUnlocked(acchash) {
+      return (await withTimeout(redis.exists(keys.account(acchash)))) > 0;
     },
     async recordCompletion(iphash, slug, countRun) {
       const p = redis.pipeline();
@@ -187,8 +204,11 @@ export function redisStore(redis: Redis): AccessStore {
       }
       await withTimeout(p.exec());
     },
-    async setUnlocked(iphash) {
-      await withTimeout(redis.set(keys.unlocked(iphash), 1, { ex: TTL.unlocked }));
+    async setUnlocked(iphash, acchash) {
+      const p = redis.pipeline();
+      p.set(keys.unlocked(iphash), 1, { ex: TTL.unlocked });
+      if (acchash) p.set(keys.account(acchash), 1, { ex: TTL.unlocked });
+      await withTimeout(p.exec());
     },
     async pushLead(json) {
       await withTimeout(redis.rpush(keys.leadQueue, json));

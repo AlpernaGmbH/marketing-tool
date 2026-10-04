@@ -3,7 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { LeadGate, type LeadGateReason } from "@/components/tool/LeadGate";
 import { ProfileBanner } from "@/components/tool/ProfileBanner";
-import { checkAccess, completeRun as completeRunApi } from "@/lib/access-client";
+import { checkAccess, completeRun as completeRunApi, unlockWithAccount, type LoginProvider } from "@/lib/access-client";
+import { clearPending, readPending } from "@/lib/konto-client";
 
 type ToolContextValue = {
   slug: string;
@@ -39,13 +40,45 @@ type Props = {
 /** Rahmen jedes Tools: Kopf mit Status, Profil-Hinweis, Inhalt und das LeadGate. */
 export function ToolShell({ slug, name, usesProfile = false, children }: Props) {
   const [unlocked, setUnlocked] = useState(false);
+  const [login, setLogin] = useState<LoginProvider | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [gate, setGate] = useState<{ open: boolean; reason: LeadGateReason }>({ open: false, reason: "zweites_tool" });
   const waiting = useRef<((ok: boolean) => void) | null>(null);
 
   // Status für die Kopfzeile. Schlägt der Aufruf fehl, bleibt «Freier Durchlauf» stehen.
   useEffect(() => {
     let alive = true;
-    checkAccess(slug).then((a) => alive && setUnlocked(a.unlocked));
+    (async () => {
+      // Rückkehr von Google (?konto=ok oder ?konto=fehler): erst abschliessen, dann den Status lesen.
+      const params = new URLSearchParams(window.location.search);
+      const konto = params.get("konto");
+      if (konto === "ok" || konto === "fehler") {
+        const pending = readPending();
+        params.delete("konto");
+        const query = params.toString();
+        window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+        if (konto === "fehler") {
+          clearPending();
+          if (alive) setNotice("Die Anmeldung hat nicht geklappt oder wurde abgebrochen. Du kannst es noch einmal versuchen.");
+        } else if (pending && pending.tool === slug) {
+          const result = await unlockWithAccount(slug, pending.firma);
+          if (result === "ok") {
+            clearPending();
+            if (alive) setNotice("Du bist angemeldet, alle Werkzeuge und Downloads sind offen.");
+          } else if (result === "not_signed_in") {
+            clearPending();
+            if (alive) setNotice("Die Anmeldung ist nicht angekommen. Du kannst es noch einmal versuchen.");
+          } else if (alive) {
+            setNotice("Das Freischalten hat nicht geklappt. Bitte versuch es noch einmal.");
+          }
+        }
+      }
+      const a = await checkAccess(slug);
+      if (alive) {
+        setUnlocked(a.unlocked);
+        setLogin(a.login);
+      }
+    })();
     return () => {
       alive = false;
     };
@@ -69,6 +102,7 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
   const requestStart = useCallback(async () => {
     const access = await checkAccess(slug);
     setUnlocked(access.unlocked);
+    setLogin(access.login);
     return access.allowed ? true : openGate("zweites_tool");
   }, [slug, openGate]);
 
@@ -81,6 +115,7 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
       void (async () => {
         if (unlocked) return void (await action());
         const access = await checkAccess(slug);
+        setLogin(access.login);
         if (access.unlocked) {
           setUnlocked(true);
           return void (await action());
@@ -105,6 +140,11 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
             {unlocked ? "Freigeschaltet" : "Freier Durchlauf"}
           </span>
         </div>
+        {notice && (
+          <p role="status" className="border-b border-line bg-surface px-5 py-3 text-sm">
+            {notice}
+          </p>
+        )}
         {usesProfile && <ProfileBanner />}
         <div className="p-5 md:p-8">{children}</div>
       </section>
@@ -112,6 +152,7 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
         open={gate.open}
         reason={gate.reason}
         tool={slug}
+        login={login}
         onOpenChange={(open) => {
           setGate((g) => ({ ...g, open }));
           if (!open) settle(false);

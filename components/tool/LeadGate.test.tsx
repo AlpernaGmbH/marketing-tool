@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LeadGate } from "@/components/tool/LeadGate";
+import { PENDING_MS, readPending } from "@/lib/konto-client";
+
+const startSignIn = vi.hoisted(() => vi.fn());
+vi.mock("better-auth/client", () => ({ createAuthClient: () => ({ signIn: { social: startSignIn } }) }));
 
 function setup(fetchImpl: typeof fetch) {
   vi.stubGlobal("fetch", fetchImpl);
@@ -109,5 +113,57 @@ describe("LeadGate", () => {
     const honeypot = document.getElementById("lead-website") as HTMLInputElement;
     expect(honeypot.tabIndex).toBe(-1);
     expect(honeypot.closest("[aria-hidden='true']")).not.toBeNull();
+  });
+});
+
+describe("LeadGate mit Google", () => {
+  function setupGoogle() {
+    const onSuccess = vi.fn();
+    render(<LeadGate open onOpenChange={vi.fn()} tool="smoke-test" reason="zweites_tool" login="google" onSuccess={onSuccess} />);
+    return { user: userEvent.setup(), onSuccess };
+  }
+
+  afterEach(() => {
+    localStorage.clear();
+    startSignIn.mockReset();
+  });
+
+  it("bietet Google an und hält das Formular als Ausweg bereit", () => {
+    setupGoogle();
+    expect(screen.getByText(/Melde dich kurz mit Google an/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mit Google anmelden" })).toBeInTheDocument();
+    const details = screen.getByText("Lieber ohne Google-Konto? Formular ausfüllen").closest("details");
+    expect(details).not.toBeNull();
+    expect(details!.open).toBe(false);
+    expect(details!.contains(screen.getByLabelText("E-Mail"))).toBe(true);
+  });
+
+  it("verlangt die Einwilligung vor der Weiterleitung", async () => {
+    const { user } = setupGoogle();
+    await user.click(screen.getByRole("button", { name: "Mit Google anmelden" }));
+    expect(await screen.findByText("Bitte stimm der Kontaktaufnahme zu.")).toBeInTheDocument();
+    expect(startSignIn).not.toHaveBeenCalled();
+    expect(readPending()).toBeNull();
+  });
+
+  it("merkt sich Werkzeug und Einwilligung und startet die Anmeldung", async () => {
+    startSignIn.mockResolvedValue({ error: null });
+    const { user } = setupGoogle();
+    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Mit Google anmelden" }));
+    await waitFor(() => expect(startSignIn).toHaveBeenCalledTimes(1));
+    expect(startSignIn.mock.calls[0][0]).toMatchObject({ provider: "google", callbackURL: expect.stringContaining("konto=ok") });
+    expect(readPending(Date.now())).toMatchObject({ tool: "smoke-test" });
+    expect(Date.now() - (readPending()?.at ?? 0)).toBeLessThan(PENDING_MS);
+  });
+
+  it("räumt auf und zeigt eine Meldung, wenn die Anmeldung nicht startet", async () => {
+    startSignIn.mockResolvedValue({ error: { message: "x" } });
+    const { user } = setupGoogle();
+    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Mit Google anmelden" }));
+    expect(await screen.findByText(/konnte nicht gestartet werden/)).toBeInTheDocument();
+    expect(readPending()).toBeNull();
+    expect(screen.getByRole("button", { name: "Mit Google anmelden" })).toBeEnabled();
   });
 });

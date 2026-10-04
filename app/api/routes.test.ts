@@ -44,7 +44,7 @@ describe("POST /api/access", () => {
   it("erlaubt eine frische IP", async () => {
     const res = await access(post("/api/access", { tool: TOOL }, { ip: IP }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ allowed: true, unlocked: false, reason: "free_run" });
+    expect(await res.json()).toEqual({ allowed: true, unlocked: false, reason: "free_run", login: null, signedIn: false });
   });
   it("lehnt unbekannte Tools und kaputte Bodies mit 400 ab", async () => {
     expect((await access(post("/api/access", { tool: "gibt-es-nicht" }, { ip: IP }))).status).toBe(400);
@@ -58,7 +58,7 @@ describe("POST /api/access", () => {
   it("sperrt niemanden aus, wenn GATE_SECRET fehlt", async () => {
     delete process.env.GATE_SECRET;
     const body = await (await access(post("/api/access", { tool: TOOL }, { ip: IP }))).json();
-    expect(body).toEqual({ allowed: true, unlocked: true, reason: "gate_disabled" });
+    expect(body).toEqual({ allowed: true, unlocked: true, reason: "gate_disabled", login: null, signedIn: false });
   });
 });
 

@@ -4,6 +4,13 @@ Stand: 04.10.2026. **Etappe 1c ist gebaut** (Marketing-Check mit Crawler ersetzt
 
 ## Fertig
 
+**Etappe 2 (Teil 1, 04.10.2026): Konto per Google, in der Anwendung fertig, noch nicht in Betrieb**
+
+- **Anmeldung** `lib/auth.ts` (Better Auth, Stateless-Modus ohne Datenbank, Google), Route `/api/auth/[...all]`. Aus, solange `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` oder `BETTER_AUTH_SECRET` (mindestens 32 Zeichen) fehlen; dann antwortet die Route mit 404 und alles bleibt wie vorher.
+- **Zugang v2:** `POST /api/lead/account` schaltet nach der Rückkehr von Google frei (Name und E-Mail aus der Sitzung, Firma aus dem Firmenprofil), schickt den Lead an n8n oder in `lead_queue`, setzt `acct:<HMAC der E-Mail>` in Redis (365 Tage, gilt auf allen Geräten) und das Cookie `mt_gate`. Ein bereits freigeschaltetes Konto erzeugt keinen zweiten Lead. `/api/access` und `/api/check` werten das Konto mit und melden `login` und `signedIn`.
+- **Fenster:** LeadGate zeigt mit Anmeldung zuerst «Mit Google anmelden» (Häkchen für die Kontaktaufnahme Pflicht, vor der Weiterleitung), das Formular bleibt als Ausweg. Die Bibliothek lädt erst beim Klick. Nach der Rückkehr (`?konto=ok` oder `?konto=fehler`) schliesst `ToolShell` ab und zeigt eine Meldung.
+- **Qualität:** 528 Unit- und Komponententests, 32 Playwright-Tests, `npm run check` grün, Lighthouse mobil Tool-Seite 96/100/100. Nicht getestet: die echte Anmeldung bei Google (braucht die Variablen unten).
+
 **Etappe 1c (04.10.2026): Marketing-Check mit Crawler, ohne KI und ohne Konto**
 
 - **Engine** `lib/check/` (Port von `analyzer.mjs` aus dem Agentur-Tool, TypeScript): `net.ts` (SSRF-Schutz: Host auflösen, jede Adresse prüfen, Verbindung an die geprüfte Adresse binden, Weiterleitungen neu prüfen, 2,5 MB, 12 s, nur Port 80/443, gzip/deflate/Brotli), `seo.ts` (16 Prüfpunkte), `social.ts`, `gbp.ts` (Places API optional), `detect.ts` (Shop, Buchung, Newsletter, Tracking, Social-Links), `analyze.ts`, `massnahmen.ts` (feste Texte, Wirkung und Aufwand), `client.ts` (NDJSON-Leser im Browser). Jeder Prüfpunkt trägt eine Kennung (`seo.title`, `gbp.reviews` …) als Anker für die spätere KI-Schicht.
@@ -132,10 +139,11 @@ Hinweise: URIs brauchen fünf Minuten bis einige Stunden, bis sie gelten. Meldet
 37. **Der Check zählt den freien Durchlauf erst am Ende** (`/api/access/complete`), wie bei allen Tools. Wer `/api/check` direkt aufruft und `complete` nie meldet, kann bis zum Limit (8 pro Stunde je IP-Hash) mehrfach prüfen. Das ist für ein Gratis-Werkzeug vertretbar, aber kein hartes Gate. Mit Upstash lässt sich ein eigener Zähler setzen.
 38. **Neues Profilfeld `website`** (in `profileFields`, `PROFILE_FIELDS`, `/profil`). `kanaele` bekommt aus dem Check die Form `{ name, url }`; ein späteres Kanalstrategie-Werkzeug muss damit umgehen oder die Form erweitern.
 39. **Kennung des Abrufs:** User-Agent `AlpernaCheck/1.0 (+https://tools.alperna.ch)`. Die Adresse antwortet erst nach dem DNS-Wechsel. Wer in Logs fremder Server nachschaut, findet bis dahin einen toten Link.
+40. **Konto-Entscheide (04.10.2026):** (a) Das Formular bleibt als Ausweg im Fenster («Lieber ohne Google-Konto?»), solange es keinen zweiten Anmeldeweg gibt; der Plan sah es als entfallen vor. Ohne Ausweg wären Besucher ohne Google-Konto ausgesperrt. (b) Die Kennung eines Kontos ist der HMAC der von Google bestätigten E-Mail-Adresse, nicht die Benutzer-ID der Bibliothek (im Stateless-Modus nicht gesichert). (c) Eine Anmeldung ohne Einwilligung im Fenster schaltet nicht frei. (d) Nach dem Wechsel auf Google geht der Besucher von der Seite weg und kommt zurück; ein laufender Download startet danach nicht von selbst, der Besucher klickt erneut. (e) `BETTER_AUTH_SECRET` stand in einem Chat-Verlauf: vor dem Start neu erzeugen (Launch-Checkliste).
 
 ## Neue Abhängigkeiten (Begründung)
 
-Laufzeit: `@upstash/redis`, `@upstash/ratelimit` (Zähler, Limits); `react-hook-form`, `@hookform/resolvers`, `zod` (Formular, Validierung); `pdf-lib`, `@pdf-lib/fontkit` (PDF mit eigenen Schriften), `docx` (Word), `qrcode`, `jszip` (ab 4a), `fuse.js` (Suche), `gray-matter`, `remark`, `remark-html` (Seitentexte); `@base-ui/react`, `class-variance-authority`, `cn`, `lucide-react`, `tw-animate-css`, `shadcn` (kommen mit shadcn/ui).
+Laufzeit: `better-auth` (Konto-Anmeldung mit Google ohne Datenbank, ab Etappe 2; Alternative Auth.js ist in Pflege der Better-Auth-Gruppe [Vermutung]); `@upstash/redis`, `@upstash/ratelimit` (Zähler, Limits); `react-hook-form`, `@hookform/resolvers`, `zod` (Formular, Validierung); `pdf-lib`, `@pdf-lib/fontkit` (PDF mit eigenen Schriften), `docx` (Word), `qrcode`, `jszip` (ab 4a), `fuse.js` (Suche), `gray-matter`, `remark`, `remark-html` (Seitentexte); `@base-ui/react`, `class-variance-authority`, `cn`, `lucide-react`, `tw-animate-css`, `shadcn` (kommen mit shadcn/ui).
 Entwicklung: `vitest`, `@vitejs/plugin-react`, `jsdom`, `@testing-library/*` (Tests); `@playwright/test` (Smoke); `tsx` (Skripte); `lighthouse`, `chrome-launcher` (`npm run lh`); `@types/qrcode`.
 
 ## Bekannte Punkte
@@ -175,6 +183,10 @@ Keine. Bisher enthält kein Seitentext Zahlen.
 - [ ] `/profil` Export und «Alles löschen» funktionieren
 - [ ] Impressum, Datenschutz, Über live
 - [ ] `GATE_SECRET` in Production gesetzt
+- [ ] Geheimnisse neu erzeugen, die in Chat-Verläufen standen: `GATE_SECRET`, `BETTER_AUTH_SECRET`, Webhook-Pfad von «Tools-Lead» (und `N8N_WEBHOOK_URL` anpassen)
+- [ ] Google: `alperna.ch` in der Search Console bestätigt, Branding geprüft und veröffentlicht, App-Status «In production», `BETTER_AUTH_URL` auf `https://tools.alperna.ch`
+- [ ] Vercel-Plan Pro (Hobby ist für nicht gewerbliche Nutzung gedacht)
+- [ ] Upstash (nicht «Redis») verbunden, `KV_REST_API_*` im Projekt
 - [ ] Search Console verifiziert, Sitemap eingereicht
 - [ ] Druck-PDFs auf Papier geprüft
 - [ ] Eine echte Person ohne Anleitung durch drei Tools geschickt

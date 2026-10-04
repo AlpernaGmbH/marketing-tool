@@ -9,7 +9,7 @@ import {
   writeGateCookie,
 } from "@/lib/access";
 import { readJson, respond } from "@/lib/api";
-import { buildPayload, forwardToN8n, leadSchema } from "@/lib/lead";
+import { buildPayload, deliverLead, leadSchema } from "@/lib/lead";
 import { logStatus } from "@/lib/log";
 import { withinLimit } from "@/lib/ratelimit";
 import { getTool } from "@/lib/registry";
@@ -41,18 +41,8 @@ export async function POST(req: NextRequest) {
 
   // Der Besucher wird freigeschaltet, ob n8n antwortet oder nicht.
   // Fällt n8n aus, liegt der Lead in lead_queue und wird stündlich nachgeholt.
-  if (!(await forwardToN8n(payload))) {
-    let queued = false;
-    if (store) {
-      try {
-        await store.pushLead(JSON.stringify(payload));
-        queued = true;
-      } catch {
-        /* siehe unten */
-      }
-    }
-    logStatus(ROUTE, 200, queued ? "lead_queued" : "lead_lost");
-  }
+  const delivery = await deliverLead(store, payload);
+  if (delivery !== "sent") logStatus(ROUTE, 200, delivery === "queued" ? "lead_queued" : "lead_lost");
 
   if (!secret || !hash) {
     return respond(ROUTE, 200, { ok: true }, "gate_unconfigured");

@@ -1,16 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryStore, SECRET, post } from "@/tests/helpers";
-import { ipHash } from "@/lib/access";
+import { accountHash, ipHash } from "@/lib/access";
 
 const store = new MemoryStore();
 const limit = vi.hoisted(() => ({ allow: true }));
 const net = vi.hoisted(() => ({ fetch: null as null | ((url: string) => Promise<unknown>) }));
+const who = vi.hoisted(() => ({ account: null as null | { email: string; name: string } }));
 
 vi.mock("@/lib/access", async (orig) => ({
   ...(await orig<typeof import("@/lib/access")>()),
   defaultStore: () => store,
 }));
 vi.mock("@/lib/ratelimit", () => ({ withinLimit: async () => limit.allow }));
+vi.mock("@/lib/auth", async (orig) => ({ ...(await orig<typeof import("@/lib/auth")>()), getAccount: async () => who.account }));
 vi.mock("@/lib/check/net", async (orig) => ({
   ...(await orig<typeof import("@/lib/check/net")>()),
   safeFetch: (url: string) => net.fetch!(url),
@@ -42,6 +44,8 @@ beforeEach(() => {
   delete process.env.GOOGLE_PLACES_API_KEY;
   store.runs.clear();
   store.unlockedSet.clear();
+  store.accounts.clear();
+  who.account = null;
   store.failing = false;
   limit.allow = true;
   net.fetch = async (url) => (url.endsWith("/robots.txt") || url.endsWith("/sitemap.xml") ? page(url, "", 404) : page(url));
@@ -100,6 +104,16 @@ describe("POST /api/check", () => {
     store.runs.set(h, 3);
     store.unlockedSet.add(h);
     expect((await POST(post("/api/check", body, { ip: IP }))).status).toBe(200);
+  });
+
+  it("lässt ein freigeschaltetes Konto auf einem Gerät mit verbrauchtem Durchlauf weiter prüfen", async () => {
+    store.runs.set(ipHash(IP, SECRET), 1);
+    who.account = { email: "anna@keller.ch", name: "Anna" };
+    expect((await POST(post("/api/check", body, { ip: IP }))).status).toBe(403); // angemeldet, aber nicht freigeschaltet
+    store.accounts.add(accountHash("anna@keller.ch", SECRET));
+    const res = await POST(post("/api/check", body, { ip: IP }));
+    expect(res.status).toBe(200);
+    await res.text();
   });
 
   it("sperrt niemanden aus, wenn GATE_SECRET fehlt oder Redis ausfällt", async () => {

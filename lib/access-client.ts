@@ -1,9 +1,18 @@
 // Browser-seitige Helfer für /api/access. Ein Fehler hier blockiert nie einen Besucher:
 // Bei jedem technischen Problem gilt «erlaubt».
 
-export type AccessInfo = { allowed: boolean; unlocked: boolean; reason: string };
+export type LoginProvider = "google";
+export type AccessInfo = {
+  allowed: boolean;
+  unlocked: boolean;
+  reason: string;
+  /** Angebotener Anmeldeweg; null: nur das Formular. */
+  login: LoginProvider | null;
+  /** Es gibt eine gültige Sitzung (angemeldet), auch wenn noch nicht freigeschaltet. */
+  signedIn: boolean;
+};
 
-const FALLBACK: AccessInfo = { allowed: true, unlocked: false, reason: "unreachable" };
+const FALLBACK: AccessInfo = { allowed: true, unlocked: false, reason: "unreachable", login: null, signedIn: false };
 
 async function postJson(path: string, body: unknown, fetchImpl: typeof fetch): Promise<Response | null> {
   try {
@@ -28,6 +37,8 @@ export async function checkAccess(tool: string, fetchImpl: typeof fetch = fetch)
       allowed: data.allowed !== false,
       unlocked: data.unlocked === true,
       reason: typeof data.reason === "string" ? data.reason : "unknown",
+      login: data.login === "google" ? "google" : null,
+      signedIn: data.signedIn === true,
     };
   } catch {
     return FALLBACK;
@@ -57,4 +68,14 @@ export async function submitLead(data: Record<string, unknown>, fetchImpl: typeo
   if (res.status === 429) return { ok: false, reason: "rate_limited" };
   if (res.status === 400) return { ok: false, reason: "invalid" };
   return { ok: false, reason: "network" };
+}
+
+export type AccountResult = "ok" | "not_signed_in" | "failed";
+
+/** Schaltet nach der Google-Anmeldung frei (Name und E-Mail kommen aus dem Konto, nicht aus dem Browser). */
+export async function unlockWithAccount(tool: string, firma: string | undefined, fetchImpl: typeof fetch = fetch): Promise<AccountResult> {
+  const res = await postJson("/api/lead/account", { tool, consent: true, ...(firma ? { firma } : {}) }, fetchImpl);
+  if (!res) return "failed";
+  if (res.ok) return "ok";
+  return res.status === 401 ? "not_signed_in" : "failed";
 }
