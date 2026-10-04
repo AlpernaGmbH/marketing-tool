@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { LeadGate, type LeadGateReason } from "@/components/tool/LeadGate";
 import { ProfileBanner } from "@/components/tool/ProfileBanner";
-import { checkAccess, completeRun as completeRunApi, unlockWithAccount, type LoginProvider } from "@/lib/access-client";
+import { checkAccess, completeRun as completeRunApi, unlockWithAccount, type AccessInfo, type LoginProvider } from "@/lib/access-client";
 import { clearPending, readPending } from "@/lib/konto-client";
 
 type ToolContextValue = {
@@ -48,6 +48,15 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
   const [gate, setGate] = useState<{ open: boolean; reason: LeadGateReason }>({ open: false, reason: "zweites_tool" });
   const waiting = useRef<((ok: boolean) => void) | null>(null);
 
+  // Eine Antwort, die nicht vom Server kam (429, 5xx, offline), ändert den bekannten Stand nicht:
+  // Wer freigeschaltet ist, soll wegen eines Limits oder Ausfalls nicht plötzlich wieder gesperrt aussehen.
+  const apply = useCallback((a: AccessInfo) => {
+    if (a.reason === "unreachable") return;
+    setUnlocked(a.unlocked);
+    setLogin(a.login);
+    setSignedIn(a.signedIn);
+  }, []);
+
   // Status für die Kopfzeile. Schlägt der Aufruf fehl, bleibt «Freier Durchlauf» stehen.
   useEffect(() => {
     let alive = true;
@@ -72,21 +81,20 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
             clearPending();
             if (alive) setNotice("Die Anmeldung ist nicht angekommen. Du kannst es noch einmal versuchen.");
           } else if (alive) {
-            setNotice("Das Freischalten hat nicht geklappt. Bitte versuch es noch einmal.");
+            setNotice("Das Freischalten hat nicht geklappt. Bitte melde dich noch einmal an.");
           }
+        } else if (alive) {
+          // Der Merker ist weg (Speicher gesperrt oder älter als 15 Minuten): angemeldet, aber ohne Einwilligung kein Freischalten.
+          setNotice("Du bist angemeldet, aber noch nicht freigeschaltet. Öffne das Fenster noch einmal und setz das Häkchen zur Kontaktaufnahme.");
         }
       }
       const a = await checkAccess(slug);
-      if (alive) {
-        setUnlocked(a.unlocked);
-        setLogin(a.login);
-        setSignedIn(a.signedIn);
-      }
+      if (alive) apply(a);
     })();
     return () => {
       alive = false;
     };
-  }, [slug]);
+  }, [slug, apply]);
 
   const settle = useCallback((ok: boolean) => {
     waiting.current?.(ok);
@@ -105,11 +113,9 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
 
   const requestStart = useCallback(async () => {
     const access = await checkAccess(slug);
-    setUnlocked(access.unlocked);
-    setLogin(access.login);
-    setSignedIn(access.signedIn);
+    apply(access);
     return access.allowed ? true : openGate("zweites_tool");
-  }, [slug, openGate]);
+  }, [slug, openGate, apply]);
 
   const completeRun = useCallback(async () => {
     if (await completeRunApi(slug)) setUnlocked(true);
@@ -120,16 +126,12 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
       void (async () => {
         if (unlocked) return void (await action());
         const access = await checkAccess(slug);
-        setLogin(access.login);
-        setSignedIn(access.signedIn);
-        if (access.unlocked) {
-          setUnlocked(true);
-          return void (await action());
-        }
+        apply(access);
+        if (access.unlocked) return void (await action());
         if (await openGate("download")) await action();
       })();
     },
-    [unlocked, slug, openGate],
+    [unlocked, slug, openGate, apply],
   );
 
   const value = useMemo<ToolContextValue>(

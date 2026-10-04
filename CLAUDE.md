@@ -34,7 +34,8 @@ acct:<HMAC der E-Mail> (TTL 365 Tage) und gilt auf allen Geräten. Ein Konto,
 das schon freigeschaltet ist, erzeugt keinen zweiten Lead. Eine Anmeldung allein
 schaltet nicht frei: ohne die Einwilligung im Fenster gibt es keine
 Freischaltung. Sitzung: Better Auth im Stateless-Modus (Cookie
-better-auth.session_data, notwendig, 30 Tage, kein Banner), keine Datenbank.
+better-auth.session_token, better-auth.session_data und better-auth.account_data, alle notwendig,
+30 Tage, kein Banner), keine Datenbank.
 - Zählung: lib/access.ts bildet einen HMAC-SHA256 der Client-IP (x-forwarded-
 for erstes Element) mit GATE_SECRET, gekürzt auf 16 Byte. Redis-Keys: run:
 <iphash> (Zähler, TTL 30 Tage), unlocked:<iphash> (TTL 365 Tage), acct:<acchash>

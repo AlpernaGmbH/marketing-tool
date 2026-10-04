@@ -24,7 +24,7 @@ Alle anderen Eingaben in Werkzeugen bleiben im Browser (localStorage: Firmenprof
 | `ai:<acchash>:<Tag>`, `ai:global:<Tag>` | Zähler der Einordnungen | 2 Tage |
 | `aicache:<hash>` | Fertige Einordnung (Text kann den Betriebsnamen enthalten) | 24 Stunden |
 | `rl:<name>` | Zähler der Ratenbegrenzung pro `iphash` | wenige Minuten bis Stunden |
-| `lead_queue` | **Leads im Klartext** (Name, E-Mail, Telefon), wenn n8n nicht erreichbar ist | **keine Dauer gesetzt** bis n8n die Liste leert (siehe «Offen») |
+| `lead_queue` | **Leads im Klartext** (Name, E-Mail, Telefon), wenn n8n nicht erreichbar ist | Liste verfällt 30 Tage nach dem letzten Eintrag, höchstens 1000 Einträge; sonst bis n8n sie leert |
 
 `<iphash>` ist ein HMAC-SHA256 der IP mit einem geheimen Schlüssel, auf 16 Byte gekürzt. `<acchash>` ist ein HMAC der von Google bestätigten E-Mail-Adresse. Klartext-IP und Klartext-E-Mail stehen nirgends in Redis ausser im Lead in `lead_queue`.
 
@@ -33,7 +33,7 @@ Alle anderen Eingaben in Werkzeugen bleiben im Browser (localStorage: Firmenprof
 | Name | Zweck | Dauer | Inhalt |
 |---|---|---|---|
 | `mt_gate` | Zählt den freien Durchlauf und die Freischaltung | 365 Tage, HttpOnly, SameSite=Lax | `{runs, unlocked, iat}`, signiert |
-| Sitzung von Better Auth (`better-auth.session_data`) | Angemeldet bleiben | 30 Tage, nur nach Anmeldung | Name, E-Mail, Konto-Kennung, verschlüsselt (JWE) |
+| Sitzung von Better Auth: `better-auth.session_token`, `better-auth.session_data`, `better-auth.account_data` | Angemeldet bleiben | je 30 Tage (`session.expiresIn`, durch Test belegt), nur nach Anmeldung | Sitzungskennung, Name, E-Mail, Konto-Kennung und Angaben des Google-Kontos, verschlüsselt (JWE) |
 | localStorage | Firmenprofil, Zwischenstände | bis der Besucher löscht | siehe oben |
 
 Kein Banner, weil beide Cookies für den Dienst nötig sind (Entscheid in CLAUDE.md Regel 4; rechtlich zu bestätigen).
@@ -63,7 +63,7 @@ Server-Routen loggen Route, Statuscode und ein Stichwort (`lib/log.ts`). Nie Inh
 
 ## 7. Offen für die Prüfung
 
-1. **`lead_queue` ohne Ablauf.** Fällt n8n aus, liegen personenbezogene Daten unbegrenzt in Redis. Vorschlag: Ablauf von 30 Tagen auf der Liste und eine Obergrenze der Länge. Das ist ein technischer Eingriff, den Claude vorschlägt und nach Freigabe umsetzt.
+1. **`lead_queue`:** Ablauf (30 Tage ab dem letzten Eintrag, gilt für die ganze Liste, nicht je Eintrag) und Obergrenze von 1000 sind umgesetzt (04.10.2026). Ein einzelner Eintrag kann bei laufendem Zustrom länger als 30 Tage liegen. Ob 30 Tage die richtige Frist sind, entscheidet die Rechtsprüfung.
 2. **Speicherdauer von Leads im CRM** und Löschweg auf Anfrage: Sache von Alperna.
 3. **Auftragsbearbeitung:** Verträge mit Vercel, Upstash, Mistral (über das Gateway) und gegebenenfalls n8n.
 4. **Auslandübermittlung (USA):** Google, Vercel, AI Gateway.

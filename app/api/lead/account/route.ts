@@ -15,7 +15,7 @@ const ROUTE = "/api/lead/account";
 const bodySchema = z.object({
   tool: z.string().min(1).max(80),
   consent: z.literal(true),
-  firma: z.string().trim().max(160).optional(),
+  firma: z.string().trim().max(200).optional(), // wie shortText im Firmenprofil
 });
 
 export async function POST(req: NextRequest) {
@@ -35,9 +35,10 @@ export async function POST(req: NextRequest) {
 
   const store = defaultStore();
   // Ein Konto, das schon freigeschaltet ist, erzeugt keinen zweiten Lead (jede neue Anmeldung würde sonst einen anlegen).
+  // Der Claim ist atomar: Zwei gleichzeitige Aufrufe erzeugen genau einen Lead.
   let known = false;
   try {
-    known = store ? await store.isAccountUnlocked(who.acchash) : false;
+    known = store ? !(await store.claimAccount(who.acchash)) : false;
   } catch {
     /* Redis nicht erreichbar: dann lieber ein doppelter Lead als ein verlorener */
   }

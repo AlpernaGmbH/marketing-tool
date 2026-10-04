@@ -93,6 +93,22 @@ describe("POST /api/lead/account", () => {
     expect(store.unlockedSet.has(ipHash(OTHER_IP, SECRET))).toBe(true);
   });
 
+  it("legt bei gleichzeitigen Aufrufen (Doppelklick, zwei Tabs) genau einen Lead an", async () => {
+    const [a, b] = await Promise.all([
+      accountLead(post("/api/lead/account", body, { ip: IP })),
+      accountLead(post("/api/lead/account", body, { ip: IP })),
+    ]);
+    const known = [(await a.json()).known, (await b.json()).known].sort();
+    expect(known).toEqual([false, true]);
+    expect(sent).toHaveLength(1);
+  });
+
+  it("nimmt eine Firma bis 200 Zeichen an (so lang darf sie im Firmenprofil sein), mehr nicht", async () => {
+    expect((await accountLead(post("/api/lead/account", { ...body, firma: "F".repeat(200) }, { ip: IP }))).status).toBe(200);
+    store.accounts.clear();
+    expect((await accountLead(post("/api/lead/account", { ...body, firma: "F".repeat(201) }, { ip: IP }))).status).toBe(400);
+  });
+
   it("legt den Lead in lead_queue, wenn n8n nicht antwortet, und schaltet trotzdem frei", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("kaputt", { status: 500 })));
     const res = await accountLead(post("/api/lead/account", body, { ip: IP }));

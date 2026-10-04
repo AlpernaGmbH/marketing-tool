@@ -7,7 +7,12 @@ export const TTL = {
   run: 30 * DAY,
   unlocked: 365 * DAY,
   daily: 2 * DAY,
+  /** Wartende Leads (Name, E-Mail im Klartext) verfallen, falls n8n sie nie abholt. */
+  leadQueue: 30 * DAY,
 } as const;
+
+/** Höchstens so viele Leads warten in lead_queue; ältere fallen weg (Schutz vor Überlauf). */
+export const LEAD_QUEUE_MAX = 1000;
 
 /** Redis-Keys. <iphash> ist nie die Klartext-IP. */
 export const keys = {

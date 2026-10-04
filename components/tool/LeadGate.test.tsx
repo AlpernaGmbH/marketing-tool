@@ -166,4 +166,24 @@ describe("LeadGate mit Google", () => {
     expect(readPending()).toBeNull();
     expect(screen.getByRole("button", { name: "Mit Google anmelden" })).toBeEnabled();
   });
+
+  it("vergisst alte Fehlermeldungen, wenn das Fenster geschlossen und wieder geöffnet wird", async () => {
+    const user = userEvent.setup();
+    const view = render(<LeadGate open onOpenChange={vi.fn()} tool="smoke-test" reason="zweites_tool" login="google" onSuccess={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Mit Google anmelden" }));
+    expect(await screen.findByText("Bitte stimm der Kontaktaufnahme zu.")).toBeInTheDocument();
+    await user.keyboard("{Escape}"); // Besucher schliesst das Fenster
+    view.rerender(<LeadGate open onOpenChange={vi.fn()} tool="smoke-test" reason="download" login="google" onSuccess={vi.fn()} />);
+    expect(screen.queryByText("Bitte stimm der Kontaktaufnahme zu.")).not.toBeInTheDocument();
+  });
+
+  it("gibt den Google-Knopf frei, wenn die Seite aus dem Cache des Browsers zurückkommt (Zurück-Taste)", async () => {
+    startSignIn.mockReturnValue(new Promise(() => {})); // Weiterleitung läuft, die Seite wird verlassen
+    const { user } = setupGoogle();
+    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Mit Google anmelden" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Mit Google anmelden|Weiter zu Google/ })).toBeDisabled());
+    window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: true }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Mit Google anmelden" })).toBeEnabled());
+  });
 });

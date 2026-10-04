@@ -9,6 +9,7 @@ import {
   readGateCookie,
   writeGateCookie,
 } from "@/lib/access";
+import { requestAccount } from "@/lib/account";
 import { readJson, respond } from "@/lib/api";
 import { withinLimit } from "@/lib/ratelimit";
 import { getTool } from "@/lib/registry";
@@ -29,7 +30,9 @@ export async function POST(req: NextRequest) {
     return respond(ROUTE, 429, { error: "rate_limited" }, "rate_limited");
   }
 
-  const state = await markComplete(defaultStore(), hash, body.data.tool, readGateCookie(req, secret));
+  // Ein freigeschaltetes Konto zählt nicht als freier Durchlauf, auch nicht auf einem neuen Gerät.
+  const who = await requestAccount(req.headers, secret);
+  const state = await markComplete(defaultStore(), hash, body.data.tool, readGateCookie(req, secret), Date.now(), who?.acchash ?? null);
   const res = respond(ROUTE, 200, { ok: true, unlocked: state.unlocked });
   writeGateCookie(res, state, secret);
   return res;

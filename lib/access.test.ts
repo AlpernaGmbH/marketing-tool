@@ -106,6 +106,24 @@ describe("canStart", () => {
   });
 });
 
+describe("markComplete mit Konto", () => {
+  it("zählt für ein freigeschaltetes Konto keinen freien Durchlauf, auch auf einem neuen Gerät", async () => {
+    const store = new MemoryStore();
+    store.accounts.add("acc1");
+    const s = await markComplete(store, "neue-ip", "persona", null, NOW, "acc1");
+    expect(s.unlocked).toBe(true);
+    expect(store.runs.size).toBe(0);
+    expect(store.popular.get("persona")).toBe(1);
+  });
+
+  it("zählt ohne Konto weiter wie bisher", async () => {
+    const store = new MemoryStore();
+    const s = await markComplete(store, "neue-ip", "persona", null, NOW);
+    expect(s.unlocked).toBe(false);
+    expect(store.runs.get("neue-ip")).toBe(1);
+  });
+});
+
 describe("markComplete", () => {
   it("zählt run und popular und erhöht runs im Cookie", async () => {
     const store = new MemoryStore();
@@ -191,12 +209,25 @@ describe("redisStore", () => {
     const redis = {
       mget: async (...ks: string[]) => (calls.push(`mget ${ks.join(",")}`), ks.map((k) => data.get(k) ?? null)),
       exists: async (k: string) => (calls.push(`exists ${k}`), data.has(k) ? 1 : 0),
+      set: async (k: string, v: unknown, opts?: { nx?: boolean }) => {
+        calls.push(`set ${k}${opts?.nx ? " nx" : ""}`);
+        if (opts?.nx && data.has(k)) return null;
+        data.set(k, v);
+        return "OK";
+      },
       pipeline: () => {
         const ops: (() => void)[] = [];
         const p = {
           set: (k: string, v: unknown) => (ops.push(() => data.set(k, v)), p),
           incr: (k: string) => (ops.push(() => data.set(k, Number(data.get(k) ?? 0) + 1)), p),
-          expire: () => p,
+          expire: (k: string, s: number) => (ops.push(() => data.set(`ttl:${k}`, s)), p),
+          rpush: (k: string, v: string) => (ops.push(() => data.set(k, [...((data.get(k) as string[]) ?? []), v])), p),
+          ltrim: (k: string, a: number, b: number) =>
+            (ops.push(() => {
+              const list = (data.get(k) as string[]) ?? [];
+              data.set(k, list.slice(a < 0 ? Math.max(list.length + a, 0) : a, b === -1 ? undefined : b + 1));
+            }),
+            p),
           exec: async () => (ops.forEach((f) => f()), []),
         };
         return p;
@@ -215,6 +246,26 @@ describe("redisStore", () => {
     expect(await store.isAccountUnlocked("acc1")).toBe(true);
     expect(await store.isAccountUnlocked("acc2")).toBe(false);
     expect(calls[0]).toBe("mget run:ip2,unlocked:ip2,acct:acc1");
+  });
+
+  it("claimAccount ist atomar: nur der erste Aufruf bekommt true, das Konto ist danach freigeschaltet", async () => {
+    const { redis, calls } = fakeRedis();
+    const store = redisStore(redis);
+    expect(await store.claimAccount("acc1")).toBe(true);
+    expect(await store.claimAccount("acc1")).toBe(false);
+    expect(await store.isAccountUnlocked("acc1")).toBe(true);
+    expect(calls.filter((c) => c === "set acct:acc1 nx")).toHaveLength(2);
+  });
+
+  it("pushLead begrenzt die Warteschlange auf 1000 Einträge und lässt sie nach 30 Tagen verfallen", async () => {
+    const { redis, data } = fakeRedis();
+    const store = redisStore(redis);
+    for (let i = 0; i < 1003; i++) await store.pushLead(`lead-${i}`);
+    const list = data.get("lead_queue") as string[];
+    expect(list).toHaveLength(1000);
+    expect(list[0]).toBe("lead-3");
+    expect(list.at(-1)).toBe("lead-1002");
+    expect(data.get("ttl:lead_queue")).toBe(30 * 24 * 60 * 60);
   });
 
   it("setUnlocked ohne Konto setzt nur die IP", async () => {

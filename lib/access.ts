@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 import type { Redis } from "@upstash/redis";
-import { TTL, getRedis, keys, withTimeout } from "@/lib/redis";
+import { LEAD_QUEUE_MAX, TTL, getRedis, keys, withTimeout } from "@/lib/redis";
 
 export const GATE_COOKIE = "mt_gate";
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // Sekunden
@@ -22,8 +22,13 @@ export type StoredState = { runs: number; unlocked: boolean };
 export interface AccessStore {
   /** Mit `acchash` zählt auch die Freischaltung des Kontos (acct:<acchash>). */
   getState(iphash: string, acchash?: string | null): Promise<StoredState>;
-  /** Ist dieses Konto schon freigeschaltet? Verhindert doppelte Leads bei jeder neuen Anmeldung. */
+  /** Ist dieses Konto schon freigeschaltet? */
   isAccountUnlocked(acchash: string): Promise<boolean>;
+  /**
+   * Beansprucht die Freischaltung des Kontos atomar (SET NX). true: das war der erste Aufruf, es braucht einen Lead.
+   * false: schon freigeschaltet. Verhindert doppelte Leads bei Doppelklick, zwei Tabs und jeder neuen Anmeldung.
+   */
+  claimAccount(acchash: string): Promise<boolean>;
   /** Zählt einen abgeschlossenen Durchlauf: popular:<slug> immer, run:<iphash> nur wenn countRun. */
   recordCompletion(iphash: string, slug: string, countRun: boolean): Promise<void>;
   /** Schaltet die IP frei und, falls angegeben, das Konto. */
@@ -148,8 +153,9 @@ export async function markComplete(
   slug: string,
   cookie: GateState | null,
   now = Date.now(),
+  acchash: string | null = null,
 ): Promise<GateState> {
-  const before = merge(await readStored(store, iphash, null), cookie);
+  const before = merge(await readStored(store, iphash, acchash), cookie);
   if (store) {
     try {
       // Für Freigeschaltete zählt run: nicht mehr, das spart Redis-Befehle im Free Tier.
@@ -195,6 +201,9 @@ export function redisStore(redis: Redis): AccessStore {
     async isAccountUnlocked(acchash) {
       return (await withTimeout(redis.exists(keys.account(acchash)))) > 0;
     },
+    async claimAccount(acchash) {
+      return (await withTimeout(redis.set(keys.account(acchash), 1, { nx: true, ex: TTL.unlocked }))) === "OK";
+    },
     async recordCompletion(iphash, slug, countRun) {
       const p = redis.pipeline();
       p.incr(keys.popular(slug));
@@ -211,7 +220,12 @@ export function redisStore(redis: Redis): AccessStore {
       await withTimeout(p.exec());
     },
     async pushLead(json) {
-      await withTimeout(redis.rpush(keys.leadQueue, json));
+      // Personendaten im Klartext: Ablauf und Obergrenze, damit nichts unbegrenzt in Redis liegt, wenn n8n ausfällt.
+      const p = redis.pipeline();
+      p.rpush(keys.leadQueue, json);
+      p.ltrim(keys.leadQueue, -LEAD_QUEUE_MAX, -1);
+      p.expire(keys.leadQueue, TTL.leadQueue);
+      await withTimeout(p.exec());
     },
   };
 }

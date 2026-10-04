@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,24 @@ export function LeadGate({ open, onOpenChange, tool, reason, login = null, onSuc
     resolver: zodResolver(formSchema),
     defaultValues: { name: "", firma: "", email: "", telefon: "", honeypot: "" },
   });
+
+  // Zurück-Taste aus dem Cache des Browsers (bfcache): Die Seite kommt so zurück, wie sie war, auch mit gesperrtem Knopf.
+  useEffect(() => {
+    const reset = (e: PageTransitionEvent) => {
+      if (e.persisted) setGoogleBusy(false);
+    };
+    window.addEventListener("pageshow", reset);
+    return () => window.removeEventListener("pageshow", reset);
+  }, []);
+
+  function handleOpenChange(next: boolean) {
+    if (!next) {
+      setSubmitError(null);
+      setGoogleError(null);
+      setGoogleBusy(false);
+    }
+    onOpenChange(next);
+  }
 
   async function onSubmit(values: FormValues) {
     setSubmitError(null);
@@ -172,7 +190,7 @@ export function LeadGate({ open, onOpenChange, tool, reason, login = null, onSuc
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent data-reason={reason} className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Dein erstes Ergebnis war gratis.</DialogTitle>

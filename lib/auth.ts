@@ -26,6 +26,8 @@ function create(env: Env) {
       },
     },
     session: {
+      // Ohne Angabe gilt 1 Woche: Wer per Konto auf einem zweiten Gerät freigeschaltet ist, stünde nach 7 Tagen wieder da.
+      expiresIn: 30 * 24 * 60 * 60,
       cookieCache: { enabled: true, maxAge: 30 * 24 * 60 * 60, strategy: "jwe", refreshCache: true },
     },
     account: { storeStateStrategy: "cookie", storeAccountCookie: true },

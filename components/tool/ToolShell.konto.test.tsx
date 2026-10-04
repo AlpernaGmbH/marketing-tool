@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ToolShell } from "@/components/tool/ToolShell";
+import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
 import { savePending } from "@/lib/konto-client";
 
 type Call = { url: string; body: unknown };
@@ -69,6 +69,8 @@ describe("ToolShell: Rückkehr von Google", () => {
     expect(calls.some((c) => c.url === "/api/lead/account")).toBe(false);
     expect(screen.getByTestId("access-status")).toHaveTextContent("Freier Durchlauf");
     expect(window.location.search).toBe("");
+    // Kein stilles Nichts: Der Besucher erfährt, dass die Einwilligung fehlt.
+    expect(await screen.findByText(/angemeldet, aber noch nicht freigeschaltet/)).toBeInTheDocument();
   });
 
   it("ignoriert einen Merker für ein anderes Werkzeug", async () => {
@@ -116,3 +118,35 @@ describe("ToolShell: Rückkehr von Google", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });
+
+describe("ToolShell: Ausfall von /api/access", () => {
+  function Probe() {
+    const ctx = useToolContext();
+    return <button onClick={() => void ctx.requestStart()}>Starten</button>;
+  }
+
+  it("behält «Freigeschaltet», wenn eine spätere Abfrage 429 oder 500 liefert", async () => {
+    let status = 200;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        status === 200
+          ? new Response(JSON.stringify({ allowed: true, unlocked: true, reason: "unlocked", login: "google", signedIn: true }), { status: 200 })
+          : new Response("{}", { status }),
+      ),
+    );
+    render(
+      <ToolShell slug="digitaler-auftritt-check" name="Test">
+        <Probe />
+      </ToolShell>,
+    );
+    await waitFor(() => expect(screen.getByTestId("access-status")).toHaveTextContent("Freigeschaltet"));
+    status = 429;
+    screen.getByRole("button", { name: "Starten" }).click();
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByTestId("access-status")).toHaveTextContent("Freigeschaltet");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+

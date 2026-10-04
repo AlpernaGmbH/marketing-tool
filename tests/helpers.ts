@@ -26,6 +26,12 @@ export class MemoryStore implements AccessStore {
     this.guard();
     return this.accounts.has(acchash);
   }
+  async claimAccount(acchash: string) {
+    this.guard();
+    if (this.accounts.has(acchash)) return false;
+    this.accounts.add(acchash);
+    return true;
+  }
   async recordCompletion(iphash: string, slug: string, countRun: boolean) {
     this.guard();
     this.popular.set(slug, (this.popular.get(slug) ?? 0) + 1);
