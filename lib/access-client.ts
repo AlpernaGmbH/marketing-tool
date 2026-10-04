@@ -1,7 +1,7 @@
 // Browser-seitige Helfer für /api/access. Ein Fehler hier blockiert nie einen Besucher:
 // Bei jedem technischen Problem gilt «erlaubt».
 
-export type LoginProvider = "google";
+export type LoginProvider = "clerk";
 export type AccessInfo = {
   allowed: boolean;
   unlocked: boolean;
@@ -37,7 +37,7 @@ export async function checkAccess(tool: string, fetchImpl: typeof fetch = fetch)
       allowed: data.allowed !== false,
       unlocked: data.unlocked === true,
       reason: typeof data.reason === "string" ? data.reason : "unknown",
-      login: data.login === "google" ? "google" : null,
+      login: data.login === "clerk" ? "clerk" : null,
       signedIn: data.signedIn === true,
     };
   } catch {
@@ -72,7 +72,7 @@ export async function submitLead(data: Record<string, unknown>, fetchImpl: typeo
 
 export type AccountResult = "ok" | "not_signed_in" | "failed";
 
-/** Schaltet nach der Google-Anmeldung frei (Name und E-Mail kommen aus dem Konto, nicht aus dem Browser). */
+/** Schaltet nach der Anmeldung frei (Name und E-Mail kommen aus dem Konto, nicht aus dem Browser). */
 export async function unlockWithAccount(tool: string, firma: string | undefined, fetchImpl: typeof fetch = fetch): Promise<AccountResult> {
   const res = await postJson("/api/lead/account", { tool, consent: true, ...(firma ? { firma } : {}) }, fetchImpl);
   if (!res) return "failed";

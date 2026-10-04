@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Ein freigeschaltetes Konto zählt nicht als freier Durchlauf, auch nicht auf einem neuen Gerät.
-  const who = await requestAccount(req.headers, secret);
+  const who = await requestAccount(secret);
   const state = await markComplete(defaultStore(), hash, body.data.tool, readGateCookie(req, secret), Date.now(), who?.acchash ?? null);
   const res = respond(ROUTE, 200, { ok: true, unlocked: state.unlocked });
   writeGateCookie(res, state, secret);

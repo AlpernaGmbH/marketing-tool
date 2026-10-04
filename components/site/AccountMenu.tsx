@@ -33,7 +33,7 @@ export function AccountMenu() {
   const [signOutError, setSignOutError] = useState(false);
   const box = useRef<HTMLDivElement>(null);
 
-  // Rückkehr von Google: Parameter aus der Adresse nehmen und eine Meldung zeigen.
+  // Rückkehr von der Anmeldung: Parameter aus der Adresse nehmen und eine Meldung zeigen.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const value = params.get("anmeldung");

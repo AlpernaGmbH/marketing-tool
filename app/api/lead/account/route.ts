@@ -8,7 +8,7 @@ import { logStatus } from "@/lib/log";
 import { withinLimit } from "@/lib/ratelimit";
 import { getTool } from "@/lib/registry";
 
-// Freischalten mit Konto: Name und E-Mail kommen aus der Google-Anmeldung, nicht aus dem Browser.
+// Freischalten mit Konto: Name und E-Mail kommen aus der Anmeldung (Clerk), nicht aus dem Browser.
 // Die Einwilligung hat der Besucher vor der Anmeldung im Fenster gegeben; sie steht hier als Pflichtfeld.
 
 const ROUTE = "/api/lead/account";
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!tool) return respond(ROUTE, 400, { error: "invalid_tool" }, "invalid_tool");
 
   const secret = gateSecret();
-  const who = await requestAccount(req.headers, secret);
+  const who = await requestAccount(secret);
   if (!secret || !who) return respond(ROUTE, 401, { error: "not_signed_in" }, "auth_error");
 
   const hash = ipHash(clientIp(req.headers), secret);

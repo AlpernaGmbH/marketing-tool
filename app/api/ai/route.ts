@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   if (!secret) return respond(ROUTE, 503, { error: "ai_disabled" }, "gate_unconfigured");
   if (!verifyResult(result, secret)) return respond(ROUTE, 400, { error: "invalid" }, "invalid_body");
 
-  const who = await requestAccount(req.headers, secret);
+  const who = await requestAccount(secret);
   if (!who) return respond(ROUTE, 401, { error: "not_signed_in" }, "auth_error");
 
   const hash = ipHash(clientIp(req.headers), secret);

@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PENDING_MS, clearPending, readPending, returnPath, savePending, startGoogleSignIn } from "@/lib/konto-client";
+import { PENDING_MS, clearPending, readPending, returnPath, savePending, startSignIn } from "@/lib/konto-client";
 
-const signIn = vi.hoisted(() => ({ social: vi.fn() }));
-vi.mock("better-auth/client", () => ({ createAuthClient: () => ({ signIn }) }));
+const bridge = vi.hoisted(() => ({ openSignIn: vi.fn() }));
+vi.mock("@/lib/clerk-bridge", () => ({ openSignIn: bridge.openSignIn }));
 
 beforeEach(() => {
   localStorage.clear();
-  signIn.social.mockReset();
+  bridge.openSignIn.mockReset();
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -45,20 +45,19 @@ describe("Merker der begonnenen Anmeldung", () => {
   });
 });
 
-describe("startGoogleSignIn", () => {
-  it("startet die Anmeldung mit Rückkehr auf die aktuelle Seite", async () => {
-    signIn.social.mockResolvedValue({ error: null });
-    expect(await startGoogleSignIn({ pathname: "/tools/x", search: "" })).toBe(true);
-    expect(signIn.social).toHaveBeenCalledWith({
-      provider: "google",
-      callbackURL: "/tools/x?konto=ok",
-      errorCallbackURL: "/tools/x?konto=fehler",
-    });
+describe("startSignIn", () => {
+  it("öffnet das Fenster von Clerk mit Rückkehr auf die aktuelle Seite (Standard: Anmelden, Parameter konto)", async () => {
+    bridge.openSignIn.mockResolvedValue(true);
+    expect(await startSignIn({ pathname: "/tools/x", search: "" })).toBe(true);
+    expect(bridge.openSignIn).toHaveBeenCalledWith("anmelden", "/tools/x?konto=ok");
   });
-  it("meldet Fehler der Bibliothek und Ausnahmen als false", async () => {
-    signIn.social.mockResolvedValue({ error: { message: "x" } });
-    expect(await startGoogleSignIn({ pathname: "/a", search: "" })).toBe(false);
-    signIn.social.mockRejectedValue(new Error("offline"));
-    expect(await startGoogleSignIn({ pathname: "/a", search: "" })).toBe(false);
+  it("kann Registrieren und den Parameter der Kopfzeile", async () => {
+    bridge.openSignIn.mockResolvedValue(true);
+    await startSignIn({ pathname: "/profil", search: "?a=1" }, "anmeldung", "registrieren");
+    expect(bridge.openSignIn).toHaveBeenCalledWith("registrieren", "/profil?a=1&anmeldung=ok");
+  });
+  it("gibt false zurück, wenn Clerk nicht bereit ist", async () => {
+    bridge.openSignIn.mockResolvedValue(false);
+    expect(await startSignIn({ pathname: "/a", search: "" })).toBe(false);
   });
 });

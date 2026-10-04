@@ -263,7 +263,7 @@ test.describe("Konto in der Kopfzeile", () => {
   });
 
   test("Besucher sehen Anmelden und Registrieren, aber kein «Mein Profil»; das Fenster öffnet sich", async ({ page }) => {
-    await route(page, { login: "google", account: null });
+    await route(page, { login: "clerk", account: null });
     await page.goto("/");
     const header = page.getByRole("banner");
     await expect(header.getByRole("button", { name: "Anmelden" })).toBeVisible();
@@ -272,11 +272,38 @@ test.describe("Konto in der Kopfzeile", () => {
     await header.getByRole("button", { name: "Registrieren" }).click();
     const dialog = page.getByTestId("signin-dialog");
     await expect(dialog.getByRole("heading", { name: "Konto erstellen" })).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Mit Google anmelden" })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Konto erstellen" })).toBeVisible();
+    await expect(dialog).not.toContainText("Google");
+  });
+
+  test("ist Clerk in diesem Build nicht eingerichtet, sagt das Fenster es ruhig und lädt nichts von Clerk", async ({ page }) => {
+    const clerkRequests: string[] = [];
+    page.on("request", (r) => {
+      if (/clerk/i.test(new URL(r.url()).host)) clerkRequests.push(r.url());
+    });
+    await route(page, { login: "clerk", account: null });
+    await page.goto("/");
+    await page.getByRole("banner").getByRole("button", { name: "Anmelden" }).click();
+    await page.getByTestId("signin-dialog").getByRole("button", { name: "Weiter zur Anmeldung" }).click();
+    await expect(page.getByTestId("signin-dialog").getByRole("alert")).toContainText("konnte nicht gestartet werden");
+    expect(clerkRequests).toEqual([]);
+  });
+
+  test("Besucher ohne Konto laden Clerk nie: keine Anfrage an eine Clerk-Adresse auf Startseite und Werkzeug", async ({ page }) => {
+    const clerkRequests: string[] = [];
+    page.on("request", (r) => {
+      if (/clerk/i.test(new URL(r.url()).host)) clerkRequests.push(r.url());
+    });
+    await route(page, { login: "clerk", account: null });
+    for (const path of ["/", `/tools/${TOOL}`]) {
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
+    }
+    expect(clerkRequests).toEqual([]);
   });
 
   test("Angemeldete sehen ein Menü mit Mein Profil und Abmelden; die Profilseite zeigt das Konto", async ({ page }) => {
-    await route(page, { login: "google", account: { name: "Anna Keller", email: "anna@keller.ch" } });
+    await route(page, { login: "clerk", account: { name: "Anna Keller", email: "anna@keller.ch" } });
     await page.goto("/");
     await page.getByTestId("account-button").click();
     await expect(page.locator("#account-menu")).toContainText("anna@keller.ch");
@@ -287,7 +314,7 @@ test.describe("Konto in der Kopfzeile", () => {
   });
 
   test("bei 375 px ragt die Kopfzeile nicht über den Rand, mit Anmelden-Knopf und mit Konto", async ({ browser }) => {
-    for (const body of [{ login: "google", account: null }, { login: "google", account: { name: "Anna", email: "a@k.ch" } }]) {
+    for (const body of [{ login: "clerk", account: null }, { login: "clerk", account: { name: "Anna", email: "a@k.ch" } }]) {
       const ctx = await browser.newContext({ viewport: { width: 375, height: 800 } });
       const page = await ctx.newPage();
       await route(page, body);
@@ -305,7 +332,7 @@ test.describe("KI-Einordnung im Browser (mit Konto)", () => {
   async function signedIn(page: Page, replies: { status: number; body: unknown }[]) {
     const calls = { n: 0 };
     await page.route("**/api/access", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ allowed: true, unlocked: true, reason: "unlocked", login: "google", signedIn: true }) }),
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ allowed: true, unlocked: true, reason: "unlocked", login: "clerk", signedIn: true }) }),
     );
     await page.route("**/api/ai", (route) => {
       const reply = replies[Math.min(calls.n++, replies.length - 1)];
@@ -435,8 +462,8 @@ test.describe("Zugang: ein freier Durchlauf, dann Formular", () => {
     expect((await request.get("/api/cron/leads", { headers: { authorization: "Bearer erraten" } })).status()).toBe(401);
   });
 
-  test("Konto-Anmeldung ist ohne Einrichtung aus: /api/auth 404, /api/lead/account 401, /api/access bietet nur das Formular", async ({ request }) => {
-    expect((await request.get("/api/auth/get-session")).status()).toBe(404);
+  test("Konto-Anmeldung ist ohne Einrichtung aus: /api/lead/account 401, /api/account/data 401, /api/access bietet nur das Formular", async ({ request }) => {
+    expect((await request.get("/api/auth/get-session")).status()).toBe(404); // die frühere Anmelde-Route gibt es nicht mehr
     const noSession = await request.post("/api/lead/account", { data: { tool: TOOL, consent: true } });
     expect(noSession.status()).toBe(401);
     const access = await (await request.post("/api/access", { data: { tool: TOOL } })).json();

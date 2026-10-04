@@ -21,7 +21,7 @@ type Gate = { ok: true; store: DataStore; acchash: string } | { ok: false; respo
 
 async function gate(req: NextRequest): Promise<Gate> {
   const secret = gateSecret();
-  const who = await requestAccount(req.headers, secret);
+  const who = await requestAccount(secret);
   if (!secret || !who) return { ok: false, response: respond(ROUTE, 401, { error: "not_signed_in" }, "auth_error") };
   if (!(await withinLimit("account-data", 60, "1 m", ipHash(clientIp(req.headers), secret)))) {
     return { ok: false, response: respond(ROUTE, 429, { error: "rate_limited" }, "rate_limited") };

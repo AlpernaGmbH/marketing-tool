@@ -20,7 +20,7 @@ function stubFetch(opts: { account?: "ok" | "401" | "500"; unlockedAfter?: boole
         unlocked = opts.unlockedAfter ?? true;
         return new Response(JSON.stringify({ ok: true, known: false }), { status: 200 });
       }
-      return new Response(JSON.stringify({ allowed: true, unlocked, reason: unlocked ? "unlocked" : "free_run", login: "google", signedIn: unlocked }), { status: 200 });
+      return new Response(JSON.stringify({ allowed: true, unlocked, reason: unlocked ? "unlocked" : "free_run", login: "clerk", signedIn: unlocked }), { status: 200 });
     }),
   );
 }
@@ -131,7 +131,7 @@ describe("ToolShell: Ausfall von /api/access", () => {
       "fetch",
       vi.fn(async () =>
         status === 200
-          ? new Response(JSON.stringify({ allowed: true, unlocked: true, reason: "unlocked", login: "google", signedIn: true }), { status: 200 })
+          ? new Response(JSON.stringify({ allowed: true, unlocked: true, reason: "unlocked", login: "clerk", signedIn: true }), { status: 200 })
           : new Response("{}", { status }),
       ),
     );

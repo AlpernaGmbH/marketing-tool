@@ -9,7 +9,7 @@ Jede Tool-Seite ist zugleich eine SEO-Landingpage mit 800-1'200 Wörtern Text.
 Sprache: Deutsch (Schweiz). Zielgruppe: KMU-Entscheider 30–60,
 Vereinsvorstände, Selbständige.
 
-## Zugangsmodell (ein freier Durchlauf, danach Konto per Google; Zugang v2, Stand 04.10.2026)
+## Zugangsmodell (ein freier Durchlauf, danach Konto über Clerk; Zugang v2, Stand 04.10.2026)
 - Alle Texte, Beispiele, FAQ: öffentlich, immer indexierbar.
 - Freier Durchlauf: Jeder Besucher darf ein Tool einmal vollständig
 durchlaufen. Ergebnis am Bildschirm und Text-Copy sind frei. Dateien (PDF,
@@ -23,19 +23,24 @@ dann sind alle Werkzeuge und Downloads offen, und wir melden uns persönlich,
 falls du Fragen hast.»
 - Nach dem Absenden: Besucher ist freigeschaltet (alle Tools, alle
 Downloads), Lead geht über /api/lead an n8n ins CRM.
-- Konto (Zugang v2): Ist die Anmeldung eingerichtet (GOOGLE_CLIENT_ID,
-GOOGLE_CLIENT_SECRET, BETTER_AUTH_SECRET), zeigt das LeadGate zuerst «Mit Google
-anmelden» (mit dem Häkchen «Alperna darf mich zu meinem Ergebnis
-kontaktieren») und das Formular als Ausweg («Lieber ohne Google-Konto?»). Ohne
-Einrichtung gilt nur das Formular. Nach der Rückkehr von Google (?konto=ok)
-schaltet POST /api/lead/account frei: Name und E-Mail kommen aus dem Konto,
-nicht aus dem Browser. Die Freischaltung des Kontos liegt in Redis unter
+- Konto (Zugang v2): Ist die Anmeldung eingerichtet (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+CLERK_SECRET_KEY), zeigt das LeadGate zuerst «Anmelden und freischalten» (mit dem
+Häkchen «Alperna darf mich zu meinem Ergebnis kontaktieren») und das Formular als
+Ausweg («Lieber ohne Konto?»). Die Anmeldung macht Clerk (Fenster mit Google,
+Microsoft, Apple oder E-Mail-Code, je nach Einstellung im Clerk-Dashboard). Ohne
+Einrichtung gilt nur das Formular. Nach der Rückkehr (?konto=ok)
+schaltet POST /api/lead/account frei: Name und E-Mail kommen aus dem Konto bei Clerk
+(nur bestätigte Adressen), nicht aus dem Browser. Die Freischaltung des Kontos liegt in Redis unter
 acct:<HMAC der E-Mail> (TTL 365 Tage) und gilt auf allen Geräten. Ein Konto,
 das schon freigeschaltet ist, erzeugt keinen zweiten Lead. Eine Anmeldung allein
 schaltet nicht frei: ohne die Einwilligung im Fenster gibt es keine
-Freischaltung. Sitzung: Better Auth im Stateless-Modus (Cookie
-better-auth.session_token, better-auth.session_data und better-auth.account_data, alle notwendig,
-30 Tage, kein Banner), keine Datenbank.
+Freischaltung. Sitzung: Clerk (Cookies __session und __client_uat auf unserer Domain,
+dazu Cookies von Clerk selbst; alle notwendig, kein Banner). Clerk lädt im Browser nur,
+wenn jemand «Anmelden» anklickt oder schon ein Sitzungs-Zeichen (__client_uat) trägt
+(lib/clerk-bridge.ts). Besucher ohne Konto nehmen nie Kontakt zu Clerk auf. Der Server
+prüft die Sitzung in middleware.ts (clerkMiddleware, nur für /api/...) und liest über
+lib/auth.ts die bestätigte E-Mail-Adresse; die Kennung des Kontos bleibt der HMAC dieser
+Adresse, egal über welchen Anbieter die Person sich anmeldet.
 - Zählung: lib/access.ts bildet einen HMAC-SHA256 der Client-IP (x-forwarded-
 for erstes Element) mit GATE_SECRET, gekürzt auf 16 Byte. Redis-Keys: run:
 <iphash> (Zähler, TTL 30 Tage), unlocked:<iphash> (TTL 365 Tage), acct:<acchash>
@@ -77,8 +82,7 @@ generateStaticParams, Tool als Client-Komponente
 exportieren/importieren, alles löschen
 - app/api/access/route.ts, app/api/access/complete/route.ts,
 app/api/lead/route.ts – Zugang und Leads
-- app/api/auth/[...all]/route.ts – Anmeldung (Better Auth, Google); app/api/lead/account/route.ts –
-Freischalten mit Konto; app/api/account/route.ts – wer ist angemeldet (Name, E-Mail) für
+- app/api/lead/account/route.ts – Freischalten mit Konto; app/api/account/route.ts – wer ist angemeldet (Name, E-Mail) für
 Kopfzeile und Profilseite; app/api/account/data/route.ts – Daten des Kontos (GET, PUT, DELETE)
 - app/api/check/route.ts – Marketing-Check: ruft die Website des Besuchers ab
 (SSRF-Schutz in lib/check/net.ts), streamt Schritte und Ergebnis als NDJSON
@@ -104,8 +108,11 @@ Breadcrumbs, AccountMenu (Konto in der Kopfzeile), SignInDialog
 - lib/access.ts – ipHash(), readGateCookie(), writeGateCookie(), canStart(),
 markComplete(), unlock()
 - lib/redis.ts – Upstash-Client, Key-Helfer, TTLs
-- lib/auth.ts, lib/account.ts, lib/konto-client.ts – Konto: Better Auth (Server), Kennung
-aus der Sitzung, Rückkehr von Google (Browser)
+- lib/auth.ts, lib/account.ts – Konto (Server): Person aus der Sitzung von Clerk, Kennung
+aus der bestätigten E-Mail-Adresse
+- lib/clerk-bridge.ts, lib/clerk-localization.ts, lib/konto-client.ts,
+components/site/ClerkLoader.tsx, ClerkRoot.tsx – Konto (Browser): Clerk lädt erst bei
+Bedarf; Texte der Fenster auf Deutsch in Du-Form; Merker der begonnenen Anmeldung
 - lib/profile.ts – Profil-Typen, Validierung, Export/Import JSON (rein, ohne React)
 - lib/use-profile.ts – useProfile(): localStorage-Key mt:profile
 - lib/check/ – Engine des Marketing-Checks (Port aus dem Agentur-Tool): net.ts,
@@ -147,7 +154,7 @@ Kopie (schlägt das fehl, bleibt sie). «Alles löschen» und «Meine Daten im K
 /profil löschen zuerst die Daten im Konto. Der Server liest die Werte nicht und loggt sie nicht.
 Ohne Anmeldung bleibt alles im Browser.
 Kopfzeile: Ist die Anmeldung eingerichtet, sehen Besucher «Anmelden» und
-«Registrieren» (bei Google derselbe Vorgang, die Anmeldung allein schaltet nichts
+«Registrieren» (bei Clerk ein Fenster für beides, die Anmeldung allein schaltet nichts
 frei und schickt nichts an Alperna). «Mein Profil» steht nur im Menü der angemeldeten
 Person, zusammen mit «Abmelden». Ohne eingerichtete Anmeldung bleibt der Link
 «Mein Profil» wie bisher. Die Seite /profil ist per Adresse erreichbar und zeigt
@@ -170,9 +177,10 @@ Anführungszeichen, CHF 1'000.-, Datum 03.10.2026, Prozent mit Leerzeichen
 (8,1 %).
 3. Jede logic.ts hat Tests. `npm run check` (typecheck, test, content-check,
 build) ist vor jedem Commit grün.
-4. Keine externen Skripte ausser Umami. Cookies: mt_gate und, nach der Anmeldung,
-die Sitzung von Better Auth (beide notwendig, in der Datenschutzerklärung
-erklärt, kein Banner). Fonts über next/font/local
+4. Keine externen Skripte ausser Umami und Clerk. Clerk (clerk-js, von der Clerk-Domain
+der Anwendung) lädt nur, wenn jemand sich anmeldet oder angemeldet ist, nie für Besucher
+ohne Konto. Cookies: mt_gate und, nach der Anmeldung, die Sitzung von Clerk (beide
+notwendig, in der Datenschutzerklärung erklärt, kein Banner). Fonts über next/font/local
 (Geist, Geist Mono, Instrument Serif).
 5. Lighthouse mobil: Performance, SEO, Accessibility je ≥ 95 pro Tool-Seite.
 6. Ein Tool = ein Ordner. Neue Tools nur über `npm run new-tool <slug>`.

@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     if (!(await withinLimit("check", 8, "1 h", hash))) {
       return respond(ROUTE, 429, { error: "rate_limited", message: "Das waren viele Prüfungen in kurzer Zeit. Bitte versuche es später wieder." }, "rate_limited");
     }
-    const who = await requestAccount(req.headers, secret);
+    const who = await requestAccount(secret);
     const decision = await canStart(defaultStore(), hash, readGateCookie(req, secret), who?.acchash ?? null);
     if (!decision.allowed) {
       return respond(ROUTE, 403, { error: "gate", message: "Dein freier Durchlauf ist verbraucht." }, "gate_used");

@@ -16,19 +16,19 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-const call = () => GET(new Request("http://localhost/api/account"));
+const call = () => GET();
 
 describe("GET /api/account", () => {
   it("meldet ohne Sitzung: Anmeldung möglich, niemand angemeldet", async () => {
     const res = await call();
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ login: "google", account: null, storage: true });
+    expect(await res.json()).toEqual({ login: "clerk", account: null, storage: true });
     expect(res.headers.get("cache-control")).toBe("no-store");
   });
 
   it("meldet Name und E-Mail der angemeldeten Person und sonst nichts", async () => {
     auth.account = { email: "anna@keller.ch", name: "Anna Keller" };
-    expect(await (await call()).json()).toEqual({ login: "google", account: { name: "Anna Keller", email: "anna@keller.ch" }, storage: true });
+    expect(await (await call()).json()).toEqual({ login: "clerk", account: { name: "Anna Keller", email: "anna@keller.ch" }, storage: true });
   });
 
   it("meldet login null, wenn die Anmeldung nicht eingerichtet ist (Kopfzeile zeigt dann «Mein Profil»)", async () => {

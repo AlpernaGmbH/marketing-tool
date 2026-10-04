@@ -1,8 +1,10 @@
+import { signOut } from "@/lib/clerk-bridge";
+
 // Browser-Seite von /api/account: Wer ist angemeldet? Und Abmelden. Keine Funktion wirft.
 
 export type AccountInfo = {
   /** Angebotener Anmeldeweg; null: Anmeldung ist nicht eingerichtet. */
-  login: "google" | null;
+  login: "clerk" | null;
   account: { name: string; email: string } | null;
   /** Die Daten (Profil, Merkliste, Zwischenstände) können beim Konto liegen. Sonst bleiben sie im Browser. */
   storage: boolean;
@@ -15,21 +17,16 @@ export async function fetchAccountInfo(fetchImpl: typeof fetch = fetch): Promise
     const data = (await res.json()) as Partial<AccountInfo>;
     const a = data.account;
     const account = a && typeof a.name === "string" && typeof a.email === "string" ? { name: a.name, email: a.email } : null;
-    return { login: data.login === "google" ? "google" : null, account, storage: data.storage === true };
+    return { login: data.login === "clerk" ? "clerk" : null, account, storage: data.storage === true };
   } catch {
     return null;
   }
 }
 
-/** Meldet ab (löscht das Sitzungs-Cookie). Die Bibliothek lädt erst beim Klick. */
+/** Meldet ab (Sitzung bei Clerk beenden, Cookies entfernen). Clerk lädt dafür bei Bedarf. */
 export async function signOutAccount(): Promise<boolean> {
-  try {
-    const { createAuthClient } = await import("better-auth/client");
-    const { error } = await createAuthClient().signOut();
-    return !error;
-  } catch {
-    return false;
-  }
+  const here = typeof window === "undefined" ? "/" : `${window.location.pathname}${window.location.search}`;
+  return signOut(here);
 }
 
 /** Anfangsbuchstabe für das Konto-Symbol. */

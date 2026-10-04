@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { submitLead, unlockWithAccount, type LoginProvider } from "@/lib/access-client";
-import { clearPending, savePending, startGoogleSignIn } from "@/lib/konto-client";
+import { clearPending, savePending, startSignIn } from "@/lib/konto-client";
 import { leadSchema } from "@/lib/lead-schema";
 import { useProfile } from "@/lib/use-profile";
 
@@ -34,7 +34,7 @@ type Props = {
   reason: LeadGateReason;
   /** Angebotener Anmeldeweg (vom Server). Ohne: nur das Formular. */
   login?: LoginProvider | null;
-  /** Der Besucher hat eine Sitzung: Dann genügt das Häkchen, ein weiterer Gang zu Google ist unnötig. */
+  /** Der Besucher hat eine Sitzung: Dann genügt das Häkchen, eine erneute Anmeldung ist unnötig. */
   signedIn?: boolean;
   /** Nach erfolgreichem Absenden: Tool starten oder Download auslösen, ohne Reload. */
   onSuccess: () => void;
@@ -49,12 +49,12 @@ const ERRORS = {
 export function LeadGate({ open, onOpenChange, tool, reason, login = null, signedIn = false, onSuccess }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { profile } = useProfile();
-  const [googleConsent, setGoogleConsent] = useState(false);
-  const [googleError, setGoogleError] = useState<string | null>(null);
-  const [googleBusy, setGoogleBusy] = useState(false);
-  // Eine Sitzung, die der Server nicht mehr kennt: dann doch wieder der Weg über Google.
+  const [kontoConsent, setKontoConsent] = useState(false);
+  const [kontoError, setKontoError] = useState<string | null>(null);
+  const [kontoBusy, setKontoBusy] = useState(false);
+  // Eine Sitzung, die der Server nicht mehr kennt: dann doch wieder der Weg über die Anmeldung.
   const [sessionStale, setSessionStale] = useState(false);
-  const direct = login === "google" && signedIn && !sessionStale;
+  const direct = login === "clerk" && signedIn && !sessionStale;
   const {
     register,
     control,
@@ -68,7 +68,7 @@ export function LeadGate({ open, onOpenChange, tool, reason, login = null, signe
   // Zurück-Taste aus dem Cache des Browsers (bfcache): Die Seite kommt so zurück, wie sie war, auch mit gesperrtem Knopf.
   useEffect(() => {
     const reset = (e: PageTransitionEvent) => {
-      if (e.persisted) setGoogleBusy(false);
+      if (e.persisted) setKontoBusy(false);
     };
     window.addEventListener("pageshow", reset);
     return () => window.removeEventListener("pageshow", reset);
@@ -77,8 +77,8 @@ export function LeadGate({ open, onOpenChange, tool, reason, login = null, signe
   function handleOpenChange(next: boolean) {
     if (!next) {
       setSubmitError(null);
-      setGoogleError(null);
-      setGoogleBusy(false);
+      setKontoError(null);
+      setKontoBusy(false);
     }
     onOpenChange(next);
   }
@@ -95,33 +95,37 @@ export function LeadGate({ open, onOpenChange, tool, reason, login = null, signe
     setSubmitError(ERRORS[result.reason]);
   }
 
-  async function onGoogle() {
-    if (!googleConsent) return setGoogleError("Bitte stimm der Kontaktaufnahme zu.");
-    setGoogleError(null);
-    setGoogleBusy(true);
-    // Die Anmeldung verlässt die Seite: Werkzeug und Einwilligung bleiben kurz im Browser, bis wir zurück sind.
+  async function onSignIn() {
+    if (!kontoConsent) return setKontoError("Bitte stimm der Kontaktaufnahme zu.");
+    setKontoError(null);
+    setKontoBusy(true);
+    // Die Anmeldung kann die Seite verlassen (Weiterleitung zum Anbieter): Werkzeug und Einwilligung bleiben kurz im Browser, bis wir zurück sind.
     savePending({ tool, firma: profile.firma?.trim() || undefined });
-    if (!(await startGoogleSignIn(window.location))) {
+    if (await startSignIn(window.location)) {
+      // Das Fenster von Clerk liegt jetzt über der Seite. Dieses Fenster muss weg, sonst fängt es den Fokus ab.
+      setKontoBusy(false);
+      onOpenChange(false);
+    } else {
       clearPending();
-      setGoogleError("Die Anmeldung konnte nicht gestartet werden. Versuch es noch einmal oder nutze das Formular.");
-      setGoogleBusy(false);
+      setKontoError("Die Anmeldung konnte nicht gestartet werden. Versuch es noch einmal oder nutze das Formular.");
+      setKontoBusy(false);
     }
   }
 
   async function onUnlock() {
-    if (!googleConsent) return setGoogleError("Bitte stimm der Kontaktaufnahme zu.");
-    setGoogleError(null);
-    setGoogleBusy(true);
+    if (!kontoConsent) return setKontoError("Bitte stimm der Kontaktaufnahme zu.");
+    setKontoError(null);
+    setKontoBusy(true);
     const result = await unlockWithAccount(tool, profile.firma?.trim() || undefined);
-    setGoogleBusy(false);
+    setKontoBusy(false);
     if (result === "ok") {
       onSuccess();
       onOpenChange(false);
     } else if (result === "not_signed_in") {
       setSessionStale(true);
-      setGoogleError("Deine Anmeldung ist abgelaufen. Bitte melde dich noch einmal an.");
+      setKontoError("Deine Anmeldung ist abgelaufen. Bitte melde dich noch einmal an.");
     } else {
-      setGoogleError("Das Freischalten hat nicht geklappt. Bitte versuch es noch einmal.");
+      setKontoError("Das Freischalten hat nicht geklappt. Bitte versuch es noch einmal.");
     }
   }
 
@@ -219,23 +223,23 @@ export function LeadGate({ open, onOpenChange, tool, reason, login = null, signe
           <DialogDescription>
             {direct
               ? "Du bist angemeldet. Setz das Häkchen, dann sind alle Werkzeuge und Downloads offen, und wir melden uns persönlich, falls du Fragen hast."
-              : login === "google"
-              ? "Melde dich kurz mit Google an – dann sind alle Werkzeuge und Downloads offen, und wir melden uns persönlich, falls du Fragen hast."
+              : login === "clerk"
+              ? "Melde dich kurz an – dann sind alle Werkzeuge und Downloads offen, und wir melden uns persönlich, falls du Fragen hast."
               : "Hinterlass uns Name, Firma und E-Mail – dann sind alle Werkzeuge und Downloads offen, und wir melden uns persönlich, falls du Fragen hast."}
           </DialogDescription>
         </DialogHeader>
 
-        {login === "google" && (
-          <div className="grid gap-4" data-testid="konto-google">
+        {login === "clerk" && (
+          <div className="grid gap-4" data-testid="konto-anmeldung">
             <div className="flex items-start gap-2">
               <Checkbox
                 id="konto-consent"
-                checked={googleConsent}
+                checked={kontoConsent}
                 onCheckedChange={(v) => {
-                  setGoogleConsent(v === true);
-                  if (v === true) setGoogleError(null);
+                  setKontoConsent(v === true);
+                  if (v === true) setKontoError(null);
                 }}
-                aria-invalid={!!googleError}
+                aria-invalid={!!kontoError}
                 aria-describedby="konto-consent-text"
               />
               <label htmlFor="konto-consent" id="konto-consent-text" className="text-sm leading-snug">
@@ -246,30 +250,30 @@ export function LeadGate({ open, onOpenChange, tool, reason, login = null, signe
                 .
               </label>
             </div>
-            {googleError && (
+            {kontoError && (
               <p role="alert" className="text-sm text-destructive">
-                {googleError}
+                {kontoError}
               </p>
             )}
             {direct ? (
-              <Button type="button" size="lg" onClick={() => void onUnlock()} disabled={googleBusy}>
-                {googleBusy ? "Wird freigeschaltet …" : "Freischalten"}
+              <Button type="button" size="lg" onClick={() => void onUnlock()} disabled={kontoBusy}>
+                {kontoBusy ? "Wird freigeschaltet …" : "Freischalten"}
               </Button>
             ) : (
-              <Button type="button" size="lg" onClick={onGoogle} disabled={googleBusy}>
-                {googleBusy ? "Weiter zu Google …" : "Mit Google anmelden"}
+              <Button type="button" size="lg" onClick={onSignIn} disabled={kontoBusy}>
+                {kontoBusy ? "Anmeldung wird geöffnet …" : "Anmelden und freischalten"}
               </Button>
             )}
             <p className="text-sm text-muted-foreground">
-              Wir erhalten von Google deinen Namen und deine E-Mail-Adresse. Deine Eingaben im Werkzeug speichern wir in deinem Konto, damit du sie auf jedem Gerät wiederfindest.
+              Wir erhalten deinen Namen und deine E-Mail-Adresse. Die Anmeldung läuft über den Dienst Clerk. Deine Eingaben im Werkzeug speichern wir in deinem Konto, damit du sie auf jedem Gerät wiederfindest.
             </p>
           </div>
         )}
 
-        {login === "google" ? (
+        {login === "clerk" ? (
           <details className="rounded-lg border border-line p-3">
             <summary className="cursor-pointer text-sm font-medium">
-              {direct ? "Stattdessen das Formular ausfüllen" : "Lieber ohne Google-Konto? Formular ausfüllen"}
+              {direct ? "Stattdessen das Formular ausfüllen" : "Lieber ohne Konto? Formular ausfüllen"}
             </summary>
             <div className="mt-4">{formBlock}</div>
           </details>

@@ -10,7 +10,7 @@ type ToolContextValue = {
   slug: string;
   /** Freigeschaltet (Formular ausgefüllt): alle Werkzeuge und Downloads offen. */
   unlocked: boolean;
-  /** Angemeldet mit einem Konto (Google). Nur dann gibt es die KI-Einordnung. */
+  /** Angemeldet mit einem Konto. Nur dann gibt es die KI-Einordnung. */
   signedIn: boolean;
   /**
    * Vor dem Tool-Start aufrufen. true: starten. false: Besucher hat das Formular geschlossen.
@@ -61,7 +61,7 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
   useEffect(() => {
     let alive = true;
     (async () => {
-      // Rückkehr von Google (?konto=ok oder ?konto=fehler): erst abschliessen, dann den Status lesen.
+      // Rückkehr von der Anmeldung (?konto=ok oder ?konto=fehler): erst abschliessen, dann den Status lesen.
       const params = new URLSearchParams(window.location.search);
       const konto = params.get("konto");
       if (konto === "ok" || konto === "fehler") {

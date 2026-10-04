@@ -146,13 +146,13 @@ describe("Konto und Zugang", () => {
     await accountLead(post("/api/lead/account", body, { ip: IP }));
     store.runs.set(ipHash(OTHER_IP, SECRET), 1); // dort ist der freie Durchlauf verbraucht
     const res = await accessRoute(post("/api/access", { tool: TOOL }, { ip: OTHER_IP }));
-    expect(await res.json()).toEqual({ allowed: true, unlocked: true, reason: "unlocked", login: "google", signedIn: true });
+    expect(await res.json()).toEqual({ allowed: true, unlocked: true, reason: "unlocked", login: "clerk", signedIn: true });
   });
 
   it("eine Anmeldung allein schaltet nicht frei (Einwilligung fehlt)", async () => {
     store.runs.set(ipHash(IP, SECRET), 1);
     const res = await accessRoute(post("/api/access", { tool: TOOL }, { ip: IP }));
-    expect(await res.json()).toEqual({ allowed: false, unlocked: false, reason: "free_run_used", login: "google", signedIn: true });
+    expect(await res.json()).toEqual({ allowed: false, unlocked: false, reason: "free_run_used", login: "clerk", signedIn: true });
   });
 
   it("bietet die Anmeldung nur an, wenn sie eingerichtet ist", async () => {

@@ -1,7 +1,8 @@
+import { openSignIn, type SignInMode } from "@/lib/clerk-bridge";
 import { readLocal, removeLocal, writeLocal } from "@/lib/storage";
 
-// Browser-Seite der Konto-Anmeldung. Die Einwilligung gibt der Besucher im Fenster, bevor er zu Google geht;
-// weil die Anmeldung die Seite verlässt, merken wir uns Werkzeug und Einwilligung kurz im Browser.
+// Browser-Seite der Konto-Anmeldung. Die Einwilligung gibt der Besucher im Fenster, bevor er sich anmeldet;
+// weil die Anmeldung die Seite verlassen kann (Weiterleitung zum Anbieter), merken wir uns Werkzeug und Einwilligung kurz im Browser.
 
 const KEY = "mt:_konto";
 /** Wie lange eine begonnene Anmeldung gilt. */
@@ -29,7 +30,7 @@ export function clearPending(): void {
   removeLocal(KEY);
 }
 
-/** Name des Abfrageparameters nach der Rückkehr von Google: «konto» (Freischalten im Werkzeug) oder «anmeldung» (Kopfzeile). */
+/** Name des Abfrageparameters nach der Rückkehr von der Anmeldung: «konto» (Freischalten im Werkzeug) oder «anmeldung» (Kopfzeile). */
 export type ReturnParam = "konto" | "anmeldung";
 
 /** Adresse der aktuellen Seite ohne Konto-Parameter, plus neuer Wert. Nur Pfad und Abfrage, nie fremde Hosts. */
@@ -42,19 +43,14 @@ export function returnPath(location: Pick<Location, "pathname" | "search">, valu
 }
 
 /**
- * Startet die Anmeldung bei Google (Weiterleitung). Gibt nur zurück, wenn etwas schiefging.
- * Die Bibliothek lädt erst beim Klick, damit sie die Seite nicht verlangsamt.
+ * Öffnet das Anmelde-Fenster von Clerk. Clerk lädt erst jetzt, damit es die Seite nicht verlangsamt.
+ * true: Das Fenster ist offen, die Person entscheidet. Sie kehrt danach mit `?konto=ok` (oder `?anmeldung=ok`) zur Seite zurück.
+ * false: Clerk ist nicht bereit (nicht eingerichtet, nicht erreichbar).
  */
-export async function startGoogleSignIn(location: Pick<Location, "pathname" | "search">, param: ReturnParam = "konto"): Promise<boolean> {
-  try {
-    const { createAuthClient } = await import("better-auth/client");
-    const { error } = await createAuthClient().signIn.social({
-      provider: "google",
-      callbackURL: returnPath(location, "ok", param),
-      errorCallbackURL: returnPath(location, "fehler", param),
-    });
-    return !error;
-  } catch {
-    return false;
-  }
+export async function startSignIn(
+  location: Pick<Location, "pathname" | "search">,
+  param: ReturnParam = "konto",
+  mode: SignInMode = "anmelden",
+): Promise<boolean> {
+  return openSignIn(mode, returnPath(location, "ok", param));
 }

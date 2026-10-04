@@ -14,7 +14,7 @@ function stubFetch(account: unknown, storage = true) {
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
       calls.push({ url, method: init?.method ?? "GET" });
-      if (url === "/api/account") return new Response(JSON.stringify({ login: "google", account, storage }), { status: 200 });
+      if (url === "/api/account") return new Response(JSON.stringify({ login: "clerk", account, storage }), { status: 200 });
       return new Response(JSON.stringify({ ok: true, entries: {} }), { status: 200 });
     }),
   );

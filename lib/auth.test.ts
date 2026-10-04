@@ -1,72 +1,105 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { authConfigured, getAccount, getAuth, resetAuth } from "@/lib/auth";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const ENV = {
-  GOOGLE_CLIENT_ID: "id.apps.googleusercontent.com",
-  GOOGLE_CLIENT_SECRET: "secret",
-  BETTER_AUTH_SECRET: "a-random-secret-with-at-least-32-characters-0123456789",
-};
+const clerk = vi.hoisted(() => ({
+  userId: null as string | null,
+  user: null as null | Record<string, unknown>,
+  getUser: vi.fn(),
+  authThrows: false,
+}));
+vi.mock("@clerk/nextjs/server", () => ({
+  auth: async () => {
+    if (clerk.authThrows) throw new Error("clerkMiddleware fehlt");
+    return { userId: clerk.userId };
+  },
+  clerkClient: async () => ({ users: { getUser: clerk.getUser } }),
+}));
 
-function setEnv(env: Record<string, string | undefined>) {
-  for (const [k, v] of Object.entries(env)) {
-    if (v === undefined) vi.stubEnv(k, "");
-    else vi.stubEnv(k, v);
-  }
-}
+import { authConfigured, getAccount, resetAccountCache } from "@/lib/auth";
+
+const verified = (address: string) => ({ emailAddress: address, verification: { status: "verified" } });
+const userOf = (over: Record<string, unknown> = {}) => ({ primaryEmailAddress: verified(" Anna@Keller.ch "), fullName: "Anna Keller", ...over });
 
 beforeEach(() => {
-  vi.unstubAllEnvs();
-  setEnv({ GOOGLE_CLIENT_ID: undefined, GOOGLE_CLIENT_SECRET: undefined, BETTER_AUTH_SECRET: undefined, BETTER_AUTH_URL: "http://localhost:3000" });
-  resetAuth();
-});
-afterEach(() => {
-  vi.unstubAllEnvs();
-  resetAuth();
+  vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "pk_test_x");
+  vi.stubEnv("CLERK_SECRET_KEY", "sk_test_x");
+  clerk.userId = "user_1";
+  clerk.authThrows = false;
+  clerk.getUser.mockReset();
+  clerk.getUser.mockResolvedValue(userOf());
+  resetAccountCache();
 });
 
 describe("authConfigured", () => {
-  it("braucht Client-ID, Client-Secret und ein Sitzungs-Secret von mindestens 32 Zeichen", () => {
-    expect(authConfigured(ENV)).toBe(true);
+  it("braucht den öffentlichen und den geheimen Schlüssel von Clerk", () => {
+    expect(authConfigured({ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk", CLERK_SECRET_KEY: "sk" })).toBe(true);
+    expect(authConfigured({ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk" })).toBe(false);
+    expect(authConfigured({ CLERK_SECRET_KEY: "sk" })).toBe(false);
     expect(authConfigured({})).toBe(false);
-    for (const key of Object.keys(ENV)) expect(authConfigured({ ...ENV, [key]: "" })).toBe(false);
-    expect(authConfigured({ ...ENV, BETTER_AUTH_SECRET: "zu-kurz" })).toBe(false);
   });
 });
 
-describe("getAuth und getAccount", () => {
-  it("sind aus, solange nichts eingerichtet ist", async () => {
-    expect(getAuth()).toBeNull();
-    expect(await getAccount(new Headers({ cookie: "better-auth.session_token=x" }))).toBeNull();
+describe("getAccount", () => {
+  it("liefert E-Mail (klein, ohne Leerzeichen) und Namen der angemeldeten Person", async () => {
+    expect(await getAccount()).toEqual({ email: "anna@keller.ch", name: "Anna Keller" });
   });
 
-  it("liefern ohne gültiges Sitzungs-Cookie keine Person, auch nicht mit einem gefälschten", async () => {
-    setEnv(ENV);
-    expect(getAuth()).not.toBeNull();
-    expect(await getAccount(new Headers())).toBeNull();
-    expect(await getAccount(new Headers({ cookie: "better-auth.session_token=gefaelscht.abc; better-auth.session_data=eyJ4Ijox" }))).toBeNull();
+  it("nimmt die E-Mail-Adresse als Namen, wenn Clerk keinen Namen kennt", async () => {
+    clerk.getUser.mockResolvedValue(userOf({ fullName: null }));
+    expect(await getAccount()).toEqual({ email: "anna@keller.ch", name: "anna@keller.ch" });
   });
 
-  it("antworten über den Handler auf Anfragen ohne Sitzung mit «keine Sitzung»", async () => {
-    setEnv(ENV);
-    const res = await getAuth()!.handler(new Request("http://localhost:3000/api/auth/get-session"));
-    expect(res.status).toBe(200);
-    expect(await res.json()).toBeNull();
+  it("ist aus, solange Clerk nicht eingerichtet ist, und fragt Clerk dann gar nicht", async () => {
+    vi.stubEnv("CLERK_SECRET_KEY", "");
+    expect(await getAccount()).toBeNull();
+    expect(clerk.getUser).not.toHaveBeenCalled();
   });
 
-  it("starten die Google-Anmeldung mit der Weiterleitung zu Google", async () => {
-    setEnv(ENV);
-    const res = await getAuth()!.handler(
-      new Request("http://localhost:3000/api/auth/sign-in/social", {
-        method: "POST",
-        headers: { "content-type": "application/json", origin: "http://localhost:3000" },
-        body: JSON.stringify({ provider: "google", callbackURL: "/tools/digitaler-auftritt-check?konto=ok" }),
-      }),
-    );
-    expect(res.status).toBe(200);
-    const data = (await res.json()) as { url?: string; redirect?: boolean };
-    expect(data.url).toContain("accounts.google.com");
-    expect(data.url).toContain("client_id=id.apps.googleusercontent.com");
-    expect(data.url).toContain(encodeURIComponent("http://localhost:3000/api/auth/callback/google"));
-    expect(data.url).toContain("prompt=select_account");
+  it("liefert niemanden ohne Sitzung", async () => {
+    clerk.userId = null;
+    expect(await getAccount()).toBeNull();
+    expect(clerk.getUser).not.toHaveBeenCalled();
+  });
+
+  it("verlangt eine bestätigte E-Mail-Adresse: sie ist die Kennung des Kontos", async () => {
+    for (const primaryEmailAddress of [
+      { emailAddress: "anna@keller.ch", verification: { status: "unverified" } },
+      { emailAddress: "anna@keller.ch", verification: null },
+      { emailAddress: "anna@keller.ch", verification: { status: "expired" } },
+      null,
+    ]) {
+      resetAccountCache();
+      clerk.getUser.mockResolvedValue(userOf({ primaryEmailAddress }));
+      expect(await getAccount()).toBeNull();
+    }
+  });
+
+  it("wirft nie: Fehler von Clerk und eine fehlende Middleware ergeben niemanden", async () => {
+    clerk.getUser.mockRejectedValue(new Error("Clerk nicht erreichbar"));
+    expect(await getAccount()).toBeNull();
+    clerk.authThrows = true;
+    expect(await getAccount()).toBeNull();
+  });
+
+  it("merkt sich die Person fünf Minuten, damit nicht jede Anfrage Clerk fragt", async () => {
+    const t0 = 1_000_000;
+    await getAccount(t0);
+    await getAccount(t0 + 4 * 60_000);
+    expect(clerk.getUser).toHaveBeenCalledTimes(1);
+    await getAccount(t0 + 5 * 60_000 + 1);
+    expect(clerk.getUser).toHaveBeenCalledTimes(2);
+  });
+
+  it("merkt sich Fehler und fehlende Bestätigungen nicht", async () => {
+    clerk.getUser.mockRejectedValueOnce(new Error("kurz weg"));
+    expect(await getAccount()).toBeNull();
+    expect(await getAccount()).toEqual({ email: "anna@keller.ch", name: "Anna Keller" });
+    expect(clerk.getUser).toHaveBeenCalledTimes(2);
+  });
+
+  it("hält die Personen auseinander", async () => {
+    await getAccount();
+    clerk.userId = "user_2";
+    clerk.getUser.mockResolvedValue(userOf({ primaryEmailAddress: verified("ben@meier.ch"), fullName: "Ben Meier" }));
+    expect(await getAccount()).toEqual({ email: "ben@meier.ch", name: "Ben Meier" });
   });
 });

@@ -1,64 +1,55 @@
-import { betterAuth } from "better-auth";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 
-// Konto-Anmeldung (Zugang v2). Better Auth im Stateless-Modus: keine Datenbank, die Sitzung steckt in einem
-// verschlüsselten Cookie (JWE). Serverseitig liegen nur Freischaltung und Kontingente in Redis (lib/access.ts).
-// Ohne Google-Zugang und Secret ist die Anmeldung aus; Besucher sehen dann weiter das Formular.
+// Konto-Anmeldung (Zugang v2). Die Anmeldung selbst macht Clerk (Google, Microsoft, Apple, E-Mail-Code).
+// Wir halten keine Passwörter und keine Benutzerliste. Serverseitig fragen wir nur: Wer ist das, und ist die
+// E-Mail-Adresse bestätigt? Die Kennung eines Kontos bleibt der HMAC dieser Adresse (lib/access.ts), egal über
+// welchen Anbieter sich die Person anmeldet. Freischaltung und Daten gehören so zur Person, nicht zum Anbieter.
+// Ohne Clerk-Schlüssel ist die Anmeldung aus; Besucher sehen dann weiter das Formular.
 
 export type Account = { email: string; name: string };
 
 type Env = Record<string, string | undefined>;
 
-/** Sind Google-Zugang und Sitzungs-Secret gesetzt? */
+/** Sind beide Clerk-Schlüssel gesetzt? */
 export function authConfigured(env: Env = process.env): boolean {
-  return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.BETTER_AUTH_SECRET && env.BETTER_AUTH_SECRET.length >= 32);
+  return Boolean(env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && env.CLERK_SECRET_KEY);
 }
 
-function create(env: Env) {
-  return betterAuth({
-    secret: env.BETTER_AUTH_SECRET,
-    baseURL: env.BETTER_AUTH_URL,
-    socialProviders: {
-      google: {
-        clientId: env.GOOGLE_CLIENT_ID ?? "",
-        clientSecret: env.GOOGLE_CLIENT_SECRET ?? "",
-        // Konto wählen lassen: Wer mehrere Google-Konten hat, soll nicht still mit dem falschen angemeldet werden.
-        prompt: "select_account",
-      },
-    },
-    session: {
-      // Ohne Angabe gilt 1 Woche: Wer per Konto auf einem zweiten Gerät freigeschaltet ist, stünde nach 7 Tagen wieder da.
-      expiresIn: 30 * 24 * 60 * 60,
-      cookieCache: { enabled: true, maxAge: 30 * 24 * 60 * 60, strategy: "jwe", refreshCache: true },
-    },
-    account: { storeStateStrategy: "cookie", storeAccountCookie: true },
-    // Harte Regel 1: Server loggen nie Inhalte. Die Route /api/auth loggt Statuscodes selbst.
-    logger: { disabled: true },
-  });
-}
-
-type Auth = ReturnType<typeof create>;
-let instance: Auth | null | undefined;
-
-/** Die Auth-Instanz oder null, wenn die Anmeldung nicht eingerichtet ist. */
-export function getAuth(): Auth | null {
-  if (instance === undefined) instance = authConfigured() ? create(process.env) : null;
-  return instance;
-}
+// Die Adresse und der Name kommen von der Backend-Schnittstelle von Clerk (eine Anfrage). Damit nicht jeder Abgleich der
+// Daten eine solche Anfrage auslöst, merkt sich die Funktion das Ergebnis kurz im Arbeitsspeicher der Instanz.
+const CACHE_MS = 5 * 60 * 1000;
+const CACHE_MAX = 500;
+const cache = new Map<string, { at: number; account: Account }>();
 
 /** Nur für Tests. */
-export function resetAuth(): void {
-  instance = undefined;
+export function resetAccountCache(): void {
+  cache.clear();
 }
 
-/** Angemeldete Person aus dem Sitzungs-Cookie. null ohne gültige Sitzung oder wenn die Anmeldung aus ist. */
-export async function getAccount(headers: Headers): Promise<Account | null> {
-  const auth = getAuth();
-  if (!auth) return null;
+function remember(userId: string, account: Account, now: number): void {
+  if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value as string);
+  cache.set(userId, { at: now, account });
+}
+
+/**
+ * Angemeldete Person aus der Sitzung von Clerk (Cookie `__session`, geprüft in `clerkMiddleware`).
+ * null ohne gültige Sitzung, ohne bestätigte E-Mail-Adresse oder wenn die Anmeldung aus ist. Wirft nie.
+ */
+export async function getAccount(now = Date.now()): Promise<Account | null> {
+  if (!authConfigured()) return null;
   try {
-    const session = await auth.api.getSession({ headers });
-    const email = session?.user?.email?.trim().toLowerCase();
-    if (!session || !email || session.user.emailVerified === false) return null;
-    return { email, name: session.user.name?.trim() || email };
+    const { userId } = await auth();
+    if (!userId) return null;
+    const hit = cache.get(userId);
+    if (hit && now - hit.at < CACHE_MS) return hit.account;
+    const user = await (await clerkClient()).users.getUser(userId);
+    const primary = user.primaryEmailAddress;
+    // Nur bestätigte Adressen: Sie sind die Kennung des Kontos. Eine unbestätigte Adresse könnte jemand anderem gehören.
+    const email = primary?.verification?.status === "verified" ? primary.emailAddress.trim().toLowerCase() : "";
+    if (!email) return null;
+    const account = { email, name: user.fullName?.trim() || email };
+    remember(userId, account, now);
+    return account;
   } catch {
     return null;
   }

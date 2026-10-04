@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountCache } from "@/lib/use-account";
 
 const signOut = vi.hoisted(() => vi.fn());
-vi.mock("better-auth/client", () => ({ createAuthClient: () => ({ signIn: { social: vi.fn() }, signOut }) }));
+vi.mock("@/lib/clerk-bridge", () => ({ openSignIn: vi.fn(), signOut, whenSessionReady: async () => {} }));
 
 import { KontoKarte } from "./KontoKarte";
 
@@ -31,7 +31,7 @@ describe("KontoKarte", () => {
   });
 
   it("bietet Besuchern Anmelden und Registrieren an und sagt, wo die Daten ohne Konto liegen", async () => {
-    stub({ login: "google", account: null });
+    stub({ login: "clerk", account: null });
     render(<KontoKarte />);
     expect(await screen.findByRole("button", { name: "Anmelden" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Registrieren" })).toBeInTheDocument();
@@ -39,10 +39,10 @@ describe("KontoKarte", () => {
   });
 
   it("zeigt Angemeldeten Name, E-Mail und «Abmelden»", async () => {
-    stub({ login: "google", account: { name: "Anna Keller", email: "anna@keller.ch" } });
+    stub({ login: "clerk", account: { name: "Anna Keller", email: "anna@keller.ch" } });
     const reload = vi.fn();
     vi.spyOn(window, "location", "get").mockReturnValue({ ...window.location, reload } as unknown as Location);
-    signOut.mockResolvedValue({ error: null });
+    signOut.mockResolvedValue(true);
     render(<KontoKarte />);
     const card = await screen.findByTestId("konto-karte");
     expect(card).toHaveTextContent("Anna Keller");

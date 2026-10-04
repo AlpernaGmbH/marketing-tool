@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
     return respond(ROUTE, 429, { error: "rate_limited" }, "rate_limited");
   }
 
-  const who = await requestAccount(req.headers, secret);
+  const who = await requestAccount(secret);
   const decision = await canStart(defaultStore(), hash, readGateCookie(req, secret), who?.acchash ?? null);
   // login: welcher Anmeldeweg angeboten wird (null: nur das Formular). signedIn: es gibt eine gültige Sitzung.
-  return respond(ROUTE, 200, { ...decision, login: authConfigured() ? "google" : null, signedIn: Boolean(who) });
+  return respond(ROUTE, 200, { ...decision, login: authConfigured() ? "clerk" : null, signedIn: Boolean(who) });
 }

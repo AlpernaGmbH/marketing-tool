@@ -45,9 +45,9 @@ describe("submitLead", () => {
 });
 
 describe("checkAccess mit Konto", () => {
-  it("übernimmt Anmeldeweg und Sitzung, kennt aber nur «google»", async () => {
-    const ok = vi.fn().mockResolvedValue(res(200, { allowed: false, unlocked: false, reason: "free_run_used", login: "google", signedIn: true }));
-    expect(await checkAccess("x", asFetch(ok))).toMatchObject({ login: "google", signedIn: true });
+  it("übernimmt Anmeldeweg und Sitzung, kennt aber nur «clerk»", async () => {
+    const ok = vi.fn().mockResolvedValue(res(200, { allowed: false, unlocked: false, reason: "free_run_used", login: "clerk", signedIn: true }));
+    expect(await checkAccess("x", asFetch(ok))).toMatchObject({ login: "clerk", signedIn: true });
     const other = vi.fn().mockResolvedValue(res(200, { allowed: true, unlocked: false, reason: "free_run", login: "apple", signedIn: "ja" }));
     expect(await checkAccess("x", asFetch(other))).toMatchObject({ login: null, signedIn: false });
   });

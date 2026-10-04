@@ -6,7 +6,7 @@ import { LeadGate } from "@/components/tool/LeadGate";
 import { PENDING_MS, readPending } from "@/lib/konto-client";
 
 const startSignIn = vi.hoisted(() => vi.fn());
-vi.mock("better-auth/client", () => ({ createAuthClient: () => ({ signIn: { social: startSignIn } }) }));
+vi.mock("@/lib/clerk-bridge", () => ({ openSignIn: startSignIn }));
 
 function setup(fetchImpl: typeof fetch) {
   vi.stubGlobal("fetch", fetchImpl);
@@ -116,11 +116,12 @@ describe("LeadGate", () => {
   });
 });
 
-describe("LeadGate mit Google", () => {
-  function setupGoogle() {
+describe("LeadGate mit Konto", () => {
+  function setupKonto() {
     const onSuccess = vi.fn();
-    render(<LeadGate open onOpenChange={vi.fn()} tool="smoke-test" reason="zweites_tool" login="google" onSuccess={onSuccess} />);
-    return { user: userEvent.setup(), onSuccess };
+    const onOpenChange = vi.fn();
+    render(<LeadGate open onOpenChange={onOpenChange} tool="smoke-test" reason="zweites_tool" login="clerk" onSuccess={onSuccess} />);
+    return { user: userEvent.setup(), onSuccess, onOpenChange };
   }
 
   afterEach(() => {
@@ -128,63 +129,65 @@ describe("LeadGate mit Google", () => {
     startSignIn.mockReset();
   });
 
-  it("bietet Google an und hält das Formular als Ausweg bereit", () => {
-    setupGoogle();
-    expect(screen.getByText(/Melde dich kurz mit Google an/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Mit Google anmelden" })).toBeInTheDocument();
-    const details = screen.getByText("Lieber ohne Google-Konto? Formular ausfüllen").closest("details");
+  it("bietet die Anmeldung an und hält das Formular als Ausweg bereit", () => {
+    setupKonto();
+    expect(screen.getByText(/Melde dich kurz an/)).toBeInTheDocument();
+    expect(screen.queryByText(/Google/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Anmelden und freischalten" })).toBeInTheDocument();
+    const details = screen.getByText("Lieber ohne Konto? Formular ausfüllen").closest("details");
     expect(details).not.toBeNull();
     expect(details!.open).toBe(false);
     expect(details!.contains(screen.getByLabelText("E-Mail"))).toBe(true);
   });
 
-  it("verlangt die Einwilligung vor der Weiterleitung", async () => {
-    const { user } = setupGoogle();
-    await user.click(screen.getByRole("button", { name: "Mit Google anmelden" }));
+  it("verlangt die Einwilligung vor der Anmeldung", async () => {
+    const { user } = setupKonto();
+    await user.click(screen.getByRole("button", { name: "Anmelden und freischalten" }));
     expect(await screen.findByText("Bitte stimm der Kontaktaufnahme zu.")).toBeInTheDocument();
     expect(startSignIn).not.toHaveBeenCalled();
     expect(readPending()).toBeNull();
   });
 
-  it("merkt sich Werkzeug und Einwilligung und startet die Anmeldung", async () => {
-    startSignIn.mockResolvedValue({ error: null });
-    const { user } = setupGoogle();
-    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
-    await user.click(screen.getByRole("button", { name: "Mit Google anmelden" }));
+  it("merkt sich Werkzeug und Einwilligung, öffnet das Fenster von Clerk und schliesst dieses Fenster", async () => {
+    startSignIn.mockResolvedValue(true);
+    const { user, onOpenChange } = setupKonto();
+    await user.click(within(screen.getByTestId("konto-anmeldung")).getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Anmelden und freischalten" }));
     await waitFor(() => expect(startSignIn).toHaveBeenCalledTimes(1));
-    expect(startSignIn.mock.calls[0][0]).toMatchObject({ provider: "google", callbackURL: expect.stringContaining("konto=ok") });
+    expect(startSignIn.mock.calls[0]).toEqual(["anmelden", expect.stringContaining("konto=ok")]);
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(readPending(Date.now())).toMatchObject({ tool: "smoke-test" });
     expect(Date.now() - (readPending()?.at ?? 0)).toBeLessThan(PENDING_MS);
   });
 
   it("räumt auf und zeigt eine Meldung, wenn die Anmeldung nicht startet", async () => {
-    startSignIn.mockResolvedValue({ error: { message: "x" } });
-    const { user } = setupGoogle();
-    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
-    await user.click(screen.getByRole("button", { name: "Mit Google anmelden" }));
+    startSignIn.mockResolvedValue(false);
+    const { user } = setupKonto();
+    await user.click(within(screen.getByTestId("konto-anmeldung")).getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Anmelden und freischalten" }));
     expect(await screen.findByText(/konnte nicht gestartet werden/)).toBeInTheDocument();
     expect(readPending()).toBeNull();
-    expect(screen.getByRole("button", { name: "Mit Google anmelden" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Anmelden und freischalten" })).toBeEnabled();
   });
 
   it("vergisst alte Fehlermeldungen, wenn das Fenster geschlossen und wieder geöffnet wird", async () => {
     const user = userEvent.setup();
-    const view = render(<LeadGate open onOpenChange={vi.fn()} tool="smoke-test" reason="zweites_tool" login="google" onSuccess={vi.fn()} />);
-    await user.click(screen.getByRole("button", { name: "Mit Google anmelden" }));
+    const view = render(<LeadGate open onOpenChange={vi.fn()} tool="smoke-test" reason="zweites_tool" login="clerk" onSuccess={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Anmelden und freischalten" }));
     expect(await screen.findByText("Bitte stimm der Kontaktaufnahme zu.")).toBeInTheDocument();
     await user.keyboard("{Escape}"); // Besucher schliesst das Fenster
-    view.rerender(<LeadGate open onOpenChange={vi.fn()} tool="smoke-test" reason="download" login="google" onSuccess={vi.fn()} />);
+    view.rerender(<LeadGate open onOpenChange={vi.fn()} tool="smoke-test" reason="download" login="clerk" onSuccess={vi.fn()} />);
     expect(screen.queryByText("Bitte stimm der Kontaktaufnahme zu.")).not.toBeInTheDocument();
   });
 
-  it("gibt den Google-Knopf frei, wenn die Seite aus dem Cache des Browsers zurückkommt (Zurück-Taste)", async () => {
-    startSignIn.mockReturnValue(new Promise(() => {})); // Weiterleitung läuft, die Seite wird verlassen
-    const { user } = setupGoogle();
-    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
-    await user.click(screen.getByRole("button", { name: "Mit Google anmelden" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: /Mit Google anmelden|Weiter zu Google/ })).toBeDisabled());
+  it("gibt den Anmelde-Knopf frei, wenn die Seite aus dem Cache des Browsers zurückkommt (Zurück-Taste)", async () => {
+    startSignIn.mockReturnValue(new Promise(() => {})); // Clerk lädt noch oder leitet weiter, die Seite wird verlassen
+    const { user } = setupKonto();
+    await user.click(within(screen.getByTestId("konto-anmeldung")).getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Anmelden und freischalten" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Anmelden und freischalten|Anmeldung wird geöffnet/ })).toBeDisabled());
     window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: true }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Mit Google anmelden" })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Anmelden und freischalten" })).toBeEnabled());
   });
 });
 
@@ -193,7 +196,7 @@ describe("LeadGate für bereits angemeldete Personen", () => {
     vi.stubGlobal("fetch", fetchImpl);
     const onSuccess = vi.fn();
     const onOpenChange = vi.fn();
-    render(<LeadGate open onOpenChange={onOpenChange} tool="smoke-test" reason="zweites_tool" login="google" signedIn onSuccess={onSuccess} />);
+    render(<LeadGate open onOpenChange={onOpenChange} tool="smoke-test" reason="zweites_tool" login="clerk" signedIn onSuccess={onSuccess} />);
     return { user: userEvent.setup(), onSuccess, onOpenChange };
   }
   const ok = () => vi.fn(async () => new Response(JSON.stringify({ ok: true, known: false }), { status: 200 })) as unknown as typeof fetch;
@@ -203,18 +206,18 @@ describe("LeadGate für bereits angemeldete Personen", () => {
     startSignIn.mockReset();
   });
 
-  it("verlangt nur das Häkchen und schaltet ohne Umweg über Google frei", async () => {
+  it("verlangt nur das Häkchen und schaltet ohne erneute Anmeldung frei", async () => {
     const f = ok();
     const { user, onSuccess, onOpenChange } = setupSignedIn(f);
     expect(screen.getByText(/Du bist angemeldet\. Setz das Häkchen/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Mit Google anmelden" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Anmelden und freischalten" })).toBeNull();
 
-    await user.click(within(screen.getByTestId("konto-google")).getByRole("button", { name: "Freischalten" }));
+    await user.click(within(screen.getByTestId("konto-anmeldung")).getByRole("button", { name: "Freischalten" }));
     expect(await screen.findByText("Bitte stimm der Kontaktaufnahme zu.")).toBeInTheDocument();
     expect(f).not.toHaveBeenCalled();
 
-    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
-    await user.click(within(screen.getByTestId("konto-google")).getByRole("button", { name: "Freischalten" }));
+    await user.click(within(screen.getByTestId("konto-anmeldung")).getByRole("checkbox"));
+    await user.click(within(screen.getByTestId("konto-anmeldung")).getByRole("button", { name: "Freischalten" }));
     await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(startSignIn).not.toHaveBeenCalled();
@@ -223,24 +226,24 @@ describe("LeadGate für bereits angemeldete Personen", () => {
     expect(JSON.parse(String(init.body))).toMatchObject({ tool: "smoke-test", consent: true });
   });
 
-  it("fällt auf den Weg über Google zurück, wenn der Server die Sitzung nicht mehr kennt", async () => {
+  it("fällt auf den Weg über die Anmeldung zurück, wenn der Server die Sitzung nicht mehr kennt", async () => {
     const f = vi.fn(async () => new Response("{}", { status: 401 })) as unknown as typeof fetch;
     const { user, onSuccess } = setupSignedIn(f);
-    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
-    await user.click(within(screen.getByTestId("konto-google")).getByRole("button", { name: "Freischalten" }));
+    await user.click(within(screen.getByTestId("konto-anmeldung")).getByRole("checkbox"));
+    await user.click(within(screen.getByTestId("konto-anmeldung")).getByRole("button", { name: "Freischalten" }));
     expect(await screen.findByText(/Deine Anmeldung ist abgelaufen/)).toBeInTheDocument();
     expect(onSuccess).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Mit Google anmelden" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Anmelden und freischalten" })).toBeInTheDocument();
   });
 
   it("meldet einen Serverfehler und lässt es noch einmal versuchen", async () => {
     const f = vi.fn(async () => new Response("{}", { status: 500 })) as unknown as typeof fetch;
     const { user, onSuccess } = setupSignedIn(f);
-    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
-    await user.click(within(screen.getByTestId("konto-google")).getByRole("button", { name: "Freischalten" }));
+    await user.click(within(screen.getByTestId("konto-anmeldung")).getByRole("checkbox"));
+    await user.click(within(screen.getByTestId("konto-anmeldung")).getByRole("button", { name: "Freischalten" }));
     expect(await screen.findByText(/Das Freischalten hat nicht geklappt/)).toBeInTheDocument();
     expect(onSuccess).not.toHaveBeenCalled();
-    expect(within(screen.getByTestId("konto-google")).getByRole("button", { name: "Freischalten" })).toBeEnabled();
+    expect(within(screen.getByTestId("konto-anmeldung")).getByRole("button", { name: "Freischalten" })).toBeEnabled();
   });
 });
 

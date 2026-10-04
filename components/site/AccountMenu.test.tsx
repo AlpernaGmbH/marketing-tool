@@ -8,7 +8,7 @@ const nav = vi.hoisted(() => ({ pathname: "/" }));
 vi.mock("next/navigation", () => ({ usePathname: () => nav.pathname }));
 const startSignIn = vi.hoisted(() => vi.fn());
 const signOut = vi.hoisted(() => vi.fn());
-vi.mock("better-auth/client", () => ({ createAuthClient: () => ({ signIn: { social: startSignIn }, signOut }) }));
+vi.mock("@/lib/clerk-bridge", () => ({ openSignIn: startSignIn, signOut, whenSessionReady: async () => {} }));
 
 import { AccountMenu } from "@/components/site/AccountMenu";
 
@@ -44,32 +44,40 @@ describe("AccountMenu", () => {
   });
 
   it("zeigt Besuchern «Anmelden» und «Registrieren» und kein «Mein Profil»", async () => {
-    stubAccount({ login: "google", account: null });
+    stubAccount({ login: "clerk", account: null });
     render(<AccountMenu />);
     expect(await screen.findByRole("button", { name: "Anmelden" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Registrieren" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Mein Profil" })).toBeNull();
   });
 
-  it("öffnet das Fenster mit dem passenden Titel und startet Google mit eigenem Rückkehr-Parameter", async () => {
-    stubAccount({ login: "google", account: null });
-    startSignIn.mockResolvedValue({ error: null });
+  it("öffnet das Fenster mit dem passenden Titel, startet Clerk mit eigenem Rückkehr-Parameter und schliesst das Fenster", async () => {
+    stubAccount({ login: "clerk", account: null });
+    startSignIn.mockResolvedValue(true);
     const user = userEvent.setup();
     window.history.replaceState(null, "", "/tools/x?a=1");
     render(<AccountMenu />);
     await user.click(await screen.findByRole("button", { name: "Registrieren" }));
     const dialog = await screen.findByTestId("signin-dialog");
     expect(within(dialog).getByRole("heading", { name: "Konto erstellen" })).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Mit Google anmelden" }));
+    await user.click(within(dialog).getByRole("button", { name: "Konto erstellen" }));
     await waitFor(() => expect(startSignIn).toHaveBeenCalledTimes(1));
-    const call = startSignIn.mock.calls[0][0];
-    expect(call).toMatchObject({ provider: "google" });
-    expect(call.callbackURL).toBe("/tools/x?a=1&anmeldung=ok");
-    expect(call.errorCallbackURL).toBe("/tools/x?a=1&anmeldung=fehler");
+    expect(startSignIn.mock.calls[0]).toEqual(["registrieren", "/tools/x?a=1&anmeldung=ok"]);
+    await waitFor(() => expect(screen.queryByTestId("signin-dialog")).toBeNull());
+  });
+
+  it("nennt im Fenster weder Google noch einen Anbieter, den es vielleicht nicht gibt, aber den Dienst Clerk", async () => {
+    stubAccount({ login: "clerk", account: null });
+    const user = userEvent.setup();
+    render(<AccountMenu />);
+    await user.click(await screen.findByRole("button", { name: "Anmelden" }));
+    const dialog = await screen.findByTestId("signin-dialog");
+    expect(dialog).not.toHaveTextContent(/Google|Microsoft|Apple/);
+    expect(dialog).toHaveTextContent("Clerk");
   });
 
   it("nennt «Anmelden» im Fenster, wenn man dort angefangen hat", async () => {
-    stubAccount({ login: "google", account: null });
+    stubAccount({ login: "clerk", account: null });
     const user = userEvent.setup();
     render(<AccountMenu />);
     await user.click(await screen.findByRole("button", { name: "Anmelden" }));
@@ -77,18 +85,18 @@ describe("AccountMenu", () => {
   });
 
   it("meldet, wenn der Start der Anmeldung scheitert, und gibt den Knopf wieder frei", async () => {
-    stubAccount({ login: "google", account: null });
-    startSignIn.mockResolvedValue({ error: { message: "x" } });
+    stubAccount({ login: "clerk", account: null });
+    startSignIn.mockResolvedValue(false);
     const user = userEvent.setup();
     render(<AccountMenu />);
     await user.click(await screen.findByRole("button", { name: "Anmelden" }));
-    await user.click(within(await screen.findByTestId("signin-dialog")).getByRole("button", { name: "Mit Google anmelden" }));
+    await user.click(within(await screen.findByTestId("signin-dialog")).getByRole("button", { name: "Weiter zur Anmeldung" }));
     expect(await screen.findByText(/konnte nicht gestartet werden/)).toBeInTheDocument();
-    expect(within(screen.getByTestId("signin-dialog")).getByRole("button", { name: "Mit Google anmelden" })).toBeEnabled();
+    expect(within(screen.getByTestId("signin-dialog")).getByRole("button", { name: "Weiter zur Anmeldung" })).toBeEnabled();
   });
 
   it("zeigt Angemeldeten den Anfangsbuchstaben und ein Menü mit «Mein Profil» und «Abmelden»", async () => {
-    stubAccount({ login: "google", account: { name: "anna keller", email: "anna@keller.ch" } });
+    stubAccount({ login: "clerk", account: { name: "anna keller", email: "anna@keller.ch" } });
     const user = userEvent.setup();
     render(<AccountMenu />);
     const button = await screen.findByTestId("account-button");
@@ -105,7 +113,7 @@ describe("AccountMenu", () => {
   });
 
   it("schliesst das Menü mit Escape und mit einem Klick daneben", async () => {
-    stubAccount({ login: "google", account: { name: "Anna", email: "a@k.ch" } });
+    stubAccount({ login: "clerk", account: { name: "Anna", email: "a@k.ch" } });
     const user = userEvent.setup();
     render(
       <div>
@@ -124,25 +132,25 @@ describe("AccountMenu", () => {
   });
 
   it("meldet ab und lädt die Seite neu; bei einem Fehler bleibt das Menü mit einer Meldung offen", async () => {
-    stubAccount({ login: "google", account: { name: "Anna", email: "a@k.ch" } });
+    stubAccount({ login: "clerk", account: { name: "Anna", email: "a@k.ch" } });
     const reload = vi.fn();
     vi.spyOn(window, "location", "get").mockReturnValue({ ...window.location, reload } as unknown as Location);
     const user = userEvent.setup();
     render(<AccountMenu />);
     await user.click(await screen.findByTestId("account-button"));
 
-    signOut.mockResolvedValueOnce({ error: { message: "x" } });
+    signOut.mockResolvedValueOnce(false);
     await user.click(screen.getByRole("button", { name: "Abmelden" }));
     expect(await screen.findByText(/Das Abmelden hat nicht geklappt/)).toBeInTheDocument();
     expect(reload).not.toHaveBeenCalled();
 
-    signOut.mockResolvedValueOnce({ error: null });
+    signOut.mockResolvedValueOnce(true);
     await user.click(screen.getByRole("button", { name: "Abmelden" }));
     await waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
   });
 
-  it("zeigt nach der Rückkehr von Google eine Meldung und räumt die Adresse auf", async () => {
-    stubAccount({ login: "google", account: { name: "Anna", email: "a@k.ch" } });
+  it("zeigt nach der Rückkehr von der Anmeldung eine Meldung und räumt die Adresse auf", async () => {
+    stubAccount({ login: "clerk", account: { name: "Anna", email: "a@k.ch" } });
     window.history.replaceState(null, "", "/tools/x?anmeldung=ok&a=1");
     render(<AccountMenu />);
     expect(await screen.findByText("Du bist angemeldet.")).toBeInTheDocument();
@@ -150,7 +158,7 @@ describe("AccountMenu", () => {
   });
 
   it("sagt bei einer abgebrochenen Anmeldung, dass man es noch einmal versuchen kann", async () => {
-    stubAccount({ login: "google", account: null });
+    stubAccount({ login: "clerk", account: null });
     window.history.replaceState(null, "", "/?anmeldung=fehler");
     const user = userEvent.setup();
     render(<AccountMenu />);
@@ -161,7 +169,7 @@ describe("AccountMenu", () => {
   });
 
   it("ignoriert fremde Werte im Rückkehr-Parameter", async () => {
-    stubAccount({ login: "google", account: null });
+    stubAccount({ login: "clerk", account: null });
     window.history.replaceState(null, "", "/?anmeldung=<script>");
     render(<AccountMenu />);
     await screen.findByRole("button", { name: "Anmelden" });

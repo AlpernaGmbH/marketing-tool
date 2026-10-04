@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchAccountInfo, type AccountInfo } from "@/lib/account-client";
+import { whenSessionReady } from "@/lib/clerk-bridge";
 
 // Ein Abruf pro Seitenaufruf, geteilt zwischen Kopfzeile und Profilseite. Nach Anmelden und Abmelden lädt die Seite
 // neu, daher gibt es keine Aktualisierung im Hintergrund.
@@ -18,7 +19,8 @@ export function useAccount(): AccountInfo | null | undefined {
     let alive = true;
     // Erst wenn der Browser Luft hat: Der Abruf konkurriert sonst mit dem Aufbau der Seite (Total Blocking Time).
     const start = () => {
-      shared ??= fetchAccountInfo();
+      // Wer ein Sitzungs-Zeichen trägt, wartet kurz, bis Clerk die Sitzung aufgefrischt hat (sonst sähe der Server ihn als abgemeldet).
+      shared ??= whenSessionReady().then(() => fetchAccountInfo());
       void shared.then((value) => {
         if (alive) setInfo(value);
       });
