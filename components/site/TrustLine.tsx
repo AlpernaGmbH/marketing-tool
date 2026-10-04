@@ -5,12 +5,12 @@ export function TrustLine() {
   const count = getTools().length;
   const parts = [
     "Alperna GmbH, Speicher AR",
-    ...(count > 0 ? [`${count} Werkzeuge`] : []),
+    ...(count > 0 ? [`${count} ${count === 1 ? "Werkzeug" : "Werkzeuge"}`] : []),
     "kein Konto nötig",
     "keine Tracking-Cookies",
   ];
   return (
-    <p className="flex flex-col gap-y-1 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-3">
+    <p className="flex flex-col gap-y-1 font-mono text-xs uppercase tracking-wide text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-3">
       {parts.map((part, i) => (
         <span key={part} className="flex gap-3">
           {i > 0 && (

@@ -23,48 +23,50 @@ export function PathGraphic({ steps }: Props) {
 
   return (
     <div>
-      <svg
-        viewBox={`0 0 ${PATH_VIEW.width} ${PATH_VIEW.height}`}
-        aria-hidden="true"
-        focusable="false"
-        className="h-auto w-full"
-        style={{ maxWidth: Math.max(160, Math.min(PATH_VIEW.width, steps.length * 110)) }}
-        data-testid="path-graphic"
-      >
-        {points.slice(1).map((p, i) => {
-          const walked = ready && done.has(steps[i].slug) && done.has(steps[i + 1].slug);
-          return (
-            <path
-              key={steps[i + 1].slug}
-              d={segmentPath(points[i], p)}
-              fill="none"
-              strokeWidth={walked ? 4 : 3}
-              strokeLinecap="round"
-              strokeDasharray={walked ? undefined : "2 9"}
-              className={walked ? "stroke-ink" : "stroke-line"}
-            />
-          );
-        })}
-        {points.map((p, i) => {
-          const isDone = ready && done.has(steps[i].slug);
-          const isNext = ready && summary.next === steps[i].slug;
-          return (
-            <g key={steps[i].slug} data-state={isDone ? "done" : isNext ? "next" : "open"}>
-              {isNext && <circle cx={p.x} cy={p.y} r={19} className="fill-none stroke-yellow" strokeWidth={4} />}
-              <circle
-                cx={p.x}
-                cy={p.y}
-                r={12}
-                strokeWidth={3}
-                className={isDone ? "fill-yellow stroke-ink" : isNext ? "fill-paper stroke-ink" : "fill-paper stroke-line"}
+      {steps.length > 1 && (
+        <svg
+          viewBox={`0 0 ${PATH_VIEW.width} ${PATH_VIEW.height}`}
+          aria-hidden="true"
+          focusable="false"
+          className="h-auto w-full"
+          style={{ maxWidth: Math.max(160, Math.min(PATH_VIEW.width, steps.length * 110)) }}
+          data-testid="path-graphic"
+        >
+          {points.slice(1).map((p, i) => {
+            const walked = ready && done.has(steps[i].slug) && done.has(steps[i + 1].slug);
+            return (
+              <path
+                key={steps[i + 1].slug}
+                d={segmentPath(points[i], p)}
+                fill="none"
+                strokeWidth={walked ? 4 : 3}
+                strokeLinecap="round"
+                strokeDasharray={walked ? undefined : "2 9"}
+                className={walked ? "stroke-ink" : "stroke-line"}
               />
-              {isDone && (
-                <path d={`M${p.x - 5} ${p.y} L${p.x - 1} ${p.y + 4} L${p.x + 6} ${p.y - 4}`} fill="none" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="stroke-ink" />
+            );
+          })}
+          {points.map((p, i) => {
+            const isDone = ready && done.has(steps[i].slug);
+            const isNext = ready && summary.next === steps[i].slug;
+            return (
+              <g key={steps[i].slug} data-state={isDone ? "done" : isNext ? "next" : "open"}>
+                {isNext && <circle cx={p.x} cy={p.y} r={19} className="fill-none stroke-yellow" strokeWidth={4} />}
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={12}
+                  strokeWidth={3}
+                  className={isDone ? "fill-yellow stroke-ink" : isNext ? "fill-paper stroke-ink" : "fill-paper stroke-line"}
+                />
+                {isDone && (
+                  <path d={`M${p.x - 5} ${p.y} L${p.x - 1} ${p.y + 4} L${p.x + 6} ${p.y - 4}`} fill="none" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="stroke-ink" />
               )}
             </g>
           );
         })}
       </svg>
+      )}
 
       <ol className="mt-4 grid gap-2">
         {steps.map((s, i) => {
@@ -74,7 +76,7 @@ export function PathGraphic({ steps }: Props) {
             <li key={s.slug}>
               <Link
                 href={`/tools/${s.slug}`}
-                className="flex items-baseline gap-3 rounded-lg border border-line bg-paper px-4 py-3 hover:border-ink"
+                className="flex items-baseline gap-3 rounded-xl border border-line bg-paper px-4 py-3 hover:border-ink"
               >
                 <span className="w-6 shrink-0 font-heading font-semibold">{i + 1}</span>
                 <span className="flex-1 font-medium">{s.name}</span>

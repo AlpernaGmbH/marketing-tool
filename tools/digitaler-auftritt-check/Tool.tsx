@@ -120,7 +120,7 @@ export default function Tool() {
               Du wählst, was für deinen Betrieb eine Rolle spielt, und beantwortest pro Baustein drei bis vier Aussagen mit Ja, Teilweise oder Nein. Daraus entstehen ein
               Ergebnis pro Baustein und eine Liste der nächsten Schritte.
             </p>
-            <fieldset className="mt-6 grid gap-4 rounded-lg border border-line p-4 md:grid-cols-2">
+            <fieldset className="mt-6 grid gap-4 rounded-xl border border-line p-4 md:grid-cols-2">
               <legend className="px-2 font-heading font-semibold">Dein Betrieb</legend>
               <ProfileFieldsForm idPrefix="dac" fields={["firma", "organisationstyp", "branche", "ort", "kanton", "groesse"]} />
               <p className="text-sm text-muted-foreground md:col-span-2">

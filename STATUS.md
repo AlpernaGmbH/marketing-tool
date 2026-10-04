@@ -16,7 +16,7 @@ Stand: 03.10.2026. **Etappe 1b (Startseite, Kategorieseiten, Referenz-Tool «Dig
 
 - Next.js 15 (App Router, TypeScript strict), Tailwind 4, shadcn/ui, `vercel.json` mit Region `fra1`.
 - **Zugang und Leads:** `lib/access.ts`, `lib/redis.ts`, `lib/lead.ts`, `lib/ratelimit.ts`; Routen `/api/access`, `/api/access/complete`, `/api/lead`; `LeadGate`. Redis-Ausfall, fehlendes Redis, ausgefallenes n8n und ein gefälschtes Cookie sind getestet.
-- **Design System:** Tokens, Poppins und Montserrat selbst gehostet, Header, Footer, Suche, mobiles Menü, Höhenlinien, Skip-Link, 44-px-Touch-Ziele.
+- **Design System (v3, 04.10.2026):** Geist, Geist Mono und Instrument Serif selbst gehostet, Papier-Hintergrund, Pillen-Knöpfe, Navy und Gold von alperna.ch als Akzente, Logo nachgezeichnet; Header, Footer, Suche, mobiles Menü, Höhenlinien, Skip-Link, 44-px-Touch-Ziele.
 - **Registry und Seiten-Gerüst:** `lib/define-tool.ts`, `lib/registry.ts`, `ToolPageLayout` (neun Abschnitte), Tool-Route mit JSON-LD (SoftwareApplication, FAQPage, BreadcrumbList), `sitemap.ts`, `robots.ts`, `opengraph-image.tsx`, `scripts/content-check.ts`, `scripts/seo-check.ts`.
 - **Gemeinsame Bausteine:** `QuestionnaireEngine`, `DocumentExport` (PDF mit eingebetteten Schriften, DOCX, Markdown-Copy), `ProfileBanner`, `ResultCard`, `ScoreBadge`, `CopyButton`, `LegalDisclaimer`, `RelatedTools`, `AlpernaPitch`, `ToolShell`, `lib/ch.ts`, Firmenprofil mit Seite `/profil` (Export, Import, alles löschen), `npm run new-tool`.
 - **Qualität (Stand 1a):** 240 Unit- und Komponententests, 11 Playwright-Smoke-Tests, `npm run check` grün.
@@ -64,8 +64,8 @@ Stand: 03.10.2026. **Etappe 1b (Startseite, Kategorieseiten, Referenz-Tool «Dig
 12. **`mt_gate` ist `Secure` in Production.** Lokal über `next start` auf `localhost` funktioniert das; HTTP auf anderen Hosts nicht.
 13. **`noindex` für alle Nicht-Production-Deployments** (`middleware.ts`) schon jetzt, nicht erst in Etappe 7.
 14. **`LegalDisclaimer` enthält keinen eigenen Text.** Hinweistext und Stand kommen aus `content/legal/`. **Offen für 4b:** Wie gelangen die Rechtstexte in die Client-Komponenten der Rechts-Tools (Props aus einer Server-Komponente oder ein Build-Schritt)?
-15. **DOCX nutzt die Schriftnamen Poppins und Montserrat ohne Einbettung.** Wer sie nicht installiert hat, sieht in Word eine Ersatzschrift.
-16. **Platzhalter bis zur Lieferung:** Wortlogo «Alperna», `app/icon.svg`, `--ink #0a0a0a`, `--accent #4b3fd6`.
+15. **DOCX nutzt den Schriftnamen Geist ohne Einbettung.** Wer sie nicht installiert hat, sieht in Word eine Ersatzschrift.
+16. **Branding (04.10.2026):** Schrift, Hintergrund und Formen von der neuen Alperna-Website (Geist, Papier `#F3F1EC`), Farben von alperna.ch (Navy `#111A28`, Gold `#FFD700`, als Akzent). Das Logo ist die Bildmarke von alperna.ch, mit Potrace nachgezeichnet (nicht das Original-SVG; bei Gelegenheit durch die Originaldatei ersetzen). Auslegung von «weisser Hintergrund»: Seite in Papier `#F3F1EC`, Karten in `#FFFDF8`.
 17. **Footer- und Platzhalterseiten** (`/impressum`, `/datenschutz`, `/ueber`) sind leer und `noindex`. Der Link im LeadGate geht auf `/datenschutz`. **Das Formular darf nicht live gehen, bevor diese Seite echten Inhalt hat.**
 
 ## Neue Abhängigkeiten (Begründung)

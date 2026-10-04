@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Contours } from "@/components/site/Contours";
 import { FaqList } from "@/components/site/FaqList";
@@ -54,7 +55,8 @@ export default async function HomePage() {
       <section className="relative overflow-hidden" aria-labelledby="hero-titel">
         <Contours />
         <div className="container-page relative section">
-          <PageH1 text="Marketing-Werkzeuge für Schweizer KMU und Vereine" className="measure" />
+          <p className="eyebrow">Von Alperna, Speicher AR</p>
+          <PageH1 text="Marketing-Werkzeuge für Schweizer KMU und Vereine" className="mt-5 max-w-[18ch] md:max-w-[22ch]" />
           <p className="measure mt-4 text-lg text-muted-foreground">
             Kostenlos, verständlich und für die Schweiz gemacht. Beantworte ein paar Fragen und du hältst in Minuten ein
             Ergebnis in der Hand.
@@ -66,8 +68,14 @@ export default async function HomePage() {
             <a href="#werkzeuge" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
               Tool finden
             </a>
-            <Link href={firstStep ? `/tools/${firstStep.slug}` : "/strategie"} className={cn(buttonVariants({ size: "lg" }))}>
+            <Link
+              href={firstStep ? `/tools/${firstStep.slug}` : "/strategie"}
+              className={cn(buttonVariants({ size: "lg" }), "gap-3 pr-2")}
+            >
               Strategie-Pfad starten
+              <span className="btn-icon" aria-hidden="true">
+                <ArrowRight />
+              </span>
             </Link>
           </div>
           <div className="mt-8">
@@ -77,7 +85,8 @@ export default async function HomePage() {
       </section>
 
       <section aria-labelledby="pfade" className="container-page pb-[var(--section-y)]">
-        <h2 id="pfade">Such dir einen Pfad aus</h2>
+        <p className="eyebrow">Pfade</p>
+        <h2 id="pfade" className="mt-3">Such dir einen Pfad aus</h2>
         <p className="measure mt-2 text-muted-foreground">
           Jeder Pfad ordnet die Werkzeuge in einer sinnvollen Reihenfolge. Was du erledigt hast, merkt sich dein Browser.
         </p>
@@ -94,7 +103,8 @@ export default async function HomePage() {
       </section>
 
       <section id="werkzeuge" aria-labelledby="meistgenutzt" className="container-page scroll-mt-6 pb-[var(--section-y)]">
-        <h2 id="meistgenutzt">Meistgenutzt</h2>
+        <p className="eyebrow">Werkzeuge</p>
+        <h2 id="meistgenutzt" className="mt-3">Meistgenutzt</h2>
         <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {popular.map((t) => (
             <li key={t.slug}>
@@ -106,7 +116,8 @@ export default async function HomePage() {
 
       <section aria-labelledby="warum-kostenlos" className="border-y border-line bg-surface">
         <div className="container-page section">
-          <h2 id="warum-kostenlos">Warum kostenlos?</h2>
+          <p className="eyebrow">Unsere Haltung</p>
+          <h2 id="warum-kostenlos" className="mt-3">Warum kostenlos?</h2>
           <div className="content mt-4">
             {warum.paragraphs.map((p) => (
               <p key={p}>{p}</p>
@@ -116,7 +127,8 @@ export default async function HomePage() {
       </section>
 
       <section aria-labelledby="marketing-schweiz" className="container-page section">
-        <h2 id="marketing-schweiz">{seo.front.heading}</h2>
+        <p className="eyebrow">Hintergrund</p>
+        <h2 id="marketing-schweiz" className="mt-3">{seo.front.heading}</h2>
         <div className="mt-4">
           <Html html={seoHtml} />
         </div>
@@ -127,7 +139,8 @@ export default async function HomePage() {
       </div>
 
       <section aria-labelledby="faq" className="container-page pb-[var(--section-y)]">
-        <h2 id="faq">Häufige Fragen</h2>
+        <p className="eyebrow">Fragen</p>
+        <h2 id="faq" className="mt-3">Häufige Fragen</h2>
         <div className="mt-4">
           <FaqList items={faqItems} />
         </div>

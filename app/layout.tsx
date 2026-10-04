@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { montserrat, poppins } from "@/app/fonts";
+import { geist, geistMono, instrumentSerif } from "@/app/fonts";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tools.alperna.ch";
@@ -24,12 +24,12 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#ffffff",
+  themeColor: "#F3F1EC",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="de-CH" className={`${poppins.variable} ${montserrat.variable}`}>
+    <html lang="de-CH" className={`${geist.variable} ${geistMono.variable} ${instrumentSerif.variable}`}>
       <body>
         <a href="#main" className="skip-link">
           Zum Inhalt springen

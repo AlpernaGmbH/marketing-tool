@@ -80,13 +80,13 @@ export function Search({ items, variant = "header", label = "Werkzeug suchen", h
           placeholder="Werkzeug suchen"
           autoComplete="off"
           aria-controls={listId}
-          className="h-11 w-full rounded-lg border border-input bg-paper px-3 text-base placeholder:text-muted-foreground"
+          className="h-12 w-full rounded-full border border-input bg-paper px-5 text-base placeholder:text-muted-foreground"
         />
       </form>
       <div id={listId} aria-live="polite" className={trimmed.length >= 2 ? "mt-2" : "sr-only"}>
         {trimmed.length >= 2 &&
           (results.length > 0 ? (
-            <ul className="rounded-lg border border-line bg-paper p-1 text-left">
+            <ul className="rounded-xl border border-line bg-paper p-1 text-left">
               {results.map((tool) => (
                 <li key={tool.slug}>
                   <Link

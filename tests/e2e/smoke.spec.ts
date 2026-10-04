@@ -79,7 +79,7 @@ test.describe("Startseite", () => {
 
     await expect(sec(page, "meistgenutzt").getByRole("link", { name: /Digitaler-Auftritt-Check/ })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "Warum kostenlos?" })).toBeVisible();
-    await expect(sec(page, "warum-kostenlos").locator("p")).toHaveCount(3);
+    await expect(sec(page, "warum-kostenlos").locator(".content p")).toHaveCount(3);
     await expect(page.getByRole("heading", { level: 2, name: "Marketing in der Schweiz – was anders ist" })).toBeVisible();
     await expect(sec(page, "faq").locator("h3")).toHaveCount(7);
   });
@@ -114,7 +114,8 @@ test.describe("Kategorieseiten", () => {
 
   test("/strategie zeigt den Pfad mit dem Referenz-Werkzeug und Fortschritt 0", async ({ page }) => {
     await page.goto("/strategie");
-    await expect(page.getByTestId("path-graphic")).toBeVisible();
+    // Mit einem einzigen Schritt gibt es keine Pfad-Grafik, nur die Liste.
+    await expect(page.getByTestId("path-graphic")).toHaveCount(0);
     await expect(sec(page, "pfad").getByRole("link", { name: /Digitaler-Auftritt-Check/ })).toBeVisible();
     await expect(page.getByRole("search", { name: "Werkzeug suchen" })).toBeVisible(); // Kopfzeile
     await expect(page.getByText("0 von 1 erledigt")).toBeVisible();

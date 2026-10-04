@@ -4,10 +4,10 @@ import type { PdfFonts } from "@/lib/export/pdf";
 // Bewusst .woff statt .woff2: @pdf-lib/fontkit liest woff2, scheitert beim Subsetting aber mit
 // «RangeError: Index out of range», und das PDF käme nie zustande. Die Webseite selbst nutzt woff2.
 export const FONT_PATHS = {
-  title: "/fonts/poppins-latin-700-normal.woff",
-  heading: "/fonts/poppins-latin-600-normal.woff",
-  body: "/fonts/montserrat-latin-400-normal.woff",
-  bodyMedium: "/fonts/montserrat-latin-500-normal.woff",
+  title: "/fonts/geist-latin-600-normal.woff",
+  heading: "/fonts/geist-latin-500-normal.woff",
+  body: "/fonts/geist-latin-400-normal.woff",
+  bodyMedium: "/fonts/geist-latin-500-normal.woff",
 } as const;
 
 let cache: Promise<PdfFonts> | null = null;

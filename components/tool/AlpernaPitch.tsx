@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "cn";
 import { loadBausteine, usable, type BausteinName } from "@/lib/pitch";
@@ -43,7 +44,7 @@ export function AlpernaPitch({ variant = "short", toolName, toolSlug, fields }: 
   if (!hasText && !erstgespraech && !wa) return null;
 
   return (
-    <section aria-labelledby="alperna-pitch" className="rounded-lg border border-line bg-surface p-6 md:p-10">
+    <section aria-labelledby="alperna-pitch" className="rounded-xl border border-line bg-surface p-6 md:p-10">
       <h2 id="alperna-pitch">Wenn du das lieber abgibst</h2>
 
       {variant === "short" ? (
@@ -71,11 +72,14 @@ export function AlpernaPitch({ variant = "short", toolName, toolSlug, fields }: 
           {erstgespraech && (
             <a
               href={erstgespraech}
-              className={cn(buttonVariants({ size: "lg" }))}
+              className={cn(buttonVariants({ size: "lg" }), "gap-3 pr-2")}
               data-umami-event="pitch_erstgespraech"
               data-umami-event-tool={toolSlug}
             >
               Kostenloses Erstgespräch
+              <span className="btn-icon" aria-hidden="true">
+                <ArrowRight />
+              </span>
             </a>
           )}
           {wa && (

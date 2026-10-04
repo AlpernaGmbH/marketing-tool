@@ -30,7 +30,7 @@ export function PathCard({ href, title, text, slugs }: Props) {
   const ratio = ready && count > 0 ? s.done / count : 0;
 
   return (
-    <Link href={href} className="group flex h-full flex-col rounded-lg border border-line bg-paper p-5 transition-colors hover:border-ink">
+    <Link href={href} className="group flex h-full flex-col rounded-xl border border-line bg-paper p-5 transition-colors hover:border-ink">
       <span className="font-heading text-xl font-semibold group-hover:underline group-hover:underline-offset-4">{title}</span>
       <span className="mt-2 flex-1 text-base text-muted-foreground">{text}</span>
       <span className="mt-4 text-sm font-medium">{status}</span>

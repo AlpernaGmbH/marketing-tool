@@ -18,12 +18,12 @@ import {
 } from "docx";
 import { FOOTER_TEXT, type DocBlock, type DocumentModel } from "@/lib/export/model";
 
-// Word-Dokument. Die Schriften heissen Poppins und Montserrat; ohne Installation nimmt Word eine Ersatzschrift.
-const BODY = "Montserrat";
-const HEAD = "Poppins";
-const LINE = "E4E1DA";
-const SURFACE = "F5F3EF";
-const MUTED = "5E5A53";
+// Word-Dokument. Die Schrift heisst Geist; ohne Installation nimmt Word eine Ersatzschrift.
+const BODY = "Geist";
+const HEAD = "Geist";
+const LINE = "DEDCD5";
+const SURFACE = "F3F1EC";
+const MUTED = "65645F";
 
 const clean = (s: string) => s.replace(/\r/g, "");
 

@@ -21,7 +21,7 @@ export function MobileMenu({ links, searchItems }: { links: NavLink[]; searchIte
         aria-expanded={open}
         aria-controls="mobile-menu"
         onClick={() => setOpen((o) => !o)}
-        className="h-11 rounded-lg border border-input px-4 text-base font-medium"
+        className="h-11 rounded-full border border-line-strong px-5 text-base font-medium"
       >
         {open ? "Schliessen" : "Menü"}
       </button>

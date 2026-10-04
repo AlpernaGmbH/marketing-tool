@@ -1,6 +1,6 @@
 ---
 title: "Schweizer Marketing-Werkzeuge: Recht und Praxis"
-description: "WhatsApp-Link, Bewertungs-Kit, Feiertage, Impressum, Datenschutz und mehr: Werkzeuge für Marketing nach Schweizer Recht und Praxis. Kostenlos."
+description: "WhatsApp-Link, Bewertungs-Kit, Feiertage, Impressum, Datenschutz und mehr: Werkzeuge für Recht und Praxis im Schweizer Marketing. Kostenlos."
 h1: "Recht und Praxis für Schweizer KMU"
 seoHeading: "Was Marketing in der Schweiz besonders macht"
 pfadText: "Praktische Hilfen für den Alltag und Werkzeuge zu den Rechtsthemen, die Schweizer Betriebe beschäftigen."

@@ -2,17 +2,17 @@ import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { FOOTER_TEXT, type DocBlock, type DocumentModel } from "@/lib/export/model";
 
-// PDF im Browser (und in Tests unter Node): A4, Poppins für Titel, Montserrat für Text.
+// PDF im Browser (und in Tests unter Node): A4, Geist für Titel und Text.
 // Die Schriften werden eingebettet; fehlende Zeichen werden ersetzt statt als Kästchen gedruckt.
 
 export type PdfFonts = {
-  /** Poppins 700 */
+  /** Geist 600 */
   title: Uint8Array;
-  /** Poppins 600 */
+  /** Geist 500 */
   heading: Uint8Array;
-  /** Montserrat 400 */
+  /** Geist 400 */
   body: Uint8Array;
-  /** Montserrat 500 */
+  /** Geist 500 */
   bodyMedium: Uint8Array;
 };
 
@@ -20,11 +20,11 @@ const A4 = { w: 595.28, h: 841.89 };
 const M = { left: 56, right: 56, top: 78, bottom: 64 };
 const CONTENT_W = A4.w - M.left - M.right;
 const COLOR = {
-  ink: rgb(10 / 255, 10 / 255, 10 / 255),
-  muted: rgb(94 / 255, 90 / 255, 83 / 255),
-  line: rgb(228 / 255, 225 / 255, 218 / 255),
-  surface: rgb(245 / 255, 243 / 255, 239 / 255),
-  yellow: rgb(255 / 255, 198 / 255, 41 / 255),
+  ink: rgb(15 / 255, 15 / 255, 14 / 255),
+  muted: rgb(101 / 255, 100 / 255, 95 / 255),
+  line: rgb(222 / 255, 220 / 255, 213 / 255),
+  surface: rgb(243 / 255, 241 / 255, 236 / 255),
+  yellow: rgb(255 / 255, 215 / 255, 0 / 255),
 };
 
 /** Ersatz für Zeichen, die in den eingebetteten Schriften fehlen. */

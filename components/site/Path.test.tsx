@@ -100,8 +100,10 @@ describe("PathGraphic", () => {
     expect(await screen.findByText(/3 von 3 erledigt/)).toBeInTheDocument();
     expect(screen.queryByText("Als Nächstes")).toBeNull();
   });
-  it("kommt mit einem einzelnen Schritt zurecht", async () => {
+  it("kommt mit einem einzelnen Schritt zurecht und zeichnet dann keine Grafik", async () => {
     render(<PathGraphic steps={[steps[0]]} />);
     expect(await screen.findByText(/0 von 1 erledigt/)).toBeInTheDocument();
+    expect(screen.queryByTestId("path-graphic")).toBeNull();
+    expect(screen.getByRole("link", { name: /Erster Schritt/ })).toBeInTheDocument();
   });
 });

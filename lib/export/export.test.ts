@@ -50,8 +50,7 @@ describe("PDF", () => {
       .flatMap(([, obj]) => (obj instanceof PDFDict ? [obj.get(PDFName.of("BaseFont"))?.toString()] : []))
       .filter(Boolean)
       .join(" ");
-    expect(baseFonts).toMatch(/Poppins/);
-    expect(baseFonts).toMatch(/Montserrat/);
+    expect(baseFonts).toMatch(/Geist/);
     expect(doc.getTitle()).toBe("ICP-Dokument: Malerei Keller, Gossau");
   });
 

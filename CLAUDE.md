@@ -114,7 +114,7 @@ Anführungszeichen, CHF 1'000.-, Datum 03.10.2026, Prozent mit Leerzeichen
 build) ist vor jedem Commit grün.
 4. Keine externen Skripte ausser Umami. Einziges Cookie: mt_gate (notwendig,
 in der Datenschutzerklärung erklärt, kein Banner). Fonts über next/font/local
-(Poppins, Montserrat).
+(Geist, Geist Mono, Instrument Serif).
 5. Lighthouse mobil: Performance, SEO, Accessibility je ≥ 95 pro Tool-Seite.
 6. Ein Tool = ein Ordner. Neue Tools nur über `npm run new-tool <slug>`.
 7. Keine Zahl ohne Quelle. Benchmarks und Statistiken nur aus data/*.json mit
@@ -131,16 +131,29 @@ befüllt. Ruhig, ohne Druck.
 12. Jede Tool-Seite hat alle Abschnitte der Seitentext-Vorlage; fehlende
 Abschnitte machen den Build rot (scripts/content-check.ts).
 
-## Design System (Alperna v2) und Branding
-Farb-Tokens in app/globals.css: --ink (Deep Black, Hex aus assets/brand), --
-yellow #FFC629, --accent (violett-blau aus assets/brand), --paper #FFFFFF, --
-muted (warmes Grau), --line (hellgrau).
-Gelb nur für den primären Knopf und eine Markierung pro Seite. Weiss als
-Grundfläche, Deep Black als Textfarbe. Keine Verläufe, keine Schatten über 4
-px.
-Typografie: Poppins 600/700 für Titel, Montserrat 400/500 für Text.
-Zeilenbreite max. 68ch, Zeilenhöhe 1.6, Abschnitte 96 px Desktop, 64 px
+## Design System (Alperna v3) und Branding (Stand 04.10.2026)
+Schrift, Hintergrund und Formensprache folgen der neuen Alperna-Website
+(alperna-tool.vercel.app/website, Quelle `styles.css`); die Markenfarben
+kommen von alperna.ch und sind nur Akzente.
+Tokens in app/globals.css: --page #F3F1EC (Seitenhintergrund, Papier), --paper
+#FFFDF8 (Karten, Felder), --surface #EAE7E0, --ink #0F0F0E (Text), --muted
+#65645F, --line (Ink mit 14 % Deckkraft), --navy #111A28 und --navy-2 #26324A
+(alperna.ch), --yellow #FFD700 (Gold, alperna.ch).
+Gold nur für den Kreis im primären Knopf, die eine Markierung pro Seite
+(`mark-yellow`: Serif kursiv mit goldenem Balken), Punkte vor Beschriftungen
+und Fokus auf Dunkel. Navy nur für den Footer, die Logo-Kachel und Zustände.
+Nie Gold als Textfarbe auf hellem Grund (Kontrast).
+Typografie: Geist für Text und Titel (Titel Gewicht 500, Laufweite -0.035 bis
+-0.04em), Instrument Serif kursiv für Betonungen (`em`), Geist Mono für
+Zahlen und kleine Beschriftungen (Klasse `eyebrow`: Grossbuchstaben, goldener
+Punkt). Zeilenbreite max. 68ch, Zeilenhöhe 1.6, Abschnitte 96 px Desktop, 64 px
 Mobile.
+Formen: Knöpfe und Suchfeld als Pillen (primär Ink mit Papier-Text, Hover
+Gold, Pfeil in Gold-Kreis), Karten mit 20 px Radius und Haarlinie, Felder
+mit 14 px Radius. Keine Verläufe, keine Schatten über 4 px.
+Logo: Bildmarke von alperna.ch, nachgezeichnet (`public/brand/alperna-mark.svg`:
+Gold auf Navy-Kachel; `alperna-mark-gold.svg` für dunkle Flächen), Wortmarke
+klein geschrieben «alperna».
 Bildsprache: keine Stockfotos. Nur Fotos aus assets/photos; gibt es keine,
 keine Bilder. Höhenlinien (SVG, 4 % Deckkraft) als Hintergrundmotiv auf
 Startseite und Kategorieseiten.
@@ -243,7 +256,7 @@ Nach Erfolg startet das Tool oder der Download sofort, ohne Reload.
 - QuestionnaireEngine: Fragetypen single, multi, text, number, scale,
 ranking, matrix; showIf; scoreFn; Zwischenstand unter mt:<slug>;
 Zurück/Weiter, Fortschritt, Zusammenfassung.
-- DocumentExport: DocumentModel → PDF (A4, Poppins/Montserrat eingebettet,
+- DocumentExport: DocumentModel → PDF (A4, Geist eingebettet,
 Kopf mit Firmenname, Fuss «Erstellt mit tools.alperna.ch»), DOCX, Markdown-
 Copy. Download-Knöpfe prüfen unlocked, sonst LeadGate.
 - lib/ch.ts: chf(1000) → «CHF 1'000.-», dateCH(), typoCH(), uidValid().

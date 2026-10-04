@@ -73,7 +73,7 @@ export default async function CategoryPageRoute({ params }: { params: Promise<Pa
 
         <div className="container-page">
           {notice && (
-            <p className="measure mt-8 rounded-lg border border-line bg-surface px-4 py-3 text-base" role="note">
+            <p className="measure mt-8 rounded-xl border border-line bg-surface px-4 py-3 text-base" role="note">
               {notice}
             </p>
           )}

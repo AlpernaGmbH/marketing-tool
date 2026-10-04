@@ -165,10 +165,21 @@ export function QuestionnaireEngine<R>({
     reset();
   };
 
+  // Vor dem Lesen des lokalen Speichers dieselbe Struktur wie der Start-Bildschirm (Knopf gesperrt).
+  // So bleibt der Einleitungstext beim Hydrieren stehen, statt neu aufgebaut zu werden:
+  // ein Neuaufbau verschiebt den LCP-Zeitpunkt auf das Ende der Hydration.
   if (!ready) {
     return (
-      <div aria-busy="true" className="min-h-48">
-        {intro}
+      <div className="grid gap-6" aria-busy="true">
+        {intro && <div className="content">{intro}</div>}
+        <p className="text-sm text-muted-foreground">
+          {asked.length} {asked.length === 1 ? "Frage" : "Fragen"}
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button size="lg" disabled>
+            {startLabel}
+          </Button>
+        </div>
       </div>
     );
   }

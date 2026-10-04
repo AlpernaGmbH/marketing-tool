@@ -73,7 +73,7 @@ export async function ToolPageLayout({ config, content, children }: Props) {
         <section aria-labelledby="beispiel" className="pb-[var(--section-y)]">
           <h2 id="beispiel">{SECTION_TITLES.beispiel}</h2>
           <p className="mt-2 text-sm text-muted-foreground">Fiktives Beispiel: {fm.beispielFirma}</p>
-          <div className="mt-4 rounded-lg border border-line bg-surface p-6 md:p-8">
+          <div className="mt-4 rounded-xl border border-line bg-paper p-6 md:p-8">
             <Html html={beispiel} />
           </div>
         </section>

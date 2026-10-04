@@ -1,9 +1,10 @@
 # assets/brand
 
-Von Alperna zu liefern (Etappe 0). Bis dahin laufen Logo und Farben auf Platzhaltern.
+Stand 04.10.2026.
 
-- Logo als SVG: schwarz und weiss (`logo-black.svg`, `logo-white.svg`)
-- Farbwerte als Hex: Deep Black, violett-blauer Akzent (Alperna Yellow ist `#FFC629`)
-- Design-System-v2-Dokument, falls vorhanden
+- `alperna-mark.svg`: Bildmarke von alperna.ch (Gold auf Navy-Kachel), mit Potrace aus der PNG-Datei nachgezeichnet. Ersetzen, sobald das Original-SVG vorliegt.
+- `alperna-mark-gold.svg`: nur die Bildmarke in Gold, für dunkle Flächen.
+- Farben: Navy `#111A28`, Gold `#FFD700` (aus alperna.ch), Papier `#F3F1EC` und Tinte `#0F0F0E` (aus der neuen Website).
+- Schriften: Geist, Geist Mono, Instrument Serif (SIL Open Font License, Dateien in `public/fonts/`).
 
-Platzhalter, die dann ersetzt werden: `--ink` und `--accent` in `app/globals.css`, das Wortlogo in `components/site/Header.tsx`, `app/icon.svg`.
+Dieselben Dateien liegen unter `public/brand/` (Seite) und `app/icon.svg` (Favicon).

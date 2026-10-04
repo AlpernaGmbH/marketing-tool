@@ -98,7 +98,7 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
 
   return (
     <ToolContext.Provider value={value}>
-      <section aria-label={name} className="overflow-hidden rounded-lg border border-line bg-paper">
+      <section aria-label={name} className="overflow-hidden rounded-xl border border-line bg-paper">
         <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3 text-sm">
           <span className="font-medium">{name}</span>
           <span aria-live="polite" data-testid="access-status" className="text-muted-foreground">
