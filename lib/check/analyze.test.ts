@@ -214,6 +214,18 @@ describe("analyze: Ablauf und Fehler", () => {
     await expect(analyze(input(), { fetcher })).rejects.toMatchObject({ code: "unreachable", message: expect.stringContaining("Stimmt die Adresse") });
   });
 
+  it("beachtet robots.txt nur bei respectRobots: Verbot heisst ungelesen, sonst wird die Seite geprüft", async () => {
+    const seen: string[] = [];
+    const fetcher: Fetcher = async (raw, opts) => {
+      seen.push(raw);
+      if (raw.endsWith("/robots.txt")) return { url: new URL(raw), status: 200, ok: true, headers: {}, body: "User-agent: *\nDisallow: /", ms: 1 };
+      return fakeFetcher(POOR)(raw, opts);
+    };
+    await expect(analyze(input({ respectRobots: true }), { fetcher })).rejects.toMatchObject({ code: "unreachable", message: expect.stringContaining("robots.txt") });
+    expect(seen).toEqual(["https://keller.ch/robots.txt"]); // die Seite selbst wurde nicht abgerufen
+    expect((await analyze(input(), { fetcher })).url).toBe("https://keller.ch/");
+  });
+
   it("verwendet den Hostnamen, wenn kein Firmenname angegeben ist", async () => {
     const r = await analyze(input({ company: "  " }), { fetcher: fakeFetcher(POOR) });
     expect(r.company).toBe("keller.ch");

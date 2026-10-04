@@ -4,6 +4,7 @@ import { MAX_ANALYZED_HTML } from "@/lib/check/html";
 import { INDUSTRIES, isIndustryKey } from "@/lib/check/industries";
 import { buildMassnahmen } from "@/lib/check/massnahmen";
 import { safeFetch, type Fetcher, type FetchResult } from "@/lib/check/net";
+import { disallowsRoot } from "@/lib/check/robots";
 import { checkSeo } from "@/lib/check/seo";
 import { checkSocial } from "@/lib/check/social";
 import { isIP } from "node:net";
@@ -91,6 +92,13 @@ export async function analyze(input: CheckInput, options: AnalyzeOptions = {}): 
   const website = normalizeUrl(input.website);
 
   step("fetch", "start");
+  if (input.respectRobots) {
+    // Fremde Website: erst robots.txt, dann die Seite. Wer den Abruf verbietet, wird nicht gelesen (PLAN.md, Baustein 7).
+    const pre = await fetcher(`${new URL(website).origin}/robots.txt`, { maxBytes: 100_000, timeout: 6000 }).catch(() => null);
+    if (pre?.ok && disallowsRoot(pre.body)) {
+      throw new CheckError("Die Website erlaubt automatische Abrufe nicht (robots.txt). Sie bleibt im Vergleich ungelesen.", "unreachable");
+    }
+  }
   const loaded = await loadPage(website, fetcher);
   // Die Analyse liest höchstens MAX_ANALYZED_HTML Zeichen: Das hält den Aufwand auch bei böswilligem HTML klein.
   const page = { ...loaded, body: loaded.body.slice(0, MAX_ANALYZED_HTML) };

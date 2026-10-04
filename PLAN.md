@@ -178,11 +178,20 @@ Diese Punkte hat Alperna genannt. Sie gehören nicht zur laufenden Etappe.
 
 ## Nächster Schritt
 
-Stand 04.10.2026 (spät): Etappe 1c, Etappe 2 (KI über Mistral direkt) und Zugang v3 sind gebaut; Textcheck und Text-Umschreiber aus Etappe 3 beziehungsweise 6 ebenfalls. Als Nächstes die Etappen 3 bis 6 in dieser Reihenfolge, je Werkzeug Spec → `logic.ts` mit Tests → `Tool.tsx` → Seitentext → `npm run check`:
+Stand 04.10.2026 (spät): Etappe 1c, Etappe 2 (KI über Mistral direkt) und Zugang v3 sind gebaut; Textcheck und Text-Umschreiber aus Etappe 3 beziehungsweise 6 ebenfalls. Dazu der **Generator-Baustein** (`/api/generate`, `lib/generator.ts`, `useGenerator`, `DocView`) und **Website lesen** (`/api/read`), damit Werkzeuge der Klasse B aus Angaben und Website-Text einen geprüften Entwurf machen. Die Bauanleitung je Werkzeug steht in `docs/TOOL-BAUEN.md`.
 
-- **Etappe 3 (Analyse):** newsletter-check, ideen-aus-website, reifegrad-check, wettbewerbsvergleich; gbp-check nur mit Places-Schlüssel, sonst als «nicht prüfbar» verschoben.
-- **Etappe 4 (Strategie und Marke, Generatoren):** icp-builder, persona, positionierung, nutzenversprechen, markenplattform, botschaften, swot, strategie-einseiter.
-- **Etappe 5 (Rechner und Recht):** whatsapp-link, qr-set, bewertungs-kit, gbp-feiertage, budget-planer, content-kalender; impressum, datenschutz, gewinnspiel-check, uwg-mailcheck erst mit `content/legal/` von Menschen (Regel 8).
-- **Etappe 6 (Content und Vereine):** content-saeulen, content-ideen, caption-baukasten, medienmitteilung, bewertungsantwort, post-generator; anspruchsgruppen, vereins-kommunikation, sponsoring-dossier.
+Die Etappen 3 bis 6 werden in **Wellen** gebaut (je Welle vier Werkzeuge parallel durch Helfer-Agenten nach `docs/TOOL-BAUEN.md`, danach Registrierung, `npm run check`, Browser-Test, Lighthouse, Commit `feat(tool): …` je Werkzeug):
+
+| Welle | Werkzeuge | Klasse |
+|---|---|---|
+| 1 (Etappe 3) | reifegrad-check, wettbewerbsvergleich, newsletter-check, ideen-aus-website | A (Fragebogen, Check-Engine, Regeln im Browser, Website + Generator) |
+| 2 (Etappe 4) | icp-builder, persona, positionierung, nutzenversprechen | B (Generator aus Profil und Angaben; positionierung liest die Website) |
+| 3 (Etappe 4) | markenplattform, botschaften, swot, strategie-einseiter | B (strategie-einseiter fasst die Ergebnisse der anderen aus dem Browser zusammen) |
+| 4 (Etappe 5) | whatsapp-link, qr-set, bewertungs-kit, budget-planer | C (Rechner, QR, ZIP; Budget nur mit Richtwerten, die eine Quelle haben, sonst Verteilung der eigenen Zahl) |
+| 5 (Etappe 5/6) | gbp-feiertage, content-kalender, content-saeulen, content-ideen | C/B (Feiertage und Schulferien brauchen `data/*.json` mit Quelle je Kanton; ohne Quelle entfällt der Kanton) |
+| 6 (Etappe 6) | caption-baukasten, medienmitteilung, bewertungsantwort, post-generator | B |
+| 7 (Etappe 6, Vereine) | anspruchsgruppen, vereins-kommunikation, sponsoring-dossier, empfehlungsprogramm | B/C mit Vereins-Begriffen (`audience: verein`), Beispiel «FC Trogen» |
+
+Verschoben, weil eine Voraussetzung fehlt: gbp-check (Places-Schlüssel mit Zahlungsmittel), impressum, datenschutz, gewinnspiel-check, uwg-mailcheck (`content/legal/` von Menschen, Regel 8), keywords-lokal (Quelle der Suchvorschläge offen), marktpotenzial und bevoelkerung-nahe Werkzeuge (BFS-Daten noch nicht im Repo), angebotsgrafik und vorher-nachher (PNG-Erzeugung, eigener Baustein).
 
 Voraussetzungen von Alperna: keine für den Bau. Für die Produktion: `MISTRAL_API_KEY` (gesetzt), Upstash verbunden (gesetzt), Datenschutzerklärung mit dem Stand aus `docs/DATENSCHUTZ-FAKTEN.md`.

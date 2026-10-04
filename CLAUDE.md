@@ -89,6 +89,13 @@ im gewählten Stil neu oder prüft ihn (Stil «pruefen»); verlangt das Cookie (
 Schutz: 30 Anfragen pro Stunde und IP-Hash, globale Tagesgrenze
 (AI_DAILY_CAP); Antwort wird geprüft (tools/text-umschreiber/logic.ts), nichts wird
 gespeichert oder mit Inhalt geloggt
+- app/api/generate/route.ts – eine Route für alle Generatoren (Klasse B): {tool, input} →
+Entwurf als JSON nach tools/<slug>/generator.ts (Registry tools/generators.ts); verlangt das
+Cookie, 20 pro Stunde und IP-Hash, globale Tagesgrenze; jede Antwort der KI wird geprüft
+(lib/generator.ts: Schema, Sperrliste, Links nur aus den Angaben) und sonst verworfen
+- app/api/read/route.ts – liest die Startseite des Besuchers (lib/read.ts: Titel,
+Beschreibung, Überschriften, bis 8'000 Zeichen Text) über den geschützten Abruf des
+Checks; verlangt das Cookie, 10 pro Stunde und IP-Hash
 - app/api/cron/leads/route.ts – täglicher Cron: schickt Leads aus lead_queue nach
 - app/api/lookup/route.ts – Etappe 3
 - app/sitemap.ts, app/robots.ts, app/opengraph-image.tsx
@@ -96,9 +103,12 @@ gespeichert oder mit Inhalt geloggt
 - tools/<slug>/Tool.tsx – Client-Komponente, nutzt ToolShell
 - tools/<slug>/logic.ts – reine Funktionen, kein React, kein DOM
 - tools/<slug>/logic.test.ts – Vitest
-- tools/index.ts – explizite Liste aller Tools (kein Glob)
+- tools/<slug>/generator.ts – nur Klasse B: defineGenerator() (Schemas, Aufgabe, Prompt)
+- tools/index.ts – explizite Liste aller Tools (kein Glob); tools/generators.ts – explizite
+Liste aller Generatoren; tools/components.tsx – Slug → Client-Komponente
 - components/tool/ – ToolShell, ToolPageLayout, QuestionnaireEngine,
-DocumentExport, ProfileBanner, LeadGate, ScoreBadge, ResultCard, CopyButton,
+DocumentExport, DocView (DocumentModel am Bildschirm), useGenerator (Ablauf eines
+Generator-Werkzeugs), ProfileBanner, LeadGate, ScoreBadge, ResultCard, CopyButton,
 LegalDisclaimer, AlpernaPitch, RelatedTools
 - components/site/ – Header, Footer, Search, PathCard, ToolCard, TrustLine,
 Breadcrumbs
@@ -118,6 +128,10 @@ sign.ts (Signatur des Ergebnisses), ai.ts (Fakten, Prompt, Prüfung der KI-Antwo
 ai-client.ts (Browser)
 - lib/ai.ts, lib/ai-quota.ts – KI: direkt bei Mistral (MISTRAL_API_KEY, kostenloser Plan) oder über
 das Vercel AI Gateway (Modelle aus AI_MODELS), Tageslimits und Zwischenspeicher
+- lib/generator.ts, lib/generate-client.ts – Generatoren: Regeln der Alperna-Stimme, Prüfung
+jeder KI-Antwort, Browser-Aufruf; lib/read.ts, lib/read-client.ts – Website lesen
+- docs/TOOL-BAUEN.md – Bauanleitung je Werkzeug (Dateien, Zugang v3, Generator, Daten,
+Seitentext, Prüfung); vor jedem neuen Werkzeug lesen
 - lib/storage.ts, lib/use-local.ts – localStorage mit Rückfall auf Arbeitsspeicher
 - lib/ch.ts – chf(), dateCH(), typoCH(), uidValid()
 - data/*.json – Schweizer Datensätze, jede Datei mit meta {source, url, asOf}
@@ -148,10 +162,12 @@ Browser gespeichert. Exportiere es, wenn du es behalten willst.»
 1. Eingaben in Tools verlassen den Browser nur auf zwei Wegen: (a) mit dem
 Ergebnis ins CRM über /api/result (E-Mail-Adresse, Werkzeug, Kategorie,
 Firma aus dem Profil, Eingabe, Ausgabe – sonst nichts; Zugang v3), (b) bei
-Tools mit needsServer: true über /api/check, /api/ai, /api/text und
-/api/lookup. Das übrige Firmenprofil, Merkliste und Zwischenstände bleiben
-im Browser. Server-Routen loggen Statuscodes, nie Inhalte, nie Klartext-IPs,
-nie E-Mail-Adressen.
+Tools mit needsServer: true über /api/check, /api/ai, /api/text,
+/api/generate, /api/read und /api/lookup (an die KI gehen nur die Angaben,
+die das Werkzeug nennt: Betrieb, Branche, Ort, Eingaben, Website-Text; nie
+die E-Mail-Adresse, nie das ganze Profil). Das übrige Firmenprofil, Merkliste
+und Zwischenstände bleiben im Browser. Server-Routen loggen Statuscodes, nie
+Inhalte, nie Klartext-IPs, nie E-Mail-Adressen.
 2. Du-Form im UI. Schweizer Rechtschreibung: ss statt ß, «» als
 Anführungszeichen, CHF 1'000.-, Datum 03.10.2026, Prozent mit Leerzeichen
 (8,1 %).

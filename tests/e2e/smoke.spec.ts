@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext, type Page, type PlaywrightWorkerArgs } from "@playwright/test";
 import { sampleResult } from "../../lib/check/fixtures";
+import { tools } from "../../tools/index";
 
 const TOOL = "digitaler-auftritt-check";
 const BASE = "http://127.0.0.1:3100";
@@ -96,6 +97,26 @@ test.describe("Seiten", () => {
     await expect(page.getByRole("banner").getByRole("button", { name: /Anmelden|Registrieren/ })).toHaveCount(0);
     expect(foreign).toEqual([]);
   });
+});
+
+test.describe("Jede Werkzeug-Seite", () => {
+  for (const tool of tools) {
+    test(`/tools/${tool.slug}: lädt, eine H1, Werkzeug sichtbar, Fragen, JSON-LD, 375 px`, async ({ page }) => {
+      const res = await page.goto(`/tools/${tool.slug}`);
+      expect(res?.status()).toBe(200);
+      await expect(page.locator("h1")).toHaveCount(1);
+      await expect(page.getByRole("region", { name: tool.name })).toBeVisible();
+      await expect(page.getByTestId("access-status")).toHaveText("Ergebnis gegen E-Mail-Adresse");
+      const faq = await sec(page, "fragen").locator("h3").count();
+      expect(faq).toBeGreaterThanOrEqual(5);
+      expect(faq).toBeLessThanOrEqual(7);
+      const types = await page.$$eval('script[type="application/ld+json"]', (nodes) => nodes.map((n) => JSON.parse(n.textContent ?? "{}")["@type"]));
+      expect(types).toEqual(["SoftwareApplication", "FAQPage", "BreadcrumbList"]);
+      expect(await page.evaluate(() => document.body.textContent?.includes("TODO"))).toBe(false);
+      await page.setViewportSize({ width: 375, height: 800 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+    });
+  }
 });
 
 test.describe("Startseite", () => {

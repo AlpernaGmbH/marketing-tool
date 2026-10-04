@@ -67,6 +67,8 @@ export const checkInputSchema = z.object({
   city: z.string().trim().max(100).optional(),
   industry: z.string().trim().max(40).optional(),
   website: z.string().trim().min(3, "Bitte gib eine Website an.").max(300),
+  /** Fremde Website (Wettbewerbsvergleich): robots.txt wird beachtet; verbietet sie den Abruf, bleibt die Seite ungelesen. */
+  respectRobots: z.boolean().optional(),
   socials: z
     .object({
       instagram: social,
