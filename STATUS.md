@@ -68,8 +68,8 @@ Bewusst nicht behoben:
 ## Stand der Einrichtung am 04.10.2026 (Abend)
 
 - Vercel: `GOOGLE_CLIENT_ID` gesetzt (Production, Preview, Development, nicht geheim). `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (Production) stehen. Die kleingeschriebenen `google_client_id`-Einträge sind unbenutzt und dürfen gelöscht werden.
-- Google: Der heruntergeladene Client (Projekt `marketing-tools-510608`) enthielt **keine** Weiterleitungs-URI für Better Auth. Nötig ist `https://marketing-tool-gold.vercel.app/api/auth/callback/google` (später `https://tools.alperna.ch/api/auth/callback/google`). Die eingetragenen `/api`, `/google`, `/auth`, `/callback` genügen nicht.
-- Upstash: Integration und Datenbank sind angelegt, aber **nicht mit dem Projekt verbunden** (`KV_REST_API_URL` und `KV_REST_API_TOKEN` fehlen in den Variablen). Verbinden: Projekt, Tab Storage, vorhandene Upstash-Datenbank verbinden.
+- Google: Der Client (Projekt `marketing-tools-510608`) hat laut Screenshot der Console vom 04.10.2026 **keine** Weiterleitungs-URI für Better Auth (nur `/api`, `/google`, `/auth`, `/callback` auf den drei Hosts). Nötig ist `https://marketing-tool-gold.vercel.app/api/auth/callback/google` (später `https://tools.alperna.ch/api/auth/callback/google`). Die eingetragenen `/api`, `/google`, `/auth`, `/callback` genügen nicht.
+- Upstash: Datenbank für `marketing-tool` ist verbunden (`KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN`, `KV_URL`, `REDIS_URL`; Production, Preview, Development). Die erste Datenbank hing versehentlich am Projekt `alperna-website` und wurde gelöscht, ebenso `redis-bole-planet` (Redis Inc.). Wirkt ab dem nächsten Deployment.
 - Nach Änderungen an Variablen braucht es ein neues Deployment.
 
 ## Eingerichtet (Etappe 0, am 03.10.2026)
