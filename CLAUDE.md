@@ -90,6 +90,9 @@ Kopfzeile und Profilseite; app/api/account/data/route.ts – Daten des Kontos (G
 Freischaltung, nur für von /api/check signierte Ergebnisse (lib/check/sign.ts),
 Tageslimits (lib/ai-quota.ts), 24 Stunden Zwischenspeicher, Antwort der KI wird
 geprüft (lib/check/ai.ts) und sonst verworfen
+- app/api/text/route.ts – Text-Umschreiber: schreibt den Text des Besuchers im gewählten Stil neu;
+nur mit Konto und Freischaltung, eigenes Tageslimit (AI_TEXT_DAILY), Antwort wird geprüft
+(tools/text-umschreiber/logic.ts), nichts wird gespeichert oder mit Inhalt geloggt
 - app/api/cron/leads/route.ts – täglicher Cron: schickt Leads aus lead_queue nach
 - app/api/lookup/route.ts – Etappe 3
 - app/sitemap.ts, app/robots.ts, app/opengraph-image.tsx
@@ -168,7 +171,7 @@ mit bereitstehendem Speicher sagt die Seite stattdessen, dass das Profil in ihre
 ## Harte Regeln
 1. Eingaben in Tools verlassen den Browser nicht. Ausnahmen: das Lead-
 Formular (Name, Firma, E-Mail, Telefon, Tool-Name, Kategorie – sonst nichts),
-Tools mit needsServer: true über /api/check, /api/ai und /api/lookup und die Daten
+Tools mit needsServer: true über /api/check, /api/ai, /api/text und /api/lookup und die Daten
 einer angemeldeten Person über /api/account/data (Profil, Merkliste, Zwischenstände,
 nur in ihrem Konto, bis sie sie löscht). Server-Routen
 loggen Statuscodes, nie Inhalte, nie Klartext-IPs.

@@ -462,6 +462,169 @@ test.describe("KI-Einordnung im Browser (mit Konto)", () => {
   });
 });
 
+test.describe("Text-Umschreiber im Browser", () => {
+  const SLUG = "text-umschreiber";
+  const json = (body: unknown, status = 200) => ({ status, contentType: "application/json", body: JSON.stringify(body) });
+
+  /** Setzt den Besucher in einen Zustand und ersetzt /api/text. Gibt die Anfragen an /api/text zurück. */
+  async function session(page: Page, o: { signedIn: boolean; unlocked: boolean; login?: "clerk" | null }, replies: { status: number; body: unknown }[] = []) {
+    const login = o.login === undefined ? "clerk" : o.login;
+    const calls: Array<{ text: string; style: string; anrede: string }> = [];
+    await page.route("**/api/access", (r) => r.fulfill(json({ allowed: true, unlocked: o.unlocked, reason: o.unlocked ? "unlocked" : "free", login, signedIn: o.signedIn })));
+    await page.route("**/api/access/complete", (r) => r.fulfill(json({ unlocked: o.unlocked })));
+    await page.route("**/api/account", (r) =>
+      r.fulfill(json({ login, account: o.signedIn ? { name: "Anna Keller", email: "anna@keller.ch" } : null, storage: false })),
+    );
+    await page.route("**/api/text", (r) => {
+      calls.push(JSON.parse(r.request().postData() ?? "{}"));
+      const reply = replies[Math.min(calls.length - 1, replies.length - 1)] ?? { status: 500, body: {} };
+      return r.fulfill(json(reply.body, reply.status));
+    });
+    return calls;
+  }
+
+  async function open(page: Page, buttonName: RegExp | string = /^(Umschreiben|Anmelden und umschreiben)$/) {
+    await page.goto(`/tools/${SLUG}`);
+    await expect(page.getByRole("button", { name: buttonName })).toBeEnabled();
+  }
+
+  const GOOD = { status: 200, body: { ok: true, text: "Ab Anfang November sind wir auch samstags für dich da.\n\nWas würdest du gern besprechen?", warnings: ["Platzhalter ausfüllen: [Datum]."] } };
+
+  test("angemeldet und freigeschaltet: Stil und Anrede gehen an die Route, die Fassung erscheint mit Kennzeichnung und Hinweis", async ({ page }) => {
+    const calls = await session(page, { signedIn: true, unlocked: true }, [GOOD]);
+    await open(page, "Umschreiben");
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.locator("label").filter({ hasText: /^Instagram-Caption$/ }).click();
+    await page.getByLabel("Anrede").selectOption("sie");
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+
+    await expect(page.getByRole("heading", { name: "Deine Fassung: Instagram-Caption" })).toBeVisible();
+    await expect(page.getByTestId("ki-hinweis")).toContainText("Von einer KI formuliert");
+    await expect(page.getByTestId("warnungen")).toContainText("Platzhalter ausfüllen");
+    await expect(page.getByLabel("Fassung", { exact: true })).toHaveValue(/Ab Anfang November/);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({ style: "instagram", anrede: "sie" });
+    expect(calls[0].text).toContain("Malerei Keller");
+  });
+
+  test("die Fassung und der Stil bleiben nach dem Neuladen stehen, ohne neue Anfrage", async ({ page }) => {
+    const calls = await session(page, { signedIn: true, unlocked: true }, [GOOD]);
+    await open(page, "Umschreiben");
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.locator("label").filter({ hasText: /^Newsletter$/ }).click();
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+    await expect(page.getByRole("heading", { name: "Deine Fassung: Newsletter" })).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Deine Fassung: Newsletter" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Newsletter" })).toBeChecked();
+    expect(calls).toHaveLength(1);
+  });
+
+  test("«Neuer Text» leert Feld und Fassung", async ({ page }) => {
+    await session(page, { signedIn: true, unlocked: true }, [GOOD]);
+    await open(page, "Umschreiben");
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+    await expect(page.getByLabel("Fassung", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Neuer Text" }).click();
+    await expect(page.getByLabel("Dein Text")).toHaveValue("");
+    await expect(page.getByLabel("Fassung", { exact: true })).toHaveCount(0);
+  });
+
+  test("zu kurzer oder leerer Text zeigt eine Meldung und ruft die Route nicht auf", async ({ page }) => {
+    const calls = await session(page, { signedIn: true, unlocked: true }, [GOOD]);
+    await open(page, "Umschreiben");
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Füge zuerst einen Text ein." })).toBeVisible();
+    await page.getByLabel("Dein Text").fill("Zu kurz.");
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "zu kurz" })).toBeVisible();
+    expect(calls).toHaveLength(0);
+  });
+
+  test("ein Fehler der KI lässt den Text stehen und nennt das Kontingent als unberührt", async ({ page }) => {
+    const calls = await session(page, { signedIn: true, unlocked: true }, [{ status: 502, body: { error: "ai_failed" } }, GOOD]);
+    await open(page, "Umschreiben");
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "nicht verbraucht" })).toBeVisible();
+    await expect(page.getByLabel("Dein Text")).toHaveValue(/Malerei Keller/);
+    await expect(page.getByLabel("Fassung", { exact: true })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+    await expect(page.getByLabel("Fassung", { exact: true })).toBeVisible();
+    expect(calls).toHaveLength(2);
+  });
+
+  test("Tageslimit erreicht: ruhiger Satz, keine Fassung", async ({ page }) => {
+    await session(page, { signedIn: true, unlocked: true }, [{ status: 429, body: { error: "account_limit" } }]);
+    await open(page, "Umschreiben");
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "für heute gebraucht" })).toBeVisible();
+  });
+
+  test("angemeldet, aber nicht freigeschaltet: erst das Formular, die Route wird nicht aufgerufen", async ({ page }) => {
+    const calls = await session(page, { signedIn: true, unlocked: false }, [GOOD]);
+    await open(page, "Umschreiben");
+    await expect(page.getByRole("note").filter({ hasText: "Name, Firma und E-Mail" })).toBeVisible();
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+    await expect(page.getByRole("dialog").getByText("Dein erstes Ergebnis war gratis.")).toBeVisible();
+    expect(calls).toHaveLength(0);
+  });
+
+  test("abgemeldet: Hinweis auf die Anmeldung, der Knopf öffnet das Anmelde-Fenster, die Route wird nicht aufgerufen", async ({ page }) => {
+    const calls = await session(page, { signedIn: false, unlocked: false }, [GOOD]);
+    await open(page, "Anmelden und umschreiben");
+    await expect(page.getByRole("note").filter({ hasText: "nur angemeldeten Personen" })).toBeVisible();
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.getByRole("button", { name: "Anmelden und umschreiben" }).click();
+    await expect(page.getByTestId("signin-dialog").getByRole("heading", { name: "Anmelden" })).toBeVisible();
+    expect(calls).toHaveLength(0);
+    // Der Entwurf ist gesichert, falls die Anmeldung die Seite neu lädt.
+    await expect.poll(() => page.evaluate(() => window.localStorage.getItem("mt:text-umschreiber") ?? "")).toContain("Malerei Keller");
+  });
+
+  test("ist die Anmeldung nicht eingerichtet, sagt das Werkzeug es ruhig und schickt nichts ab", async ({ page }) => {
+    const calls = await session(page, { signedIn: false, unlocked: false, login: null }, [GOOD]);
+    await open(page, "Anmelden und umschreiben");
+    await expect(page.getByRole("note").filter({ hasText: "zurzeit nicht verfügbar" })).toBeVisible();
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.getByRole("button", { name: "Anmelden und umschreiben" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "zurzeit nicht verfügbar" })).toBeVisible();
+    expect(calls).toHaveLength(0);
+  });
+
+  test("der Text geht nur an /api/text und an keine andere Adresse", async ({ page }) => {
+    await session(page, { signedIn: true, unlocked: true }, [GOOD]);
+    const others: string[] = [];
+    page.on("request", (r) => {
+      if (r.method() === "POST" && !r.url().includes("/api/text") && /Malerei Keller/.test(r.postData() ?? "")) others.push(r.url());
+    });
+    await open(page, "Umschreiben");
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+    await expect(page.getByLabel("Fassung", { exact: true })).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    expect(others).toEqual([]);
+  });
+
+  test("bei 375 px ragt nichts über den Rand, auch mit Fassung", async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 375, height: 800 } });
+    const page = await ctx.newPage();
+    await session(page, { signedIn: true, unlocked: true }, [GOOD]);
+    await open(page, "Umschreiben");
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.getByRole("button", { name: "Umschreiben" }).click();
+    await expect(page.getByLabel("Fassung", { exact: true })).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    await ctx.close();
+  });
+});
+
 test.describe("Zugang: ein freier Durchlauf, dann Formular", () => {
   test("frische IP → gezählt → gesperrt → Formular → freigeschaltet", async ({ request }) => {
     const ip = { "x-forwarded-for": `198.51.100.${Math.floor(Math.random() * 200) + 1}` };

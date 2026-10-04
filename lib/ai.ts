@@ -55,3 +55,21 @@ export const generateRaw: GenerateRaw = async (fakten) => {
   });
   return output;
 };
+
+/** Freier Text statt strukturierter Ausgabe: für den Text-Umschreiber. Gleiche Modellliste und gleiche Ersatzmodelle wie die Einordnung. */
+export type GenerateFreeText = (args: { system: string; prompt: string; maxOutputTokens: number }) => Promise<string>;
+
+export const generateFreeText: GenerateFreeText = async ({ system, prompt, maxOutputTokens }) => {
+  const [model, ...fallbacks] = modelsFromEnv();
+  const { text } = await generateText({
+    model,
+    system,
+    prompt,
+    temperature: 0.5,
+    maxOutputTokens,
+    abortSignal: AbortSignal.timeout(30_000),
+    maxRetries: 1,
+    providerOptions: fallbacks.length > 0 ? { gateway: { models: fallbacks } } : undefined,
+  });
+  return text;
+};

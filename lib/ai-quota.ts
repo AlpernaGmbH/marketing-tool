@@ -51,28 +51,35 @@ export function cacheHash(sig: string): string {
 
 export type Slot = "ok" | "account_limit" | "capacity";
 
-export type Limits = { perAccount: number; global: number };
+export type Limits = { perAccount: number; perAccountText: number; global: number };
+
+/** Art der Anfrage: Einordnung zum Check oder Umschreiben eines Textes. Jede hat ein eigenes Tageslimit pro Konto, die globale Grenze teilen sie. */
+export type Scope = "einordnung" | "text";
 
 export function limitsFromEnv(env: Record<string, string | undefined> = process.env): Limits {
   const n = (v: string | undefined, d: number) => (v && /^\d+$/.test(v) ? Number(v) : d);
-  return { perAccount: n(env.AI_ACCOUNT_DAILY, 5), global: n(env.AI_DAILY_CAP, 200) };
+  return { perAccount: n(env.AI_ACCOUNT_DAILY, 5), perAccountText: n(env.AI_TEXT_DAILY, 10), global: n(env.AI_DAILY_CAP, 200) };
 }
 
+const accountKey = (scope: Scope, acchash: string, day: string) => (scope === "text" ? keys.aiText(acchash, day) : keys.ai(acchash, day));
+
 /**
- * Reserviert eine Einordnung. Erst das Tageslimit des Kontos, dann das globale Tageslimit.
+ * Reserviert eine Anfrage. Erst das Tageslimit des Kontos (je Art), dann das globale Tageslimit.
  * Fällt Redis aus, geht die Anfrage durch.
  */
-export async function takeSlot(store: AiStore | null, acchash: string, limits: Limits, now = new Date()): Promise<Slot> {
+export async function takeSlot(store: AiStore | null, acchash: string, limits: Limits, now = new Date(), scope: Scope = "einordnung"): Promise<Slot> {
   if (!store) return "ok";
   const day = dayKey(now);
+  const mine = accountKey(scope, acchash, day);
+  const max = scope === "text" ? limits.perAccountText : limits.perAccount;
   try {
-    if ((await store.incr(keys.ai(acchash, day), TTL.daily)) > limits.perAccount) {
-      await store.decr(keys.ai(acchash, day)); // abgelehnte Anfragen zählen nicht weiter
+    if ((await store.incr(mine, TTL.daily)) > max) {
+      await store.decr(mine); // abgelehnte Anfragen zählen nicht weiter
       return "account_limit";
     }
     if ((await store.incr(keys.aiGlobal(day), TTL.daily)) > limits.global) {
       await store.decr(keys.aiGlobal(day));
-      await store.decr(keys.ai(acchash, day));
+      await store.decr(mine);
       return "capacity";
     }
     return "ok";
@@ -82,11 +89,11 @@ export async function takeSlot(store: AiStore | null, acchash: string, limits: L
 }
 
 /** Bucht einen reservierten Platz zurück, wenn keine Einordnung entstanden ist (Modellfehler, verworfene Antwort). */
-export async function releaseSlot(store: AiStore | null, acchash: string, now = new Date()): Promise<void> {
+export async function releaseSlot(store: AiStore | null, acchash: string, now = new Date(), scope: Scope = "einordnung"): Promise<void> {
   if (!store) return;
   const day = dayKey(now);
   try {
-    await store.decr(keys.ai(acchash, day));
+    await store.decr(accountKey(scope, acchash, day));
     await store.decr(keys.aiGlobal(day));
   } catch {
     /* Rückbuchung ist Komfort */
