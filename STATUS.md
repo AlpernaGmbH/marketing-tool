@@ -65,6 +65,13 @@ Bewusst nicht behoben:
 - **Qualität (Stand 1a):** 240 Unit- und Komponententests, 11 Playwright-Smoke-Tests, `npm run check` grün.
 - Verifiziert im echten Browser (Chromium): freier Durchlauf bis zum Ergebnis ohne Formular, Formular beim ersten Download und beim zweiten Start, Download startet nach dem Absenden ohne Reload, danach alles offen, Lead kommt mit genau den erlaubten Feldern bei einem n8n-Stub an, 375 px ohne Überlauf, Skip-Link als erster Tab-Stopp.
 
+## Stand der Einrichtung am 04.10.2026 (Abend)
+
+- Vercel: `GOOGLE_CLIENT_ID` gesetzt (Production, Preview, Development, nicht geheim). `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (Production) stehen. Die kleingeschriebenen `google_client_id`-Einträge sind unbenutzt und dürfen gelöscht werden.
+- Google: Der heruntergeladene Client (Projekt `marketing-tools-510608`) enthielt **keine** Weiterleitungs-URI für Better Auth. Nötig ist `https://marketing-tool-gold.vercel.app/api/auth/callback/google` (später `https://tools.alperna.ch/api/auth/callback/google`). Die eingetragenen `/api`, `/google`, `/auth`, `/callback` genügen nicht.
+- Upstash: Integration und Datenbank sind angelegt, aber **nicht mit dem Projekt verbunden** (`KV_REST_API_URL` und `KV_REST_API_TOKEN` fehlen in den Variablen). Verbinden: Projekt, Tab Storage, vorhandene Upstash-Datenbank verbinden.
+- Nach Änderungen an Variablen braucht es ein neues Deployment.
+
 ## Eingerichtet (Etappe 0, am 03.10.2026)
 
 | Was | Stand |
@@ -215,7 +222,7 @@ Keine. Bisher enthält kein Seitentext Zahlen.
 - [ ] `/profil` Export und «Alles löschen» funktionieren
 - [ ] Impressum, Datenschutz, Über live
 - [ ] `GATE_SECRET` in Production gesetzt
-- [ ] Geheimnisse neu erzeugen, die in Chat-Verläufen standen: `GATE_SECRET`, `BETTER_AUTH_SECRET`, Webhook-Pfad von «Tools-Lead» (und `N8N_WEBHOOK_URL` anpassen)
+- [ ] Geheimnisse neu erzeugen, die in Chat-Verläufen standen: `GATE_SECRET`, `BETTER_AUTH_SECRET`, Webhook-Pfad von «Tools-Lead» (und `N8N_WEBHOOK_URL` anpassen), `GOOGLE_CLIENT_SECRET` (die heruntergeladene Datei mit dem Secret lag am 04.10.2026 im Chat; in der Google Console beim Client ein neues Secret erzeugen, in Vercel eintragen, das alte deaktivieren)
 - [ ] Google: `alperna.ch` in der Search Console bestätigt, Branding geprüft und veröffentlicht, App-Status «In production», `BETTER_AUTH_URL` auf `https://tools.alperna.ch`
 - [ ] Vercel-Plan Pro (Hobby ist für nicht gewerbliche Nutzung gedacht)
 - [ ] Upstash (nicht «Redis») verbunden, `KV_REST_API_*` im Projekt
