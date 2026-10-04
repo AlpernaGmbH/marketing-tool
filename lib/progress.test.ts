@@ -8,6 +8,18 @@ describe("isToolDone", () => {
     expect(isToolDone(state("result"))).toBe(true);
     for (const p of ["intro", "questions", "summary"]) expect(isToolDone(state(p))).toBe(false);
   });
+  it("Generator-Werkzeuge: erledigt, sobald «output» ein Objekt ist", () => {
+    expect(isToolDone(JSON.stringify({ v: 1, input: { betrieb: "Keller" }, output: { titel: "x" } }))).toBe(true);
+    expect(isToolDone(JSON.stringify({ v: 1, input: { betrieb: "Keller" }, output: null }))).toBe(false);
+    expect(isToolDone(JSON.stringify({ v: 1, input: null, output: ["kein", "Objekt"] }))).toBe(false);
+  });
+  it("Text-Umschreiber: erledigt, sobald «result» Text enthält; Wettbewerbsvergleich zählt über die Phase", () => {
+    expect(isToolDone(JSON.stringify({ v: 1, text: "a", result: "Neue Fassung" }))).toBe(true);
+    expect(isToolDone(JSON.stringify({ v: 1, text: "a", result: "  " }))).toBe(false);
+    expect(isToolDone(JSON.stringify({ v: 1, phase: "intro", result: { score: 1 } }))).toBe(false);
+    expect(isToolDone(JSON.stringify({ v: 1, phase: "result", result: { score: 1 } }))).toBe(true);
+    expect(isToolDone(JSON.stringify({ v: 1, result: { score: 1 } }))).toBe(true);
+  });
   it("behandelt leer, kaputt und unbekannt als nicht erledigt", () => {
     expect(isToolDone(null)).toBe(false);
     expect(isToolDone(undefined)).toBe(false);
@@ -15,6 +27,8 @@ describe("isToolDone", () => {
     expect(isToolDone("{kaputt")).toBe(false);
     expect(isToolDone('"result"')).toBe(false);
     expect(isToolDone(state("fertig"))).toBe(false);
+    expect(isToolDone("[1,2]")).toBe(false);
+    expect(isToolDone(JSON.stringify({ v: 1, input: null }))).toBe(false);
   });
 });
 

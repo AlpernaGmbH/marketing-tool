@@ -4,7 +4,7 @@ import { ToolPageLayout } from "@/components/tool/ToolPageLayout";
 import { readToolContent } from "@/lib/content";
 import { SITE_URL, serializeJsonLd, toolJsonLd } from "@/lib/jsonld";
 import { getTool, getTools } from "@/lib/registry";
-import { toolComponents } from "@/tools/components";
+import { ToolMount } from "@/components/tool/ToolMount";
 
 type Params = { slug: string };
 
@@ -34,8 +34,6 @@ export default async function ToolPage({ params }: { params: Promise<Params> }) 
   if (!config) notFound();
 
   const content = readToolContent(slug);
-  const Tool = toolComponents[slug];
-  if (!Tool) throw new Error(`tools/components.tsx hat keinen Eintrag für «${slug}»`);
 
   const jsonLd = toolJsonLd(
     config,
@@ -49,7 +47,7 @@ export default async function ToolPage({ params }: { params: Promise<Params> }) 
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(block) }} />
       ))}
       <ToolPageLayout config={config} content={content}>
-        <Tool />
+        <ToolMount slug={slug} />
       </ToolPageLayout>
     </>
   );

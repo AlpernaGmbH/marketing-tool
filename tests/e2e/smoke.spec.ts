@@ -170,14 +170,21 @@ test.describe("Kategorieseiten", () => {
     });
   }
 
-  test("/strategie zeigt den Pfad mit dem Referenz-Werkzeug und Fortschritt 0", async ({ page }) => {
+  const strategiePfad = tools
+    .filter((t) => t.pathStep?.path === "strategie")
+    .sort((a, b) => a.pathStep!.order - b.pathStep!.order)
+    .map((t) => t.slug);
+
+  test("/strategie zeigt den Pfad aus der Registry mit dem Referenz-Werkzeug und Fortschritt 0", async ({ page }) => {
     await page.goto("/strategie");
-    // Mit einem einzigen Schritt gibt es keine Pfad-Grafik, nur die Liste.
-    await expect(page.getByTestId("path-graphic")).toHaveCount(0);
+    // Ab zwei Schritten gibt es die Pfad-Grafik, mit einem einzigen nur die Liste.
+    await expect(page.getByTestId("path-graphic")).toHaveCount(strategiePfad.length > 1 ? 1 : 0);
     await expect(sec(page, "pfad").getByRole("link", { name: /Digitaler-Auftritt-Check/ })).toBeVisible();
     await expect(page.getByRole("search", { name: "Werkzeug suchen" })).toBeVisible(); // Kopfzeile
-    await expect(page.getByText("0 von 1 erledigt")).toBeVisible();
-    await expect(page.getByRole("note")).toContainText("Dieser Bereich ist im Aufbau");
+    await expect(page.getByText(`0 von ${strategiePfad.length} erledigt`)).toBeVisible();
+    const inKategorie = tools.filter((t) => t.category === "strategie").length;
+    if (inKategorie < 3) await expect(page.getByRole("note")).toContainText("Dieser Bereich ist im Aufbau");
+    else await expect(page.getByRole("note")).toHaveCount(0);
   });
 
   test("/vereine zeigt die Werkzeuge mit audience verein oder beide, sonst ist die Seite ehrlich leer", async ({ page }) => {
@@ -209,10 +216,19 @@ test.describe("Kategorieseiten", () => {
 
   test("der Fortschritt kommt aus dem Browser und wirkt auf Pfad und Startseite", async ({ page }) => {
     await page.goto("/strategie");
-    await page.evaluate((slug) => localStorage.setItem(`mt:${slug}`, JSON.stringify({ v: 1, phase: "result", step: 0, answers: {} })), TOOL);
+    // Fragebogen-Form für das Referenz-Werkzeug, Generator-Form ({input, output}) für die übrigen Schritte.
+    await page.evaluate(
+      ({ slugs, first }) => {
+        for (const s of slugs) {
+          const state = s === first ? { v: 1, phase: "result", step: 0, answers: {} } : { v: 1, input: { betrieb: "Malerei Keller" }, output: { titel: "Entwurf" } };
+          localStorage.setItem(`mt:${s}`, JSON.stringify(state));
+        }
+      },
+      { slugs: strategiePfad, first: TOOL },
+    );
     await page.reload();
-    await expect(page.getByText("1 von 1 erledigt")).toBeVisible();
-    await expect(sec(page, "pfad").getByText("Erledigt", { exact: true })).toBeVisible();
+    await expect(page.getByText(`${strategiePfad.length} von ${strategiePfad.length} erledigt`)).toBeVisible();
+    await expect(sec(page, "pfad").getByText("Erledigt", { exact: true }).first()).toBeVisible();
     await page.goto("/");
     await expect(sec(page, "pfade").getByText("Pfad abgeschlossen")).toBeVisible();
   });

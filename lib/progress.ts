@@ -1,15 +1,23 @@
-import { parseState } from "@/components/tool/questionnaire";
-
-// Fortschritt in einem Pfad: ein Werkzeug gilt als erledigt, wenn sein Zwischenstand
-// (localStorage «mt:<slug>») die Phase «result» erreicht hat. Nichts davon verlässt den Browser.
+// Fortschritt in einem Pfad: ein Werkzeug gilt als erledigt, wenn sein Zwischenstand (localStorage «mt:<slug>»)
+// ein Ergebnis trägt. Nichts davon verlässt den Browser. Die Werkzeuge speichern verschieden (docs/TOOL-BAUEN.md):
+// - Fragebogen, Marketing-Check, Wettbewerbsvergleich, Textcheck, Newsletter-Check: `phase: "result"`
+// - Generator-Werkzeuge (useGenerator): `output` ist ein Objekt
+// - Text-Umschreiber: `result` ist ein nicht leerer Text
 
 export const toolStateKey = (slug: string) => `mt:${slug}`;
+
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** Roher Wert aus dem lokalen Speicher → hat das Werkzeug ein Ergebnis? Kaputte Daten zählen als «nein». */
 export function isToolDone(raw: string | null | undefined): boolean {
   if (!raw) return false;
   try {
-    return parseState(JSON.parse(raw)).phase === "result";
+    const s: unknown = JSON.parse(raw);
+    if (!isObject(s)) return false;
+    // Trägt der Stand eine Phase, entscheidet nur sie (ein altes Ergebnis neben «edit» zählt nicht).
+    if (typeof s.phase === "string") return s.phase === "result";
+    if (isObject(s.output)) return true;
+    return typeof s.result === "string" ? s.result.trim() !== "" : isObject(s.result);
   } catch {
     return false;
   }
