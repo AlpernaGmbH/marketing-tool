@@ -9,5 +9,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "textcheck": dynamic(() => import("./textcheck/Tool")),
   "text-umschreiber": dynamic(() => import("./text-umschreiber/Tool")),
   "reifegrad-check": dynamic(() => import("./reifegrad-check/Tool")),
+  "wettbewerbsvergleich": dynamic(() => import("./wettbewerbsvergleich/Tool")),
   // new-tool:components
 };
