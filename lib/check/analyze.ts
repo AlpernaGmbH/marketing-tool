@@ -1,5 +1,6 @@
 import { detectAll } from "@/lib/check/detect";
 import { checkGoogleBusiness, type GbpOptions } from "@/lib/check/gbp";
+import { MAX_ANALYZED_HTML } from "@/lib/check/html";
 import { INDUSTRIES, isIndustryKey } from "@/lib/check/industries";
 import { buildMassnahmen } from "@/lib/check/massnahmen";
 import { safeFetch, type Fetcher, type FetchResult } from "@/lib/check/net";
@@ -90,13 +91,16 @@ export async function analyze(input: CheckInput, options: AnalyzeOptions = {}): 
   const website = normalizeUrl(input.website);
 
   step("fetch", "start");
-  const page = await loadPage(website, fetcher);
+  const loaded = await loadPage(website, fetcher);
+  // Die Analyse liest höchstens MAX_ANALYZED_HTML Zeichen: Das hält den Aufwand auch bei böswilligem HTML klein.
+  const page = { ...loaded, body: loaded.body.slice(0, MAX_ANALYZED_HTML) };
   const origin = page.url.origin;
   const [robots, sitemap] = await Promise.all([
     fetcher(`${origin}/robots.txt`, { maxBytes: 100_000, timeout: 6000 }).catch(() => null),
     fetcher(`${origin}/sitemap.xml`, { maxBytes: 200_000, timeout: 6000 }).catch(() => null),
   ]);
-  const hasRobots = Boolean(robots?.ok && /user-agent|sitemap|disallow|allow/i.test(robots.body));
+  // Zeilenform «Regel: Wert». Eine Fehlerseite mit Status 200, auf der irgendwo «allow» steht, ist keine robots.txt.
+  const hasRobots = Boolean(robots?.ok && /^\s*(?:user-agent|disallow|allow|sitemap)\s*:/im.test(robots.body));
   const hasSitemap = Boolean((sitemap?.ok && /<urlset|<sitemapindex/i.test(sitemap.body)) || /sitemap:/i.test(robots?.body ?? ""));
   step("fetch", "done");
 
@@ -168,7 +172,7 @@ export async function analyze(input: CheckInput, options: AnalyzeOptions = {}): 
           id: "newsletter.signup",
           ok: found.hasNewsletter,
           label: "Newsletter-Anmeldung",
-          detail: found.hasNewsletter ? `Gefunden${nlSystems}` : "Keine Anmeldung gefunden. E-Mail ist der günstigste Kanal für Stammkundschaft",
+          detail: found.hasNewsletter ? `Gefunden${nlSystems}` : "Keine Anmeldung gefunden. Mit E-Mail bleibst du günstig mit Stammkundschaft in Kontakt",
         },
       ],
     },

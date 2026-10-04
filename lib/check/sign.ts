@@ -29,11 +29,17 @@ export function signResult(result: CheckResult, secret: string): CheckResult {
   return { ...rest, sig: mac(rest, secret).toString("base64url") };
 }
 
+/** HMAC-SHA256 in base64url ohne Auffüllung: genau 43 Zeichen. Jede andere Schreibweise gilt als ungültig. */
+const SIG_FORMAT = /^[A-Za-z0-9_-]{43}$/;
+
 /** Stimmt die Signatur mit dem Inhalt überein? Fehlende oder falsche Signaturen gelten als ungültig. */
 export function verifyResult(result: CheckResult, secret: string): boolean {
   const { sig, ...rest } = result;
-  if (typeof sig !== "string" || sig.length === 0) return false;
+  // Streng prüfen: Buffer.from(…, "base64url") überliest Fremdzeichen, dann würden verschiedene Schreibweisen
+  // derselben Signatur gelten (und im Zwischenspeicher je einen eigenen Schlüssel bekommen).
+  if (typeof sig !== "string" || !SIG_FORMAT.test(sig)) return false;
   const given = Buffer.from(sig, "base64url");
+  if (given.toString("base64url") !== sig) return false; // das letzte Zeichen trägt zwei ungenutzte Bits; nur die Normalform gilt
   const expected = mac(rest, secret);
   return given.length === expected.length && timingSafeEqual(given, expected);
 }

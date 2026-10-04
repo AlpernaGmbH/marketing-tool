@@ -51,3 +51,25 @@ export async function fetchEinordnung(result: CheckResult, fetchImpl: typeof fet
   if (res.status === 503 && data.error === "capacity") return { ok: false, reason: "capacity" };
   return { ok: false, reason: "failed" };
 }
+
+// Merker pro Browser-Tab: Ein Ergebnis, bei dem die Einordnung schon versucht wurde, wird beim Neuladen nicht von selbst
+// noch einmal angefragt. Sonst löst jedes Neuladen bei einem Ausfall einen neuen Aufruf aus (Kosten, Kontingent).
+// Der Knopf «Noch einmal versuchen» geht weiter.
+const triedKey = (sig: string) => `mt:ai-tried:${sig.slice(0, 16)}`;
+
+export function aiTried(sig: string): boolean {
+  try {
+    return window.sessionStorage.getItem(triedKey(sig)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markAiTried(sig: string): void {
+  try {
+    window.sessionStorage.setItem(triedKey(sig), "1");
+  } catch {
+    /* ohne Speicher gibt es den Schutz vor Wiederholung nicht, mehr nicht */
+  }
+}
+

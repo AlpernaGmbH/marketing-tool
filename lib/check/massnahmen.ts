@@ -189,7 +189,7 @@ const OTHER: Record<string, Entry> = {
   },
   "newsletter.signup": {
     titel: "Eine Newsletter-Anmeldung auf der Website einbauen",
-    warum: "E-Mail ist der günstigste Kanal, um mit Stammkundschaft in Kontakt zu bleiben.",
+    warum: "Mit E-Mail bleibst du günstig mit Stammkundschaft in Kontakt.",
     baustein: "Website",
     aufwand: "mittel",
     wirkung: "mittel",
@@ -212,7 +212,7 @@ function gbpProfile(cat: CheckCategory): Entry {
   }
   return {
     titel: "Prüfen, ob dein Betrieb bei Google Maps eingetragen ist",
-    warum: "Der Check konnte den Eintrag nicht bestätigen. Suche nach «Firma Ort» in Google Maps. Fehlt der Eintrag, ist das die wichtigste Lücke bei lokalen Suchen.",
+    warum: "Der Check konnte den Eintrag nicht bestätigen. Suche nach «Firma Ort» in Google Maps. Fehlt der Eintrag, fehlt dir bei lokalen Suchen ein zentraler Baustein.",
     baustein: "Google Business Profil",
     aufwand: "klein",
     wirkung: "hoch",

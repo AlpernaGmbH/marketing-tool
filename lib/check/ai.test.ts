@@ -23,6 +23,14 @@ describe("buildFakten", () => {
     expect(JSON.stringify(f)).not.toMatch(/<\w+/);
   });
 
+  it("gibt Texte der Website in «» nicht an die KI weiter (Titel, Überschrift)", async () => {
+    const r = await sampleResult();
+    r.categories[0].items.push({ id: "seo.titel-test", ok: false, label: "Seitentitel", detail: "«Geheimer Titel der Seite», 90 Zeichen (ideal 10 bis 65)", weight: 1 });
+    const out = JSON.stringify(buildFakten(r));
+    expect(out).not.toContain("Geheimer");
+    expect(out).toContain("90 Zeichen");
+  });
+
   it("lässt Hinweise ohne Wertung weg (keine fehlende Werbung als Mangel)", () => {
     const ids = f.bereiche.flatMap((b) => b.offen.map((o) => o.id));
     expect(ids).not.toContain("sea.ads");
@@ -72,6 +80,49 @@ describe("pruefeEinordnung", () => {
     expect(pruefeEinordnung(raw, f)).toEqual({ ok: false, reason: "zahl" });
     raw.zusammenfassung = `Dein Auftritt erreicht ${f.punkte} von 100 Punkten, die grösste Lücke liegt beim Google-Profil.`;
     expect(pruefeEinordnung(raw, f).ok).toBe(true);
+  });
+
+  it("zählt Ziffern aus Betrieb, Ort, Adresse und Kennungen nicht als erlaubte Zahlen", () => {
+    const garage: Fakten = { ...f, betrieb: "Garage 73", website: "garage-73.ch", ort: "Gossau 73" };
+    const raw = ok(garage.schritte[0].id);
+    raw.zusammenfassung = "Mit diesem Schritt erreichst du 73 Prozent mehr Anfragen bei deiner Garage in der Region.";
+    expect(pruefeEinordnung(raw, garage)).toEqual({ ok: false, reason: "zahl" });
+  });
+
+  it("erkennt Zahlen auch in Vollbreite-Ziffern und als Wort vor «Prozent»", () => {
+    const raw = ok(f.schritte[0].id);
+    raw.zusammenfassung = "Mit diesem Schritt erreichst du ７３ Prozent mehr Anfragen bei deiner Garage in der Region.";
+    expect(pruefeEinordnung(raw, f)).toEqual({ ok: false, reason: "zahl" });
+    raw.zusammenfassung = "Mit diesem Schritt erreichst du zwanzig Prozent mehr Anfragen bei deiner Garage in der Region.";
+    expect(pruefeEinordnung(raw, f)).toEqual({ ok: false, reason: "regel" });
+  });
+
+  it("lässt Verweise auf Schritte der Liste zu («Schritt 2»), aber keine erfundenen Nummern", () => {
+    const raw = ok(f.schritte[0].id);
+    raw.prioritaeten[0].text = "Beginne mit Schritt 2, weil der Aufwand klein ist und die Wirkung gross.";
+    expect(f.schritte.length).toBeGreaterThanOrEqual(2);
+    expect(pruefeEinordnung(raw, f).ok).toBe(true);
+    raw.prioritaeten[0].text = `Beginne mit Schritt 77, weil der Aufwand klein ist und die Wirkung gross.`;
+    expect(pruefeEinordnung(raw, f)).toEqual({ ok: false, reason: "zahl" });
+  });
+
+  it("sperrt das Wort «Agentur» in jeder Form, auch Mehrzahl und Zusammensetzungen", () => {
+    for (const text of [
+      "Eine Agentur kann dir beim Eintrag helfen, das spart dir Zeit im Alltag.",
+      "Viele Agenturen bieten das an, aber du kannst es auch selbst erledigen.",
+      "Die Werbeagentur deines Vertrauens richtet das Profil in einer Stunde ein.",
+    ]) {
+      const raw = ok(f.schritte[0].id);
+      raw.prioritaeten[0].text = text;
+      expect(pruefeEinordnung(raw, f).ok, text).toBe(false);
+    }
+  });
+
+  it("verlangt Prioritäten nur, wenn es Schritte gibt", () => {
+    const none: Fakten = { ...f, schritte: [] };
+    const raw = { zusammenfassung: "Dein Auftritt ist vollständig, es gibt nichts Dringendes zu tun im Moment.", prioritaeten: [] };
+    expect(pruefeEinordnung(raw, none).ok).toBe(true);
+    expect(pruefeEinordnung(raw, f)).toEqual({ ok: false, reason: "schritt" });
   });
 
   it.each([

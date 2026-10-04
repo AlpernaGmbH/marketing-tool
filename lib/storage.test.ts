@@ -41,4 +41,16 @@ describe("storage", () => {
     writeLocal("mt:gesperrt", "ok");
     expect(readLocal("mt:gesperrt")).toBe("ok");
   });
+  it("liest nach einem gescheiterten Schreiben (Speicher voll) den neuen Wert aus dem Arbeitsspeicher, nicht den alten", () => {
+    writeLocal("mt:voll", "alt");
+    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation((key: string) => {
+      if (key !== "mt:__probe") throw new DOMException("voll", "QuotaExceededError");
+    });
+    writeLocal("mt:voll", "neu");
+    expect(readLocal("mt:voll")).toBe("neu");
+    spy.mockRestore();
+    writeLocal("mt:voll", "neuer"); // Speicher wieder frei: der Wert landet im Browser und der Rückfall entfällt
+    expect(readLocal("mt:voll")).toBe("neuer");
+    expect(window.localStorage.getItem("mt:voll")).toBe("neuer");
+  });
 });

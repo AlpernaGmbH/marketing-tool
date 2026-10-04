@@ -16,6 +16,8 @@ export const USER_AGENT = "Mozilla/5.0 (compatible; AlpernaCheck/1.0; +https://t
 export const MAX_BYTES = 2_500_000;
 export const TIMEOUT_MS = 12_000;
 const MAX_REDIRECTS = 5;
+/** Obergrenze für einen ganzen Abruf mit allen Weiterleitungen (die Funktion läuft höchstens 60 Sekunden). */
+const TOTAL_MS = 25_000;
 
 export type FetchOptions = {
   method?: "GET" | "HEAD";
@@ -57,32 +59,54 @@ function ipv4Private(ip: string): boolean {
   );
 }
 
+const v4Of = (hi: number, lo: number): string => `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+
+/** IPv6 als acht Blöcke. null bei allem, was keine eindeutige Adresse ist (auch Zonen wie «%eth0»). */
+function parseIPv6(ip: string): number[] | null {
+  let s = ip.toLowerCase();
+  if (s.includes("%")) return null;
+  const tail4 = s.match(/(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (tail4) {
+    const o = tail4.slice(1).map(Number);
+    if (o.some((n) => n > 255)) return null;
+    s = `${s.slice(0, -tail4[0].length)}${((o[0] << 8) | o[1]).toString(16)}:${((o[2] << 8) | o[3]).toString(16)}`;
+  }
+  const halves = s.split("::");
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(":") : [];
+  const rest = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  const fill = halves.length === 2 ? 8 - head.length - rest.length : 0;
+  if (halves.length === 2 ? fill < 1 : head.length !== 8) return null;
+  const groups = [...head, ...Array<string>(fill).fill("0"), ...rest];
+  const nums = groups.map((g) => (/^[0-9a-f]{1,4}$/.test(g) ? parseInt(g, 16) : NaN));
+  return nums.length === 8 && nums.every((n) => Number.isFinite(n)) ? nums : null;
+}
+
+function ipv6Private(ip: string): boolean {
+  const g = parseIPv6(ip);
+  if (!g) return true; // unlesbar: lieber sperren
+  const [a, b] = g;
+  if (g.slice(0, 6).every((x) => x === 0)) return true; // ::, ::1 und IPv4-kompatible Adressen ::a.b.c.d
+  if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) return ipv4Private(v4Of(g[6], g[7])); // ::ffff:a.b.c.d
+  if (a === 0x64 && b === 0xff9b) return g.slice(2, 6).every((x) => x === 0) ? ipv4Private(v4Of(g[6], g[7])) : true; // NAT64
+  if (a === 0x2002) return ipv4Private(v4Of(g[1], g[2])); // 6to4 trägt eine IPv4-Adresse
+  return (
+    (a === 0x2001 && b === 0) || // Teredo
+    (a === 0x2001 && b === 0xdb8) || // Dokumentation
+    (a === 0x100 && b === 0 && g[2] === 0 && g[3] === 0) || // 100::/64 Discard
+    (a & 0xfe00) === 0xfc00 || // fc00::/7 Unique Local
+    (a & 0xffc0) === 0xfe80 || // fe80::/10 Link-Local
+    (a & 0xffc0) === 0xfec0 || // fec0::/10 Site-Local (veraltet)
+    (a & 0xff00) === 0xff00 // Multicast
+  );
+}
+
 /** true für Adressen, die nicht im öffentlichen Internet liegen. Unlesbare Adressen gelten als privat. */
 export function isPrivateAddress(ip: string): boolean {
   const kind = isIP(ip);
   if (kind === 4) return ipv4Private(ip);
   if (kind !== 6) return true;
-  const v6 = ip.toLowerCase();
-  if (v6 === "::1" || v6 === "::") return true;
-  // IPv4 in IPv6: ::ffff:a.b.c.d oder ::ffff:7f00:1
-  const mapped = v6.match(/^(?:0:0:0:0:0:ffff:|::ffff:)(.+)$/);
-  if (mapped) {
-    const rest = mapped[1];
-    if (rest.includes(".")) return isPrivateAddress(rest);
-    const parts = rest.split(":").map((h) => parseInt(h, 16));
-    if (parts.length === 2 && parts.every(Number.isFinite)) {
-      const [hi, lo] = parts;
-      return ipv4Private(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
-    }
-    return true;
-  }
-  const first = parseInt(v6.split(":")[0] || "0", 16);
-  return (
-    (first & 0xfe00) === 0xfc00 || // fc00::/7 Unique Local
-    (first & 0xffc0) === 0xfe80 || // fe80::/10 Link-Local
-    v6.startsWith("2001:db8") || // Dokumentation
-    (first & 0xff00) === 0xff00 // Multicast
-  );
+  return ipv6Private(ip);
 }
 
 /** Prüft Protokoll, Port, Zugangsdaten und Host. Gibt die geprüfte Adresse zurück. */
@@ -185,11 +209,14 @@ function requestOnce(url: URL, target: { address: string; family: 4 | 6 }, opts:
         const chunks: Buffer[] = [];
         let size = 0;
         stream.on("data", (chunk: Buffer) => {
+          if (settled) return;
           size += chunk.length;
           chunks.push(chunk);
           if (size > opts.maxBytes) {
-            // Genug gelesen: der Rest der Seite zählt für den Check nicht.
+            // Genug gelesen: der Rest der Seite zählt für den Check nicht. Auch den Entpacker beenden, sonst packt er
+            // eine kleine Brotli-Datei mit Gigabytes Nullen weiter aus und belegt die CPU.
             done(null, { status, headers, body: Buffer.concat(chunks).subarray(0, opts.maxBytes) });
+            (stream as unknown as { destroy?: () => void }).destroy?.();
             res.destroy();
           }
         });
@@ -221,10 +248,14 @@ export async function safeFetch(rawUrl: string, options: FetchOptions = {}): Pro
   } catch {
     throw new CheckError("Das ist keine gültige Adresse.", "invalid");
   }
-  const started = Date.now();
+  // Gesamtbudget für alle Stationen zusammen: Sonst dauern sechs langsame Weiterleitungen länger als die Funktion läuft.
+  const deadline = Date.now() + Math.min(TOTAL_MS, opts.timeout * 2);
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const left = deadline - Date.now();
+    if (left < 500) throw new CheckError("Die Website hat zu lange nicht geantwortet.", "unreachable");
     const target = await assertPublicUrl(url, opts.allowPrivate);
-    const res = await requestOnce(url, target, opts);
+    const hopStart = Date.now();
+    const res = await requestOnce(url, target, { ...opts, timeout: Math.min(opts.timeout, Math.max(500, deadline - Date.now())) });
     const location = res.headers.location;
     if (res.status >= 300 && res.status < 400 && location) {
       try {
@@ -240,7 +271,7 @@ export async function safeFetch(rawUrl: string, options: FetchOptions = {}): Pro
       ok: res.status >= 200 && res.status < 300,
       headers: res.headers,
       body: decodeBody(res.body, res.headers["content-type"] ?? ""),
-      ms: Date.now() - started,
+      ms: Date.now() - hopStart, // Dauer der letzten Station, nicht der ganzen Weiterleitungskette
     };
   }
   throw new CheckError("Die Website leitet zu oft weiter.", "unreachable");

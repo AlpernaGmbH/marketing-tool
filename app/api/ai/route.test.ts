@@ -21,6 +21,10 @@ class MemoryAi implements AiStore {
     this.counters.set(key, (this.counters.get(key) ?? 0) + 1);
     return this.counters.get(key)!;
   }
+  async decr(key: string) {
+    if (this.failing) throw new Error("redis down");
+    this.counters.set(key, (this.counters.get(key) ?? 0) - 1);
+  }
   async getCache(h: string) {
     if (this.failing) throw new Error("redis down");
     return this.cache.get(h) ?? null;
@@ -155,6 +159,19 @@ describe("POST /api/ai", () => {
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ error: "ai_failed" });
     expect(ai.cache.size).toBe(0);
+  });
+
+  it("bucht den Platz nach einem Fehlversuch zurück: Ausfälle verbrauchen das Tageslimit nicht", async () => {
+    process.env.AI_ACCOUNT_DAILY = "1";
+    process.env.AI_DAILY_CAP = "1";
+    gen.fn.mockRejectedValueOnce(new Error("Modell nicht erreichbar"));
+    expect((await call()).status).toBe(502);
+    gen.fn.mockResolvedValueOnce({ zusammenfassung: "x", prioritaeten: [] }); // wird verworfen
+    expect((await call()).status).toBe(502);
+    expect([...ai.counters.values()].every((n) => n === 0)).toBe(true);
+    gen.fn.mockImplementation(async (f) => good(f));
+    expect((await call()).status).toBe(200); // das Limit von 1 ist noch frei
+    expect((await call(signResult(await sampleResult({ company: "Zwei" }), SECRET))).status).toBe(429);
   });
 
   it("verwirft eine Ausgabe, die die Regeln verletzt, und gibt den Grund nicht preis", async () => {

@@ -11,6 +11,8 @@ export const CACHE_TTL = 24 * 60 * 60;
 export interface AiStore {
   /** Erhöht den Zähler und gibt den neuen Stand zurück. Beim ersten Aufruf setzt es die Lebensdauer. */
   incr(key: string, ttl: number): Promise<number>;
+  /** Zieht einen Zähler wieder ab (Rückbuchung nach einem Fehlversuch). */
+  decr(key: string): Promise<void>;
   getCache(hash: string): Promise<string | null>;
   setCache(hash: string, json: string): Promise<void>;
 }
@@ -23,6 +25,9 @@ export function redisAiStore(redis: Redis): AiStore {
       p.expire(key, ttl, "NX");
       const [n] = await withTimeout(p.exec<[number, number]>());
       return Number(n);
+    },
+    async decr(key) {
+      await withTimeout(redis.decr(key));
     },
     async getCache(hash) {
       const v = await withTimeout(redis.get<unknown>(keys.aiCache(hash)));
@@ -61,10 +66,29 @@ export async function takeSlot(store: AiStore | null, acchash: string, limits: L
   if (!store) return "ok";
   const day = dayKey(now);
   try {
-    if ((await store.incr(keys.ai(acchash, day), TTL.daily)) > limits.perAccount) return "account_limit";
-    if ((await store.incr(keys.aiGlobal(day), TTL.daily)) > limits.global) return "capacity";
+    if ((await store.incr(keys.ai(acchash, day), TTL.daily)) > limits.perAccount) {
+      await store.decr(keys.ai(acchash, day)); // abgelehnte Anfragen zählen nicht weiter
+      return "account_limit";
+    }
+    if ((await store.incr(keys.aiGlobal(day), TTL.daily)) > limits.global) {
+      await store.decr(keys.aiGlobal(day));
+      await store.decr(keys.ai(acchash, day));
+      return "capacity";
+    }
     return "ok";
   } catch {
     return "ok";
+  }
+}
+
+/** Bucht einen reservierten Platz zurück, wenn keine Einordnung entstanden ist (Modellfehler, verworfene Antwort). */
+export async function releaseSlot(store: AiStore | null, acchash: string, now = new Date()): Promise<void> {
+  if (!store) return;
+  const day = dayKey(now);
+  try {
+    await store.decr(keys.ai(acchash, day));
+    await store.decr(keys.aiGlobal(day));
+  } catch {
+    /* Rückbuchung ist Komfort */
   }
 }

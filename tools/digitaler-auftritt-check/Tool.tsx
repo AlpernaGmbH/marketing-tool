@@ -6,7 +6,7 @@ import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { fetchEinordnung, type EinordnungReason } from "@/lib/check/ai-client";
+import { aiTried, fetchEinordnung, markAiTried, type EinordnungReason } from "@/lib/check/ai-client";
 import { runCheck } from "@/lib/check/client";
 import { CHECK_STEPS, INDUSTRY_KEYS, INDUSTRY_LABELS, POSTING_FREQUENCIES, SOCIAL_NETWORKS, type CheckStepId, type IndustryKey } from "@/lib/check/types";
 import { useLocalJson } from "@/lib/use-local";
@@ -35,8 +35,8 @@ function Intro({ withAi }: { withAi: boolean }) {
       </p>
       {withAi && (
         <p>
-          Du bist angemeldet: Eine KI schreibt zusätzlich eine kurze Einordnung. Dafür gehen Betrieb, Ort, Branche und die Messwerte des Checks an unseren
-          KI-Anbieter, nicht die Seite selbst.
+          Du bist angemeldet: Eine KI schreibt zusätzlich eine kurze Einordnung. Dafür gehen Betrieb, Ort, Branche, die Domain und die Messwerte des Checks
+          an unseren KI-Anbieter, nicht die Seite selbst.
         </p>
       )}
     </>
@@ -76,6 +76,12 @@ function CheckFlow() {
     requested.current = `${sig}:${aiTry}`;
     const current = savedRef.current;
     if (!current.result) return;
+    // Beim Neuladen nach einem Fehlversuch nicht von selbst wieder anfragen; der Knopf «Noch einmal versuchen» bleibt.
+    if (aiTry === 0 && aiTried(sig)) {
+      setAiFailed({ sig, reason: "failed" });
+      return;
+    }
+    markAiTried(sig);
     void fetchEinordnung(current.result).then((outcome) => {
       const now = savedRef.current;
       // Hat der Besucher inzwischen neu geprüft, gehört die Antwort nicht mehr zum Ergebnis.

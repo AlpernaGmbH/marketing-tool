@@ -282,6 +282,27 @@ describe("checkGoogleBusiness", () => {
     expect(r.score).toBeCloseTo(0.4 + 0.15 + 0.15 * (1.3 / 1.5) + 0.1 + 0.1 + 0.1, 10);
   });
 
+  describe("Zuordnung des Eintrags", () => {
+    const place = (name: string, site?: string) => ({ displayName: { text: name }, formattedAddress: "Bern", rating: 4.5, userRatingCount: 30, websiteUri: site });
+    const run = (website: string, found: unknown[], company = "Malerei Keller") =>
+      checkGoogleBusiness({ ...base, company, website }, false, { placesKey: "k", fetchImpl: places({ places: found }) });
+
+    it("nimmt den Eintrag mit demselben Host, nicht einen mit ähnlichem Namen der Adresse", async () => {
+      const r = await run("https://bar.ch/", [place("Foobar AG", "https://www.foobar.ch"), place("Bar Keller", "https://www.bar.ch/kontakt")]);
+      expect(r.items[0].detail).toContain("Bar Keller");
+    });
+
+    it("nimmt ohne Host-Treffer nur einen Eintrag, dessen Name zum Betrieb passt", async () => {
+      const r = await run("https://keller-maler.ch/", [place("Zahnarzt Meier"), place("Keller Malerei AG", undefined)]);
+      expect(r.items[0].detail).toContain("Keller Malerei AG");
+    });
+
+    it("wertet einen fremden Treffer ohne passenden Namen als nicht gefunden", async () => {
+      const r = await run("https://keller-maler.ch/", [place("Zahnarzt Meier", "https://zahnarzt-meier.ch")]);
+      expect(r).toMatchObject({ verified: true, found: false, score: 0 });
+    });
+  });
+
   it("meldet einen fehlenden Eintrag als bestätigt nicht vorhanden", async () => {
     const r = await checkGoogleBusiness(base, false, { placesKey: "k", fetchImpl: places({ places: [] }) });
     expect(r).toMatchObject({ verified: true, found: false, score: 0 });

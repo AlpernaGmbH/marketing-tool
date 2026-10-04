@@ -25,12 +25,27 @@ describe("isPrivateAddress", () => {
     "::ffff:7f00:1", // dieselbe Adresse in Hex-Schreibweise
     "::ffff:a9fe:a9fe", // 169.254.169.254 in Hex
     "2001:db8::1",
+    "0:0:0:0:0:0:0:1", // nicht gekürzte Schreibweisen von ::1
+    "0000:0000:0000:0000:0000:0000:0000:0001",
+    "0:0:0:0:0:ffff:7f00:1",
+    "0::ffff:7f00:1",
+    "::7f00:1", // IPv4-kompatibel
+    "::127.0.0.1",
+    "64:ff9b::7f00:1", // NAT64 auf 127.0.0.1
+    "64:ff9b::a9fe:a9fe", // NAT64 auf die Cloud-Metadaten
+    "2002:7f00:1::1", // 6to4 auf 127.0.0.1
+    "2002:a9fe:a9fe::1", // 6to4 auf 169.254.169.254
+    "2001:0:4136:e378:8000:63bf:3fff:fdd2", // Teredo
+    "fec0::1", // Site-Local
+    "ff02::1", // Multicast
+    "100::1", // Discard
+    "fe80::1%eth0", // mit Zone
     "kein-ip",
   ])("%s ist privat", (ip) => {
     expect(isPrivateAddress(ip)).toBe(true);
   });
 
-  it.each(["93.184.216.34", "172.32.0.1", "8.8.8.8", "2606:4700:4700::1111", "::ffff:8.8.8.8"])("%s ist öffentlich", (ip) => {
+  it.each(["93.184.216.34", "172.32.0.1", "8.8.8.8", "2606:4700:4700::1111", "::ffff:8.8.8.8", "2a00:1450:4001:81b::200e", "64:ff9b::808:808", "2002:808:808::1"])("%s ist öffentlich", (ip) => {
     expect(isPrivateAddress(ip)).toBe(false);
   });
 });
@@ -66,6 +81,7 @@ describe("safeFetch gegen einen lokalen Server (allowPrivate nur im Test)", () =
   let server: http.Server;
   let base = "";
   const big = "a".repeat(5000);
+  const bomb = zlib.brotliCompressSync(Buffer.alloc(128 * 1024 * 1024), { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 1 } });
 
   beforeAll(async () => {
     server = http.createServer((req, res) => {
@@ -93,6 +109,20 @@ describe("safeFetch gegen einen lokalen Server (allowPrivate nur im Test)", () =
         res.end();
       } else if (url === "/big") {
         res.end(big);
+      } else if (url === "/bomb") {
+        // 128 MB Nullen, als Brotli wenige Bytes: Der Entpacker darf nach dem Limit nicht weiterarbeiten.
+        res.setHeader("content-encoding", "br");
+        res.setHeader("content-type", "text/html");
+        res.end(bomb);
+      } else if (url.startsWith("/hop/")) {
+        const n = Number(url.slice(5));
+        setTimeout(() => {
+          if (n < 5) {
+            res.statusCode = 302;
+            res.setHeader("location", `/hop/${n + 1}`);
+          }
+          res.end("ende");
+        }, 400);
       } else if (url === "/slow") {
         setTimeout(() => res.end("zu spät"), 1500);
       } else {
@@ -145,6 +175,28 @@ describe("safeFetch gegen einen lokalen Server (allowPrivate nur im Test)", () =
     const r = await get("/big", { maxBytes: 1000 });
     expect(r.body.length).toBeLessThanOrEqual(1000);
     expect(r.body.length).toBeGreaterThan(0);
+  });
+
+  it("beendet den Entpacker nach dem Limit: eine Brotli-Bombe belegt danach keine CPU mehr", async () => {
+    const r = await get("/bomb", { maxBytes: 1000 });
+    expect(r.body.length).toBeLessThanOrEqual(1000);
+    const cpu = process.cpuUsage();
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    const used = process.cpuUsage(cpu);
+    expect((used.user + used.system) / 1000).toBeLessThan(350); // ms CPU in 800 ms; vorher rund 1000
+  });
+
+  it("hält ein Gesamtbudget für alle Weiterleitungen ein, nicht nur je Station", async () => {
+    const started = Date.now();
+    // Jede Station braucht 400 ms und bleibt unter dem Limit von 1000 ms; sechs Stationen wären 2,4 s.
+    await expect(get("/hop/0", { timeout: 1000 })).rejects.toMatchObject({ code: "unreachable" });
+    expect(Date.now() - started).toBeLessThan(2600);
+  });
+
+  it("misst die Antwortzeit der letzten Station, nicht der ganzen Weiterleitungskette", async () => {
+    const r = await get("/hop/4", { timeout: 2000 }); // 4 -> 5: zwei Stationen à 400 ms
+    expect(r.url.pathname).toBe("/hop/5");
+    expect(r.ms).toBeLessThan(700);
   });
 
   it("bricht bei Zeitüberschreitung ab", async () => {

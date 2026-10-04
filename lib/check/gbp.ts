@@ -50,6 +50,31 @@ function fallback(mapsLink: boolean): GbpResult {
   };
 }
 
+function hostOf(url?: string): string {
+  try {
+    return new URL(url ?? "").hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+const words = (s: string): string[] =>
+  s
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 3);
+
+/** Passt der Name im Google-Eintrag zum Betrieb? Alle Wörter des kürzeren Namens müssen im anderen vorkommen. */
+export function sameName(listed: string | undefined, company: string): boolean {
+  const a = words(listed ?? "");
+  const b = words(company);
+  if (a.length === 0 || b.length === 0) return false;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  return short.every((w) => long.includes(w));
+}
+
 export async function checkGoogleBusiness(input: GbpInput, mapsLink: boolean, options: GbpOptions = {}): Promise<GbpResult> {
   const key = options.placesKey;
   if (!key || !input.company) return fallback(mapsLink);
@@ -67,9 +92,11 @@ export async function checkGoogleBusiness(input: GbpInput, mapsLink: boolean, op
     });
     if (!res.ok) return fallback(mapsLink);
     const data = (await res.json()) as { places?: Place[] };
-    const host = new URL(input.website).hostname.replace(/^www\./, "");
+    const host = hostOf(input.website);
     const places = data.places ?? [];
-    const p = places.find((x) => host && x.websiteUri?.includes(host)) ?? places[0];
+    // Erst die Website (gleicher Host, nicht «foobar.ch» für «bar.ch»), sonst nur ein Eintrag, dessen Name zum Betrieb passt.
+    // Ein fremder Treffer der Textsuche zählt nicht: Sonst bekäme ein Betrieb ohne eigenes Profil Punkte für ein fremdes.
+    const p = places.find((x) => host && hostOf(x.websiteUri) === host) ?? places.find((x) => sameName(x.displayName?.text, input.company));
 
     if (!p) {
       return {

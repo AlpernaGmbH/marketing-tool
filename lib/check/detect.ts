@@ -1,4 +1,4 @@
-import { decode, textOf } from "@/lib/check/html";
+import { decode, tagsOf, textOf } from "@/lib/check/html";
 import type { SocialNetwork } from "@/lib/check/types";
 
 // Erkennung von Shop, Buchung, Newsletter, Tracking und Social-Links aus dem HTML der Startseite.
@@ -13,8 +13,8 @@ const SHOP_SYSTEMS: Pattern[] = [
   ["Magento", /mage\/cookies|Magento_|magento/i],
   ["PrestaShop", /prestashop/i],
   ["Wix Stores", /wixstores|wix-ecommerce/i],
-  ["Squarespace Commerce", /squarespace-commerce|static\.squarespace\.com\/.*commerce/i],
-  ["Jimdo Shop", /jimdo.*(shop|store)/i],
+  ["Squarespace Commerce", /squarespace-commerce|static\.squarespace\.com\/.{0,300}commerce/i],
+  ["Jimdo Shop", /jimdo.{0,200}(shop|store)/i],
   ["Ecwid", /ecwid\.com|app\.ecwid/i],
   ["Gambio", /gambio/i],
   ["JTL-Shop", /jtl-shop|jtlshop/i],
@@ -65,14 +65,15 @@ const NEWSLETTER_SYSTEMS: Pattern[] = [
 ];
 
 const SOCIAL_PATTERNS: Record<SocialNetwork, RegExp> = {
-  instagram: /https?:\/\/(?:www\.)?instagram\.com\/[A-Za-z0-9_.]+/i,
-  facebook: /https?:\/\/(?:[a-z]+\.)?facebook\.com\/[A-Za-z0-9_.\-/?=]+/i,
-  linkedin: /https?:\/\/(?:[a-z]+\.)?linkedin\.com\/(?:company|in|school)\/[A-Za-z0-9_\-%.]+/i,
-  tiktok: /https?:\/\/(?:www\.)?tiktok\.com\/@[A-Za-z0-9_.]+/i,
-  youtube: /https?:\/\/(?:www\.)?youtube\.com\/(?:@|channel\/|c\/|user\/)[A-Za-z0-9_\-.]+/i,
+  // Am Anfang der Adresse verankert: «https://fremd.example/?u=https://facebook.com/x» ist kein Profil.
+  instagram: /^https?:\/\/(?:www\.)?instagram\.com\/(?!(?:p|reel|reels|explore|stories|tv)\/)[A-Za-z0-9_.]+/i,
+  facebook: /^https?:\/\/(?:[a-z]+\.)?facebook\.com\/[A-Za-z0-9_.\-/?=]+/i,
+  linkedin: /^https?:\/\/(?:[a-z]+\.)?linkedin\.com\/(?:company|in|school)\/[A-Za-z0-9_\-%.]+/i,
+  tiktok: /^https?:\/\/(?:www\.)?tiktok\.com\/@[A-Za-z0-9_.]+/i,
+  youtube: /^https?:\/\/(?:www\.)?youtube\.com\/(?:@|channel\/|c\/|user\/)[A-Za-z0-9_\-.]+/i,
 };
-// Teilen-Knöpfe sind keine eigenen Kanäle.
-const SHARE_LINK = /sharer|share\?|intent|plugins|dialog/i;
+// Teilen-Knöpfe sind keine eigenen Kanäle. Nur Pfade und Parameter, die Teilen bedeuten, nicht Namen wie «dialogtreuhand».
+const SHARE_LINK = /sharer|\/share\b|share\?|\/intent\/|\/plugins\/|\/dialog\//i;
 
 const names = (list: Pattern[], html: string): string[] => list.filter(([, re]) => re.test(html)).map(([name]) => name);
 
@@ -93,9 +94,10 @@ export type Tracking = { ga4: boolean; gtm: boolean; gads: boolean; meta: boolea
 
 export function detectTracking(html: string): Tracking {
   return {
-    ga4: /G-[A-Z0-9]{6,12}/.test(html),
-    gtm: /GTM-[A-Z0-9]{4,9}/.test(html),
-    gads: /AW-\d{6,12}|googleadservices\.com|googleads\.g\.doubleclick\.net|google_conversion_id/i.test(html),
+    // Kennungen stehen nie mitten in einem Wort: «TRAINING-CENTER» ist kein GA4, «SAW-1234567» kein Ads-Konto.
+    ga4: /(?<![A-Za-z0-9_-])G-[A-Z0-9]{6,12}(?![A-Za-z0-9])/.test(html),
+    gtm: /(?<![A-Za-z0-9_-])GTM-[A-Z0-9]{4,9}(?![A-Za-z0-9])/.test(html),
+    gads: /(?<![A-Za-z0-9_-])AW-\d{6,12}(?!\d)|googleadservices\.com|googleads\.g\.doubleclick\.net|google_conversion_id/i.test(html),
     meta: /connect\.facebook\.net\/[^"']*fbevents|fbq\(\s*['"]init/i.test(html),
     linkedin: /snap\.licdn\.com|_linkedin_partner_id/i.test(html),
     tiktok: /analytics\.tiktok\.com|ttq\.load/i.test(html),
@@ -117,7 +119,7 @@ export function detectAll(html: string): Detected {
   const shopSystems = names(SHOP_SYSTEMS, html);
   const bookingSystems = names(BOOKING_SYSTEMS, html);
   const newsletterSystems = names(NEWSLETTER_SYSTEMS, html);
-  const hasEmailInput = /<input[^>]+type=["']?email/i.test(html);
+  const hasEmailInput = tagsOf(html, "input").some((t) => /type\s*=\s*["']?email/i.test(t));
   return {
     shopSystems,
     hasShop: shopSystems.length > 0 || SHOP_WORDS.test(html),

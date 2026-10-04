@@ -30,6 +30,18 @@ describe("signResult und verifyResult", () => {
     expect(verifyResult({ ...signed, massnahmen: signed.massnahmen.slice(1) }, SECRET)).toBe(false);
   });
 
+  it("lehnt andere Schreibweisen derselben Signatur ab (Anhängsel, Fremdzeichen, zweite Normalform)", async () => {
+    const signed = signResult(await sampleResult(), SECRET);
+    const sig = signed.sig as string;
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const lastIndex = alphabet.indexOf(sig.at(-1)!);
+    const sibling = alphabet[lastIndex ^ 1]; // gleiche Bytes, andere Zeichen: nur die ungenutzten Bits unterscheiden sich
+    for (const variant of [`${sig}=`, `${sig}\n`, `${sig.slice(0, 5)}!${sig.slice(5)}`, ` ${sig}`, `${sig.slice(0, -1)}${sibling}`, sig.slice(0, -1)]) {
+      expect(verifyResult({ ...signed, sig: variant }, SECRET), JSON.stringify(variant)).toBe(false);
+    }
+    expect(verifyResult(signed, SECRET)).toBe(true);
+  });
+
   it("lehnt fehlende, leere, kaputte und fremd signierte Signaturen ab", async () => {
     const r = await sampleResult();
     const signed = signResult(r, SECRET);

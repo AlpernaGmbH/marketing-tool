@@ -1,4 +1,4 @@
-import { attr, decode, metaContent, textOf } from "@/lib/check/html";
+import { attr, blocks, decode, metaContent, tagsOf, textOf } from "@/lib/check/html";
 import type { CheckItem } from "@/lib/check/types";
 
 // Website und SEO: 16 gewichtete Prüfpunkte. Gewichte wie im Agentur-Tool (Stand 02.10.2026).
@@ -15,13 +15,19 @@ export type SeoExtras = { robots: boolean; sitemap: boolean };
 
 export type SeoResult = { score: number; items: CheckItem[]; title: string; description: string };
 
+const LOCAL_TYPES =
+  "LocalBusiness|Restaurant|Store|Hotel|Dentist|MedicalBusiness|HealthAndBeautyBusiness|HairSalon|BeautySalon|AutoRepair|ProfessionalService|HomeAndConstructionBusiness|FoodEstablishment|Organization";
+/** `"@type": "LocalBusiness"` und die Liste `"@type": ["Store", "LocalBusiness"]`. */
+const LOCAL_BUSINESS_SINGLE = new RegExp(`"@type"\\s*:\\s*"?(${LOCAL_TYPES})`, "i");
+const LOCAL_BUSINESS_LIST = new RegExp(`"@type"\\s*:\\s*\\[[^\\]]{0,300}?"(${LOCAL_TYPES})"`, "i");
+
 export function checkSeo(page: SeoPage, extras: SeoExtras): SeoResult {
   const html = page.body;
   const items: CheckItem[] = [];
   const add = (id: string, ok: boolean, label: string, detail: string, weight = 1) =>
     items.push({ id: `seo.${id}`, ok, label, detail, weight });
 
-  const title = decode(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "");
+  const title = decode(blocks(html, "title")[0]?.inner ?? "");
   add(
     "title",
     title.length >= 10 && title.length <= 65,
@@ -39,7 +45,7 @@ export function checkSeo(page: SeoPage, extras: SeoExtras): SeoResult {
     2,
   );
 
-  const h1s = (html.match(/<h1\b[\s\S]*?<\/h1>/gi) ?? []).map((h) => textOf(h)).filter(Boolean);
+  const h1s = blocks(html, "h1").map((h) => textOf(h.inner)).filter(Boolean);
   add(
     "h1",
     h1s.length === 1,
@@ -51,7 +57,7 @@ export function checkSeo(page: SeoPage, extras: SeoExtras): SeoResult {
   const https = page.url.protocol === "https:";
   add("https", https, "HTTPS-Verschlüsselung", https ? "Aktiv" : "Die Website läuft ohne HTTPS", 2);
 
-  const viewport = /<meta[^>]+name=["']?viewport/i.test(html);
+  const viewport = tagsOf(html, "meta").some((t) => /name\s*=\s*["']?viewport/i.test(t));
   add(
     "viewport",
     viewport,
@@ -60,10 +66,10 @@ export function checkSeo(page: SeoPage, extras: SeoExtras): SeoResult {
     2,
   );
 
-  const lang = attr(html.match(/<html\b[^>]*>/i)?.[0] ?? "", "lang");
+  const lang = attr(tagsOf(html, "html")[0] ?? "", "lang");
   add("lang", Boolean(lang), "Sprachangabe", lang ? `lang="${lang}"` : "Fehlt", 0.5);
 
-  const canonical = /<link[^>]+rel=["']?canonical/i.test(html);
+  const canonical = tagsOf(html, "link").some((t) => /rel\s*=\s*["']?canonical/i.test(t));
   add("canonical", canonical, "Canonical-Tag", canonical ? "Vorhanden" : "Fehlt. Das Risiko doppelter Inhalte steigt", 0.5);
 
   const og = Boolean(metaContent(html, "og:title") && metaContent(html, "og:image"));
@@ -75,11 +81,11 @@ export function checkSeo(page: SeoPage, extras: SeoExtras): SeoResult {
     1,
   );
 
-  const ld = [...html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]).join(" ");
-  const localBiz =
-    /"@type"\s*:\s*"?(LocalBusiness|Restaurant|Store|Hotel|Dentist|MedicalBusiness|HealthAndBeautyBusiness|HairSalon|BeautySalon|AutoRepair|ProfessionalService|HomeAndConstructionBusiness|FoodEstablishment|Organization)/i.test(
-      ld,
-    );
+  const ld = blocks(html, "script")
+    .filter((b) => /application\/ld\+json/i.test(b.open))
+    .map((b) => b.inner)
+    .join(" ");
+  const localBiz = LOCAL_BUSINESS_SINGLE.test(ld) || LOCAL_BUSINESS_LIST.test(ld);
   add(
     "schema",
     localBiz,
@@ -88,7 +94,7 @@ export function checkSeo(page: SeoPage, extras: SeoExtras): SeoResult {
     1,
   );
 
-  const imgs = html.match(/<img\b[^>]*>/gi) ?? [];
+  const imgs = tagsOf(html, "img");
   const withAlt = imgs.filter((t) => (attr(t, "alt") ?? "").length > 0).length;
   const altRatio = imgs.length ? withAlt / imgs.length : 1;
   add("alt", altRatio >= 0.8, "Bildbeschreibungen (Alt-Texte)", imgs.length ? `${withAlt} von ${imgs.length} Bildern beschrieben` : "Keine Bilder gefunden", 1);

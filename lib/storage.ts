@@ -23,6 +23,8 @@ function notify() {
 }
 
 export function readLocal(key: string): string | null {
+  // Ein Wert im Arbeitsspeicher ist neuer als der im Speicher des Browsers: Er steht nur dort, weil das Schreiben scheiterte.
+  if (memory.has(key)) return memory.get(key) ?? null;
   const s = ls();
   if (s) {
     try {
@@ -37,8 +39,10 @@ export function readLocal(key: string): string | null {
 export function writeLocal(key: string, value: string): void {
   const s = ls();
   try {
-    if (s) s.setItem(key, value);
-    else memory.set(key, value);
+    if (s) {
+      s.setItem(key, value);
+      memory.delete(key);
+    } else memory.set(key, value);
   } catch {
     memory.set(key, value); // Speicher voll oder gesperrt
   }

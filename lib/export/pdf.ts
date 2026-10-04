@@ -261,8 +261,14 @@ class Layout {
 
 /** Kopf (Firma links, Datum rechts) und Fuss (Hinweis links, Seitenzahl rechts) auf jeder Seite. */
 function decorate(pages: PDFPage[], f: Fonts, model: DocumentModel) {
-  const firma = f.safe(f.bodyMedium, model.firma?.trim() || "Alperna");
   const datum = model.datum ? f.safe(f.body, model.datum) : "";
+  // Der Firmenname steht in einer Zeile links vom Datum; ein sehr langer Name wird gekürzt statt über das Datum zu laufen.
+  const room = A4.w - M.left - M.right - (datum ? f.body.widthOfTextAtSize(datum, 9) + 16 : 0);
+  let firma = f.safe(f.bodyMedium, model.firma?.trim() || "Alperna");
+  if (f.bodyMedium.widthOfTextAtSize(firma, 9) > room) {
+    while (firma.length > 1 && f.bodyMedium.widthOfTextAtSize(`${firma}...`, 9) > room) firma = firma.slice(0, -1);
+    firma = `${firma.trimEnd()}...`;
+  }
   const footer = f.safe(f.body, FOOTER_TEXT);
   pages.forEach((page, i) => {
     const top = A4.h - 40;

@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { canStart, clientIp, defaultStore, gateSecret, ipHash, readGateCookie } from "@/lib/access";
 import { requestAccount } from "@/lib/account";
-import { cacheHash, defaultAiStore, limitsFromEnv, takeSlot } from "@/lib/ai-quota";
+import { cacheHash, defaultAiStore, limitsFromEnv, releaseSlot, takeSlot } from "@/lib/ai-quota";
 import { generateRaw } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
 import { buildFakten, pruefeEinordnung } from "@/lib/check/ai";
@@ -72,9 +72,13 @@ export async function POST(req: NextRequest) {
   try {
     checked = pruefeEinordnung(await generateRaw(fakten), fakten);
   } catch {
+    await releaseSlot(store, who.acchash); // ohne Einordnung kein verbrauchter Platz
     return respond(ROUTE, 502, { error: "ai_failed" }, "ai_failed");
   }
-  if (!checked.ok) return respond(ROUTE, 502, { error: "ai_rejected" }, "ai_failed");
+  if (!checked.ok) {
+    await releaseSlot(store, who.acchash);
+    return respond(ROUTE, 502, { error: "ai_rejected" }, "ai_failed");
+  }
 
   try {
     await store?.setCache(key, JSON.stringify(checked.value));

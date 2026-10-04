@@ -154,3 +154,21 @@ describe("loadPdfFonts", () => {
     expect(calls).toHaveLength(4);
   });
 });
+
+describe("Randfälle aus dem Review", () => {
+  it("DOCX enthält keine in XML verbotenen Steuerzeichen, auch wenn sie im Text stehen", async () => {
+    const zip = await JSZip.loadAsync(
+      await buildDocx(model({ firma: "Keller\u0008AG", blocks: [{ type: "paragraph", text: "Titel mit \u0001 und \u000B Steuerzeichen\nZweite Zeile" }] })),
+    );
+    const xml = await zip.file("word/document.xml")!.async("string");
+    // eslint-disable-next-line no-control-regex
+    expect(xml).not.toMatch(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/);
+    expect(xml).toContain("Steuerzeichen");
+  });
+
+  it("PDF kürzt einen sehr langen Firmennamen im Kopf, statt über das Datum zu laufen", async () => {
+    const bytes = await buildPdf(model({ firma: "Malerei und Gipserei Keller ".repeat(8) }), fonts);
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+  });
+});
+

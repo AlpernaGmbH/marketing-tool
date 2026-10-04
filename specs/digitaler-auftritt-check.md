@@ -31,7 +31,7 @@ Alle Felder ausser Branche und Social Media kommen aus dem Firmenprofil und werd
 5. «Erneut prüfen» setzt auf den Start zurück, `counted` wird false: der nächste Start zeigt das LeadGate.
 
 ## Logik (lib/check)
-- Abruf nur über `safeFetch`: Host auflösen, jede Adresse prüfen, Verbindung an die geprüfte Adresse binden, jede Weiterleitung neu prüfen, höchstens 2,5 MB, 12 s, fünf Weiterleitungen. Ports nur 80 und 443. Gesperrt: private, Loopback-, Link-Local-, Carrier-NAT-, Dokumentations- und Multicast-Adressen, auch als IPv4-in-IPv6.
+- Abruf nur über `safeFetch`: Host auflösen, jede Adresse prüfen, Verbindung an die geprüfte Adresse binden, jede Weiterleitung neu prüfen, höchstens 2,5 MB, 12 s je Station und 25 s insgesamt, fünf Weiterleitungen. Nach dem Grössenlimit wird auch der Entpacker beendet. Die Analyse liest höchstens 1 MB HTML, und jedes Muster läuft linear (`lib/check/html.ts`, Test `redos.test.ts`): Böswilliges HTML mit Hunderttausenden offenen Tags hält den Server nicht fest. `ms` im Ergebnis ist die Dauer der letzten Station. Ports nur 80 und 443. Gesperrt: private, Loopback-, Link-Local-, Carrier-NAT-, Dokumentations- und Multicast-Adressen, auch als IPv4-in-IPv6.
 - Abgerufen werden Startseite, `/robots.txt`, `/sitemap.xml`. Nichts sonst.
 - Kategorien und Gewichte: Website und SEO 25 · Google-Business-Profil 20 · Social Media 20 · Online-Werbung und Tracking 12 · Newsletter 9 · Online-Shop 7 × Relevanz · Online-Buchung 7 × Relevanz (hoch 1, mittel 0,5, gering 0).
 - Gesamtpunktzahl = Σ(Gewicht × Punkte) ÷ Σ Gewichte × 100, gerundet.
