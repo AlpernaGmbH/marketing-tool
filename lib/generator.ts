@@ -142,3 +142,14 @@ export function placeholdersIn(value: unknown): string[] {
   for (const s of collectStrings(value)) for (const m of s.match(/\[[^\]\n]{1,40}\]/g) ?? []) found.add(m);
   return [...found];
 }
+
+/**
+ * Ziffernfolgen in einem Text, ohne Tausender- und Dezimaltrenner (Punkt, Komma, Apostroph, geschütztes Leerzeichen)
+ * und ohne Listenmarken («1. Punkt»). Ein normales Leerzeichen trennt zwei Zahlen («1985 5» → 1985 und 5).
+ * Für die Prüfung «keine Ziffer, die nicht in den Angaben steht» (check eines Generators): Angaben und Entwurf
+ * mit derselben Funktion zerlegen und vergleichen.
+ */
+export function numbersIn(text: string): string[] {
+  const withoutListMarks = text.replace(/^\s*\d+[.)]\s+/gm, "");
+  return (withoutListMarks.match(/\d+(?:[.,'\u2019\u00a0\u202f]\d+)*/g) ?? []).map((n) => n.replace(/[.,'\u2019\u00a0\u202f]/g, ""));
+}

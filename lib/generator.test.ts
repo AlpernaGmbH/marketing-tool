@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { checkGenerated, cleanStrings, collectStrings, dataPrompt, defineGenerator, linksIn, parseJsonObject, placeholdersIn, systemPrompt, textIssue } from "@/lib/generator";
+import { checkGenerated, cleanStrings, collectStrings, dataPrompt, defineGenerator, linksIn, numbersIn, parseJsonObject, placeholdersIn, systemPrompt, textIssue } from "@/lib/generator";
 
 const def = defineGenerator({
   slug: "probe",
@@ -79,5 +79,17 @@ describe("checkGenerated", () => {
     const out = checkGenerated(def, { titel: "Seit 1998 in Gossau", punkte: ["Ruf an: [Telefonnummer]", "Ab [Datum]"] }, input);
     expect(out.ok).toBe(true);
     expect(placeholdersIn(out.ok ? out.output : null)).toEqual(["[Telefonnummer]", "[Datum]"]);
+  });
+});
+
+describe("numbersIn", () => {
+  it("trennt Zahlen am normalen Leerzeichen und fasst Tausender- und Dezimaltrenner zusammen", () => {
+    expect(numbersIn("seit 1985 5 Mitarbeitende")).toEqual(["1985", "5"]);
+    expect(numbersIn("CHF 15'000.- bis 40'000.-")).toEqual(["15000", "40000"]);
+    expect(numbersIn("1\u00a0200 Besucher, 3,5 Prozent, 2\u202f000")).toEqual(["1200", "35", "2000"]);
+  });
+  it("ignoriert Listenmarken und liefert leer ohne Ziffern", () => {
+    expect(numbersIn("1. Punkt eins\n2) Punkt zwei mit 7 Tagen")).toEqual(["7"]);
+    expect(numbersIn("keine Zahl")).toEqual([]);
   });
 });

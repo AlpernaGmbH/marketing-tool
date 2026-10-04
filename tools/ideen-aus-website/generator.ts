@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dataPrompt, defineGenerator } from "@/lib/generator";
+import { dataPrompt, defineGenerator, numbersIn } from "@/lib/generator";
 
 // Generator des Werkzeugs «Ideen aus deiner Website» (Klasse B, docs/TOOL-BAUEN.md Abschnitt 4). Läuft im Browser und
 // auf dem Server: nur zod, Strings und reine Funktionen. Die Angaben kommen aus lib/read.ts (Startseite) und dem
@@ -45,11 +45,7 @@ export const ideenOutput = z.object({
 });
 export type IdeenOutput = z.infer<typeof ideenOutput>;
 
-/** Ziffernfolgen in einem Text, ohne Trennzeichen und ohne Listenmarken («1. Punkt»). Vorbild: tools/text-umschreiber/logic.ts. */
-export function numbersIn(text: string): string[] {
-  const withoutListMarks = text.replace(/^\s*\d+[.)]\s+/gm, "");
-  return (withoutListMarks.match(/\d+(?:[.,'’  ]\d+)*/g) ?? []).map((n) => n.replace(/[.,'’  ]/g, ""));
-}
+export { numbersIn };
 
 /**
  * Prüfung, die nur dieses Werkzeug kennt: keine Ziffer, die nicht in den Angaben steht (Betrieb, Branche, Ort, Host,

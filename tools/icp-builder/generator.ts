@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dataPrompt, defineGenerator } from "@/lib/generator";
+import { dataPrompt, defineGenerator, numbersIn } from "@/lib/generator";
 
 // Generator des ICP-Builders (Klasse B, docs/TOOL-BAUEN.md Abschnitt 4). Läuft im Browser und auf dem Server: nur zod,
 // Strings und reine Funktionen. Die Angaben kommen aus dem Firmenprofil (Grunddaten) und fünf Feldern des Formulars;
@@ -56,11 +56,7 @@ export const icpOutput = z.object({
 });
 export type IcpOutput = z.infer<typeof icpOutput>;
 
-/** Ziffernfolgen in einem Text, ohne Trennzeichen und ohne Listenmarken («1. Punkt»). Vorbild: tools/ideen-aus-website/generator.ts. */
-export function numbersIn(text: string): string[] {
-  const withoutListMarks = text.replace(/^\s*\d+[.)]\s+/gm, "");
-  return (withoutListMarks.match(/\d+(?:[.,'’  ]\d+)*/g) ?? []).map((n) => n.replace(/[.,'’  ]/g, ""));
-}
+export { numbersIn };
 
 /** Summe der Gewichte der Punktekarte: die Punktzahl, die eine Anfrage höchstens erreicht. */
 export function punkteSumme(output: Pick<IcpOutput, "punktekarte">): number {

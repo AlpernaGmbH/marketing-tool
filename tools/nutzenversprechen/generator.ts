@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { collectStrings, dataPrompt, defineGenerator } from "@/lib/generator";
+import { collectStrings, dataPrompt, defineGenerator, numbersIn } from "@/lib/generator";
 
 // Generator des Werkzeugs «Nutzenversprechen» (Klasse B, docs/TOOL-BAUEN.md Abschnitt 4). Läuft im Browser und auf
 // dem Server: nur zod, Strings und reine Funktionen. Die Angaben kommen aus dem Formular und dem Firmenprofil; die
@@ -57,11 +57,7 @@ export const nutzenOutput = z.object({
 });
 export type NutzenOutput = z.infer<typeof nutzenOutput>;
 
-/** Ziffernfolgen in einem Text, ohne Trennzeichen und ohne Listenmarken («1. Punkt»). Vorbild: tools/ideen-aus-website/generator.ts. */
-export function numbersIn(text: string): string[] {
-  const withoutListMarks = text.replace(/^\s*\d+[.)]\s+/gm, "");
-  return (withoutListMarks.match(/\d+(?:[.,'’  ]\d+)*/g) ?? []).map((n) => n.replace(/[.,'’  ]/g, ""));
-}
+export { numbersIn };
 
 /**
  * Prüfung, die nur dieses Werkzeug kennt: keine Ziffer, die nicht in den Angaben steht (Betrieb, Branche, Ort,
