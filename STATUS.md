@@ -47,7 +47,7 @@ Stand: 04.10.2026. **Etappe 1c ist gebaut** (Marketing-Check mit Crawler ersetzt
 |---|---|
 | **Upstash Redis** | Die Integration `redis` ist im Vercel-Team installiert (04.10.2026, 06:47 UTC), aber **keinem Projekt zugewiesen**. Im Projekt `marketing-tool` gibt es keine Variablen `UPSTASH_REDIS_REST_URL`/`_TOKEN` (oder `KV_REST_API_*`). Zu tun: Vercel → Projekt → Storage → die Datenbank öffnen → «Connect Project» → `marketing-tool`, alle Umgebungen. Danach neu deployen (läuft mit jedem Push). Zu prüfen: Es muss «Upstash for Redis» sein (REST-Schnittstelle), nicht «Redis» von Redis Inc. (das liefert `REDIS_URL` über TCP; der Integrations-Name heisst auffällig `redis`). |
 | Zugang v2, Etappe 2 | Entschieden (PLAN.md). Offen sind die Zugangsdaten: Google OAuth (Login) und E-Mail-Versand über n8n. |
-| KI-Anbieter (gratis) | Entschieden: nur Gratis-Anbieter (PLAN.md, «KI ohne Kosten»). Für Etappe 2 nötig: Cloudflare-Konto mit API-Token für Workers AI, Groq-Konto mit API-Key; optional OpenRouter und Gemini. |
+| KI-Anbieter (gratis) | Entschieden am 04.10.2026: Vercel AI Gateway (5 Dollar Gratisguthaben pro Monat, harte Obergrenze, kein neues Konto, kein Schlüssel). Cloudflare und Groq entfallen. Gemini Gratis ist für Besucher in der Schweiz ausgeschlossen. Einzelheiten und Rechnung in PLAN.md. Offen: welche Modelle im Gratis-Kontingent liegen (Test in Etappe 2). |
 | Google Cloud | Nur für «Mit Google anmelden» (OAuth, kostenlos) in Etappe 2. Der Places-Schlüssel für das Google-Profil ist optional (Etappe 3, braucht Zahlungsmittel). |
 | `content/pitch/bausteine.md` | Gefüllt aus COMPANY-MASTER und alperna.ch: Website (mit Einstiegsangebot), Google-Profil (Text), Social Media, Online-Shop und Buchungstool (Text). Offen: Beweise für Google-Profil, Online-Shop, Buchungstool; Google Ads bleibt ohne Text (COMPANY-MASTER 3.9). |
 | Zwischenspeicher je Domain | Fehlt. Plan v2 sieht 24 Stunden in Redis vor; geht erst, wenn Upstash verbunden ist. Bis dahin ruft jeder Check die Website neu ab. |
@@ -61,6 +61,22 @@ Stand: 04.10.2026. **Etappe 1c ist gebaut** (Marketing-Check mit Crawler ersetzt
 | Umami | Etappe 7. |
 
 Erledigt am 04.10.2026: `NEXT_PUBLIC_WHATSAPP_NUMBER` in Vercel gesetzt (Production, Preview, Development); der Knopf «Kurz schreiben» erscheint mit dem nächsten Build. Branding v3.
+
+### Einrichtung Google-Login (macht Alperna, rund 10 Minuten, Stand 04.10.2026)
+
+Google bietet keinen Weg, einen OAuth-Client per Skript anzulegen; er entsteht nur in der Konsole (Quelle: support.google.com/cloud/answer/15549257). Darum von Hand:
+
+1. console.cloud.google.com, neues Projekt «alperna-tools». Kein Zahlungsmittel nötig.
+2. Menü «Google Auth Platform», «Get started»: App-Name «Alperna Tools», Support-E-Mail `kontakt@alperna.ch`, Zielgruppe «Extern», Kontakt-E-Mail `kontakt@alperna.ch`.
+3. Branding: Startseite `https://tools.alperna.ch`, Datenschutz `https://tools.alperna.ch/datenschutz`, autorisierte Domain `alperna.ch`. Kein Logo (ein Logo löst eine Prüfung durch Google aus).
+4. Datenzugriff: nur `openid`, `…/auth/userinfo.email`, `…/auth/userinfo.profile`.
+5. Zielgruppe: «App veröffentlichen» (Status «In Produktion»). Im Teststatus melden sich nur eingetragene Testnutzer an.
+6. Clients, «Create client», Typ «Web application», Name «Alperna Tools Web».
+   - Autorisierte JavaScript-Quellen: `https://tools.alperna.ch`, `https://marketing-tool-opal.vercel.app`, `http://localhost:3000`
+   - Autorisierte Weiterleitungs-URIs: `https://tools.alperna.ch/api/auth/callback/google`, `https://marketing-tool-opal.vercel.app/api/auth/callback/google`, `http://localhost:3000/api/auth/callback/google`
+7. Client-ID und Client-Secret kopieren. Das Secret zeigt Google nur einmal. Beides direkt in Vercel eintragen (Projekt `marketing-tool`, Settings, Environment Variables): `GOOGLE_CLIENT_ID` und `GOOGLE_CLIENT_SECRET` (Secret als «Sensitive»), für Production und Preview. Das Secret nicht in Chats oder Mails weitergeben.
+
+Hinweise: Änderungen an den URIs brauchen fünf Minuten bis einige Stunden. Clients, die sechs Monate unbenutzt bleiben, löscht Google selbst. Der Pfad `/api/auth/callback/google` ist bei Better Auth und Auth.js gleich [Wahrscheinlich]; wählt Etappe 2 etwas anderes, ändert sich nur die URI.
 
 ### Offene Fragen an Alperna
 
@@ -98,7 +114,7 @@ Erledigt am 04.10.2026: `NEXT_PUBLIC_WHATSAPP_NUMBER` in Vercel gesetzt (Product
 30. **Performance nach dem Redesign:** Der Startbildschirm der Tools baut die Einleitung beim Hydrieren nicht mehr neu auf (sonst verschiebt sich der LCP), Mono- und Serif-Schrift werden nicht vorgeladen, Geist 600 entfällt (Titel sind 500).
 
 31. **Zugang v2 entschieden (04.10.2026):** ein freier Durchlauf, danach Konto-Fenster mit Google u. a. Das Lead-Formular entfällt in Etappe 2; die Einwilligung bleibt als Häkchen. Apple nur, wenn Alperna das Entwicklerkonto zahlt. Einzelheiten in PLAN.md.
-32. **KI nur gratis (04.10.2026):** Fakten und Massnahmen ohne KI, KI nur für Angemeldete, Zwischenspeicher, mehrere Gratis-Anbieter, Tageslimit. Rechnung und Quellen in PLAN.md. Gemini ist kein Fundament mehr.
+32. **KI nur gratis (04.10.2026):** Fakten und Massnahmen ohne KI, KI nur für Angemeldete, Zwischenspeicher, Tageslimit. Anbieter: Vercel AI Gateway statt Cloudflare und Groq (Entscheid Alperna, 04.10.2026). Rechnung und Quellen in PLAN.md. Gemini ist kein Fundament mehr.
 33. **Alperna-Dokumente als Wahrheitsquelle (04.10.2026):** COMPANY-MASTER, BRAND-VOICE-CORE und ANTI-PATTERNS liegen nur bei Alperna (sie enthalten interne Finanzzahlen). Im Repo steht der Auszug `docs/MARKE.md`; die Sperrliste läuft als Code in `lib/brand-rules.ts` (41 Tests) und prüft Seitentexte und Pitch-Bausteine bei jedem `content-check`. Folgen: Die Texte «Warum kostenlos» und die Antwort «Wer steckt dahinter» sind neu geschrieben («Agentur» fällt weg). **Mein Entwurf von gestern liess Google Ads aktiv anbieten; das widersprach COMPANY-MASTER 3.9** und ist entfernt. Das geplante Werkzeug «customer-journey» heisst «kundenweg», weil «Customer Journey» auf der Sperrliste steht.
 34. **Logo (04.10.2026):** neu nachgezeichnet aus der Original-PNG von Alperna statt aus der Framer-Version (sauberere Kanten, Gold exakt `#FFD700`).
 35. **Marketing-Check, Auslegungen (04.10.2026):** (a) Gewichte und Punkte sind unverändert aus dem Agentur-Tool, damit beide Systeme dieselbe Seite gleich bewerten. (b) Was nur eine Annahme ist (Häufigkeit auf Social Media nicht angegeben) oder kein Mangel (keine Google-Ads- und Meta-Pixel-Spur), trägt `info: true`: es zählt in der Punktzahl, erzeugt aber keine Massnahme. (c) Ein nicht bestätigtes Google-Profil heisst «Prüfauftrag» («Prüfen, ob dein Betrieb bei Google Maps eingetragen ist»), nicht «Eintrag fehlt».

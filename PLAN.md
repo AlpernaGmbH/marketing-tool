@@ -60,7 +60,7 @@ Klasse C bleibt bewusst einfach: Diese Seiten bringen Suchverkehr (WhatsApp-Link
 | Etappe | Inhalt | Voraussetzung |
 |---|---|---|
 | **1c** | Marketing-Check mit Crawler (Engine-Port, Schritte, Zwischenspeicher, Ergebnisansicht im neuen Design, Export PDF/Word). Ersetzt den Fragebogen. Profil-Autofill. Ohne KI. | Zugriff auf `AlpernaGmbH/tool` (ist da); optional Places-Schlüssel |
-| **2** | Zugang v2 (Konto per Google u. a., siehe unten), `/api/ai` mit Gratis-Anbietern, KI-Auswertung im Marketing-Check, Tageskontingente | Upstash verbunden, Google-Login-Daten, Cloudflare- und Groq-Schlüssel |
+| **2** | Zugang v2 (Konto per Google u. a., siehe unten), `/api/ai` mit Gratis-Anbietern, KI-Auswertung im Marketing-Check, Tageskontingente | Upstash verbunden, Google-Login-Daten (Client-ID und Secret) |
 | **3** | Klasse A: gbp-check, wettbewerbsvergleich, newsletter-check, textcheck, reifegrad-check, ideen-aus-website | Places-Schlüssel |
 | **4** | Klasse B Strategie und Marke: icp-builder, persona, positionierung, markenplattform, botschaften, nutzenversprechen, swot, strategie-einseiter | Etappe 2 |
 | **5** | Klasse C und Rechts-Tools: whatsapp-link, qr-set, bewertungs-kit, Feiertage, Budget, Kalender, Impressum, Datenschutz, Gewinnspiel, UWG-Mailcheck | `content/legal/` von Menschen |
@@ -94,18 +94,27 @@ Reihenfolge neu: **Analyse zuerst.** Sie zeigt, was Alperna kann, liefert das Pr
 4. Mehrere Anbieter hintereinander (siehe Tabelle) und ein globales Tageslimit. Ist es erreicht, steht dort «Heute ist das Kontingent aufgebraucht» mit WhatsApp-Knopf.
 5. Kurze Eingaben: nur das Fakten-JSON, ungefähr 3'000 Tokens statt 8'000.
 
-**Gratis-Anbieter, Stand 04.10.2026** (Annahme für die Rechnung: 8'000 Tokens Eingabe und 2'000 Tokens Ausgabe je Auswertung):
+**Entscheid vom 04.10.2026: Cloudflare und Groq entfallen** (Alperna will dort kein Konto). Gewählt ist das **Vercel AI Gateway**, weil es im vorhandenen Vercel-Team läuft, kein neues Konto und keinen Schlüssel braucht (auf Vercel meldet sich die Funktion per OIDC-Token an; Quelle: vercel.com/docs/ai-gateway/authentication-and-byok/oidc) und weil das Gratis-Kontingent eine harte Obergrenze ist.
 
-| Anbieter | Gratis-Grenze | Auswertungen pro Tag | Quelle |
+**Vercel AI Gateway, Stand 04.10.2026** (Quelle: vercel.com/docs/ai-gateway/pricing, Seite vom 08.09.2026): jedes Team hat 5 Dollar Guthaben pro Monat gratis, ohne Aufschlag auf die Preise der Anbieter, nur für einen Teil der Modelle (Liste «Free Tier» im Dashboard) und mit niedrigeren Limits pro Modell. Ohne gekauftes Guthaben bleibt es bei diesem Betrag: Ist er aufgebraucht, antwortet das Gateway mit einem Fehler (429), es wird nichts abgebucht. Automatisches Aufladen ist standardmässig aus. Wer Guthaben kauft, verliert das monatliche Gratisguthaben.
+
+Rechnung mit 8'000 Tokens Eingabe und 2'000 Tokens Ausgabe je Auswertung und den Listenpreisen vom 04.10.2026 (Quelle: vercel.com/ai-gateway/models):
+
+| Modell | Preis je Million Tokens (Eingabe / Ausgabe) | Auswertungen pro Monat mit 5 Dollar | pro Tag |
 |---|---|---|---|
-| Cloudflare Workers AI | 10'000 Neurons pro Tag | rund 97 mit Llama 3.1 8B, 78 mit Gemma 4 26B, 50 mit gpt-oss-20b, 25 mit gpt-oss-120b, 16 mit Llama 3.3 70B | developers.cloudflare.com/workers-ai/platform/pricing |
-| Groq | Basislimit 1'000 Anfragen und 200'000 Tokens pro Tag, 8'000 Tokens pro Minute (gpt-oss, Qwen) | rund 20 | console.groq.com/docs/rate-limits |
-| OpenRouter, Modelle mit «:free» | 20 pro Minute, 50 pro Tag (1'000 pro Tag nach einmaligem Kauf von Guthaben im Wert von 10 Dollar) | bis 50 | openrouter.ai/docs/api-reference/limits |
-| Gemini (Google AI Studio) | Gratis-Stufe vorhanden, Zahlen stehen auf der offiziellen Seite nur im Konto | unklar | ai.google.dev/gemini-api/docs/rate-limits |
+| mistral/mistral-nemo | 0,02 / 0,03 Dollar | rund 22'700 | rund 750 |
+| alibaba/qwen3.5-flash | 0,10 / 0,40 Dollar | rund 3'100 | rund 100 |
+| mistral/mistral-small | 0,15 / 0,60 Dollar | rund 2'100 | rund 70 |
+| meta/llama-3.3-70b | 0,72 / 0,72 Dollar | rund 690 | rund 23 |
 
-Zusammen sind das **rund 100 bis 170 Auswertungen pro Tag**, wenn alle Anbieter laufen [Wahrscheinlich]. Für den Start reicht das. Kleinere Modelle schreiben schwächeres Deutsch; welches Modell die Texte trägt, entscheidet ein Test mit echten Checks in Etappe 2.
+**Offen [Vermutung]:** Welche Modelle zum Gratis-Kontingent gehören, steht nur im Dashboard. Das Modell für das Deutsch der Texte entscheidet ein Test mit echten Checks in Etappe 2. Reihenfolge der Prüfung: mistral-small, qwen3.5-flash, mistral-nemo.
 
-**Datenschutz:** Die Fakten (öffentliche Seiteninhalte, keine Angaben zur Person) gehen an US-Anbieter. Das gehört in die Datenschutzerklärung.
+**Nicht verwendet:**
+- **Gemini (Google AI Studio):** Die Gratis-Stufe ist für Angebote an Nutzer im EWR, in der Schweiz und im Vereinigten Königreich ausgeschlossen (Quelle: ai.google.dev/gemini-api/terms, «Use Restrictions»). [Sicher]
+- **Cloudflare Workers AI, Groq:** abgelehnt.
+- **Mistral Studio (Plan «Experiment»):** gratis und in der EU, aber Eingaben und Ausgaben dürfen für das Training genutzt werden (Quelle: help.mistral.ai, «Do you use my user data to train your Artificial Intelligence models?»). Als zweiter Anbieter möglich, falls das Kontingent nicht reicht. Braucht ein eigenes Konto.
+
+**Datenschutz:** Die Fakten (öffentliche Seiteninhalte, keine Angaben zur Person) gehen über das Vercel AI Gateway an einen Modellanbieter, je nach Modell auch ausserhalb der Schweiz. Zero Data Retention gibt es nur auf Pro und Enterprise (Quelle: vercel.com/docs/ai-gateway/pricing). Das gehört in die Datenschutzerklärung, geschrieben von einem Menschen (Regel 8).
 
 ## Wofür die Google Cloud gebraucht wird
 
@@ -116,4 +125,4 @@ Du brauchst sie **nicht für die KI**. Es sind zwei andere Dinge:
 
 ## Nächster Schritt
 
-Etappe 1c ist gebaut (04.10.2026): Marketing-Check mit Crawler, ohne KI und ohne Konto, gleiche Bewertung wie das Agentur-Tool. Als Nächstes Etappe 2: Zugang v2 und KI. Voraussetzungen von Alperna: Upstash mit dem Projekt verbinden, Google-OAuth-Zugang, Cloudflare- und Groq-Schlüssel.
+Etappe 1c ist gebaut (04.10.2026): Marketing-Check mit Crawler, ohne KI und ohne Konto, gleiche Bewertung wie das Agentur-Tool. Als Nächstes Etappe 2: Zugang v2 und KI. Voraussetzungen von Alperna: Upstash mit dem Projekt verbunden, Google-OAuth-Zugang (Schritte in STATUS.md). Für die KI braucht es nichts: Vercel AI Gateway läuft im vorhandenen Team.
