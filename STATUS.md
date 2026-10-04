@@ -45,7 +45,7 @@ Stand: 04.10.2026. **Etappe 1c ist gebaut** (Marketing-Check mit Crawler ersetzt
 
 | Was | Stand |
 |---|---|
-| **Upstash Redis** | Im neuen Account gibt es noch keine Datenbank. (Der Redis-Inc.-Speicher `REDIS_URL` gehört zum alten Account und wird dort gelöscht.) Zu tun im Account `alpernagmbh`: Projekt `marketing-tool` → Storage → Create Database → **Upstash** → Redis, Free, Frankfurt, mit dem Projekt verbinden. Der Code erwartet `KV_REST_API_URL` und `KV_REST_API_TOKEN` (oder `UPSTASH_REDIS_REST_*`). Ohne Redis greifen weder das Limit von `/api/check` noch der Zähler über mehrere Geräte. |
+| **Upstash Redis** | Stand 04.10.2026: Im neuen Projekt hängt der Speicher `redis-bole-planet` (Produkt **«Redis»**, «Official Redis for Vercel», Plan Free 30 MB). Das ist **nicht Upstash**: Er liefert nur `REDIS_URL` über TCP, ohne Speichern auf Platte («No persistence»), mit 100 Operationen pro Sekunde und 30 Verbindungen. Der Code spricht Upstash über REST und braucht `KV_REST_API_URL` und `KV_REST_API_TOKEN` (oder `UPSTASH_REDIS_REST_*`). Ein RAM-Redis würde Freischaltungen und die Lead-Warteschlange beim Neustart verlieren. Zu tun: Storage → Create Database → Eintrag **«Upstash»** (nicht «Redis») → Redis, Free, Frankfurt, mit `marketing-tool` verbinden; danach `redis-bole-planet` löschen. |
 | Zugang v2, Etappe 2 | Entschieden (PLAN.md). Offen sind die Zugangsdaten: Google OAuth (Login) und E-Mail-Versand über n8n. |
 | KI-Anbieter (gratis) | Entschieden am 04.10.2026: Vercel AI Gateway (5 Dollar Gratisguthaben pro Monat, harte Obergrenze, kein neues Konto, kein Schlüssel). Cloudflare und Groq entfallen. Gemini Gratis ist für Besucher in der Schweiz ausgeschlossen. Einzelheiten und Rechnung in PLAN.md. Offen: welche Modelle im Gratis-Kontingent liegen (Test in Etappe 2). |
 | Google Cloud | Nur für «Mit Google anmelden» (OAuth, kostenlos) in Etappe 2. Der Places-Schlüssel für das Google-Profil ist optional (Etappe 3, braucht Zahlungsmittel). |
@@ -62,21 +62,31 @@ Stand: 04.10.2026. **Etappe 1c ist gebaut** (Marketing-Check mit Crawler ersetzt
 
 Erledigt am 04.10.2026: `NEXT_PUBLIC_WHATSAPP_NUMBER` in Vercel gesetzt (Production, Preview, Development); der Knopf «Kurz schreiben» erscheint mit dem nächsten Build. Branding v3.
 
-### Einrichtung Google-Login (macht Alperna, rund 10 Minuten, Stand 04.10.2026)
+### Einrichtung Google-Login (macht Alperna, rund 15 Minuten, Stand 04.10.2026)
 
-Google bietet keinen Weg, einen OAuth-Client per Skript anzulegen; er entsteht nur in der Konsole (Quelle: support.google.com/cloud/answer/15549257). Darum von Hand:
+Google legt OAuth-Clients nur in der Konsole an (Quelle: support.google.com/cloud/answer/15549257). Für die Entwicklung läuft die App im Status «Testing» mit eingetragenen Testnutzern. Zum Start (Etappe 7) braucht es eine verifizierte Domain und die Veröffentlichung (siehe unten).
 
-1. console.cloud.google.com, neues Projekt «alperna-tools». Kein Zahlungsmittel nötig.
-2. Menü «Google Auth Platform», «Get started»: App-Name «Alperna Tools», Support-E-Mail `kontakt@alperna.ch`, Zielgruppe «Extern», Kontakt-E-Mail `kontakt@alperna.ch`.
-3. Branding: Startseite `https://tools.alperna.ch`, Datenschutz `https://tools.alperna.ch/datenschutz`, autorisierte Domain `alperna.ch`. Kein Logo (ein Logo löst eine Prüfung durch Google aus).
-4. Datenzugriff: nur `openid`, `…/auth/userinfo.email`, `…/auth/userinfo.profile`.
-5. Zielgruppe: «App veröffentlichen» (Status «In Produktion»). Im Teststatus melden sich nur eingetragene Testnutzer an.
-6. Clients, «Create client», Typ «Web application», Name «Alperna Tools Web».
-   - Autorisierte JavaScript-Quellen: `https://tools.alperna.ch`, `https://marketing-tool-gold.vercel.app`, `http://localhost:3000`
-   - Autorisierte Weiterleitungs-URIs: `https://tools.alperna.ch/api/auth/callback/google`, `https://marketing-tool-gold.vercel.app/api/auth/callback/google`, `http://localhost:3000/api/auth/callback/google`
-7. Client-ID und Client-Secret kopieren. Das Secret zeigt Google nur einmal. Beides direkt in Vercel eintragen (Projekt `marketing-tool`, Settings, Environment Variables): `GOOGLE_CLIENT_ID` und `GOOGLE_CLIENT_SECRET` (Secret als «Sensitive»), für Production und Preview. Das Secret nicht in Chats oder Mails weitergeben.
+1. `console.cloud.google.com`, oben links das Projekt wählen. Dann `console.cloud.google.com/auth/overview` öffnen und **Get started** klicken (steht dort «Google Auth Platform not configured yet»).
+2. Vier Schritte im Assistenten:
+   - **App Information:** App name `Alperna Tools`, User support email `kontakt@alperna.ch` (nur wählbar, wenn du mit diesem Konto angemeldet bist), weiter.
+   - **Audience:** **External**, weiter.
+   - **Contact Information:** `kontakt@alperna.ch`, weiter.
+   - **Finish:** Häkchen bei den «Google API Services: User Data Policy», **Continue**, dann **Create**.
+3. Linkes Menü **Branding:** Application home page `https://tools.alperna.ch`, Privacy policy link `https://tools.alperna.ch/datenschutz`, Authorized domains `alperna.ch`. **Kein Logo** hochladen. Speichern. (App-Name und Logo zeigt Google erst nach einer Markenprüfung; bis dahin steht auf dem Zustimmungsfenster nur die Domain.)
+4. **Audience:** Publishing status bleibt **Testing**. Unter **Test users** → **Add users** die Google-Konten eintragen, die testen (`kontakt@alperna.ch` und die beiden Gründer). Nicht eingetragene Konten bekommen `access_denied`.
+5. **Data Access:** nichts hinzufügen. `openid`, E-Mail und Profil reichen und sind ohne Prüfung erlaubt.
+6. **Clients** → **Create client** → Application type **Web application**, Name `Alperna Tools Web`.
+   - **Authorized JavaScript origins** (Add URI): `https://marketing-tool-gold.vercel.app`, `https://tools.alperna.ch`, `http://localhost:3000`
+   - **Authorized redirect URIs** (Add URI): `https://marketing-tool-gold.vercel.app/api/auth/callback/google`, `https://tools.alperna.ch/api/auth/callback/google`, `http://localhost:3000/api/auth/callback/google`
+   - **Create.** Es öffnet sich ein Fenster mit **Client ID** und **Client secret**. Das Secret steht nur jetzt da: kopieren oder **Download JSON**.
+7. Vercel: `vercel.com/website-dbed/marketing-tool/settings/environment-variables` → **Add**:
+   - `GOOGLE_CLIENT_ID` = die Client ID, Umgebungen Production, Preview, Development
+   - `GOOGLE_CLIENT_SECRET` = das Secret, Haken **Sensitive**, Umgebungen Production und Preview
+   Das Secret nicht in Chats oder Mails weitergeben. Danach «gemacht» schreiben.
 
-Hinweise: Änderungen an den URIs brauchen fünf Minuten bis einige Stunden. Clients, die sechs Monate unbenutzt bleiben, löscht Google selbst. Der Pfad `/api/auth/callback/google` ist bei Better Auth und Auth.js gleich [Wahrscheinlich]; wählt Etappe 2 etwas anderes, ändert sich nur die URI.
+Hinweise: URIs brauchen fünf Minuten bis einige Stunden, bis sie gelten. Meldet Google «redirect_uri_mismatch», stimmt Schreibweise oder Schema nicht (kein Slash am Ende, `https`). Clients, die sechs Monate unbenutzt bleiben, löscht Google selbst. Der Pfad `/api/auth/callback/google` ist bei Better Auth und Auth.js gleich [Wahrscheinlich].
+
+**Zum Start (Etappe 7):** `alperna.ch` in der Google Search Console als Domain bestätigen (DNS-Eintrag TXT), die Startseite und `/datenschutz` mit echtem Inhalt live haben (die Startseite muss die Datenschutzerklärung verlinken), im Branding **Verify branding** klicken, danach **Publish branding** und unter Audience **Publish app** (Status «In production»). Ohne Veröffentlichung können sich nur die Testnutzer anmelden (Quelle: support.google.com/cloud/answer/15549049).
 
 ### Offene Fragen an Alperna
 
