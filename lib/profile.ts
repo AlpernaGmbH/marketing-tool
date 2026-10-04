@@ -47,6 +47,7 @@ export const profileFields = {
   branche: shortText,
   rechtsform: shortText,
   ort: shortText,
+  website: shortText,
   kanton: z.string().regex(/^[A-Z]{2}$/),
   groesse: shortText,
   zielgruppen: z.array(looseObject.extend({ name: shortText })).max(10),

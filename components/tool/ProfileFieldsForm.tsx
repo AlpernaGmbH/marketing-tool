@@ -6,7 +6,7 @@ import { KANTONE } from "@/lib/ch";
 import { GROESSEN, RECHTSFORMEN, type ProfileKey } from "@/lib/profile";
 import { useProfile } from "@/lib/use-profile";
 
-export type BasicField = "organisationstyp" | "firma" | "branche" | "rechtsform" | "ort" | "kanton" | "groesse";
+export type BasicField = "organisationstyp" | "firma" | "branche" | "rechtsform" | "ort" | "website" | "kanton" | "groesse";
 
 const selectClass =
   "h-11 w-full rounded-lg border border-input bg-paper px-3 text-base focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
@@ -86,6 +86,22 @@ export function ProfileFieldsForm({ fields, idPrefix = "p" }: Props) {
       <div key="ort" className="grid gap-1.5">
         <Label htmlFor={id("ort")}>Ort</Label>
         <Input id={id("ort")} autoComplete="address-level2" value={profile.ort ?? ""} onChange={(e) => set("ort", e.target.value)} />
+      </div>
+    ),
+    website: (
+      <div key="website" className="grid gap-1.5">
+        <Label htmlFor={id("website")}>Website</Label>
+        <Input
+          id={id("website")}
+          type="text"
+          inputMode="url"
+          autoComplete="url"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder="malerei-keller.ch"
+          value={profile.website ?? ""}
+          onChange={(e) => set("website", e.target.value)}
+        />
       </div>
     ),
     kanton: (

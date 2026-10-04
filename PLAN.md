@@ -116,4 +116,4 @@ Du brauchst sie **nicht für die KI**. Es sind zwei andere Dinge:
 
 ## Nächster Schritt
 
-Etappe 1c läuft: Marketing-Check mit Crawler, ohne KI und ohne Konto. Zugang v2 und KI folgen in Etappe 2.
+Etappe 1c ist gebaut (04.10.2026): Marketing-Check mit Crawler, ohne KI und ohne Konto, gleiche Bewertung wie das Agentur-Tool. Als Nächstes Etappe 2: Zugang v2 und KI. Voraussetzungen von Alperna: Upstash mit dem Projekt verbinden, Google-OAuth-Zugang, Cloudflare- und Groq-Schlüssel.

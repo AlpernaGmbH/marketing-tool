@@ -80,7 +80,7 @@ export function ProfilEditor() {
       <section aria-labelledby="grunddaten" className="grid max-w-2xl gap-6">
         <h2 id="grunddaten">Grunddaten</h2>
 
-        <ProfileFieldsForm fields={["organisationstyp", "firma", "branche", "rechtsform", "ort", "kanton", "groesse"]} />
+        <ProfileFieldsForm fields={["organisationstyp", "firma", "branche", "rechtsform", "ort", "website", "kanton", "groesse"]} />
         <p className="text-sm text-muted-foreground">Änderungen werden sofort in deinem Browser gespeichert.</p>
       </section>
 

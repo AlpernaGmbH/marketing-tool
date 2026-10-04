@@ -1,74 +1,70 @@
 # Digitaler-Auftritt-Check (digitaler-auftritt-check)
 
-Entwurf von Claude Code aus der Beschreibung in Etappe 1b des Plans. Alperna liest gegen; Gewichte und Formulierungen lassen sich in `logic.ts` ändern.
+Klasse A (Analyse), Etappe 1c, Stand 04.10.2026. Ersetzt den Fragebogen der Etappe 1b. Die Prüf-Engine stammt aus dem Agentur-Tool von Alperna (`lib/marketing-check/analyzer.mjs`, Stand 02.10.2026) und liegt hier als TypeScript in `lib/check/`. Gewichte und Punktzahlen sind gleich geblieben: alperna.ch ergibt in beiden Systemen 53 Punkte (geprüft am 04.10.2026 mit `industry: b2b`).
 
 ## Nutzen in einem Satz
-Für Inhaberinnen und Inhaber von Schweizer KMU: in rund 6 Minuten sehen, wie vollständig der eigene Auftritt im Netz ist, und eine nach Wirkung geordnete Liste der nächsten Schritte bekommen.
+Für Inhaberinnen und Inhaber von Schweizer KMU: die Adresse der Website eingeben und in rund zehn Sekunden sehen, wie vollständig der Auftritt im Netz ist, mit einer nach Wirkung geordneten Liste der nächsten Schritte.
 
 ## Kategorie und Verknüpfung
 Kategorie: strategie (erster Schritt im Pfad «Strategie»)
-Liest aus Profil: organisationstyp, branche, ort, kanton, groesse
-Schreibt ins Profil: organisationstyp, branche, ort, kanton, groesse
-Verwandte Tools: gbp-check, bewertungs-kit, positionierung (entstehen in späteren Etappen; bis dahin zeigt die Seite nur, was es gibt)
+Liest aus Profil: firma, website, ort, branche, kanaele
+Schreibt ins Profil: firma, website, ort (live über das Formular), branche und kanaele (nur wenn leer, nach dem Ergebnis)
+Verwandte Tools: gbp-check, bewertungs-kit, positionierung (entstehen später; die Seite verlinkt nur, was es gibt)
+`needsServer: true`: die Adresse geht an `/api/check`.
 
 ## Eingaben
+Alle Felder ausser Branche und Social Media kommen aus dem Firmenprofil und werden vorbefüllt (Harte Regel 10).
 
-Vor dem Start: ein Block «Dein Betrieb» mit den fünf Profilfeldern (organisationstyp, branche, ort, kanton, groesse). Er liegt ausserhalb des Fragebogens, schreibt direkt ins Profil und zählt nicht zu den höchstens 10 Fragen (Harte Regel 9). Was im Profil steht, wird vorbefüllt und nie erneut gefragt (Harte Regel 10).
+| Feld | Quelle | Pflicht | Hinweis |
+|---|---|---|---|
+| firma | Profil | ja | Name im Export |
+| website | Profil (neu) | ja | `normalizeUrl`: ergänzt https, lehnt IP-Adressen, Zugangsdaten und fremde Protokolle ab |
+| ort | Profil | nein | verbessert die Suche nach dem Google-Profil |
+| industry | Auswahl, Vorschlag aus `profil.branche` (`guessIndustry`) | ja | 12 Branchen; bestimmt, ob Shop und Buchung zählen |
+| Social-Media-Kanäle | nur dieses Werkzeug | nein | pro Kanal Adresse und Häufigkeit; ohne Häufigkeit gilt «etwa monatlich» als Annahme |
 
-Fragebogen: 7 Fragen.
+## Ablauf
+1. `ToolShell.requestStart()` prüft den freien Durchlauf (`/api/access`).
+2. `POST /api/check` streamt NDJSON: `step` (start/done) für `fetch`, `seo`, `gbp`, `social`, `detect`, `score`, dann `result` oder `error`. Der Fortschritt im Browser folgt diesen Ereignissen und ist nicht erfunden.
+3. Der Server prüft vor dem Abruf Eingabe, Limit (8 pro Stunde und IP-Hash) und `canStart`. Ohne `GATE_SECRET` oder bei Redis-Ausfall wird niemand gesperrt.
+4. Ergebnis wird in `mt:digitaler-auftritt-check` gespeichert (`phase: "result"`, damit der Pfad-Fortschritt weiter funktioniert) und über `/api/access/complete` gezählt.
+5. «Erneut prüfen» setzt auf den Start zurück, `counted` wird false: der nächste Start zeigt das LeadGate.
 
-| Feld | Typ | Pflicht | Vorbefüllung | Validierung | Hilfetext |
-|---|---|---|---|---|---|
-| bausteine | multi | ja | nein | mindestens 1 | «Wähle, was für deinen Betrieb eine Rolle spielt. Was du nicht brauchst, zählt nicht gegen dich.» |
-| website | matrix (3 bis 4 Zeilen) | ja | nein | jede Zeile beantwortet | nur wenn «Website» gewählt |
-| gbp | matrix (4 Zeilen) | ja | nein | wie oben | nur wenn «Google Business Profil» gewählt |
-| social | matrix (3 Zeilen) | ja | nein | wie oben | nur wenn «Social Media» gewählt |
-| shop | matrix (3 Zeilen) | ja | nein | wie oben | nur wenn «Online-Shop» gewählt |
-| buchung | matrix (3 Zeilen) | ja | nein | wie oben | nur wenn «Buchungstool» gewählt |
-| ads | matrix (3 Zeilen) | ja | nein | wie oben | nur wenn «Google Ads» gewählt |
-
-Spalten jeder Matrix: «Ja», «Teilweise», «Nein». «Nein» gilt auch, wenn es etwas nicht gibt.
-
-Die sechs Bausteine sind die Alperna-Bausteine aus dem Pitch: Website, Google Business Profil, Social Media, Online-Shop, Buchungstool, Google Ads.
-
-## Logik
-
-Jede Matrixzeile ist ein Prüfpunkt mit Gewicht (1 bis 3), Aufwand (klein, mittel, gross), einer Massnahme, einem Grund und optional einem Werkzeug, das dazu passt.
-
-1. Antwortwert: Ja = 1, Teilweise = 0,5, Nein = 0.
-2. Baustein-Score = Summe(Gewicht × Antwortwert) ÷ Summe(Gewicht) × 100, gerundet.
-3. Gesamt-Score = Mittel der Baustein-Scores der gewählten Bausteine. **Annahme:** Alle gewählten Bausteine zählen gleich. Ohne Quelle, im UI als Einschätzung kennzeichnen.
-4. Stufe (aus `scoreBand`): ab 75 «stark», ab 40 «ausbaufähig», darunter «Handlungsbedarf».
-5. Massnahmenliste: alle Prüfpunkte mit «Nein» oder «Teilweise». Priorität = Gewicht × (1 bei «Nein», 0,5 bei «Teilweise»). Sortierung: Priorität absteigend, dann kleinerer Aufwand zuerst, dann Reihenfolge der Bausteine.
-6. **Annahme:** Gewichte und Aufwand sind eine Einschätzung von Alperna, keine Statistik. Es gibt keine Prozentzahlen aus Studien und keine Benchmarks.
-7. Link zum passenden Werkzeug nur, wenn das Werkzeug in der Registry existiert.
+## Logik (lib/check)
+- Abruf nur über `safeFetch`: Host auflösen, jede Adresse prüfen, Verbindung an die geprüfte Adresse binden, jede Weiterleitung neu prüfen, höchstens 2,5 MB, 12 s, fünf Weiterleitungen. Ports nur 80 und 443. Gesperrt: private, Loopback-, Link-Local-, Carrier-NAT-, Dokumentations- und Multicast-Adressen, auch als IPv4-in-IPv6.
+- Abgerufen werden Startseite, `/robots.txt`, `/sitemap.xml`. Nichts sonst.
+- Kategorien und Gewichte: Website und SEO 25 · Google-Business-Profil 20 · Social Media 20 · Online-Werbung und Tracking 12 · Newsletter 9 · Online-Shop 7 × Relevanz · Online-Buchung 7 × Relevanz (hoch 1, mittel 0,5, gering 0).
+- Gesamtpunktzahl = Σ(Gewicht × Punkte) ÷ Σ Gewichte × 100, gerundet.
+- SEO: 16 Prüfpunkte mit Gewichten 0,5 bis 3 (`lib/check/seo.ts`).
+- Google-Profil: mit `GOOGLE_PLACES_API_KEY` Suche über Places API (New), sonst nur Hinweis aus einem Maps-Link auf der Website (Punkte 0,5, sonst 0,25). Ohne Schlüssel gilt der Bereich als **nicht bestätigt**, und das Ergebnis sagt es.
+- Social: Kanäle aus Eingabe und Links auf der Website; Formel `min(1, 0,55·best + 0,25·Ø + 0,1·min(1, n/3) + 0,1·verlinkt/n)`. Die Häufigkeit ist eine Selbstangabe.
+- Prüfpunkte, die nur eine Annahme sind (Häufigkeit nicht angegeben) oder ein fehlendes Werbe-Tracking, tragen `info: true`: sie zählen in der Punktzahl wie im Agentur-Tool, erzeugen aber keine Massnahme.
+- Massnahmen: höchstens eine pro offenem Prüfpunkt, fester Text, Wirkung und Aufwand als Einschätzung von Alperna. Sortierung: Wirkung, dann Aufwand, dann Reihenfolge der Prüfung. Jede Massnahme trägt die Kennung ihres Prüfpunkts (`itemId`); die KI-Schicht (Etappe 2) darf nur auf diese Kennungen verweisen.
 
 ## Ausgaben
-- Ergebnisbereich: Gesamt-Score mit Stufe (`ScoreBadge`), pro Baustein eine Zeile mit Score, danach die Massnahmenliste (auf dem Bildschirm die ersten 8, im Export alle).
+- Ergebnis: Punktzahl mit Stufe (`ScoreBadge`), erfüllte Prüfpunkte, die ersten acht Schritte, alle Bereiche mit Prüfpunkten (aufklappbar), Kasten «Was gemessen ist und was nicht».
 - Kopieren (frei): Markdown aus dem DocumentModel.
-- Export (hinter dem LeadGate): PDF und DOCX mit Kopf (Firmenname, Datum), Gesamt-Score, Tabelle der Bausteine, Massnahmenliste, Hinweis auf Gewichtung als Einschätzung.
-- Schreibt branche, ort, kanton, groesse, organisationstyp ins Profil (über den Block «Dein Betrieb»).
+- Export (hinter dem LeadGate): PDF und DOCX mit Kopf, Punktzahl, Bereichstabelle, allen Schritten, allen Prüfpunkten und den Messhinweisen.
 
-## Edge Cases
-- Kein Baustein gewählt: Frage 1 ist Pflicht, der Fragebogen geht nicht weiter.
-- Alles «Ja»: Score 100, Massnahmenliste leer, Text «Hier gibt es nichts Dringendes».
-- Alles «Nein»: Score 0, Liste vollständig, Stufe «Handlungsbedarf».
-- Ein Baustein gewählt, dann abgewählt: Antworten dieses Bausteins zählen nicht und erscheinen nicht.
-- Profil leer: Der Block «Dein Betrieb» ist leer, Export-Kopf zeigt «Alperna».
-- Unbekannter Prüfpunkt im gespeicherten Zwischenstand: wird ignoriert.
+## Edge Cases (getestet)
+- Website nicht erreichbar, Fehlerseite, HTTP 403/429 (Bot-Sperre): verständliche Meldung, freier Durchlauf bleibt unverbraucht.
+- https scheitert: einmal http versuchen.
+- Adresse zeigt auf eine interne IP: `blocked`, ohne Hinweis auf die Adresse.
+- Zu viele Weiterleitungen, zu grosse oder zu langsame Antwort: abgebrochen beziehungsweise gekappt.
+- `noindex` im Meta-Tag oder im Header; mehrere H1; Latin-1-Seiten; gzip und Brotli.
+- Branche mit Relevanz «gering»: Bereich zählt nicht und steht als Hinweis, nicht als Mangel.
+- Stream bricht ab oder liefert Müll: Meldung, kein Absturz.
+- Zwischenstand der Fragebogen-Version oder beschädigte Daten: Start, nichts geht verloren.
+
+## Nicht Teil dieses Werkzeugs
+- Keine KI (Etappe 2). Die Einordnung und Priorisierung sind regelbasiert.
+- Kein Zwischenspeicher je Domain (braucht Redis, die Integration ist noch nicht verbunden).
+- Keine Unterseiten, kein Rendern von JavaScript, keine PageSpeed-Messung. Eine Website, die Inhalte erst im Browser lädt, erscheint leerer, als sie ist.
+- Kein Auslesen von Instagram, LinkedIn, TikTok oder Google ohne Schnittstelle.
 
 ## Texte
-- Tagline (≤ 110 Zeichen): «Sechs Bausteine, ein Ergebnis: Wo dein Auftritt im Netz Lücken hat und was du zuerst angehst.»
-- SEO-Title (≤ 60, mit «Schweiz»): «Digitaler-Auftritt-Check Schweiz für KMU – kostenlos»
-- Meta-Description (≤ 155): siehe `content/tools/digitaler-auftritt-check.md`
-- Erklärtext: Warum der Auftritt zählt, so nutzt du das Ergebnis, häufige Fehler, Beispiel Malerei Keller, Gossau.
-- FAQ: 6 Fragen.
-- Alperna-CTA: problem aus dem Text, baustein «Website», beweis aus `content/pitch/bausteine.md` (`beweis: @baustein`).
+- Seitentext: `content/tools/digitaler-auftritt-check.md` (Beispiel Malerei Keller, Gossau mit dem echten Ergebnis der Engine auf einer Beispielseite).
+- Alperna-Pitch: Baustein «Website», Beweis aus `content/pitch/bausteine.md`.
 
 ## Tests
-Mindestens fünf Fälle für `logic.ts`, davon zwei Edge Cases: siehe `logic.test.ts`.
-
-## Nicht Teil dieses Tools
-- Keine automatische Analyse einer Website oder eines Google-Eintrags (keine Netzwerkzugriffe).
-- Kein Vergleich mit anderen Betrieben, keine Branchenwerte.
-- Keine Bewertung rechtlicher Pflichten.
+`lib/check/*.test.ts` (Netz-Schutz, Engine, Massnahmen, Browser-Client), `app/api/check/route.test.ts`, `tools/digitaler-auftritt-check/{logic.test.ts,Result.test.tsx}`, Smoke-Tests in `tests/e2e/smoke.spec.ts`.

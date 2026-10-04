@@ -60,7 +60,9 @@ generateStaticParams, Tool als Client-Komponente
 exportieren/importieren, alles löschen
 - app/api/access/route.ts, app/api/access/complete/route.ts,
 app/api/lead/route.ts – Zugang und Leads
-- app/api/ai/route.ts, app/api/lookup/route.ts – Etappe 8
+- app/api/check/route.ts – Marketing-Check: ruft die Website des Besuchers ab
+(SSRF-Schutz in lib/check/net.ts), streamt Schritte und Ergebnis als NDJSON
+- app/api/ai/route.ts, app/api/lookup/route.ts – Etappe 2
 - app/sitemap.ts, app/robots.ts, app/opengraph-image.tsx
 - tools/<slug>/tool.config.ts – Metadaten (Schema unten)
 - tools/<slug>/Tool.tsx – Client-Komponente, nutzt ToolShell
@@ -79,6 +81,8 @@ markComplete(), unlock()
 - lib/redis.ts – Upstash-Client, Key-Helfer, TTLs
 - lib/profile.ts – Profil-Typen, Validierung, Export/Import JSON (rein, ohne React)
 - lib/use-profile.ts – useProfile(): localStorage-Key mt:profile
+- lib/check/ – Engine des Marketing-Checks (Port aus dem Agentur-Tool): net.ts,
+analyze.ts, seo.ts, social.ts, gbp.ts, detect.ts, massnahmen.ts, client.ts
 - lib/storage.ts, lib/use-local.ts – localStorage mit Rückfall auf Arbeitsspeicher
 - lib/ch.ts – chf(), dateCH(), typoCH(), uidValid()
 - data/*.json – Schweizer Datensätze, jede Datei mit meta {source, url, asOf}
@@ -93,7 +97,7 @@ formulieren
 - PLAN.md, STATUS.md, IDEAS.md – Arbeitsdateien
 
 ## Firmenprofil (lib/profile.ts, nur im Browser)
-Felder: organisationstyp kmu|verein, firma, branche, rechtsform, ort, kanton,
+Felder: organisationstyp kmu|verein, firma, branche, rechtsform, ort, website, kanton,
 groesse, zielgruppen[], primaersegment, personas[], positionierung, marke
 {werte, persoenlichkeit, tonalitaet, woerter, bewertungsregeln}, kanaele[],
 budgetJahr, contentSaeulen[]. Tool-Zwischenstände unter mt:<slug>. Merkliste
@@ -105,7 +109,7 @@ Browser gespeichert. Exportiere es, wenn du es behalten willst.»
 ## Harte Regeln
 1. Eingaben in Tools verlassen den Browser nicht. Ausnahmen: das Lead-
 Formular (Name, Firma, E-Mail, Telefon, Tool-Name, Kategorie – sonst nichts)
-und Tools mit needsServer: true über /api/ai und /api/lookup. Server-Routen
+und Tools mit needsServer: true über /api/check, /api/ai und /api/lookup. Server-Routen
 loggen Statuscodes, nie Inhalte, nie Klartext-IPs.
 2. Du-Form im UI. Schweizer Rechtschreibung: ss statt ß, «» als
 Anführungszeichen, CHF 1'000.-, Datum 03.10.2026, Prozent mit Leerzeichen

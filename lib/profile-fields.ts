@@ -6,6 +6,7 @@ export const PROFILE_FIELDS = [
   "branche",
   "rechtsform",
   "ort",
+  "website",
   "kanton",
   "groesse",
   "zielgruppen",

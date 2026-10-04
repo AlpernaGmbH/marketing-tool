@@ -1,148 +1,165 @@
 import { describe, expect, it } from "vitest";
-import { planQuestions, validateAnswer, validateQuestions, type Answers } from "@/components/tool/questionnaire";
+import { sampleResult } from "@/lib/check/fixtures";
+import type { CheckResult } from "@/lib/check/types";
+import { toMarkdown } from "@/lib/export/model";
 import {
-  BAUSTEIN_IDS,
-  PRUEFPUNKTE,
-  bausteinScore,
-  evaluate,
-  questions,
+  EMPTY_FORM,
+  EMPTY_SAVED,
+  buildInput,
+  countItems,
+  formProblem,
+  host,
+  industryFor,
+  measurementNotes,
+  parseCheckState,
+  profilePatch,
+  stufe,
   toDocument,
-  type BausteinId,
+  type FormState,
 } from "./logic";
 
-/** Antworten für gewählte Bausteine; `wert` gilt für alle Prüfpunkte, `override` für einzelne. */
-function antworten(bausteine: BausteinId[], wert: "ja" | "teilweise" | "nein", override: Record<string, string> = {}): Answers {
-  const a: Answers = { bausteine };
-  for (const b of bausteine) {
-    a[b] = Object.fromEntries(PRUEFPUNKTE.filter((p) => p.baustein === b).map((p) => [p.id, override[p.id] ?? wert]));
-  }
-  return a;
-}
+let result: CheckResult;
+const form = (over: Partial<FormState> = {}): FormState => ({ ...EMPTY_FORM, ...over });
 
-describe("Fragenkatalog", () => {
-  it("ist gültig und hat sieben Fragen (Harte Regel 9: höchstens 10)", () => {
-    expect(questions).toHaveLength(7);
-    expect(validateQuestions(questions)).toEqual([]);
+describe("parseCheckState", () => {
+  it("fällt bei Müll auf den Start zurück", () => {
+    for (const bad of [null, undefined, "x", 3, [], {}]) expect(parseCheckState(bad)).toEqual(EMPTY_SAVED);
   });
-  it("zeigt eine Matrix nur, wenn der Baustein gewählt ist", () => {
-    const ohne = planQuestions(questions, { bausteine: [] });
-    expect(ohne.asked.map((q) => q.id)).toEqual(["bausteine"]);
-    const mit = planQuestions(questions, { bausteine: ["website", "ads"] });
-    expect(mit.asked.map((q) => q.id)).toEqual(["bausteine", "website", "ads"]);
+
+  it("behält ein gültiges Ergebnis und zählt den Durchlauf als gezählt", async () => {
+    result = await sampleResult();
+    const saved = parseCheckState(JSON.parse(JSON.stringify({ v: 1, phase: "result", counted: true, form: EMPTY_FORM, result })));
+    expect(saved.phase).toBe("result");
+    expect(saved.counted).toBe(true);
+    expect(saved.result?.score).toBe(result.score);
   });
-  it("verlangt mindestens einen Baustein und jede Zeile der Matrix", () => {
-    expect(validateAnswer(questions[0], [])).toBe("Bitte wähle mindestens eine Antwort.");
-    const web = questions.find((q) => q.id === "website")!;
-    expect(validateAnswer(web, { "web-mobil": "ja" })).toBe("Bitte beantworte jede Zeile.");
+
+  it("verwirft ein beschädigtes Ergebnis und behält die Formulardaten", () => {
+    const saved = parseCheckState({ phase: "result", counted: true, result: { v: 1, score: "viel" }, form: { industry: "gastro" } });
+    expect(saved.phase).toBe("intro");
+    expect(saved.result).toBeUndefined();
+    expect(saved.form.industry).toBe("gastro");
   });
-  it("hat pro Baustein drei bis vier Prüfpunkte mit eindeutiger ID und Gewicht 1 bis 3", () => {
-    expect(new Set(PRUEFPUNKTE.map((p) => p.id)).size).toBe(PRUEFPUNKTE.length);
-    for (const b of BAUSTEIN_IDS) {
-      const n = PRUEFPUNKTE.filter((p) => p.baustein === b).length;
-      expect(n).toBeGreaterThanOrEqual(3);
-      expect(n).toBeLessThanOrEqual(4);
-    }
-    for (const p of PRUEFPUNKTE) {
-      expect([1, 2, 3]).toContain(p.gewicht);
-      expect(p.massnahme.length).toBeGreaterThan(10);
-      expect(p.warum.length).toBeGreaterThan(10);
-      expect(p.tool === undefined || /^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.tool)).toBe(true);
-    }
+
+  it("ignoriert den Zwischenstand der früheren Fragebogen-Version", () => {
+    const saved = parseCheckState({ v: 1, phase: "result", step: 0, answers: { bausteine: ["website"] }, counted: true });
+    expect(saved.phase).toBe("intro");
+    expect(saved.counted).toBe(true);
   });
-  it("enthält keine Prozentzahlen oder Franken-Beträge ohne Quelle", () => {
-    const text = PRUEFPUNKTE.map((p) => `${p.frage} ${p.massnahme} ${p.warum}`).join(" ");
-    expect(text).not.toMatch(/\d\s?%|CHF/);
+
+  it("säubert das Formular: unbekannte Branche und Häufigkeit fallen weg, lange Adressen werden gekürzt", () => {
+    const saved = parseCheckState({
+      form: { industry: "raumschiff", socials: { instagram: { url: "x".repeat(500), freq: "täglich" }, tiktok: { url: "tiktok.com/@a", freq: "weekly" }, myspace: { url: "x" } } },
+    });
+    expect(saved.form.industry).toBe("");
+    expect(saved.form.socials.instagram.url).toHaveLength(300);
+    expect(saved.form.socials.instagram.freq).toBe("");
+    expect(saved.form.socials.tiktok).toEqual({ url: "tiktok.com/@a", freq: "weekly" });
+    expect(Object.keys(saved.form.socials)).not.toContain("myspace");
   });
 });
 
-describe("Baustein-Score", () => {
-  it("rechnet Summe(Gewicht × Wert) ÷ Summe(Gewicht)", () => {
-    // Website: Gewichte 3, 3, 2, 2 (Summe 10). ja = 3, teilweise = 1,5, nein = 0, ja = 2 → 6,5 von 10
-    const r = bausteinScore("website", { "web-mobil": "ja", "web-kontakt": "teilweise", "web-angebot": "nein", "web-impressum": "ja" });
-    expect(r.score).toBe(65);
-    expect(r).toMatchObject({ ja: 2, teilweise: 1, nein: 1 });
+describe("Eingabe", () => {
+  it("nimmt Firma, Ort und Website aus dem Profil", () => {
+    const input = buildInput({ firma: " Malerei Keller ", ort: "Gossau", website: "malerei-keller.ch", branche: "Malerei" }, form());
+    expect(input).toMatchObject({ company: "Malerei Keller", city: "Gossau", website: "malerei-keller.ch", industry: "craft" });
+    expect(input.socials).toBeUndefined();
   });
-  it("behandelt fehlende und unbekannte Antworten als «Nein»", () => {
-    expect(bausteinScore("gbp", {}).score).toBe(0);
-    expect(bausteinScore("gbp", { "gbp-eintrag": "vielleicht", "gbp-daten": 42, "gbp-bewertungen": null }).score).toBe(0);
+
+  it("schlägt die Branche aus dem Profil vor, die Wahl des Besuchers geht vor", () => {
+    expect(industryFor({ branche: "Restaurant" }, form())).toBe("gastro");
+    expect(industryFor({ branche: "Restaurant" }, form({ industry: "hotel" }))).toBe("hotel");
+    expect(industryFor({}, form())).toBe("");
+  });
+
+  it("übernimmt nur Kanäle mit Adresse und lässt eine leere Häufigkeit weg", () => {
+    const f = form({ industry: "gastro" });
+    f.socials = { ...f.socials, instagram: { url: " instagram.com/x ", freq: "weekly" }, facebook: { url: "facebook.com/x", freq: "" }, tiktok: { url: "  ", freq: "several" } };
+    const input = buildInput({ firma: "A", website: "a.ch" }, f);
+    expect(input.socials).toEqual({ instagram: { url: "instagram.com/x", freq: "weekly" }, facebook: { url: "facebook.com/x" } });
+  });
+
+  it("meldet fehlende Angaben der Reihe nach", () => {
+    expect(formProblem(buildInput({}, form()))).toBe("Bitte gib den Firmennamen an.");
+    expect(formProblem(buildInput({ firma: "A" }, form()))).toBe("Bitte gib eine Website an.");
+    expect(formProblem(buildInput({ firma: "A", website: "a.ch" }, form()))).toContain("Branche");
+    expect(formProblem(buildInput({ firma: "A", website: "a.ch" }, form({ industry: "other" })))).toBeNull();
   });
 });
 
-describe("evaluate", () => {
-  it("gibt bei lauter «Ja» 100 Punkte und keine Massnahmen", () => {
-    const r = evaluate(antworten(["website", "gbp"], "ja"));
-    expect(r.gesamt).toBe(100);
-    expect(r.stufe).toBe("stark");
-    expect(r.massnahmen).toEqual([]);
+describe("Auswertung", () => {
+  it("ordnet Stufen mit denselben Grenzen wie die übrigen Werkzeuge zu", () => {
+    expect(stufe(80)).toBe("stark");
+    expect(stufe(40)).toBe("ausbaufähig");
+    expect(stufe(39)).toBe("Handlungsbedarf");
   });
-  it("gibt bei lauter «Nein» 0 Punkte und alle Prüfpunkte als Massnahmen", () => {
-    const r = evaluate(antworten(["website", "shop"], "nein"));
-    expect(r.gesamt).toBe(0);
-    expect(r.stufe).toBe("Handlungsbedarf");
-    expect(r.massnahmen).toHaveLength(PRUEFPUNKTE.filter((p) => ["website", "shop"].includes(p.baustein)).length);
+
+  it("zählt gewertete Prüfpunkte ohne Hinweise und ohne Bereiche mit Gewicht 0", async () => {
+    result = await sampleResult();
+    const { ok, total } = countItems(result);
+    expect(total).toBeGreaterThan(ok);
+    expect(ok).toBeGreaterThan(0);
+    const all = result.categories.flatMap((c) => c.items).length;
+    expect(total).toBeLessThan(all); // Shop (Gewicht 0) und Hinweise fehlen
   });
-  it("bildet den Gesamt-Score als Mittel der gewählten Bausteine", () => {
-    const r = evaluate(antworten(["website", "gbp"], "ja", { "web-kontakt": "teilweise", "web-angebot": "nein", "web-impressum": "ja" }));
-    // Website: 3 + 1,5 + 0 + 2 = 6,5 von 10 → 65; GBP: 100 → Mittel 82,5 → 83
-    expect(r.bausteine.map((b) => b.score)).toEqual([65, 100]);
-    expect(r.gesamt).toBe(83);
+
+  it("nennt Host ohne www", () => {
+    expect(host("https://www.malerei-keller.ch/")).toBe("malerei-keller.ch");
+    expect(host("kaputt")).toBe("kaputt");
   });
-  it("lässt abgewählte Bausteine ausser Acht, auch wenn noch Antworten dazu im Zwischenstand liegen", () => {
-    const a = antworten(["website", "ads"], "nein");
-    a.bausteine = ["website"];
-    const r = evaluate(a);
-    expect(r.bausteine.map((b) => b.baustein)).toEqual(["website"]);
-    expect(r.massnahmen.every((m) => m.baustein === "website")).toBe(true);
+
+  it("sagt, was nicht gemessen ist", async () => {
+    result = await sampleResult();
+    const notes = measurementNotes(result).join("\n");
+    expect(notes).toContain("nicht automatisch bestätigt");
+    expect(notes).toContain("Social Media");
+    expect(notes).toContain("Einschätzung von Alperna");
   });
-  it("gibt ohne gewählten Baustein 0 Punkte zurück und stürzt nicht ab", () => {
-    for (const a of [{}, { bausteine: [] }, { bausteine: null }, { bausteine: "website" }, { bausteine: ["gibtsnicht"] }] as Answers[]) {
-      const r = evaluate(a);
-      expect(r.gesamt).toBe(0);
-      expect(r.bausteine).toEqual([]);
-      expect(r.massnahmen).toEqual([]);
-    }
-  });
-  it("übersteht kaputte Matrixdaten", () => {
-    const r = evaluate({ bausteine: ["website"], website: "kaputt" } as Answers);
-    expect(r.gesamt).toBe(0);
-    expect(r.massnahmen).toHaveLength(PRUEFPUNKTE.filter((p) => p.baustein === "website").length);
-  });
-  it("ordnet Massnahmen nach Priorität, dann kleinerem Aufwand, dann Reihenfolge der Bausteine", () => {
-    const r = evaluate(antworten(["website"], "nein"));
-    // Priorität 3: kontakt (klein) vor mobil (mittel); Priorität 2: angebot (klein) vor impressum (mittel)
-    expect(r.massnahmen.map((m) => m.id)).toEqual(["web-kontakt", "web-mobil", "web-angebot", "web-impressum"]);
-  });
-  it("halbiert die Priorität bei «Teilweise»", () => {
-    const r = evaluate(antworten(["website"], "ja", { "web-kontakt": "teilweise", "web-mobil": "nein" }));
-    const byId = Object.fromEntries(r.massnahmen.map((m) => [m.id, m]));
-    expect(byId["web-kontakt"].prioritaet).toBe(1.5);
-    expect(byId["web-mobil"].prioritaet).toBe(3);
-    expect(r.massnahmen[0].id).toBe("web-mobil");
+});
+
+describe("Profil", () => {
+  it("ergänzt Branche und Kanäle nur, wo das Profil leer ist", async () => {
+    result = await sampleResult();
+    const patch = profilePatch({}, result);
+    expect(patch.branche).toBe("Handwerk / Bau / Garten");
+    expect(patch.kanaele).toEqual([{ name: "Instagram", url: "instagram.com/malereikeller" }]);
+    expect(profilePatch({ branche: "Malerei", kanaele: [{ name: "Facebook" }] }, result)).toEqual({});
   });
 });
 
 describe("toDocument", () => {
-  it("baut Titel, Baustein-Tabelle und Massnahmenliste", () => {
-    const result = evaluate(antworten(["website", "gbp"], "nein"));
-    const doc = toDocument(result, { firma: "Malerei Keller", ort: "Gossau", kanton: "SG", branche: "Maler" });
-    expect(doc.title).toBe("Digitaler Auftritt: Malerei Keller");
+  it("baut ein vollständiges Dokument mit Kopf, Tabellen und Hinweisen", async () => {
+    result = await sampleResult();
+    const doc = toDocument(result);
+    expect(doc.title).toBe("Marketing-Check: Malerei Keller");
     expect(doc.firma).toBe("Malerei Keller");
-    const tables = doc.blocks.filter((b) => b.type === "table");
-    expect(tables).toHaveLength(2);
-    expect(tables[0].type === "table" && tables[0].rows.map((r) => r[0])).toEqual(["Website", "Google Business Profil"]);
-    expect(tables[1].type === "table" && tables[1].rows).toHaveLength(result.massnahmen.length);
-    const facts = doc.blocks.find((b) => b.type === "facts");
-    expect(facts && facts.type === "facts" && facts.items.find((i) => i.label === "Standort")?.value).toBe("Gossau, SG");
+    expect(doc.datum).toBe("04.10.2026");
+    expect(doc.filename).toBe("marketing-check-malerei-keller");
+    const headings = doc.blocks.filter((b) => b.type === "heading").map((b) => (b.type === "heading" ? b.text : ""));
+    expect(headings).toEqual(expect.arrayContaining(["Ergebnis", "Nächste Schritte", "Alle Prüfpunkte", "Hinweise zur Messung", "Website und SEO"]));
+    const steps = doc.blocks.find((b) => b.type === "table" && b.header[0] === "Nr.");
+    expect(steps && steps.type === "table" ? steps.rows.length : 0).toBe(result.massnahmen.length);
   });
-  it("sagt ehrlich, wenn nichts zu tun ist, und funktioniert ohne Profil", () => {
-    const doc = toDocument(evaluate(antworten(["website"], "ja")));
-    expect(doc.title).toBe("Digitaler Auftritt");
-    expect(doc.firma).toBeUndefined();
+
+  it("erzeugt Markdown ohne «undefined» und ohne Verbotenes", async () => {
+    result = await sampleResult();
+    const md = toMarkdown(toDocument(result));
+    expect(md).not.toMatch(/undefined|NaN|\[object/);
+    expect(md).not.toContain("—");
+    expect(md).toContain(`${result.score} von 100 Punkten`);
+  });
+
+  it("meldet in der Gesamtzeile den Bereich ohne Gewicht nicht als Bereich der Punktetabelle", async () => {
+    result = await sampleResult({ industry: "craft" });
+    const table = toDocument(result).blocks.find((b) => b.type === "table" && b.header[0] === "Bereich");
+    const rows = table && table.type === "table" ? table.rows.map((r) => r[0]) : [];
+    expect(rows).not.toContain("Online-Shop");
+    expect(rows).toContain("Website und SEO");
+  });
+
+  it("schreibt bei leerer Massnahmenliste einen Satz statt einer Tabelle", async () => {
+    result = await sampleResult();
+    const doc = toDocument({ ...result, massnahmen: [] });
     expect(doc.blocks.some((b) => b.type === "paragraph" && b.text.includes("nichts Dringendes"))).toBe(true);
-    expect(doc.blocks.some((b) => b.type === "facts")).toBe(false);
-  });
-  it("weist darauf hin, dass Gewichte eine Einschätzung sind", () => {
-    const doc = toDocument(evaluate(antworten(["website"], "nein")));
-    expect(doc.blocks.some((b) => b.type === "paragraph" && b.text.includes("Einschätzung von Alperna"))).toBe(true);
   });
 });

@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { sampleResult } from "../../lib/check/fixtures";
 
 const TOOL = "digitaler-auftritt-check";
 /** Abschnitt (section) nach der id seiner Überschrift. */
@@ -154,20 +155,69 @@ test.describe("Kategorieseiten", () => {
   });
 });
 
+/** Ersetzt /api/check im Browser: Der Server dürfte localhost nicht abrufen (SSRF-Schutz), und der Test soll nicht von fremden Seiten abhängen. */
+async function mockCheck(page: Page, outcome: "result" | "error" = "result") {
+  const events =
+    outcome === "result"
+      ? [
+          { type: "step", id: "fetch", state: "start" },
+          { type: "step", id: "fetch", state: "done" },
+          { type: "result", result: await sampleResult() },
+        ]
+      : [{ type: "error", code: "unreachable", message: "Die Website konnte nicht geladen werden. Stimmt die Adresse?" }];
+  await page.route("**/api/check", (route) =>
+    route.fulfill({ status: 200, contentType: "application/x-ndjson", body: events.map((e) => JSON.stringify(e)).join("\n") + "\n" }),
+  );
+}
+
+async function fillForm(page: Page) {
+  await page.goto(`/tools/${TOOL}`);
+  // Der Knopf ist gesperrt, bis die Seite den lokalen Speicher gelesen hat. Erst dann ist Tippen sicher.
+  await expect(page.getByRole("button", { name: "Website prüfen" })).toBeEnabled();
+  await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+  await page.getByLabel("Website", { exact: true }).fill("malerei-keller.ch");
+  await page.getByLabel("Branche", { exact: true }).selectOption("craft");
+}
+
 test.describe("Referenz-Werkzeug im Browser", () => {
-  async function runToResult(page: import("@playwright/test").Page) {
-    await page.goto(`/tools/${TOOL}`);
-    await page.getByRole("button", { name: "Check starten" }).click();
-    await page.getByLabel("Website", { exact: true }).check();
-    await page.getByRole("button", { name: "Weiter" }).click();
-    const rows = page.locator("form fieldset");
-    const n = await rows.count();
-    expect(n).toBeGreaterThanOrEqual(3);
-    for (let i = 0; i < n; i++) await rows.nth(i).getByLabel("Nein").check();
-    await page.getByRole("button", { name: "Zur Zusammenfassung" }).click();
-    await page.getByRole("button", { name: "Ergebnis anzeigen" }).click();
+  async function runToResult(page: Page) {
+    await mockCheck(page);
+    await fillForm(page);
+    await page.getByRole("button", { name: "Website prüfen" }).click();
     await expect(page.getByText("Dein Ergebnis")).toBeVisible();
   }
+
+  test("leere Angaben zeigen eine Meldung, ohne Gate und ohne Abruf", async ({ page }) => {
+    await page.goto(`/tools/${TOOL}`);
+    const start = page.getByRole("button", { name: "Website prüfen" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    await expect(page.getByRole("alert").filter({ hasText: "Bitte gib den Firmennamen an." })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("ein Fehler des Servers bleibt am Formular und verbraucht den freien Durchlauf nicht", async ({ page }) => {
+    await mockCheck(page, "error");
+    await fillForm(page);
+    await page.getByRole("button", { name: "Website prüfen" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Stimmt die Adresse?" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Website prüfen" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+
+    await page.unroute("**/api/check");
+    await mockCheck(page);
+    await page.getByRole("button", { name: "Website prüfen" }).click();
+    await expect(page.getByText("Dein Ergebnis")).toBeVisible();
+  });
+
+  test("das Ergebnis bleibt nach dem Neuladen stehen und schreibt Branche und Kanal ins Profil", async ({ page }) => {
+    await runToResult(page);
+    await page.reload();
+    await expect(page.getByText("Dein Ergebnis")).toBeVisible();
+    const profile = await page.evaluate(() => JSON.parse(localStorage.getItem("mt:profile") ?? "{}"));
+    expect(profile).toMatchObject({ firma: "Malerei Keller", website: "malerei-keller.ch", branche: "Handwerk / Bau / Garten" });
+    expect(profile.kanaele).toEqual([{ name: "Instagram", url: "instagram.com/malereikeller" }]);
+  });
 
   test("freier Durchlauf bis zum Ergebnis, Download erst nach dem Formular, Lead kommt bei n8n an", async ({ page }) => {
     await runToResult(page);
@@ -194,8 +244,8 @@ test.describe("Referenz-Werkzeug im Browser", () => {
 
   test("nach dem freien Durchlauf verlangt ein neuer Start das Formular", async ({ page }) => {
     await runToResult(page);
-    await page.getByRole("button", { name: "Neu starten" }).click();
-    await page.getByRole("button", { name: "Check starten" }).click();
+    await page.getByRole("button", { name: "Erneut prüfen" }).click();
+    await page.getByRole("button", { name: "Website prüfen" }).click();
     await expect(page.getByRole("dialog").getByText("Dein erstes Ergebnis war gratis.")).toBeVisible();
   });
 });
@@ -228,6 +278,27 @@ test.describe("Zugang: ein freier Durchlauf, dann Formular", () => {
 
     const third = await (await post("/api/access", { tool: TOOL })).json();
     expect(third).toMatchObject({ allowed: true, unlocked: true, reason: "unlocked" });
+  });
+
+  test("/api/check: kaputte Eingaben liefern 400, nach dem freien Durchlauf 403", async ({ request }) => {
+    const ip = { "x-forwarded-for": `198.51.100.${Math.floor(Math.random() * 200) + 1}` };
+    let cookie = "";
+    const post = async (path: string, data: unknown) => {
+      const res = await request.post(path, { data, headers: { ...ip, ...(cookie ? { cookie } : {}) } });
+      const set = res.headers()["set-cookie"];
+      if (set) cookie = set.split(";")[0];
+      return res;
+    };
+
+    expect((await post("/api/check", {})).status()).toBe(400);
+    expect((await post("/api/check", { company: "A", website: "http://127.0.0.1" })).status()).toBe(400);
+    expect((await post("/api/check", { company: "A", website: "ftp://keller.ch" })).status()).toBe(400);
+
+    await post("/api/access", { tool: TOOL });
+    await post("/api/access/complete", { tool: TOOL });
+    const used = await post("/api/check", { company: "A", website: "keller.ch" });
+    expect(used.status()).toBe(403);
+    expect((await used.json()).error).toBe("gate");
   });
 
   test("ein Cookie von woanders ändert nichts: ohne Cookie gilt der freie Durchlauf", async ({ playwright }) => {

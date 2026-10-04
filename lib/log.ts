@@ -10,7 +10,11 @@ export type LogNote =
   | "webhook_failed"
   | "lead_queued"
   | "lead_lost"
-  | "honeypot";
+  | "honeypot"
+  | "check_ok"
+  | "check_error"
+  | "check_blocked"
+  | "gate_used";
 
 export function logStatus(route: string, status: number, note: LogNote = "ok"): void {
   console.log(JSON.stringify({ route, status, note }));

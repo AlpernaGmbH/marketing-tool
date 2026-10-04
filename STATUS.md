@@ -1,8 +1,17 @@
 # STATUS.md
 
-Stand: 04.10.2026. **Etappe 1b ist fertig und deployt** (hinter Vercel-Login, noch nicht öffentlich). Seit dem 04.10.2026 gilt **Plan v2** (PLAN.md): Analyse-Werkzeuge entstehen durch Crawling und KI statt durch Fragen; der Fragebogen-Check aus 1b wird in Etappe 1c durch den Marketing-Check mit Crawler ersetzt. Das Branding ist auf Design v3 umgestellt (Geist, Papier, Navy und Gold von alperna.ch).
+Stand: 04.10.2026. **Etappe 1c ist gebaut** (Marketing-Check mit Crawler ersetzt den Fragebogen; Push und Deploy siehe unten). Etappe 1b ist deployt (hinter Vercel-Login, noch nicht öffentlich). Seit dem 04.10.2026 gilt **Plan v2** (PLAN.md): Analyse-Werkzeuge entstehen durch Crawling und KI statt durch Fragen. Das Branding ist auf Design v3 umgestellt (Geist, Papier, Navy und Gold von alperna.ch).
 
 ## Fertig
+
+**Etappe 1c (04.10.2026): Marketing-Check mit Crawler, ohne KI und ohne Konto**
+
+- **Engine** `lib/check/` (Port von `analyzer.mjs` aus dem Agentur-Tool, TypeScript): `net.ts` (SSRF-Schutz: Host auflösen, jede Adresse prüfen, Verbindung an die geprüfte Adresse binden, Weiterleitungen neu prüfen, 2,5 MB, 12 s, nur Port 80/443, gzip/deflate/Brotli), `seo.ts` (16 Prüfpunkte), `social.ts`, `gbp.ts` (Places API optional), `detect.ts` (Shop, Buchung, Newsletter, Tracking, Social-Links), `analyze.ts`, `massnahmen.ts` (feste Texte, Wirkung und Aufwand), `client.ts` (NDJSON-Leser im Browser). Jeder Prüfpunkt trägt eine Kennung (`seo.title`, `gbp.reviews` …) als Anker für die spätere KI-Schicht.
+- **Gleiche Bewertung wie das Agentur-Tool:** `alperna.ch` ergibt mit Branche «Beratung» und ohne Social-Angaben in beiden Systemen **53 Punkte** (live geprüft am 04.10.2026). Mit Instagram wöchentlich: 60.
+- **Route** `POST /api/check` (Node, bis 60 s): streamt `step`-, `result`- und `error`-Ereignisse (NDJSON), prüft Eingabe, Limit (8 pro Stunde und IP-Hash) und freien Durchlauf (`canStart`, 403 `gate`). Loggt nur Route, Statuscode und Stichwort, nie Adresse, Firma oder IP (getestet).
+- **Werkzeug** `tools/digitaler-auftritt-check/`: Formular mit Profil-Vorbefüllung (Firma, Website, Ort; neues Profilfeld `website`), Branche, Social-Kanäle (freiwillig); Fortschritt aus den echten Server-Schritten; Ergebnis mit Punktzahl, bis zu acht Schritten, allen Bereichen und Prüfpunkten (aufklappbar) und dem Kasten «Was gemessen ist und was nicht»; Export PDF, Word, Text. Schreibt Branche und Kanäle ins Profil, nur wenn dort leer.
+- **Seitentext** neu (`content/tools/digitaler-auftritt-check.md`, Beispiel mit dem echten Ergebnis der Engine auf einer Beispielseite), **Spec** neu (`specs/digitaler-auftritt-check.md`).
+- **Qualität:** 480 Unit- und Komponententests (neu: Netz-Schutz, Engine, Route, Client, Logik, Ergebnis-Ansicht), 31 Playwright-Tests (Check im Browser mit gemockter Route, 400 und 403 der echten Route), `npm run check` grün. Lighthouse mobil, Tool-Seite: 97/100/100.
 
 **Etappe 1b**
 
@@ -41,7 +50,8 @@ Stand: 04.10.2026. **Etappe 1b ist fertig und deployt** (hinter Vercel-Login, no
 | KI-Anbieter (gratis) | Entschieden: nur Gratis-Anbieter (PLAN.md, «KI ohne Kosten»). Für Etappe 2 nötig: Cloudflare-Konto mit API-Token für Workers AI, Groq-Konto mit API-Key; optional OpenRouter und Gemini. |
 | Google Cloud | Nur für «Mit Google anmelden» (OAuth, kostenlos) in Etappe 2. Der Places-Schlüssel für das Google-Profil ist optional (Etappe 3, braucht Zahlungsmittel). |
 | `content/pitch/bausteine.md` | Gefüllt aus COMPANY-MASTER und alperna.ch: Website (mit Einstiegsangebot), Google-Profil (Text), Social Media, Online-Shop und Buchungstool (Text). Offen: Beweise für Google-Profil, Online-Shop, Buchungstool; Google Ads bleibt ohne Text (COMPANY-MASTER 3.9). |
-| `specs/digitaler-auftritt-check.md` | Gilt nur noch für den Fragebogen-Check und wird mit Etappe 1c ersetzt. |
+| Zwischenspeicher je Domain | Fehlt. Plan v2 sieht 24 Stunden in Redis vor; geht erst, wenn Upstash verbunden ist. Bis dahin ruft jeder Check die Website neu ab. |
+| Google-Profil im Check | Ohne `GOOGLE_PLACES_API_KEY` bleibt der Bereich «nicht bestätigt» (Annahme 0,25 oder 0,5). Der Schlüssel braucht ein Zahlungsmittel in der Google Cloud (PLAN.md). |
 | Rechtsabsatz in den Seitentexten | `content/site/marketing-schweiz.md` (UWG, revDSG, PBV) und `content/site/schweiz.md` stammen von mir. Nach Regel 8 muss ein Mensch gegenlesen, bevor die Seite öffentlich wird. |
 | Texte mit «ohne Konto» | `content/site/*.md`, TrustLine und CLAUDE.md sagen «kein Konto». Ändern, falls Zugang v2 kommt. |
 | Logo | Nachzeichnung der Original-PNG (liegt in `assets/brand/`). Ein Vektor-Original ersetzt sie. |
@@ -91,6 +101,11 @@ Erledigt am 04.10.2026: `NEXT_PUBLIC_WHATSAPP_NUMBER` in Vercel gesetzt (Product
 32. **KI nur gratis (04.10.2026):** Fakten und Massnahmen ohne KI, KI nur für Angemeldete, Zwischenspeicher, mehrere Gratis-Anbieter, Tageslimit. Rechnung und Quellen in PLAN.md. Gemini ist kein Fundament mehr.
 33. **Alperna-Dokumente als Wahrheitsquelle (04.10.2026):** COMPANY-MASTER, BRAND-VOICE-CORE und ANTI-PATTERNS liegen nur bei Alperna (sie enthalten interne Finanzzahlen). Im Repo steht der Auszug `docs/MARKE.md`; die Sperrliste läuft als Code in `lib/brand-rules.ts` (41 Tests) und prüft Seitentexte und Pitch-Bausteine bei jedem `content-check`. Folgen: Die Texte «Warum kostenlos» und die Antwort «Wer steckt dahinter» sind neu geschrieben («Agentur» fällt weg). **Mein Entwurf von gestern liess Google Ads aktiv anbieten; das widersprach COMPANY-MASTER 3.9** und ist entfernt. Das geplante Werkzeug «customer-journey» heisst «kundenweg», weil «Customer Journey» auf der Sperrliste steht.
 34. **Logo (04.10.2026):** neu nachgezeichnet aus der Original-PNG von Alperna statt aus der Framer-Version (sauberere Kanten, Gold exakt `#FFD700`).
+35. **Marketing-Check, Auslegungen (04.10.2026):** (a) Gewichte und Punkte sind unverändert aus dem Agentur-Tool, damit beide Systeme dieselbe Seite gleich bewerten. (b) Was nur eine Annahme ist (Häufigkeit auf Social Media nicht angegeben) oder kein Mangel (keine Google-Ads- und Meta-Pixel-Spur), trägt `info: true`: es zählt in der Punktzahl, erzeugt aber keine Massnahme. (c) Ein nicht bestätigtes Google-Profil heisst «Prüfauftrag» («Prüfen, ob dein Betrieb bei Google Maps eingetragen ist»), nicht «Eintrag fehlt».
+36. **Offene Frage zur Gerechtigkeit der Punktzahl:** Das Agentur-Tool zieht Betrieben ohne Werbung rund 8 von 100 Punkten ab (Werbung und Tracking haben Gewicht 12 von 89,5, davon entfallen 0,6 auf Ads und Meta) und rechnet das Google-Profil ohne Schlüssel mit 20 von 89,5 Gewicht als Annahme. Beides ist im Ergebnis gekennzeichnet, verzerrt aber die Zahl. Entscheid bei Alperna: gleich lassen (Vergleichbarkeit mit dem Agentur-Tool) oder im Marketing-Check getrennt gewichten.
+37. **Der Check zählt den freien Durchlauf erst am Ende** (`/api/access/complete`), wie bei allen Tools. Wer `/api/check` direkt aufruft und `complete` nie meldet, kann bis zum Limit (8 pro Stunde je IP-Hash) mehrfach prüfen. Das ist für ein Gratis-Werkzeug vertretbar, aber kein hartes Gate. Mit Upstash lässt sich ein eigener Zähler setzen.
+38. **Neues Profilfeld `website`** (in `profileFields`, `PROFILE_FIELDS`, `/profil`). `kanaele` bekommt aus dem Check die Form `{ name, url }`; ein späteres Kanalstrategie-Werkzeug muss damit umgehen oder die Form erweitern.
+39. **Kennung des Abrufs:** User-Agent `AlpernaCheck/1.0 (+https://tools.alperna.ch)`. Die Adresse antwortet erst nach dem DNS-Wechsel. Wer in Logs fremder Server nachschaut, findet bis dahin einen toten Link.
 
 ## Neue Abhängigkeiten (Begründung)
 
