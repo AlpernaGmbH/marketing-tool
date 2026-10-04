@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { CopyButton } from "@/components/tool/CopyButton";
 import { ResultCard } from "@/components/tool/ResultCard";
@@ -8,15 +7,11 @@ import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useAccount } from "@/lib/use-account";
 import { useLocalJson } from "@/lib/use-local";
 import { requestRewrite } from "./client";
 import { FAIL_MESSAGES, MAX_INPUT_CHARS, SAMPLE_TEXT, SLUG, inputProblem, isAnrede, parseUmschreiberState } from "./logic";
 import { ANREDEN, STYLES, getStyle, type Anrede } from "./styles";
 import config from "./tool.config";
-
-// Das Anmelde-Fenster wird erst geladen, wenn jemand es braucht: Die meisten Besucher sehen es nie.
-const SignInDialog = dynamic(() => import("@/components/site/SignInDialog").then((m) => m.SignInDialog), { ssr: false });
 
 const selectClass =
   "h-11 w-full rounded-lg border border-input bg-paper px-3 text-base focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
@@ -31,7 +26,8 @@ function Intro() {
         Fakten.
       </p>
       <p>
-        Dein Text geht an unseren Server und von dort an unseren KI-Anbieter. Wir speichern ihn nicht. Gib keine vertraulichen Angaben und keine Daten Dritter ein.
+        Dein Text geht an unseren Server und von dort an unseren KI-Anbieter. Wir speichern ihn nicht. Gib keine vertraulichen Angaben und keine Daten Dritter ein. Der erste
+        Durchlauf ist frei, danach brauchst du das kurze Formular.
       </p>
     </>
   );
@@ -64,7 +60,6 @@ function StylePicker({ value, onChange, disabled }: { value: string; onChange: (
 
 function RewriteFlow() {
   const ctx = useToolContext();
-  const account = useAccount();
   const { value: saved, ready, set } = useLocalJson(`mt:${SLUG}`, parseUmschreiberState);
 
   // Der Entwurf lebt im Feld, der Speicher folgt mit etwas Verzögerung (nicht bei jedem Tastendruck).
@@ -72,7 +67,6 @@ function RewriteFlow() {
   const text = draft ?? saved.text;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [signInOpen, setSignInOpen] = useState(false);
   // Änderungen des Besuchers am Ergebnis (Platzhalter ausfüllen). Gelten nur für die Fassung, zu der sie gehören.
   const [edit, setEdit] = useState<{ base: string; value: string } | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -95,14 +89,14 @@ function RewriteFlow() {
     shouldFocus.current = false;
   }, [saved.result]);
 
-  const signedIn = ctx.signedIn || Boolean(account?.account);
-  const canSignIn = account?.login === "clerk";
   const shown = edit && edit.base === saved.result ? edit.value : saved.result;
 
   async function rewrite(input: string, styleId: string, anrede: Anrede) {
     setBusy(true);
     try {
-      const outcome = await requestRewrite({ text: input, styleId, anrede });
+      let outcome = await requestRewrite({ text: input, styleId, anrede });
+      // Der Server kennt den freien Durchlauf als gebraucht: erst das Formular, dann einmal wiederholen.
+      if (!outcome.ok && outcome.reason === "gate" && (await ctx.requestStart())) outcome = await requestRewrite({ text: input, styleId, anrede });
       if (!outcome.ok) {
         setError(FAIL_MESSAGES[outcome.reason]);
         return;
@@ -123,19 +117,9 @@ function RewriteFlow() {
     const problem = inputProblem(text, saved.styleId);
     if (problem) return setError(problem);
     setError(null);
-    // Den Entwurf sofort sichern: Die Anmeldung kann die Seite neu laden.
     set({ ...saved, text });
-    if (!signedIn) {
-      if (canSignIn) setSignInOpen(true);
-      else setError("Der Text-Umschreiber braucht eine Anmeldung, und die ist zurzeit nicht verfügbar. Bitte versuch es später noch einmal.");
-      return;
-    }
-    const { styleId, anrede } = saved;
-    // Ohne Freischaltung öffnet sich erst das kurze Formular, danach läuft die Umschreibung von selbst.
-    ctx.guardDownload(() => rewrite(text, styleId, anrede));
+    void rewrite(text, saved.styleId, saved.anrede);
   }
-
-  const waiting = !ready || account === undefined;
 
   return (
     <form
@@ -150,19 +134,6 @@ function RewriteFlow() {
       <div className="content">
         <Intro />
       </div>
-
-      {account !== undefined && !signedIn && (
-        <p role="note" className="rounded-xl border border-line bg-surface px-4 py-3 text-sm">
-          {canSignIn
-            ? "Der Text-Umschreiber arbeitet mit einer KI und steht deshalb nur angemeldeten Personen offen. Beim Klick auf «Anmelden und umschreiben» öffnet sich die Anmeldung."
-            : "Der Text-Umschreiber arbeitet mit einer KI und steht nur angemeldeten Personen offen. Die Anmeldung ist zurzeit nicht verfügbar."}
-        </p>
-      )}
-      {ctx.signedIn && !ctx.unlocked && (
-        <p role="note" className="rounded-xl border border-line bg-surface px-4 py-3 text-sm">
-          Du bist angemeldet. Für den Text-Umschreiber brauchen wir noch Name, Firma und E-Mail in einem kurzen Formular. Es öffnet sich beim Klick auf «Umschreiben».
-        </p>
-      )}
 
       <StylePicker
         value={saved.styleId}
@@ -219,8 +190,8 @@ function RewriteFlow() {
       </p>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" size="lg" disabled={waiting || busy}>
-          {busy ? "Die KI schreibt …" : signedIn ? "Umschreiben" : "Anmelden und umschreiben"}
+        <Button type="submit" size="lg" disabled={!ready || busy}>
+          {busy ? "Die KI schreibt …" : "Umschreiben"}
         </Button>
         <Button
           type="button"
@@ -288,7 +259,6 @@ function RewriteFlow() {
         </ResultCard>
       )}
 
-      {signInOpen && <SignInDialog open mode="anmelden" onOpenChange={setSignInOpen} />}
     </form>
   );
 }

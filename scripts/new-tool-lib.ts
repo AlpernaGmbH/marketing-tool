@@ -185,12 +185,28 @@ description: "TODO Beschreibung, höchstens 155 Zeichen"
 h1: "${name} für Schweizer KMU"
 tagline: "TODO Tagline"
 beispielFirma: "Malerei Keller, Gossau"
+kurz:
+  - "TODO was du bekommst"
+  - "TODO was du dafür tust"
+  - "TODO was danach klar ist"
+ablauf:
+  - "TODO Schritt 1"
+  - "TODO Schritt 2"
+  - "TODO Schritt 3"
 ---
 ## Warum das wichtig ist
-TODO 200 bis 300 Wörter, Schweizer Bezug, Zahlen mit Quelle in Klammern.
+TODO Ein Satz mit der Aussage (50 bis 140 Wörter mit den Punkten).
+
+- TODO Punkt 1
+- TODO Punkt 2
+- TODO Punkt 3
+
+=> TODO Offene Schleife: ein Satz, der auf den nächsten Abschnitt neugierig macht.
 
 ## So nutzt du das Ergebnis
 1. TODO
+
+=> TODO Offene Schleife auf «Häufige Fehler».
 
 ## Häufige Fehler
 - TODO
@@ -200,7 +216,7 @@ TODO Ergebnis der fiktiven Firma Malerei Keller, Gossau.
 
 ## Häufige Fragen
 ### TODO Frage 1
-TODO Antwort
+TODO Antwort (höchstens 80 Wörter)
 
 ## Alperna
 problem: TODO

@@ -5,8 +5,14 @@
 //  - der Browser trägt ein Sitzungs-Zeichen von Clerk (Cookie `__client_uat`): Dann hält clerk-js die Sitzung frisch.
 // Besucher ohne Konto, also fast alle Aufrufe aus der Suche, laden Clerk nie und nehmen nie Kontakt zu Clerk auf.
 //
+// Ausnahme: Kehrt jemand von Google, Microsoft oder Apple zurück, muss Clerk die Anmeldung abschliessen. Dann trägt die Adresse
+// Parameter von Clerk (`__clerk_...`), oder die Person hat vor kurzem «Anmelden» geklickt. Auch dann lädt Clerk, sonst bliebe
+// die Anmeldung nach dem Anbieter-Fenster einfach stehen.
+//
 // Die Komponenten der App kennen Clerk nicht. Sie rufen die Funktionen hier auf. `ClerkRoot` (lazy geladen) meldet
 // sich mit `registerClerk` an, sobald Clerk bereit ist.
+
+import { readLocal, writeLocal } from "@/lib/storage";
 
 /** Der Teil von Clerk, den wir brauchen. */
 export type ClerkApi = {
@@ -111,11 +117,52 @@ export async function whenSessionReady(timeoutMs = 8_000): Promise<void> {
 
 export type SignInMode = "anmelden" | "registrieren";
 
+// ---- Rückkehr vom Anbieter ------------------------------------------------------------------------------------------
+
+const STARTED_KEY = "mt:_clerk";
+/** So lange gilt «Anmelden wurde geklickt»: genug für das Fenster des Anbieters, kurz genug, dass Clerk danach wieder schweigt. */
+export const STARTED_MS = 15 * 60 * 1000;
+
+/** Trägt die Adresse Parameter von Clerk? Dann kommt die Person vom Anbieter zurück und Clerk muss den Rest erledigen. */
+export function hasClerkCallback(search: string = typeof location === "undefined" ? "" : location.search, hash: string = typeof location === "undefined" ? "" : location.hash): boolean {
+  return /[?&](?:__clerk_[a-z_]+|__clerk_db_jwt)=/i.test(search) || /(?:^|[?&#/])(?:sso-callback|__clerk_[a-z_]+=)/i.test(hash);
+}
+
+function markStarted(now = Date.now()): void {
+  try {
+    writeLocal(STARTED_KEY, String(now));
+  } catch {
+    /* Merker ist Komfort */
+  }
+}
+
+/** Hat die Person vor kurzem «Anmelden» geklickt? */
+export function signInStartedRecently(now = Date.now()): boolean {
+  try {
+    const at = Number(readLocal(STARTED_KEY));
+    return Number.isFinite(at) && at > 0 && now - at >= 0 && now - at <= STARTED_MS;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Beim Laden der Seite aufrufen: Lädt Clerk, wenn die Person vom Anbieter zurückkehrt oder vor kurzem «Anmelden» geklickt hat.
+ * Alle anderen Besucher laden Clerk nie. Gibt zurück, ob Clerk angefordert wurde.
+ */
+export function loadClerkIfReturning(): boolean {
+  if (!clerkEnabled()) return false;
+  if (!hasClerkCallback() && !signInStartedRecently()) return false;
+  void loadClerk();
+  return true;
+}
+
 /** Öffnet das Fenster von Clerk. Danach kehrt die Person zu `returnUrl` zurück. false: Clerk war nicht bereit. */
 export async function openSignIn(mode: SignInMode, returnUrl: string): Promise<boolean> {
   const clerk = await loadClerk();
   if (!clerk) return false;
   try {
+    markStarted();
     // Meldet sich die Person im Fenster an (E-Mail-Code, ohne die Seite zu verlassen), wechselt Clerk die Seite nur sanft.
     // Wir laden die Zielseite ganz neu: Dann lesen Kopfzeile und Werkzeug den neuen Stand und werten `?konto=ok` aus.
     // Wer schon angemeldet ist, braucht das nicht; sonst gilt jede Meldung mit einer Person als «hat sich angemeldet».

@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { DEFAULT_AI_MODELS, describeAiError, modelsFromEnv } from "@/lib/ai";
+import { describe, expect, it, vi } from "vitest";
+import { DEFAULT_AI_MODELS, DEFAULT_MISTRAL_MODELS, MistralError, describeAiError, mistralChat, mistralModelsFromEnv, usesMistral } from "@/lib/ai";
+import { modelsFromEnv } from "@/lib/ai";
 
 describe("modelsFromEnv", () => {
   it("nimmt ohne Angabe den Standard (nur Mistral)", () => {
@@ -55,5 +56,83 @@ describe("describeAiError", () => {
     a.cause = a; // Zirkel
     expect(describeAiError(a).split(">").length).toBeLessThanOrEqual(3);
     for (const junk of [null, undefined, 5, "text", {}]) expect(typeof describeAiError(junk)).toBe("string");
+  });
+});
+
+describe("Mistral direkt", () => {
+  const ARGS = { system: "Regeln", prompt: "Ausgangstext", maxTokens: 300, temperature: 0.4, timeoutMs: 5_000 };
+  const ENV = { MISTRAL_API_KEY: "test-key" };
+  const ok = (content: unknown) => new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200, headers: { "content-type": "application/json" } });
+  const fail = (status: number) => new Response("{}", { status });
+  const asFetch = (fn: ReturnType<typeof vi.fn>) => fn as unknown as typeof fetch;
+
+  it("der Weg richtet sich nach dem Schlüssel", () => {
+    expect(usesMistral({})).toBe(false);
+    expect(usesMistral({ MISTRAL_API_KEY: "" })).toBe(false);
+    expect(usesMistral(ENV)).toBe(true);
+  });
+
+  it("liest die Modellliste aus MISTRAL_MODELS und fällt bei Müll auf den Standard", () => {
+    expect(mistralModelsFromEnv(undefined)).toEqual(DEFAULT_MISTRAL_MODELS);
+    expect(mistralModelsFromEnv(" mistral-large-latest , open-mistral-nemo ")).toEqual(["mistral-large-latest", "open-mistral-nemo"]);
+    expect(mistralModelsFromEnv("../x,;drop,http://a")).toEqual(DEFAULT_MISTRAL_MODELS);
+    expect(mistralModelsFromEnv("a,b,c,d,e")).toHaveLength(3);
+  });
+
+  it("schickt Schlüssel, Nachrichten und Grenzen an Mistral und gibt den Text zurück", async () => {
+    const fetchImpl = vi.fn(async () => ok("Fertige Fassung."));
+    const out = await mistralChat({ ...ARGS, json: true }, asFetch(fetchImpl), ENV);
+    expect(out).toBe("Fertige Fassung.");
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.mistral.ai/v1/chat/completions");
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer test-key");
+    const body = JSON.parse(init.body as string);
+    expect(body).toMatchObject({ model: "mistral-small-latest", temperature: 0.4, max_tokens: 300, response_format: { type: "json_object" } });
+    expect(body.messages).toEqual([
+      { role: "system", content: "Regeln" },
+      { role: "user", content: "Ausgangstext" },
+    ]);
+  });
+
+  it("verlangt response_format nur für JSON-Antworten", async () => {
+    const fetchImpl = vi.fn(async () => ok("Text"));
+    await mistralChat(ARGS, asFetch(fetchImpl), ENV);
+    const body = JSON.parse((fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(body.response_format).toBeUndefined();
+  });
+
+  it("liest auch eine Antwort, die als Liste von Teilen kommt", async () => {
+    const fetchImpl = vi.fn(async () => ok([{ type: "text", text: "Teil eins. " }, { type: "text", text: "Teil zwei." }]));
+    expect(await mistralChat(ARGS, asFetch(fetchImpl), ENV)).toBe("Teil eins. Teil zwei.");
+  });
+
+  it("versucht bei Überlastung oder Serverfehler das nächste Modell", async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(fail(429)).mockResolvedValueOnce(ok("Zweites Modell."));
+    expect(await mistralChat(ARGS, asFetch(fetchImpl), ENV)).toBe("Zweites Modell.");
+    expect(JSON.parse((fetchImpl.mock.calls[1] as unknown as [string, RequestInit])[1].body as string).model).toBe("open-mistral-nemo");
+
+    const server = vi.fn().mockResolvedValueOnce(fail(503)).mockResolvedValueOnce(ok("Ersatz."));
+    expect(await mistralChat(ARGS, asFetch(server), ENV)).toBe("Ersatz.");
+  });
+
+  it("versucht bei falschem Schlüssel oder falscher Anfrage nichts weiter", async () => {
+    const fetchImpl = vi.fn(async () => fail(401));
+    await expect(mistralChat(ARGS, asFetch(fetchImpl), ENV)).rejects.toMatchObject({ name: "MistralHttpError", statusCode: 401 });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("wirft ohne Schlüssel, bei leerer Antwort und bei Netzfehlern mit lesbarer Fehlerart", async () => {
+    await expect(mistralChat(ARGS, asFetch(vi.fn()), {})).rejects.toMatchObject({ name: "MistralNoKey" });
+    const empty = vi.fn(async () => ok("   "));
+    await expect(mistralChat(ARGS, asFetch(empty), ENV)).rejects.toMatchObject({ name: "MistralEmptyError" });
+    const offline = vi.fn(async () => {
+      throw new TypeError("fetch failed");
+    });
+    await expect(mistralChat(ARGS, asFetch(offline), ENV)).rejects.toMatchObject({ name: "MistralNetworkError" });
+  });
+
+  it("Fehler tragen nie Text des Anbieters: die Fehlerart im Protokoll bleibt kurz", () => {
+    const e = new MistralError("MistralHttpError", 429);
+    expect(describeAiError(e)).toBe("MistralHttpError:429");
   });
 });

@@ -49,7 +49,34 @@ export async function ToolPageLayout({ config, content, children }: Props) {
       <div className="container-page mt-6 md:mt-8">{children}</div>
 
       <div className="container-page">
-        <section aria-labelledby="warum" className="section">
+        {(fm.kurz?.length === 3 || fm.ablauf?.length === 3) && (
+          <section aria-labelledby="kurz" className="section">
+            {fm.kurz?.length === 3 && (
+              <div className="kurz measure">
+                <h2 id="kurz" className="text-xl">
+                  In Kürze
+                </h2>
+                <ul>
+                  {fm.kurz.map((k) => (
+                    <li key={k}>{k}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {fm.ablauf?.length === 3 && (
+              <ol className="flow mt-4" aria-label="So läuft es ab" data-testid="ablauf">
+                {fm.ablauf.map((a, i) => (
+                  <li key={a}>
+                    <span aria-hidden>{i + 1}</span>
+                    <span>{a}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        )}
+
+        <section aria-labelledby="warum" className={fm.kurz?.length === 3 || fm.ablauf?.length === 3 ? "pb-[var(--section-y)]" : "section"}>
           <h2 id="warum">{SECTION_TITLES.warum}</h2>
           <div className="mt-4">
             <Html html={warum} />
@@ -58,14 +85,14 @@ export async function ToolPageLayout({ config, content, children }: Props) {
 
         <section aria-labelledby="nutzen" className="pb-[var(--section-y)]">
           <h2 id="nutzen">{SECTION_TITLES.nutzen}</h2>
-          <div className="mt-4">
+          <div className="steps mt-4">
             <Html html={nutzen} />
           </div>
         </section>
 
         <section aria-labelledby="fehler" className="pb-[var(--section-y)]">
           <h2 id="fehler">{SECTION_TITLES.fehler}</h2>
-          <div className="mt-4">
+          <div className="pitfalls mt-4">
             <Html html={fehler} />
           </div>
         </section>

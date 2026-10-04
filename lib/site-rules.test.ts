@@ -19,8 +19,14 @@ function category(o: { einleitung?: string; hintergrund?: string; faq?: number; 
     .map(([k, v]) => `${k}: "${v}"`)
     .join("\n");
   const faq = Array.from({ length: o.faq ?? 5 }, (_, i) => `### Frage ${i + 1}\n${words(40, `a${i}`)}.`).join("\n\n");
-  return `---\n${head}\n---\n\n## Einleitung\n${o.einleitung ?? words(250, "e")}.\n\n## Hintergrund\n${o.hintergrund ?? words(500, "h")}.\n\n## Häufige Fragen\n${faq}\n`;
+  return `---\n${head}\n---\n\n## Einleitung\n${o.einleitung ?? INTRO}\n\n## Hintergrund\n${o.hintergrund ?? BACKGROUND}\n\n## Häufige Fragen\n${faq}\n`;
 }
+
+const bulletLines = (n: number, w = 8, seed = "p") => Array.from({ length: n }, (_, i) => `- ${words(w, `${seed}${i}`)}`).join("\n");
+const INTRO = `${words(25, "e")}.\n\n${bulletLines(3, 12, "e")}`;
+const BACKGROUND = ["### Eins", "### Zwei", "### Drei"]
+  .map((h, i) => `${h}\n${words(20, `s${i}`)}.\n\n${bulletLines(2, 20, `b${i}`)}${i < 2 ? "\n\n=> Gleich darunter: mehr." : ""}`)
+  .join("\n\n");
 
 const check = (md: string) => codes(checkCategory(parseCategory(md)));
 
@@ -28,11 +34,21 @@ describe("checkCategory", () => {
   it("akzeptiert einen vollständigen Text", () => {
     expect(check(category())).toEqual([]);
   });
-  it("verlangt rund 250 Wörter Einleitung und rund 500 Hintergrund", () => {
-    expect(check(category({ einleitung: words(150) }))).toContain("words");
-    expect(check(category({ einleitung: words(400) }))).toContain("words");
-    expect(check(category({ hintergrund: words(300) }))).toContain("words");
-    expect(check(category({ hintergrund: words(700) }))).toContain("words");
+  it("verlangt kurze Texte: Einleitung 50 bis 130 Wörter, Hintergrund 180 bis 360", () => {
+    expect(check(category({ einleitung: `${words(10)}.\n\n${bulletLines(3, 3)}` }))).toContain("words");
+    expect(check(category({ einleitung: `${words(150)}.\n\n${bulletLines(3, 10)}` }))).toContain("words");
+    const tiny = ["### A", "### B", "### C"].map((h) => `${h}\n${words(5)}.\n\n${bulletLines(2, 5)}\n\n=> Gleich: mehr.`).join("\n\n");
+    expect(check(category({ hintergrund: tiny }))).toContain("words");
+    expect(check(category({ hintergrund: `${BACKGROUND}\n\n${words(400)}.` }))).toContain("words");
+  });
+  it("verlangt Aufzählungen, Zwischenüberschriften und offene Schleifen", () => {
+    expect(check(category({ einleitung: `${words(60)}.` }))).toContain("reading");
+    expect(check(category({ hintergrund: `${words(200)}.` }))).toContain("reading");
+    expect(check(category({ hintergrund: BACKGROUND.replace(/=> [^\n]+/g, "") }))).toContain("reading");
+  });
+  it("hält die Antworten der FAQ kurz (höchstens 80 Wörter)", () => {
+    const md = category().replace(/(### Frage 1\n)[^\n]+/, `$1${words(120)}.`);
+    expect(check(md)).toContain("faq-long");
   });
   it("verlangt genau 5 Fragen", () => {
     expect(check(category({ faq: 4 }))).toContain("faq-count");
@@ -69,15 +85,21 @@ describe("checkWarumKostenlos", () => {
 });
 
 describe("checkMarketingSchweiz", () => {
-  const full = `${MARKETING_TOPICS.join(" ")} ${words(750 - MARKETING_TOPICS.length - 1)}.`;
+  const sections = ["### A", "### B", "### C", "### D"]
+    .map((h, i) => `${h}\n${words(12, `m${i}`)}.\n\n${bulletLines(2, 10, `m${i}`)}${i < 3 ? "\n\n=> Als Nächstes: mehr." : ""}`)
+    .join("\n\n");
+  const full = `${MARKETING_TOPICS.join(" ")} ${words(200)}.\n\n${sections}`;
   const doc = (body: string, front = 'title: "Marketing in der Schweiz"\nheading: "Marketing in der Schweiz: was anders ist"') => `---\n${front}\n---\n\n${body}\n`;
   const run = (md: string) => codes(checkMarketingSchweiz(parseSimple(md)));
-  it("akzeptiert 700 bis 900 Wörter mit allen Pflichtthemen", () => {
+  it("akzeptiert 300 bis 480 Wörter mit allen Pflichtthemen, Aufzählungen und Schleifen", () => {
     expect(run(doc(full))).toEqual([]);
   });
   it("meldet zu wenig und zu viel", () => {
-    expect(run(doc(`${MARKETING_TOPICS.join(" ")} ${words(200)}`))).toContain("words");
-    expect(run(doc(`${MARKETING_TOPICS.join(" ")} ${words(1000)}`))).toContain("words");
+    expect(run(doc(`${MARKETING_TOPICS.join(" ")} ${words(100)}`))).toContain("words");
+    expect(run(doc(`${full}\n\n${words(400)}.`))).toContain("words");
+  });
+  it("verlangt Aufzählungen und offene Schleifen", () => {
+    expect(run(doc(`${MARKETING_TOPICS.join(" ")} ${words(350)}.`))).toEqual(expect.arrayContaining(["reading"]));
   });
   it.each(MARKETING_TOPICS)("meldet das fehlende Pflichtthema «%s»", (topic) => {
     expect(run(doc(full.replace(topic, "XYZ")))).toContain("topic");
@@ -94,6 +116,9 @@ describe("checkFaqStartseite", () => {
     expect(run(faq(7))).toEqual([]);
     expect(run(faq(6))).toContain("faq-count");
     expect(run(faq(8))).toContain("faq-count");
+  });
+  it("hält die Antworten kurz (höchstens 80 Wörter)", () => {
+    expect(run(faq(7).replace(/(### Frage 1\n)[^\n]+/, `$1${words(120)}.`))).toContain("faq-long");
   });
 });
 

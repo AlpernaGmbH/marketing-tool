@@ -1,5 +1,5 @@
 import { brandHits } from "@/lib/brand-rules";
-import { SECTION_ORDER, SECTION_TITLES, type ParsedToolContent } from "@/lib/content";
+import { SECTION_ORDER, SECTION_TITLES, loopCount, type ParsedToolContent } from "@/lib/content";
 import { BAUSTEIN_NAMES } from "@/lib/pitch";
 
 // Prüfregeln für content/tools/<slug>.md (CLAUDE.md, Harte Regel 12 und Seitentext-Vorlage).
@@ -22,6 +22,15 @@ function listItems(md: string, kind: "ordered" | "bullet"): number {
   const re = kind === "ordered" ? /^\s*\d+[.)]\s+\S/ : /^\s*[-*]\s+\S/;
   return md.split("\n").filter((l) => re.test(l)).length;
 }
+
+/** Umfang der Lese-Vorlage (CLAUDE.md, «Lese-Vorlage»). Zahlen an einer Stelle, damit sie leicht angepasst werden. */
+export const READING = {
+  toolWords: [350, 700],
+  warumWords: [50, 140],
+  warumBullets: [3, 6],
+  faqAnswerMax: 80,
+  loopsMin: 2,
+} as const;
 
 type Banned = { re: RegExp; what: string };
 const BANNED: Banned[] = [
@@ -97,11 +106,17 @@ export function checkToolContent(parsed: ParsedToolContent): Issue[] {
   for (const t of unknown) issues.push(err("section-unknown", `Unbekannter Abschnitt «## ${t}»`));
   if (/^#\s+\S/m.test(parsed.body)) issues.push(err("h1-in-body", "Der Text enthält eine H1; die H1 kommt aus den Kopfdaten"));
 
-  // Umfang
+  // Umfang und Lesbarkeit
   const { warum, nutzen, fehler, beispiel } = parsed.sections;
   if (warum !== undefined) {
     const n = countWords(warum);
-    if (n < 200 || n > 300) issues.push(err("warum-words", `«Warum das wichtig ist» hat ${n} Wörter (200 bis 300)`));
+    if (n < READING.warumWords[0] || n > READING.warumWords[1]) {
+      issues.push(err("warum-words", `«Warum das wichtig ist» hat ${n} Wörter (${READING.warumWords[0]} bis ${READING.warumWords[1]})`));
+    }
+    const bullets = listItems(warum, "bullet");
+    if (bullets < READING.warumBullets[0] || bullets > READING.warumBullets[1]) {
+      issues.push(err("warum-bullets", `«Warum das wichtig ist» hat ${bullets} Aufzählungspunkte (${READING.warumBullets[0]} bis ${READING.warumBullets[1]})`));
+    }
   }
   if (nutzen !== undefined) {
     const n = listItems(nutzen, "ordered");
@@ -119,7 +134,15 @@ export function checkToolContent(parsed: ParsedToolContent): Issue[] {
     if (n < 5 || n > 7) issues.push(err("faq-count", `Es gibt ${n} Fragen (5 bis 7)`));
     for (const f of parsed.faq) {
       if (!f.answer) issues.push(err("faq-empty", `Frage «${f.question}» hat keine Antwort`));
+      else if (countWords(f.answer) > READING.faqAnswerMax) {
+        issues.push(err("faq-long", `Antwort auf «${f.question}» hat ${countWords(f.answer)} Wörter (höchstens ${READING.faqAnswerMax})`));
+      }
     }
+  }
+  // Offene Schleifen: Sätze am Ende eines Abschnitts, die auf den nächsten neugierig machen («=> Gleich unten: …»).
+  const loops = loopCount([warum, nutzen, fehler].filter(Boolean).join("\n"));
+  if (loops < READING.loopsMin) {
+    issues.push(err("loops", `Es gibt ${loops} offene Schleifen (Zeilen mit «=> » am Ende von «Warum», «So nutzt du» oder «Fehler»), mindestens ${READING.loopsMin}`));
   }
   if (parsed.sections.alperna !== undefined) {
     for (const key of ["problem", "baustein", "beweis"] as const) {
@@ -131,10 +154,13 @@ export function checkToolContent(parsed: ParsedToolContent): Issue[] {
     }
   }
   const words = countWords(parsed.body);
-  if (words < 800 || words > 1200) issues.push(err("total-words", `Der Text hat ${words} Wörter (800 bis 1'200)`));
+  if (words < READING.toolWords[0] || words > READING.toolWords[1]) {
+    issues.push(err("total-words", `Der Text hat ${words} Wörter (${READING.toolWords[0]} bis ${READING.toolWords[1]})`));
+  }
 
-  issues.push(...todoIssues(parsed.body, Object.values(parsed.frontmatter)));
-  issues.push(...styleIssues(parsed.body));
+  const head = Object.values(parsed.frontmatter).flat();
+  issues.push(...todoIssues(parsed.body, head));
+  issues.push(...styleIssues([parsed.body, ...(fm.kurz ?? []), ...(fm.ablauf ?? [])].join("\n")));
 
   // Zahlen mit Quelle: Hinweis, kein Fehler (heuristisch). Das Beispiel ist fiktiv und ausgenommen.
   const sourced = Object.entries(parsed.sections)

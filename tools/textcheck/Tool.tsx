@@ -25,6 +25,7 @@ import {
   type FindingKind,
   type TextReport,
 } from "./logic";
+import { AiPanel } from "./AiPanel";
 import config from "./tool.config";
 
 const KINDS: FindingKind[] = ["fehler", "schreibweise", "floskel", "satz"];
@@ -38,8 +39,8 @@ function Intro({ inAccount }: { inAccount: boolean }) {
         Schreibweise, markiert Floskeln und misst, wie leicht sich der Text lesen lässt. Du bekommst den Text mit den sicheren Korrekturen zurück.
       </p>
       <p>
-        Die Prüfung läuft in deinem Browser. Der Text geht an keinen Server und an keine KI. Rechtschreibung einzelner Wörter und Grammatik prüft der
-        Textcheck nicht: Dafür unterstreicht dein Browser unbekannte Wörter im Textfeld.{" "}
+        Die Prüfung läuft in deinem Browser. Der Text geht an keinen Server, solange du nicht selbst «Mit KI prüfen» klickst. Rechtschreibung und Grammatik prüft die
+        KI auf Knopfdruck; dein Browser unterstreicht unbekannte Wörter schon beim Schreiben.{" "}
         {inAccount
           ? "Du bist angemeldet: Der Text wird in deinem Konto gespeichert, damit du ihn auf jedem Gerät wiederfindest."
           : "Der Text bleibt in deinem Browser. Mit Konto bleibt er auf jedem Gerät erhalten."}
@@ -82,11 +83,13 @@ function FindingRow({ f }: { f: Finding }) {
 
 function ResultView({
   report,
+  source,
   onEdit,
   onNew,
   headingRef,
 }: {
   report: TextReport;
+  source: string;
   onEdit: () => void;
   onNew: () => void;
   headingRef: React.Ref<HTMLHeadingElement>;
@@ -129,16 +132,16 @@ function ResultView({
       )}
 
       <p className="text-sm text-muted-foreground">
-        Geprüft: doppelte Wörter, Leerzeichen und Satzzeichen, Schweizer Schreibweise, Floskeln aus unserer Liste, Satzlänge und Lesbarkeit. Nicht geprüft:
-        Rechtschreibung einzelner Wörter und Grammatik.
+        Geprüft: doppelte Wörter, Leerzeichen und Satzzeichen, Schweizer Schreibweise, Floskeln aus unserer Liste, Satzlänge und Lesbarkeit. Rechtschreibung und
+        Grammatik: mit dem Knopf «Mit KI prüfen» weiter unten.
       </p>
 
       <div className="grid gap-4">
         <h4>Das fällt auf</h4>
         {byKind.length === 0 ? (
           <p>
-            Zu den geprüften Punkten ist nichts aufgefallen. Das heisst nicht, dass der Text fehlerfrei ist: Tippfehler in einzelnen Wörtern und Grammatik prüft der
-            Textcheck nicht.
+            Zu den geprüften Punkten ist nichts aufgefallen. Das heisst nicht, dass der Text fehlerfrei ist: Tippfehler in einzelnen Wörtern und Grammatik prüft die
+            KI weiter unten.
           </p>
         ) : (
           byKind.map((g) => (
@@ -156,6 +159,8 @@ function ResultView({
           <p className="text-sm text-muted-foreground">Als lang gilt hier ein Satz ab {LONG_SENTENCE_WORDS + 1} Wörtern. Das ist ein Richtwert dieses Werkzeugs, keine Norm.</p>
         )}
       </div>
+
+      <AiPanel source={source} />
 
       <div className="grid gap-2">
         <Label htmlFor="tc-cleaned">Bereinigter Text</Label>
@@ -227,6 +232,7 @@ function TextFlow() {
     return (
       <ResultView
         report={report}
+        source={saved.text}
         headingRef={headingRef}
         onEdit={() => {
           shouldFocus.current = "area";

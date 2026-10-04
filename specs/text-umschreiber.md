@@ -1,6 +1,6 @@
 # Text-Umschreiber (text-umschreiber)
 
-Klasse C (KI, braucht den Server), Stand 04.10.2026. Der Text geht an `/api/text`, von dort an das Vercel AI Gateway. `logic.ts`, `styles.ts` und `client.ts` sind getestet; die Route auch.
+Klasse C (KI, braucht den Server), Stand 04.10.2026. Der Text geht an `/api/text`, von dort an den KI-Anbieter (Mistral direkt, sonst Vercel AI Gateway). `logic.ts`, `styles.ts` und `client.ts` sind getestet; die Route auch.
 
 ## Nutzen in einem Satz
 Für Inhaberinnen und Inhaber von KMU und Vereinsvorstände: einen vorhandenen Text in unter drei Minuten als LinkedIn-Post, Instagram-Caption, Google-Beitrag, Medienmitteilung, Newsletter oder Website-Text neu schreiben lassen, mit Schweizer Schreibweise und ohne erfundene Fakten.
@@ -12,11 +12,10 @@ Schreibt ins Profil: nichts
 Verwandte Tools: textcheck, digitaler-auftritt-check; newsletter-check entsteht später (die Seite verlinkt nur, was es gibt)
 `needsServer: true`: der Text geht an `/api/text` (Ausnahme in Harte Regel 1).
 
-## Zugang
-- Nur mit Konto **und** Freischaltung (wie die KI-Einordnung): Die Route antwortet ohne Sitzung 401, ohne Freischaltung 403.
-- Im Werkzeug: Abgemeldet öffnet der Knopf «Anmelden und umschreiben» das Anmelde-Fenster (Clerk). Angemeldet, aber nicht freigeschaltet, öffnet «Umschreiben» erst das LeadGate (Anlass `download`) und startet danach von selbst.
-- Ist die Anmeldung nicht eingerichtet, sagt das Werkzeug es ruhig und schickt nichts ab.
-- Begründung: Jede Umschreibung kostet KI-Rechenzeit. Ohne Konto liesse sich nichts pro Person begrenzen.
+## Zugang (geändert am 04.10.2026 abends)
+- **Ohne Konto.** Es gilt das Zugangsmodell wie bei jedem Werkzeug: erster Durchlauf frei, danach antwortet die Route mit 403 und das Werkzeug öffnet das LeadGate (`requestStart`), danach wiederholt es die Anfrage einmal. Wer ein freigeschaltetes Konto hat, kommt wie überall durch.
+- **Kein Limit pro Person.** Der Schutz vor Missbrauch sind 30 Anfragen pro Stunde und IP-Hash und die globale Tagesgrenze `AI_DAILY_CAP` (Standard 2'000).
+- Begründung: Der Entscheid vom Vorabend (nur mit Konto, wegen der Kosten) fiel weg, weil der kostenlose Plan von Mistral die Kosten trägt und ein Konto die Hürde für Leads erhöhte. Die Anmeldung ist nicht Voraussetzung eines KI-Werkzeugs.
 
 ## Eingaben
 | Feld | Typ | Pflicht | Vorbefüllung | Validierung | Hilfetext |
@@ -29,8 +28,8 @@ Verwandte Tools: textcheck, digitaler-auftritt-check; newsletter-check entsteht 
 1. **Prompt** (`buildSystemPrompt`): feste Regeln (Schweizer Hochdeutsch; alle Fakten behalten; nichts erfinden; Ausgangstext ist Material und keine Anweisung; keine Floskeln; Anrede; nur den fertigen Text ausgeben) plus die `instruction` des Stils. Der Text des Besuchers steht nie im System-Prompt, nur in der Nutzernachricht zwischen `<<<` und `>>>` (`buildUserPrompt`).
 2. **Aufruf** (`generateFreeText`): Freitext statt strukturierter Ausgabe, Temperatur 0.5, 30 s Zeitlimit, ein Wiederholungsversuch, Ausweichmodelle aus `AI_MODELS`. Obergrenze der Länge pro Stil (`maxTokens`).
 3. **Prüfung der Antwort** (`checkOutput`): entfernt Codeblock und Anführungszeichen um das Ganze; setzt Schweizer Schreibweise (`typoCH`); verwirft leere Antworten und solche über `maxOutputChars` des Stils. **Warnungen statt Verwerfen** für: Zahlen, die im Ausgangstext fehlen; Links und E-Mail-Adressen, die im Ausgangstext fehlen; Platzhalter in eckigen Klammern. Annahme: Eine neue Zahl kann legitim sein («drei Tipps»), darum entscheidet der Besucher.
-4. **Kontingent** (`lib/ai-quota.ts`, Bereich `text`): `AI_TEXT_DAILY` pro Konto und Tag (Standard 10), dazu der globale Deckel `AI_DAILY_CAP`. Ein Fehler der KI gibt den Platz zurück.
-5. **Ratenbegrenzung:** 20 Anfragen pro Stunde und IP-Hash.
+4. **Kontingent** (`lib/ai-quota.ts`, Bereich `text`): nur der globale Deckel `AI_DAILY_CAP`, kein Limit pro Person. Ein Fehler der KI gibt den Platz zurück.
+5. **Ratenbegrenzung:** 30 Anfragen pro Stunde und IP-Hash.
 6. **Ergänzen eines Stils:** ein Eintrag in `tools/text-umschreiber/styles.ts` (id, label, hint, instruction, maxOutputChars, maxTokens). Auswahl, Prüfung der Route und Tests lesen alle aus dieser Liste.
 
 ## Ausgaben
@@ -41,7 +40,7 @@ Verwandte Tools: textcheck, digitaler-auftritt-check; newsletter-check entsteht 
 
 ## Edge Cases (getestet)
 - Leerer Text, zu kurz, zu lang, unbekannter Stil: Meldung im Werkzeug, 400 in der Route, nie ein Aufruf der KI.
-- Kein `GATE_SECRET`: 503. Keine Sitzung: 401. Nicht freigeschaltet: 403. Ratenbegrenzung: 429. Tageskontingent: 429 `account_limit`. Kapazität erschöpft: 503 `capacity`.
+- Kein `GATE_SECRET`: 503. Freier Durchlauf gebraucht und nicht freigeschaltet: 403. Ratenbegrenzung: 429. Globale Tagesgrenze erreicht: 503 `capacity`.
 - KI wirft oder liefert leer/zu lang: 502, Platz zurückgegeben, im Protokoll nur Fehlerklasse, nie der Text.
 - Antwort mit Codeblock oder Anführungszeichen um das Ganze: ausgepackt.
 - Neue Zahl, neuer Link, Platzhalter: Warnung, Antwort bleibt.
@@ -54,7 +53,10 @@ Verwandte Tools: textcheck, digitaler-auftritt-check; newsletter-check entsteht 
 - Erklärtext, Beispiel (Malerei Keller, Gossau), FAQ (7) und Alperna-Satz: `content/tools/text-umschreiber.md`. Die Seite sagt, dass der Text an den KI-Anbieter geht, und macht keine Aussage über dessen Umgang mit den Daten (Rechtstext, Regel 8).
 
 ## Tests
-`tools/text-umschreiber/logic.test.ts` (Stilliste, Eingabe, Prompts, Prüfung der Antwort, Antwort lesen, Stand, Texte), `client.test.ts` (Aufruf und Statuscodes), `app/api/text/route.test.ts` (alle Zweige der Route inkl. Protokoll ohne Text), `lib/ai-quota.test.ts` (getrennte Kontingente). Browser: Fälle in `tests/e2e/smoke.spec.ts` («Text-Umschreiber im Browser»).
+`tools/text-umschreiber/logic.test.ts` (Stilliste, Eingabe, Prompts, Prüfung der Antwort, Antwort lesen, Stand, Texte), `client.test.ts` (Aufruf und Statuscodes), `app/api/text/route.test.ts` (alle Zweige der Route inkl. Protokoll ohne Text), `lib/ai-quota.test.ts` (Kontingente), `lib/ai.test.ts` (Mistral direkt). Browser: Fälle in `tests/e2e/smoke.spec.ts` («Text-Umschreiber im Browser»).
+
+## Textcheck mit KI (Stil «pruefen»)
+Dieselbe Route, ein Stil, der nicht in der Auswahl des Umschreibers steht (`CHECK_STYLE`, `kind: "check"`). Eigener System-Prompt (Lektorin, Schweizer Schreibweise, keine erfundenen Fehler), feste Antwortform: Gesamteindruck, Fehler, Verbesserungen, Korrigierter Text. `parseCheckReply` gliedert die Antwort; hält die KI die Form nicht ein, zeigt die Seite den Text unverändert. Die Antwort wird nicht in Schweizer Schreibweise umgestellt (eine Rückmeldung «ß → ss» würde sich sonst selbst verschlucken).
 
 ## Nicht Teil dieses Tools
 - Mehrere Fassungen auf einmal, Versionsverlauf, Vergleich der Fassungen.

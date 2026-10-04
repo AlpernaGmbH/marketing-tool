@@ -20,9 +20,7 @@ describe("text-umschreiber: Aufruf von /api/text", () => {
   });
 
   it("übersetzt die Statuscodes der Route in Gründe", async () => {
-    expect(await requestRewrite(INPUT, reply(401, { error: "not_signed_in" }))).toEqual({ ok: false, reason: "not_signed_in" });
     expect(await requestRewrite(INPUT, reply(403, { error: "gate" }))).toEqual({ ok: false, reason: "gate" });
-    expect(await requestRewrite(INPUT, reply(429, { error: "account_limit" }))).toEqual({ ok: false, reason: "limit" });
     expect(await requestRewrite(INPUT, reply(429, { error: "rate_limited" }))).toEqual({ ok: false, reason: "rate" });
     expect(await requestRewrite(INPUT, reply(503, { error: "capacity" }))).toEqual({ ok: false, reason: "capacity" });
     expect(await requestRewrite(INPUT, reply(502, { error: "ai_failed" }))).toEqual({ ok: false, reason: "failed" });

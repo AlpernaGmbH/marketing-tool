@@ -43,45 +43,24 @@ describe("AccountMenu", () => {
     expect(await screen.findByRole("link", { name: "Mein Profil" })).toBeInTheDocument();
   });
 
-  it("zeigt Besuchern «Anmelden» und «Registrieren» und kein «Mein Profil»", async () => {
+  it("zeigt Besuchern genau einen Knopf «Anmelden» und kein «Mein Profil»", async () => {
     stubAccount({ login: "clerk", account: null });
     render(<AccountMenu />);
     expect(await screen.findByRole("button", { name: "Anmelden" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Registrieren" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Registrieren" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Mein Profil" })).toBeNull();
   });
 
-  it("öffnet das Fenster mit dem passenden Titel, startet Clerk mit eigenem Rückkehr-Parameter und schliesst das Fenster", async () => {
+  it("öffnet beim Klick sofort das Fenster von Clerk (kein Zwischenfenster) mit eigenem Rückkehr-Parameter", async () => {
     stubAccount({ login: "clerk", account: null });
     startSignIn.mockResolvedValue(true);
     const user = userEvent.setup();
     window.history.replaceState(null, "", "/tools/x?a=1");
     render(<AccountMenu />);
-    await user.click(await screen.findByRole("button", { name: "Registrieren" }));
-    const dialog = await screen.findByTestId("signin-dialog");
-    expect(within(dialog).getByRole("heading", { name: "Konto erstellen" })).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Konto erstellen" }));
+    await user.click(await screen.findByRole("button", { name: "Anmelden" }));
     await waitFor(() => expect(startSignIn).toHaveBeenCalledTimes(1));
-    expect(startSignIn.mock.calls[0]).toEqual(["registrieren", "/tools/x?a=1&anmeldung=ok"]);
-    await waitFor(() => expect(screen.queryByTestId("signin-dialog")).toBeNull());
-  });
-
-  it("nennt im Fenster weder Google noch einen Anbieter, den es vielleicht nicht gibt, aber den Dienst Clerk", async () => {
-    stubAccount({ login: "clerk", account: null });
-    const user = userEvent.setup();
-    render(<AccountMenu />);
-    await user.click(await screen.findByRole("button", { name: "Anmelden" }));
-    const dialog = await screen.findByTestId("signin-dialog");
-    expect(dialog).not.toHaveTextContent(/Google|Microsoft|Apple/);
-    expect(dialog).toHaveTextContent("Clerk");
-  });
-
-  it("nennt «Anmelden» im Fenster, wenn man dort angefangen hat", async () => {
-    stubAccount({ login: "clerk", account: null });
-    const user = userEvent.setup();
-    render(<AccountMenu />);
-    await user.click(await screen.findByRole("button", { name: "Anmelden" }));
-    expect(within(await screen.findByTestId("signin-dialog")).getByRole("heading", { name: "Anmelden" })).toBeInTheDocument();
+    expect(startSignIn.mock.calls[0]).toEqual(["anmelden", "/tools/x?a=1&anmeldung=ok"]);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("meldet, wenn der Start der Anmeldung scheitert, und gibt den Knopf wieder frei", async () => {
@@ -90,9 +69,8 @@ describe("AccountMenu", () => {
     const user = userEvent.setup();
     render(<AccountMenu />);
     await user.click(await screen.findByRole("button", { name: "Anmelden" }));
-    await user.click(within(await screen.findByTestId("signin-dialog")).getByRole("button", { name: "Weiter zur Anmeldung" }));
     expect(await screen.findByText(/konnte nicht gestartet werden/)).toBeInTheDocument();
-    expect(within(screen.getByTestId("signin-dialog")).getByRole("button", { name: "Weiter zur Anmeldung" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Anmelden" })).toBeEnabled();
   });
 
   it("zeigt Angemeldeten den Anfangsbuchstaben und ein Menü mit «Mein Profil» und «Abmelden»", async () => {

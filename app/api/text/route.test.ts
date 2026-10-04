@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryStore, SECRET, post } from "@/tests/helpers";
-import { accountHash } from "@/lib/access";
+import { accountHash, ipHash } from "@/lib/access";
 import type { AiStore } from "@/lib/ai-quota";
 
 const store = new MemoryStore();
@@ -44,16 +44,14 @@ const call = (b: unknown = body(), ip = IP) => POST(post("/api/text", b, { ip })
 
 beforeEach(() => {
   process.env.GATE_SECRET = SECRET;
-  delete process.env.AI_TEXT_DAILY;
   delete process.env.AI_DAILY_CAP;
   store.runs.clear();
   store.unlockedSet.clear();
   store.accounts.clear();
-  store.accounts.add(accountHash(ME.email, SECRET));
   store.failing = false;
   ai.counters.clear();
   ai.failing = false;
-  who.account = ME;
+  who.account = null;
   limit.allow = true;
   gen.fn.mockReset();
   gen.fn.mockResolvedValue("Wir streichen Wände und Fassaden in Gossau.\n\nTermine gibt es ab Montag.");
@@ -91,16 +89,27 @@ describe("POST /api/text", () => {
     expect(gen.fn).not.toHaveBeenCalled();
   });
 
-  it("verlangt eine Anmeldung", async () => {
-    who.account = null;
-    expect((await call()).status).toBe(401);
-    expect(gen.fn).not.toHaveBeenCalled();
+  it("braucht kein Konto: der erste Durchlauf ist frei", async () => {
+    expect((await call()).status).toBe(200);
+    expect(gen.fn).toHaveBeenCalledTimes(1);
   });
 
-  it("verlangt die Freischaltung (Anmeldung allein genügt nicht)", async () => {
-    store.accounts.clear();
-    expect((await call()).status).toBe(403);
+  it("sperrt nach dem freien Durchlauf, bis das Formular ausgefüllt ist", async () => {
+    store.runs.set(ipHash(IP, SECRET), 1);
+    const res = await call();
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "gate" });
     expect(gen.fn).not.toHaveBeenCalled();
+
+    store.unlockedSet.add(ipHash(IP, SECRET));
+    expect((await call()).status).toBe(200);
+  });
+
+  it("lässt ein freigeschaltetes Konto durch, auch von einer neuen IP", async () => {
+    store.runs.set(ipHash("203.0.113.9", SECRET), 1);
+    store.accounts.add(accountHash(ME.email, SECRET));
+    who.account = ME;
+    expect((await call(body(), "203.0.113.9")).status).toBe(200);
   });
 
   it("ist ohne GATE_SECRET aus", async () => {
@@ -108,17 +117,11 @@ describe("POST /api/text", () => {
     expect((await call()).status).toBe(503);
   });
 
-  it("antwortet 429 beim Limit pro Stunde und pro Tag (Standard 10) und 503 bei der globalen Grenze", async () => {
+  it("antwortet 429 bei zu vielen Anfragen pro Stunde und 503 bei der globalen Tagesgrenze, aber nie wegen einer Grenze pro Person", async () => {
     limit.allow = false;
     expect((await call()).status).toBe(429);
     limit.allow = true;
-    process.env.AI_TEXT_DAILY = "2";
-    expect((await call()).status).toBe(200);
-    expect((await call()).status).toBe(200);
-    const third = await call();
-    expect(third.status).toBe(429);
-    expect(await third.json()).toEqual({ error: "account_limit" });
-    process.env.AI_TEXT_DAILY = "50";
+    for (let i = 0; i < 12; i++) expect((await call()).status).toBe(200); // kein Limit pro Person
     process.env.AI_DAILY_CAP = "2";
     ai.counters.clear();
     expect((await call()).status).toBe(200);
@@ -128,16 +131,23 @@ describe("POST /api/text", () => {
     expect(await cap.json()).toEqual({ error: "capacity" });
   });
 
-  it("zählt die Texte getrennt von den Einordnungen des Checks", async () => {
+  it("zählt nur die globale Tagesgrenze, nichts pro Person", async () => {
     await call();
-    const keys = [...ai.counters.keys()];
-    expect(keys.some((k) => k.startsWith("aitext:"))).toBe(true);
-    expect(keys.some((k) => k.startsWith("ai:") && !k.startsWith("ai:global"))).toBe(false);
+    expect([...ai.counters.keys()].every((k) => k.startsWith("ai:global:"))).toBe(true);
+  });
+
+  it("nimmt den Stil des Textchecks an und gibt die Antwort unverändert zurück", async () => {
+    gen.fn.mockResolvedValue("Gesamteindruck: gut.\nFehler:\n- Straße → Strasse (Eszett)");
+    const res = await call(body({ style: "pruefen" }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).text).toContain("Straße → Strasse");
+    const args = gen.fn.mock.calls[0][0] as { system: string };
+    expect(args.system).toContain("prüfst den Text");
   });
 
   it("meldet 502, wenn die KI ausfällt, bucht den Platz zurück und loggt die Fehlerart ohne Text", async () => {
     gen.fn.mockRejectedValue(Object.assign(new Error(`Meldung mit ${TEXT}`), { name: "GatewayRateLimitError", statusCode: 429 }));
-    process.env.AI_TEXT_DAILY = "1";
+    process.env.AI_DAILY_CAP = "1";
     const res = await call();
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ error: "ai_failed" });
@@ -146,7 +156,7 @@ describe("POST /api/text", () => {
     expect(all).toContain('"detail":"GatewayRateLimitError:429"');
     expect(all).not.toContain("Gossau");
     gen.fn.mockResolvedValue("Wir streichen Wände in Gossau.");
-    expect((await call()).status).toBe(200); // das Limit von 1 ist noch frei
+    expect((await call()).status).toBe(200); // der Platz wurde zurückgebucht, die Grenze von 1 ist noch frei
   });
 
   it("verwirft leere und überlange Antworten", async () => {
@@ -160,7 +170,7 @@ describe("POST /api/text", () => {
     expect([...ai.counters.values()].every((n) => n === 0)).toBe(true);
   });
 
-  it("läuft ohne Redis weiter (das Gratisguthaben begrenzt dann die Kosten)", async () => {
+  it("läuft ohne Redis weiter (dann begrenzt nur der Anbieter)", async () => {
     ai.failing = true;
     expect((await call()).status).toBe(200);
   });

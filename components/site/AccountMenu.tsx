@@ -3,15 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import type { SignInMode } from "@/components/site/SignInDialog";
 import { Button } from "@/components/ui/button";
 import { signOutAndForget } from "@/lib/account-actions";
 import { initialOf } from "@/lib/account-client";
+import { startSignIn } from "@/lib/konto-client";
 import { useAccount } from "@/lib/use-account";
-
-// Das Fenster (Dialog-Bibliothek) wird erst geladen, wenn jemand «Anmelden» anklickt: Es soll keine Seite verlangsamen.
-const SignInDialog = dynamic(() => import("@/components/site/SignInDialog").then((m) => m.SignInDialog), { ssr: false });
 
 type Banner = { kind: "ok" | "fehler"; text: string } | null;
 
@@ -20,14 +16,16 @@ const BANNER_TEXT = {
   fehler: "Die Anmeldung hat nicht geklappt oder wurde abgebrochen. Du kannst es noch einmal versuchen.",
 } as const;
 
+const START_FAILED = "Die Anmeldung konnte nicht gestartet werden. Bitte versuch es noch einmal.";
+
 /**
  * Konto in der Kopfzeile. Ist die Anmeldung nicht eingerichtet, bleibt der Link «Mein Profil» wie bisher.
- * Sonst: Besucher sehen «Anmelden» und «Registrieren», Angemeldete ein Menü mit «Mein Profil» und «Abmelden».
+ * Sonst: Besucher sehen einen Knopf «Anmelden» (ein Fenster von Clerk für Anmelden und Konto erstellen), Angemeldete ein Menü mit «Mein Profil» und «Abmelden».
  */
 export function AccountMenu() {
   const info = useAccount();
   const pathname = usePathname();
-  const [dialog, setDialog] = useState<{ open: boolean; mode: SignInMode }>({ open: false, mode: "anmelden" });
+  const [starting, setStarting] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [banner, setBanner] = useState<Banner>(null);
   const [signOutError, setSignOutError] = useState(false);
@@ -70,11 +68,12 @@ export function AccountMenu() {
     else setSignOutError(true);
   }
 
-  const [dialogUsed, setDialogUsed] = useState(false);
-  const open = (mode: SignInMode) => {
-    setDialogUsed(true);
-    setDialog({ open: true, mode });
-  };
+  async function signIn() {
+    setStarting(true);
+    const ok = await startSignIn(window.location, "anmeldung", "anmelden");
+    setStarting(false);
+    if (!ok) setBanner({ kind: "fehler", text: START_FAILED });
+  }
 
   let content: React.ReactNode;
   if (info === undefined) {
@@ -90,14 +89,9 @@ export function AccountMenu() {
     );
   } else if (!info.account) {
     content = (
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="outline" className="px-4 sm:px-5" onClick={() => open("anmelden")}>
-          Anmelden
-        </Button>
-        <Button type="button" className="hidden sm:inline-flex" onClick={() => open("registrieren")}>
-          Registrieren
-        </Button>
-      </div>
+      <Button type="button" className="px-4 sm:px-5" disabled={starting} onClick={() => void signIn()}>
+        {starting ? "Wird geöffnet …" : "Anmelden"}
+      </Button>
     );
   } else {
     const { name, email } = info.account;
@@ -146,7 +140,6 @@ export function AccountMenu() {
   return (
     <>
       {content}
-      {dialogUsed && <SignInDialog open={dialog.open} mode={dialog.mode} onOpenChange={(o) => setDialog((d) => ({ ...d, open: o }))} />}
       {banner && (
         <div
           role="status"

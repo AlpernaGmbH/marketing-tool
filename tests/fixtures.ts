@@ -7,11 +7,16 @@ export function words(n: number, seed = "wort"): string {
 
 type Over = {
   front?: Partial<Record<"title" | "description" | "h1" | "tagline" | "beispielFirma", string | null>>;
+  /** Die zwei Listen der Kopfdaten; null lässt sie weg. */
+  kurz?: string[] | null;
+  ablauf?: string[] | null;
   warum?: string;
   nutzen?: string;
   fehler?: string;
   beispiel?: string;
   faqCount?: number;
+  /** Wörter je FAQ-Antwort (Standard 55). */
+  faqWords?: number;
   alperna?: string;
   extra?: string;
   omit?: ("warum" | "nutzen" | "fehler" | "beispiel" | "fragen" | "alperna")[];
@@ -20,7 +25,7 @@ type Over = {
 
 const FIRMA = "Malerei Keller, Gossau";
 
-/** Gültiger Seitentext (rund 900 Wörter), einzelne Teile lassen sich überschreiben. */
+/** Gültiger Seitentext (rund 600 Wörter, Lese-Vorlage), einzelne Teile lassen sich überschreiben. */
 export function validToolMarkdown(o: Over = {}): string {
   const f = {
     title: "ICP-Builder Schweiz – Idealkundenprofil in 8 Fragen",
@@ -30,15 +35,20 @@ export function validToolMarkdown(o: Over = {}): string {
     beispielFirma: FIRMA,
     ...o.front,
   };
-  const front = Object.entries(f)
-    .filter(([, v]) => v !== null)
-    .map(([k, v]) => `${k}: "${v}"`)
-    .join("\n");
+  const list = (key: string, items: string[] | null | undefined, fallback: string[]) =>
+    items === null ? "" : `\n${key}:\n${(items ?? fallback).map((i) => `  - "${i}"`).join("\n")}`;
+  const front =
+    Object.entries(f)
+      .filter(([, v]) => v !== null)
+      .map(([k, v]) => `${k}: "${v}"`)
+      .join("\n") +
+    list("kurz", o.kurz, ["Du bekommst ein Profil.", "Du beantwortest acht Fragen.", "Danach weisst du, wen du suchst."]) +
+    list("ablauf", o.ablauf, ["Fragen beantworten", "Profil lesen", "Punkte nutzen"]);
 
-  const faq = Array.from({ length: o.faqCount ?? 5 }, (_, i) => `### Frage ${i + 1}\n${words(55, `antwort${i}`)}.`).join("\n\n");
+  const faq = Array.from({ length: o.faqCount ?? 5 }, (_, i) => `### Frage ${i + 1}\n${words(o.faqWords ?? 55, `antwort${i}`)}.`).join("\n\n");
   const blocks: Record<string, string> = {
-    warum: `## Warum das wichtig ist\n${o.warum ?? words(250, "warum")}.`,
-    nutzen: `## So nutzt du das Ergebnis\n${o.nutzen ?? `1. ${words(20)}\n2. ${words(20)}\n3. ${words(20)}`}`,
+    warum: `## Warum das wichtig ist\n${o.warum ?? `${words(20, "warum")}.\n\n- ${words(12, "a")}\n- ${words(12, "b")}\n- ${words(12, "c")}\n\n=> Gleich darunter: drei Schritte.`}`,
+    nutzen: `## So nutzt du das Ergebnis\n${o.nutzen ?? `1. ${words(20)}\n2. ${words(20)}\n3. ${words(20)}\n\n=> Gleich darunter: die Fehler.`}`,
     fehler: `## Häufige Fehler\n${o.fehler ?? `- ${words(25)}\n- ${words(25)}\n- ${words(25)}`}`,
     beispiel: `## Beispiel\n${o.beispiel ?? `${FIRMA} hat ein Ergebnis. ${words(110, "beispiel")}.`}`,
     fragen: `## Häufige Fragen\n${faq}`,

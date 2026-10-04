@@ -24,7 +24,7 @@ export const localizationDeCH: Localization = {
       title: "Anmelden",
       subtitle: "Marketing-Tools von Alperna",
       titleCombined: "Anmelden oder Konto erstellen",
-      subtitleCombined: "Marketing-Tools von Alperna",
+      subtitleCombined: "Kein Passwort nötig. Wir erhalten nur Name und E-Mail-Adresse.",
       actionText: "Noch kein Konto?",
       actionLink: "Konto erstellen",
     },

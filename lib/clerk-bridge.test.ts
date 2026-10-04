@@ -1,13 +1,17 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  STARTED_MS,
   clerkEnabled,
+  hasClerkCallback,
   hasSessionHint,
   isWanted,
   loadClerk,
+  loadClerkIfReturning,
   openSignIn,
   registerClerk,
   resetClerkBridge,
+  signInStartedRecently,
   signOut,
   subscribeWanted,
   whenSessionReady,
@@ -209,5 +213,50 @@ describe("signOut", () => {
     const { clerk } = fakeClerk({ loaded: true, signOut: vi.fn(async () => Promise.reject(new Error("offline"))) });
     registerClerk(clerk);
     expect(await signOut("/")).toBe(false);
+  });
+});
+
+describe("Rückkehr vom Anbieter", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("erkennt Parameter von Clerk in Abfrage und Adresse nach dem #", () => {
+    expect(hasClerkCallback("?__clerk_modal_state=abc", "")).toBe(true);
+    expect(hasClerkCallback("?a=1&__clerk_status=verified", "")).toBe(true);
+    expect(hasClerkCallback("?__clerk_db_jwt=xyz", "")).toBe(true);
+    expect(hasClerkCallback("", "#/sso-callback")).toBe(true);
+    expect(hasClerkCallback("?q=clerk&anmeldung=ok", "")).toBe(false);
+    expect(hasClerkCallback("", "")).toBe(false);
+  });
+
+  it("lädt Clerk bei der Rückkehr, auch ohne Klick und ohne Sitzungs-Zeichen", () => {
+    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "pk_test_x");
+    window.history.replaceState(null, "", "/tools/x?__clerk_modal_state=abc");
+    expect(loadClerkIfReturning()).toBe(true);
+    expect(isWanted()).toBe(true);
+  });
+
+  it("lädt Clerk nach einem Klick auf «Anmelden» eine Viertelstunde lang, danach nicht mehr", async () => {
+    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "pk_test_x");
+    const { clerk, becomeLoaded } = fakeClerk();
+    registerClerk(clerk);
+    becomeLoaded();
+    expect(signInStartedRecently()).toBe(false);
+    await openSignIn("anmelden", "/x?anmeldung=ok");
+    expect(signInStartedRecently()).toBe(true);
+    expect(signInStartedRecently(Date.now() + STARTED_MS + 1000)).toBe(false);
+    resetClerkBridge();
+    expect(loadClerkIfReturning()).toBe(true);
+  });
+
+  it("lädt für gewöhnliche Besucher nichts und ohne eingerichtetes Clerk ebenso nichts", () => {
+    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "pk_test_x");
+    expect(loadClerkIfReturning()).toBe(false);
+    expect(isWanted()).toBe(false);
+    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "");
+    window.history.replaceState(null, "", "/?__clerk_status=verified");
+    expect(loadClerkIfReturning()).toBe(false);
   });
 });

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { SignInDialog, type SignInMode } from "@/components/site/SignInDialog";
 import { Button } from "@/components/ui/button";
 import { signOutAndForget } from "@/lib/account-actions";
+import { startSignIn } from "@/lib/konto-client";
 import { clearAllLocal } from "@/lib/storage";
 import { deleteAccountData } from "@/lib/sync";
 import { useAccount } from "@/lib/use-account";
@@ -11,7 +11,7 @@ import { useAccount } from "@/lib/use-account";
 /** Konto auf der Profilseite: angemeldet oder nicht, und was beim Konto liegt. */
 export function KontoKarte() {
   const info = useAccount();
-  const [dialog, setDialog] = useState<{ open: boolean; mode: SignInMode }>({ open: false, mode: "anmelden" });
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -23,6 +23,14 @@ export function KontoKarte() {
     setError(null);
     if (await signOutAndForget(info?.storage === true)) window.location.reload();
     else setError("Das Abmelden hat nicht geklappt. Bitte versuch es noch einmal.");
+  }
+
+  async function signIn() {
+    setError(null);
+    setStarting(true);
+    const ok = await startSignIn(window.location, "anmeldung", "anmelden");
+    setStarting(false);
+    if (!ok) setError("Die Anmeldung konnte nicht gestartet werden. Bitte versuch es noch einmal.");
   }
 
   async function wipe() {
@@ -93,14 +101,15 @@ export function KontoKarte() {
             freigeschaltet und bekommst zu deinem Check eine kurze Einordnung. Ohne Konto bleiben die Daten in diesem Browser.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={() => setDialog({ open: true, mode: "anmelden" })}>
-              Anmelden
-            </Button>
-            <Button type="button" onClick={() => setDialog({ open: true, mode: "registrieren" })}>
-              Registrieren
+            <Button type="button" disabled={starting} onClick={() => void signIn()}>
+              {starting ? "Wird geöffnet …" : "Anmelden"}
             </Button>
           </div>
-          <SignInDialog open={dialog.open} mode={dialog.mode} onOpenChange={(open) => setDialog((d) => ({ ...d, open }))} />
+          {error && (
+            <p role="alert" className="mt-3 text-sm text-destructive">
+              {error}
+            </p>
+          )}
         </>
       )}
     </section>

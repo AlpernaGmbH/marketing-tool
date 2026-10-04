@@ -28,8 +28,16 @@ export const frontmatterSchema = z.object({
   h1: z.string().min(1),
   tagline: z.string().min(1),
   beispielFirma: z.string().min(1),
+  /** Das Versprechen in drei Punkten («In Kürze»): was du bekommst, was du dafür tust, was danach klar ist. */
+  kurz: z.array(z.string().min(1)).length(3),
+  /** Der Ablauf in drei kurzen Schritten (Grafik unter dem Werkzeug). */
+  ablauf: z.array(z.string().min(1)).length(3),
 });
 export type Frontmatter = z.infer<typeof frontmatterSchema>;
+
+/** Kopfdaten, die ein Text sein müssen, und solche, die eine Liste aus genau drei Texten sind. */
+const TEXT_KEYS = ["title", "description", "h1", "tagline", "beispielFirma"] as const;
+const LIST_KEYS = ["kurz", "ablauf"] as const;
 
 export type Faq = { question: string; answer: string };
 export type AlpernaFields = { problem?: string; baustein?: string; beweis?: string };
@@ -102,9 +110,13 @@ export function parseToolMarkdown(raw: string): ParsedToolContent {
   const fm = frontmatterSchema.partial().safeParse(data);
   const frontmatter = fm.success ? fm.data : {};
   const issues: string[] = [];
-  for (const key of Object.keys(frontmatterSchema.shape) as (keyof Frontmatter)[]) {
+  for (const key of TEXT_KEYS) {
     const v = (data as Record<string, unknown>)[key];
     if (typeof v !== "string" || v.trim() === "") issues.push(`Kopfdaten: «${key}» fehlt`);
+  }
+  for (const key of LIST_KEYS) {
+    const v = (data as Record<string, unknown>)[key];
+    if (!Array.isArray(v) || v.length !== 3 || v.some((x) => typeof x !== "string" || x.trim() === "")) issues.push(`Kopfdaten: «${key}» braucht genau drei Einträge`);
   }
 
   const byTitle = new Map(splitH2(content).map((s) => [s.title, s.content]));
@@ -136,10 +148,19 @@ export function readToolContent(slug: string): ParsedToolContent {
   return parseToolMarkdown(fs.readFileSync(file, "utf8"));
 }
 
-/** Markdown zu HTML (remark, bereinigt). Nur für Inhalte aus dem Repo. */
+/**
+ * Markdown zu HTML (remark, bereinigt). Nur für Inhalte aus dem Repo.
+ * Ein Absatz, der mit «=> » beginnt, ist eine offene Schleife: ein Satz am Ende eines Abschnitts, der auf den nächsten neugierig
+ * macht («Gleich unten: …»). Er bekommt die Klasse `loop` und wird vom Stil abgesetzt.
+ */
 export async function markdownToHtml(md: string): Promise<string> {
   const file = await remark().use(html).process(md);
-  return String(file);
+  return String(file).replace(/<p>=(?:&gt;|>)\s+/g, '<p class="loop">');
+}
+
+/** Wörter eines Textes ohne Markdown-Zeichen; die offenen Schleifen zählen mit. */
+export function loopCount(md: string): number {
+  return md.split("\n").filter((l) => /^=>\s+\S/.test(l.trim())).length;
 }
 
 export type FaqHtml = { question: string; html: string };

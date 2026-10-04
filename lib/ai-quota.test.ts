@@ -3,7 +3,9 @@ import { limitsFromEnv, releaseSlot, takeSlot, type AiStore, type Limits } from 
 
 class Memory implements AiStore {
   counters = new Map<string, number>();
+  failing = false;
   async incr(key: string) {
+    if (this.failing) throw new Error("redis down");
     this.counters.set(key, (this.counters.get(key) ?? 0) + 1);
     return this.counters.get(key)!;
   }
@@ -16,58 +18,80 @@ class Memory implements AiStore {
   async setCache() {}
 }
 
-const limits: Limits = { perAccount: 2, perAccountText: 3, global: 4 };
 const NOW = new Date("2026-10-04T10:00:00Z");
+const keysOf = (s: Memory) => [...s.counters.keys()];
 
 describe("limitsFromEnv", () => {
   it("hat Standardwerte und liest Zahlen aus der Umgebung", () => {
-    expect(limitsFromEnv({})).toEqual({ perAccount: 5, perAccountText: 10, global: 200 });
-    expect(limitsFromEnv({ AI_ACCOUNT_DAILY: "2", AI_TEXT_DAILY: "7", AI_DAILY_CAP: "50" })).toEqual({ perAccount: 2, perAccountText: 7, global: 50 });
-    expect(limitsFromEnv({ AI_TEXT_DAILY: "viele" }).perAccountText).toBe(10);
+    expect(limitsFromEnv({})).toEqual({ perAccount: 5, global: 2000 });
+    expect(limitsFromEnv({ AI_ACCOUNT_DAILY: "2", AI_DAILY_CAP: "50" })).toEqual({ perAccount: 2, global: 50 });
+    expect(limitsFromEnv({ AI_DAILY_CAP: "viele" }).global).toBe(2000);
   });
 });
 
-describe("takeSlot und releaseSlot mit Art", () => {
-  it("zählt Einordnungen und Texte getrennt je Konto", async () => {
+describe("takeSlot für die Einordnung (mit Konto)", () => {
+  const limits: Limits = { perAccount: 2, global: 4 };
+
+  it("begrenzt je Konto und je Tag, andere Konten bleiben unberührt", async () => {
     const store = new Memory();
-    const wide: Limits = { ...limits, global: 100 };
-    expect(await takeSlot(store, "a", wide, NOW, "einordnung")).toBe("ok");
-    expect(await takeSlot(store, "a", wide, NOW, "einordnung")).toBe("ok");
-    expect(await takeSlot(store, "a", wide, NOW, "einordnung")).toBe("account_limit");
-    // Texte haben ihr eigenes Limit (3), auch wenn die Einordnungen aufgebraucht sind
-    expect(await takeSlot(store, "a", wide, NOW, "text")).toBe("ok");
-    expect(await takeSlot(store, "a", wide, NOW, "text")).toBe("ok");
-    expect(await takeSlot(store, "a", wide, NOW, "text")).toBe("ok");
-    expect(await takeSlot(store, "a", wide, NOW, "text")).toBe("account_limit");
-    // ein anderes Konto ist unberührt
-    expect(await takeSlot(store, "b", wide, NOW, "text")).toBe("ok");
+    expect(await takeSlot(store, "a", limits, NOW)).toBe("ok");
+    expect(await takeSlot(store, "a", limits, NOW)).toBe("ok");
+    expect(await takeSlot(store, "a", limits, NOW)).toBe("account_limit");
+    expect(await takeSlot(store, "b", limits, NOW)).toBe("ok");
+    // am nächsten Tag ist es wieder frei
+    expect(await takeSlot(store, "a", limits, new Date("2026-10-05T10:00:00Z"))).toBe("ok");
   });
 
-  it("teilt die globale Grenze zwischen beiden Arten und bucht bei Ablehnung zurück", async () => {
+  it("bucht bei Ablehnung durch die globale Grenze auch das Konto zurück", async () => {
     const store = new Memory();
-    const tight: Limits = { perAccount: 5, perAccountText: 5, global: 2 };
+    const tight: Limits = { perAccount: 5, global: 1 };
+    expect(await takeSlot(store, "a", tight, NOW)).toBe("ok");
+    expect(await takeSlot(store, "b", tight, NOW)).toBe("capacity");
+    expect([...store.counters.entries()].find(([k]) => k.startsWith("ai:b:"))?.[1]).toBe(0);
+  });
+
+  it("gibt einen reservierten Platz zurück", async () => {
+    const store = new Memory();
+    const limits1: Limits = { perAccount: 1, global: 10 };
+    await takeSlot(store, "a", limits1, NOW);
+    await releaseSlot(store, "a", NOW);
+    expect(await takeSlot(store, "a", limits1, NOW)).toBe("ok");
+  });
+});
+
+describe("takeSlot für Texte (ohne Konto, ohne Limit pro Person)", () => {
+  const limits: Limits = { perAccount: 1, global: 3 };
+
+  it("zählt nur die globale Tagesgrenze und kennt weder Konto noch Person", async () => {
+    const store = new Memory();
+    for (let i = 0; i < 3; i++) expect(await takeSlot(store, null, limits, NOW, "text")).toBe("ok");
+    expect(await takeSlot(store, null, limits, NOW, "text")).toBe("capacity");
+    expect(keysOf(store).every((k) => k.startsWith("ai:global:"))).toBe(true);
+    expect(store.counters.get(keysOf(store)[0])).toBe(3); // die abgelehnte Anfrage ist zurückgebucht
+  });
+
+  it("ignoriert ein übergebenes Konto: kein Limit pro Person", async () => {
+    const store = new Memory();
+    const wide: Limits = { perAccount: 1, global: 100 };
+    for (let i = 0; i < 5; i++) expect(await takeSlot(store, "a", wide, NOW, "text")).toBe("ok");
+    expect(keysOf(store).some((k) => k.startsWith("ai:a:"))).toBe(false);
+  });
+
+  it("teilt die globale Grenze mit den Einordnungen", async () => {
+    const store = new Memory();
+    const tight: Limits = { perAccount: 5, global: 2 };
     expect(await takeSlot(store, "a", tight, NOW, "einordnung")).toBe("ok");
-    expect(await takeSlot(store, "b", tight, NOW, "text")).toBe("ok");
-    expect(await takeSlot(store, "c", tight, NOW, "text")).toBe("capacity");
-    // abgelehnt: weder der globale noch der Zähler des Kontos bleibt belegt
-    const values = [...store.counters.entries()];
-    expect(values.find(([k]) => k.startsWith("aitext:c:"))?.[1]).toBe(0);
-    expect(values.find(([k]) => k.startsWith("ai:global:"))?.[1]).toBe(2);
+    expect(await takeSlot(store, null, tight, NOW, "text")).toBe("ok");
+    expect(await takeSlot(store, null, tight, NOW, "text")).toBe("capacity");
   });
 
-  it("gibt einen Platz der richtigen Art zurück", async () => {
+  it("gibt einen Platz zurück und lässt die Anfrage bei Ausfall von Redis durch", async () => {
     const store = new Memory();
-    await takeSlot(store, "a", limits, NOW, "text");
-    await releaseSlot(store, "a", NOW, "text");
-    expect([...store.counters.values()].every((n) => n === 0)).toBe(true);
-    await takeSlot(store, "a", limits, NOW, "einordnung");
-    await releaseSlot(store, "a", NOW); // Standard: Einordnung
-    expect([...store.counters.values()].every((n) => n === 0)).toBe(true);
-  });
-
-  it("lässt alles durch, wenn der Speicher fehlt oder ausfällt", async () => {
-    expect(await takeSlot(null, "a", limits, NOW, "text")).toBe("ok");
-    const broken: AiStore = { ...new Memory(), incr: async () => Promise.reject(new Error("down")), decr: async () => {}, getCache: async () => null, setCache: async () => {} };
-    expect(await takeSlot(broken, "a", limits, NOW, "text")).toBe("ok");
+    await takeSlot(store, null, limits, NOW, "text");
+    await releaseSlot(store, null, NOW, "text");
+    expect(store.counters.get(keysOf(store)[0])).toBe(0);
+    store.failing = true;
+    expect(await takeSlot(store, null, limits, NOW, "text")).toBe("ok");
+    expect(await takeSlot(null, null, limits, NOW, "text")).toBe("ok");
   });
 });

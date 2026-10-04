@@ -22,8 +22,6 @@ export const keys = {
   account: (acchash: string) => `acct:${acchash}`,
   popular: (slug: string) => `popular:${slug}`,
   ai: (acchash: string, day: string) => `ai:${acchash}:${day}`,
-  /** Umschreibungen des Text-Umschreibers je Konto und Tag; die globale Grenze (`aiGlobal`) gilt für beide Arten. */
-  aiText: (acchash: string, day: string) => `aitext:${acchash}:${day}`,
   lookup: (iphash: string, day: string) => `lookup:${iphash}:${day}`,
   aiGlobal: (day: string) => `ai:global:${day}`,
   /** Zwischenspeicher der KI-Einordnung je Ergebnis (Hash der Signatur), 24 Stunden. */

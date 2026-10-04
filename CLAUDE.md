@@ -5,7 +5,7 @@
 betrieben von der Alperna GmbH (Speicher AR).
 Zweck: echten Nutzen stiften, Besucher über Suchmaschinen gewinnen und daraus
 Gespräche für Alperna machen.
-Jede Tool-Seite ist zugleich eine SEO-Landingpage mit 800-1'200 Wörtern Text.
+Jede Tool-Seite ist zugleich eine SEO-Landingpage mit kurzem, gegliedertem Text (350-700 Wörter, siehe «Lese-Vorlage»).
 Sprache: Deutsch (Schweiz). Zielgruppe: KMU-Entscheider 30–60,
 Vereinsvorstände, Selbständige.
 
@@ -90,9 +90,11 @@ Kopfzeile und Profilseite; app/api/account/data/route.ts – Daten des Kontos (G
 Freischaltung, nur für von /api/check signierte Ergebnisse (lib/check/sign.ts),
 Tageslimits (lib/ai-quota.ts), 24 Stunden Zwischenspeicher, Antwort der KI wird
 geprüft (lib/check/ai.ts) und sonst verworfen
-- app/api/text/route.ts – Text-Umschreiber: schreibt den Text des Besuchers im gewählten Stil neu;
-nur mit Konto und Freischaltung, eigenes Tageslimit (AI_TEXT_DAILY), Antwort wird geprüft
-(tools/text-umschreiber/logic.ts), nichts wird gespeichert oder mit Inhalt geloggt
+- app/api/text/route.ts – Text-Umschreiber und Textcheck mit KI: schreibt den Text des Besuchers
+im gewählten Stil neu oder prüft ihn (Stil «pruefen»); ohne Konto, es gilt der freie Durchlauf
+und danach das Formular; Schutz: 30 Anfragen pro Stunde und IP-Hash, globale Tagesgrenze
+(AI_DAILY_CAP); Antwort wird geprüft (tools/text-umschreiber/logic.ts), nichts wird
+gespeichert oder mit Inhalt geloggt
 - app/api/cron/leads/route.ts – täglicher Cron: schickt Leads aus lead_queue nach
 - app/api/lookup/route.ts – Etappe 3
 - app/sitemap.ts, app/robots.ts, app/opengraph-image.tsx
@@ -122,8 +124,8 @@ Bedarf; Texte der Fenster auf Deutsch in Du-Form; Merker der begonnenen Anmeldun
 analyze.ts, seo.ts, social.ts, gbp.ts, detect.ts, massnahmen.ts, client.ts,
 sign.ts (Signatur des Ergebnisses), ai.ts (Fakten, Prompt, Prüfung der KI-Antwort),
 ai-client.ts (Browser)
-- lib/ai.ts, lib/ai-quota.ts – KI über das Vercel AI Gateway (Modelle aus
-AI_MODELS), Tageslimits und Zwischenspeicher
+- lib/ai.ts, lib/ai-quota.ts – KI: direkt bei Mistral (MISTRAL_API_KEY, kostenloser Plan) oder über
+das Vercel AI Gateway (Modelle aus AI_MODELS), Tageslimits und Zwischenspeicher
 - lib/storage.ts, lib/use-local.ts – localStorage mit Rückfall auf Arbeitsspeicher; führt
 für Schlüssel des Kontos Buch (Zeitpunkt der letzten Änderung)
 - lib/sync-keys.ts, lib/sync.ts, lib/account-data.ts, lib/account-actions.ts,
@@ -241,15 +243,21 @@ Schweizer Vereine») · Tagline · MetaLine: Dauer, Kategorie, «Ergebnis sofort
 Dateien nach kurzem Formular»
 2. Tool (Client-Komponente). Desktop: im sichtbaren Bereich. Mobile: nach H1
 und Tagline.
-3. ## Warum das wichtig ist – 200-300 Wörter, Schweizer Bezug, Zahlen mit
-Quelle
-4. ## So nutzt du das Ergebnis – 3-5 nummerierte Schritte
-5. ## Häufige Fehler – 3-5 Punkte, je ein Satz Problem, ein Satz Lösung
-6. ## Beispiel – ein fertiges Ergebnis einer fiktiven Ostschweizer Firma
+3. «In Kürze» (Kasten mit drei Punkten aus `kurz`) und Ablauf (drei Schritte
+aus `ablauf`, als Grafik)
+4. ## Warum das wichtig ist – 50-140 Wörter, ein Satz mit der Aussage,
+3-6 Aufzählungspunkte, Schweizer Bezug, Zahlen mit Quelle, am Ende eine
+offene Schleife
+5. ## So nutzt du das Ergebnis – 3-5 nummerierte Schritte (als Karten), am
+Ende eine offene Schleife
+6. ## Häufige Fehler – 3-5 Punkte (als Karten), je ein Satz Problem, ein Satz
+Lösung
+7. ## Beispiel – ein fertiges Ergebnis einer fiktiven Ostschweizer Firma
 (Standard «Malerei Keller, Gossau»; Vereins-Tools: «FC Trogen»), als Kasten
-7. ## Häufige Fragen – 5-7, FAQPage-JSON-LD
-8. AlpernaPitch
-9. RelatedTools (3 aus tool.config.related) + «Nächster Schritt» im Pfad
+8. ## Häufige Fragen – 5-7 als Akkordeon, Antworten höchstens 80 Wörter,
+FAQPage-JSON-LD
+9. AlpernaPitch
+10. RelatedTools (3 aus tool.config.related) + «Nächster Schritt» im Pfad
 JSON-LD pro Seite: SoftwareApplication (offers price 0, CHF), FAQPage,
 BreadcrumbList. Metadata: title ≤ 60 Zeichen mit «Schweiz», description ≤
 155.
@@ -261,6 +269,10 @@ BreadcrumbList. Metadata: title ≤ 60 Zeichen mit «Schweiz», description ≤
     h1: "ICP-Builder für Schweizer KMU"
     tagline: "…"
     beispielFirma: "Malerei Keller, Gossau"
+    kurz:                 (genau drei Punkte: was du bekommst, was du dafür tust, was danach klar ist)
+      - "…"
+    ablauf:               (genau drei kurze Schritte)
+      - "…"
     ---
     ## Warum das wichtig ist
     ## So nutzt du das Ergebnis
@@ -275,8 +287,27 @@ BreadcrumbList. Metadata: title ≤ 60 Zeichen mit «Schweiz», description ≤
 Schreibregeln: Nutzen vor Erklärung; der erste Satz jedes Abschnitts trägt
 die Aussage; Schweizer Beispiele (Gemeinden, Kantone, Anlässe, Behörden,
 Gesetze beim Namen); keine Füllwörter; Du-Form; jede Zahl mit Quelle in
-Klammern oder gar nicht; 800-1'200 Wörter gesamt; Keyword natürlich 3-5 Mal,
-einmal in H1, einmal im ersten Absatz.
+Klammern oder gar nicht; 350-700 Wörter gesamt; Keyword natürlich 3-5 Mal
+(H1 und Text zusammen), einmal in H1, einmal im ersten Absatz.
+
+## Lese-Vorlage (Stand 04.10.2026, Entscheid Alperna: lange Texte liest niemand)
+Jede Seite folgt derselben Reihenfolge: Hook (H1, Tagline), Versprechen («In
+Kürze»), Inhalt 1, offene Schleife, Inhalt 2, offene Schleife, Inhalt 3.
+- Ein Abschnitt beginnt mit einem Satz, der die Aussage trägt. Danach
+Aufzählung statt Fliesstext. Absätze höchstens drei Sätze.
+- Offene Schleife: eine Zeile am Ende eines Abschnitts, die auf den nächsten
+neugierig macht. Markdown: eine Zeile, die mit `=> ` beginnt («=> Gleich
+unten: der Fehler, den fast alle machen.»). Sie wird mit einem goldenen
+Punkt abgesetzt. Mindestens zwei pro Seite. Sie verspricht nur, was folgt.
+- Zwischenüberschriften (###) statt langer Absätze; Schritte und Fehler
+erscheinen als Karten, Fragen als Akkordeon.
+- Kategorieseiten: Einleitung 50-130 Wörter mit 3-5 Punkten; Hintergrund
+180-360 Wörter in 3-5 Abschnitten (###), mindestens 5 Punkte, mindestens zwei
+offene Schleifen; Fragen höchstens 80 Wörter. Startseite, SEO-Abschnitt
+«Marketing in der Schweiz»: 300-480 Wörter, gleiche Regeln.
+- Die Grenzen prüft `npm run content-check` (lib/content-rules.ts, `READING`,
+und lib/site-rules.ts). Kürzer als früher heisst nicht dünner: Jede Zahl
+braucht weiter eine Quelle, jede Aussage einen Schweizer Bezug.
 
 ## Alperna-Pitch (components/AlpernaPitch)
 Überschrift fest: «Wenn du das lieber abgibst». Drei Sätze aus
@@ -293,12 +324,13 @@ Hero (ein Satz Nutzen, Suchfeld, zwei Knöpfe) → TrustLine → vier PathCards
 mit Fortschritt aus dem lokalen Profil + Karte «Für Vereine» → sechs
 ToolCards «Meistgenutzt» (popular:<slug> aus Redis, revalidate 1 h, Fallback:
 Feld featured in tools/index.ts) → «Warum kostenlos» (content/site/warum-
-kostenlos.md) → SEO-Abschnitt (content/site/marketing-schweiz.md, 700-900
-Wörter) → AlpernaPitch lang → FAQ → Footer.
+kostenlos.md) → SEO-Abschnitt (content/site/marketing-schweiz.md, 300-480
+Wörter, gegliedert) → AlpernaPitch lang → FAQ → Footer.
 
 ## Kategorieseite
-H1, Intro 250 Wörter aus content/site/<kategorie>.md, Pfad als SVG mit
-Fortschritt aus dem lokalen Profil, ToolCards, SEO-Abschnitt 500 Wörter, FAQ,
+H1, Intro (50-130 Wörter mit Punkten) aus content/site/<kategorie>.md, Pfad als
+SVG mit Fortschritt aus dem lokalen Profil, ToolCards, SEO-Abschnitt (180-360
+Wörter in Abschnitten mit Zwischenüberschriften), FAQ als Akkordeon,
 AlpernaPitch lang.
 
 ## Tool-Anatomie: tool.config.ts
@@ -349,7 +381,7 @@ STATENT), spamwoerter.json, floskeln.json.
 Spec zuerst fragen, sonst nicht fragen.
 2. Kurzen Plan in PLAN.md (Dateien, Reihenfolge), dann bauen.
 3. Pro Tool: Spec → logic.ts mit Tests → Tool.tsx → content/tools/<slug>.md
-vollständig (alle Abschnitte, 800-1'200 Wörter) → Commit `feat(tool):
+vollständig (alle Abschnitte, 350-700 Wörter, Lese-Vorlage) → Commit `feat(tool):
 <slug>`. Shared Code: `feat(core): …`.
 4. Nach jedem Tool `npm run check` und `npm run lh -- <slug>` gegen den
 lokalen Production-Build.

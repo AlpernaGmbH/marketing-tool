@@ -116,6 +116,12 @@ Rechnung mit 8'000 Tokens Eingabe und 2'000 Tokens Ausgabe je Auswertung und den
 
 **Datenschutz:** Die Fakten (öffentliche Seiteninhalte, keine Angaben zur Person) gehen über das Vercel AI Gateway an einen Modellanbieter, je nach Modell auch ausserhalb der Schweiz. Zero Data Retention gibt es nur auf Pro und Enterprise (Quelle: vercel.com/docs/ai-gateway/pricing). Das gehört in die Datenschutzerklärung, geschrieben von einem Menschen (Regel 8).
 
+**Korrektur vom 04.10.2026 (abends) [Sicher, aus vercel.com/docs/ai-gateway/pricing und der Liste «Free Tier» vom selben Tag]:** Die Annahme oben, `mistral/mistral-small` und `mistral/mistral-nemo` liefen mit dem Gratis-Guthaben, war falsch. Die Liste der Gratis-Modelle enthält zurzeit nur `inclusionai/ling-3.0-flash-sante`, `inclusionai/ling-3.1-flash` und `poolside/laguna-s-2.1-free` (dazu ein Embedding-Modell). Alle Mistral-Modelle sind bezahlt; ohne gekauftes Guthaben scheitern die Anfragen. **Das ist die wahrscheinliche Ursache der hohen Fehlerquote im AI-Gateway-Dashboard** [Wahrscheinlich: nicht an einer roten Anfrage bestätigt]. Die drei Gratis-Modelle sind auf Code und Agenten ausgelegt, über ihr Deutsch und den Umgang mit Eingaben steht in der Modellbeschreibung nichts; zwei stammen von einem chinesischen Anbieter. Sie sind darum nicht der Standard.
+
+**Entscheid vom 04.10.2026 (abends): Mistral direkt, kostenloser Plan «Experiment».** Eine API-Schlüssel-Variable `MISTRAL_API_KEY` genügt; ohne sie läuft der alte Weg über das Gateway weiter (für bezahltes Guthaben). Mistral ist ein Anbieter in Frankreich, schreibt gutes Deutsch und der Plan kostet nichts (rund eine Anfrage pro Sekunde, Obergrenze rund eine Milliarde Tokens im Monat; die genauen Zahlen stehen nur im Mistral-Konto). **Preis dafür:** Im Plan «Experiment» dürfen Eingaben und Ausgaben für das Training verwendet werden (Quelle: help.mistral.ai, bereits oben genannt). Darum sagen die KI-Werkzeuge «Gib nichts Vertrauliches ein», und die Datenschutzerklärung muss es nennen. Eine Erklärung dafür, was das für Kundentexte heisst, schreibt ein Mensch (Regel 8). Wer das nicht will, kauft bei Mistral den bezahlten Plan «Scale» (Training aus) oder Guthaben beim Gateway.
+
+**Limits:** Die KI-Werkzeuge ohne Konto (Text-Umschreiber, Textcheck mit KI) haben kein Limit pro Person, nur 30 Anfragen pro Stunde und IP-Hash und eine globale Tagesgrenze (`AI_DAILY_CAP`, Standard 2'000). Grund: Die Grenze schützt den kostenlosen Plan vor einem Skript, das ihn für alle aufbraucht. Bei normaler Nutzung wird sie nie erreicht.
+
 ## Wofür die Google Cloud gebraucht wird
 
 Du brauchst sie **nicht für die KI**. Es sind zwei andere Dinge:
@@ -138,6 +144,30 @@ Reihenfolge, jeder Schritt mit Tests und `npm run check`:
 5. **Marketing-Check:** Abschnitt «Einordnung» im Ergebnis, bei Ausfall der KI unsichtbar.
 6. **Texte:** «kein Konto nötig» in TrustLine, Seitentexten und CLAUDE.md; Antworten im FAQ; Datenschutzerklärung als Entwurf für den Menschen, der sie schreibt (Regel 8).
 7. **E-Mail-Link als zweiter Weg** für alle ohne Google (Versand über n8n und Gmail): erst danach, als Etappe 2b.
+
+## Später (aufgenommen am 04.10.2026, noch nicht gebaut)
+
+Diese Punkte hat Alperna genannt. Sie gehören nicht zur laufenden Etappe.
+
+### Blog von alperna.ch hierher holen
+
+**Ziel:** Der Blog soll auf tools.alperna.ch laufen, damit Suchverkehr und Werkzeuge zusammenkommen.
+
+- **Warum hier:** Jeder Artikel kann auf ein passendes Werkzeug verweisen, jedes Werkzeug auf passende Artikel. Das ist die stärkste Verlinkung, die die Seite hat.
+- **Aufbau** [Vorschlag]: `content/blog/<slug>.md` (gleiche Technik wie die Seitentexte: Frontmatter, Markdown), Route `app/(site)/blog/[slug]/page.tsx` und Übersicht `/blog`, Eintrag in Sitemap und `robots`, JSON-LD `Article` und `BreadcrumbList`.
+- **Verlinkung als Regel, vom Build geprüft** (`scripts/seo-check.ts`): mindestens drei interne Links je Artikel (davon mindestens ein Werkzeug), mindestens ein Link zur Hauptseite alperna.ch (zum passenden Baustein), und unter jedem Artikel «Dazu passt» mit zwei bis drei Werkzeugen. Umgekehrt zeigt jede Werkzeug-Seite zwei passende Artikel.
+- **Umzug:** Die bestehenden Artikel von alperna.ch als Markdown übernehmen. Offen: Bleiben sie auf alperna.ch erreichbar (dann `rel=canonical` auf eine der beiden Adressen, sonst doppelter Inhalt), oder leitet alperna.ch auf tools.alperna.ch um (301)? Das entscheidet Alperna; es betrifft die Suchmaschinen-Sichtbarkeit der Hauptseite [Wahrscheinlich: ein Umzug mit 301 ist richtig, wenn der Blog dort nur Traffic bringt und keine eigene Rolle spielt].
+- **Voraussetzung:** Lesbare Seitentexte (siehe STATUS.md, Entscheid 51), weil Artikel dieselbe Struktur nutzen: Hook, Versprechen, Inhalt, offene Schleife.
+
+### Bessere Analyse und ein kostenloser Crawler
+
+**Anlass:** Der Marketing-Check sieht nur die Startseite der Website. Instagram, LinkedIn und TikTok lassen sich nicht auslesen; Firecrawl hat nur ein kleines Kontingent und lief bei Alperna nicht zuverlässig.
+
+- **Zuerst klären:** Was soll der Check über Social Media wissen? Zum Beispiel: gibt es ein Profil, wie viele Beiträge, wann der letzte war. Je kleiner die Frage, desto eher gibt es einen Weg ohne Kosten.
+- **Wege, die keinen Schlüssel brauchen** [Vermutung, jeweils vor dem Bau zu prüfen]: (1) mehr Seiten der Website selbst lesen (Impressum, Kontakt, Leistungen, Blog), mit demselben eigenen Abruf, den der Check schon hat; (2) Verlinkungen auf der Website auswerten (Social-Profile werden dort meist verlinkt) und nur die Profil-Adresse prüfen, nicht den Inhalt; (3) öffentliche Metadaten von Profilseiten (Titel, Beschreibung, Open-Graph) lesen, soweit die Plattform sie ohne Anmeldung ausliefert.
+- **Wege mit Konto:** offizielle Schnittstellen (Instagram Graph API braucht ein Geschäftskonto und die App-Prüfung von Meta), ein Kontingent bei einem Crawler-Dienst. Beides ist nicht kostenlos im Sinne von «ohne Konto».
+- **Nicht tun:** Plattformen gegen ihre Nutzungsbedingungen auslesen (Anmeldung simulieren, Sperren umgehen). Das ist ein rechtliches Risiko und fällt bei der ersten Änderung der Plattform aus.
+- **Ergebnis soll ehrlich bleiben:** Was nicht prüfbar ist, steht als «nicht prüfbar» im Ergebnis (wie heute das Google-Profil ohne Schlüssel).
 
 ## Nächster Schritt
 

@@ -1,6 +1,6 @@
 # Textcheck (textcheck)
 
-Klasse A (Analyse, regelbasiert, ohne Server und ohne KI), Stand 04.10.2026. Alles läuft im Browser; `logic.ts` ist rein und getestet.
+Klasse A (Analyse, regelbasiert) mit einem KI-Zusatz auf Knopfdruck, Stand 04.10.2026. Die festen Prüfungen laufen im Browser; `logic.ts` ist rein und getestet. Nur wer «Mit KI prüfen» klickt, schickt den Text an `/api/text`.
 
 ## Nutzen in einem Satz
 Für Inhaberinnen und Inhaber von KMU und Vereinen: einen Text einfügen und in unter einer Minute sehen, wo er Fehler, eine fremde Schreibweise, Floskeln oder zu lange Sätze hat, samt bereinigter Fassung zum Kopieren.
@@ -10,7 +10,7 @@ Kategorie: content (erster Schritt im Pfad «Content»), Zielgruppe: kmu (die Se
 Liest aus Profil: nichts
 Schreibt ins Profil: nichts
 Verwandte Tools: digitaler-auftritt-check; newsletter-check und ideen-aus-website entstehen später (die Seite verlinkt nur, was es gibt)
-`needsServer: false`: der Text geht an keine Route.
+`needsServer: true` (seit 04.10.2026 abends): Der Text geht nur auf Klick auf «Mit KI prüfen» an `/api/text` (Stil «pruefen», siehe `specs/text-umschreiber.md`), nie von selbst.
 
 ## Eingaben
 | Feld | Typ | Pflicht | Vorbefüllung | Validierung | Hilfetext |
@@ -52,8 +52,8 @@ Alle Regeln in `tools/textcheck/logic.ts`. Treffer werden je Regel gruppiert (An
 `tools/textcheck/logic.test.ts` (35 Fälle): Silben, Quellen-Beispiel Index 74, Stufen, Sätze mit Kürzeln und Datum, Fehlerregeln, Schweizer Schreibweise, Floskeln samt Datei-Prüfung, lange Sätze, Bereinigung (inkl. Wiederholbarkeit), Gesamtbericht, Eingabe und Stand, Randfälle und Laufzeit. Browser: sechs Fälle in `tests/e2e/smoke.spec.ts` («Textcheck im Browser»), darunter «keine Anfrage enthält den Text» und 375 px.
 
 ## Nicht Teil dieses Tools
-- Grammatik, Wörterbuch-Rechtschreibung, Stil über die Liste hinaus: dafür bräuchte es ein Wörterbuch oder eine KI.
+- Grammatik und Wörterbuch-Rechtschreibung in den festen Prüfungen: Das macht seit 04.10.2026 abends die KI auf Knopfdruck (`tools/textcheck/AiPanel.tsx`: Gesamteindruck, Fehler, Verbesserungen, korrigierter Text). Entscheid Alperna: «einfach KI mit eigener Anweisung, nicht verkomplizieren»; die festen Prüfungen bleiben, weil Zählen (Lesbarkeit, Satzlänge) und Schreibweise mit Regeln sicherer und sofort sind. Die KI-Prüfung gilt für Texte bis 3'000 Zeichen; längere prüft man abschnittsweise.
 - URL statt Text (der Plan v2 nennt «Text oder URL»): kommt, wenn die Website-Import-Funktion aus `ideen-aus-website` steht; sie braucht den Server.
-- KI-Vorschläge für Umformulierungen (Plan v2): nach Etappe 2 möglich, bisher bewusst nicht gebaut, damit der Text den Browser nie verlässt.
+- KI-Vorschläge für Umformulierungen: dafür gibt es den Text-Umschreiber.
 - Markieren der Stellen im Originaltext: die Liste zeigt Stellen mit Umgebung; ein markierter Text wäre ein eigener Ausbau.
 - Rechtsaussagen (Regel 8): keine.

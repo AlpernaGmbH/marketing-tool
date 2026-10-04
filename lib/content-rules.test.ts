@@ -45,10 +45,34 @@ describe("checkToolContent: Struktur", () => {
 });
 
 describe("checkToolContent: Umfang", () => {
-  it("verlangt 200 bis 300 Wörter in «Warum das wichtig ist»", () => {
-    expect(errorCodes(validToolMarkdown({ warum: words(150) }))).toContain("warum-words");
-    expect(errorCodes(validToolMarkdown({ warum: words(350) }))).toContain("warum-words");
-    expect(errorCodes(validToolMarkdown({ warum: words(200) }))).not.toContain("warum-words");
+  const bullets = (n: number, w = 10) => Array.from({ length: n }, (_, i) => `- ${words(w, `p${i}`)}`).join("\n");
+  const loopLine = "\n\n=> Gleich darunter: mehr.";
+  it("verlangt 50 bis 140 Wörter in «Warum das wichtig ist»", () => {
+    expect(errorCodes(validToolMarkdown({ warum: `${words(10)}.\n${bullets(3, 5)}${loopLine}` }))).toContain("warum-words");
+    expect(errorCodes(validToolMarkdown({ warum: `${words(30)}.\n${bullets(3, 40)}${loopLine}` }))).toContain("warum-words");
+    expect(errorCodes(validToolMarkdown({ warum: `${words(20)}.\n${bullets(3, 10)}${loopLine}` }))).not.toContain("warum-words");
+  });
+  it("verlangt 3 bis 6 Aufzählungspunkte in «Warum das wichtig ist»", () => {
+    expect(errorCodes(validToolMarkdown({ warum: `${words(60)}.${loopLine}` }))).toContain("warum-bullets");
+    expect(errorCodes(validToolMarkdown({ warum: `${words(20)}.\n${bullets(2, 15)}${loopLine}` }))).toContain("warum-bullets");
+    expect(errorCodes(validToolMarkdown({ warum: `${words(20)}.\n${bullets(7, 5)}${loopLine}` }))).toContain("warum-bullets");
+  });
+  it("verlangt mindestens zwei offene Schleifen («=> ») in Warum, Nutzen und Fehler", () => {
+    const bare = { warum: `${words(20)}.\n${bullets(3, 10)}`, nutzen: `1. ${words(10)}\n2. ${words(10)}\n3. ${words(10)}` };
+    expect(errorCodes(validToolMarkdown(bare))).toContain("loops");
+    expect(errorCodes(validToolMarkdown({ ...bare, warum: `${bare.warum}${loopLine}` }))).toContain("loops");
+    expect(errorCodes(validToolMarkdown({ ...bare, warum: `${bare.warum}${loopLine}`, nutzen: `${bare.nutzen}${loopLine}` }))).not.toContain("loops");
+  });
+  it("verlangt je drei Einträge bei «kurz» und «ablauf»", () => {
+    expect(errorCodes(validToolMarkdown({ kurz: null }))).toContain("frontmatter");
+    expect(errorCodes(validToolMarkdown({ ablauf: null }))).toContain("frontmatter");
+    expect(errorCodes(validToolMarkdown({ kurz: ["eins", "zwei"] }))).toContain("frontmatter");
+    expect(errorCodes(validToolMarkdown({ ablauf: ["a", "b", "c", "d"] }))).toContain("frontmatter");
+  });
+  it("hält die Antworten der FAQ kurz (höchstens 80 Wörter)", () => {
+    const longFaq = `## Häufige Fragen\n${Array.from({ length: 5 }, (_, i) => `### Frage ${i}\n${words(i === 0 ? 120 : 20, `x${i}`)}.`).join("\n\n")}`;
+    const md = validToolMarkdown({ omit: ["fragen"] }).replace("## Alperna", `${longFaq}\n\n## Alperna`);
+    expect(errorCodes(md)).toContain("faq-long");
   });
   it("verlangt 3 bis 5 nummerierte Schritte", () => {
     expect(errorCodes(validToolMarkdown({ nutzen: "1. a\n2. b" }))).toContain("nutzen-steps");
@@ -62,9 +86,10 @@ describe("checkToolContent: Umfang", () => {
     expect(errorCodes(validToolMarkdown({ faqCount: 8 }))).toContain("faq-count");
     expect(errorCodes(validToolMarkdown({ faqCount: 7 }))).not.toContain("faq-count");
   });
-  it("verlangt 800 bis 1'200 Wörter gesamt", () => {
-    expect(errorCodes(validToolMarkdown({ warum: words(200), faqCount: 5, beispiel: `${"Malerei Keller, Gossau"} ${words(5)}.` }))).toContain("total-words");
-    expect(errorCodes(validToolMarkdown({ extra: "", beispiel: `Malerei Keller, Gossau. ${words(500, "b")}.` }))).toContain("total-words");
+  it("verlangt 350 bis 700 Wörter gesamt", () => {
+    expect(errorCodes(validToolMarkdown())).not.toContain("total-words");
+    expect(errorCodes(validToolMarkdown({ faqWords: 2, beispiel: "Malerei Keller, Gossau." }))).toContain("total-words");
+    expect(errorCodes(validToolMarkdown({ beispiel: `Malerei Keller, Gossau. ${words(300, "b")}.` }))).toContain("total-words");
   });
   it("verlangt die Beispielfirma im Beispiel", () => {
     expect(errorCodes(validToolMarkdown({ beispiel: `Ein Betrieb. ${words(110)}.` }))).toContain("beispiel-firma");

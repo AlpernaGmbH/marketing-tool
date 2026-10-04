@@ -10,7 +10,7 @@ Stand 04.10.2026. Das ist **kein Rechtstext** (Harte Regel 8: Rechtstexte schrei
 | Lead-Formular | Name, Firma, E-Mail, Telefon (freiwillig), Tool-Name, Kategorie, Zeitpunkt, Quelle | Eigener Server, dann n8n (Alperna, CRM) | Beim Absenden des Formulars oder nach der Anmeldung mit Einwilligung | `lib/lead.ts`, `app/api/lead*/route.ts` |
 | Anmeldung über Clerk (ab Einrichtung) | **Beim Klick auf «Anmelden»** lädt der Browser das Skript von Clerk (clerk-js) von der Clerk-Domain unserer Anwendung (Entwicklung: `<name>.clerk.accounts.dev`, später eine Adresse unter `tools.alperna.ch`), dabei sieht Clerk die IP-Adresse des Besuchers. Bei der Anmeldung erfasst Clerk E-Mail-Adresse, Name und, je nach gewähltem Weg, die Angaben von Google, Microsoft oder Apple. **Besucher ohne Konto laden das Skript nie** (durch Test belegt). Wer ein Sitzungs-Zeichen trägt, lädt es bei jedem Besuch, damit die Sitzung frisch bleibt | Clerk, Inc. (USA), danach zurück zu uns | Beim Klick auf «Anmelden» oder «Registrieren», bei jedem Besuch angemeldeter Personen | `lib/clerk-bridge.ts`, `components/site/ClerkRoot.tsx`, `middleware.ts`, `lib/auth.ts` |
 | KI-Einordnung (ab Einrichtung, nur angemeldet und freigeschaltet) | Betrieb, Ort, Branche, Host der Website, Punktzahlen, offene Prüfpunkte mit Befund, die ersten acht Schritte. Kein Seiteninhalt, keine E-Mail, kein Name der Person | Eigener Server, dann Vercel AI Gateway (USA), dann Modellanbieter (Standard: Mistral; Liste in `AI_MODELS`) | Automatisch nach dem Ergebnis | `lib/check/ai.ts` (`buildFakten`), `lib/ai.ts` |
-| Text-Umschreiber (nur angemeldet und freigeschaltet) | **Der Text, den die Person einfügt** (bis 3'000 Zeichen), gewählter Stil und gewählte Anrede. Kein Name, keine E-Mail, keine Profildaten | Eigener Server, dann Vercel AI Gateway (USA), dann Modellanbieter (Standard: Mistral; Liste in `AI_MODELS`). Der Server speichert und loggt den Text nicht (nur Statuscode und Fehlerklasse) | Beim Klick auf «Umschreiben» | `app/api/text/route.ts`, `lib/ai.ts` (`generateFreeText`), `tools/text-umschreiber/logic.ts` |
+| Text-Umschreiber und KI-Prüfung im Textcheck (ohne Konto; erster Durchlauf frei, danach Formular) | **Der Text, den die Person einfügt** (bis 3'000 Zeichen), gewählter Stil und gewählte Anrede. Kein Name, keine E-Mail, keine Profildaten. Der Textcheck sendet nur auf Klick auf «Mit KI prüfen» | Eigener Server, dann der KI-Anbieter. **Standard: Mistral AI (Frankreich), direkt, kostenloser Plan «Experiment»** (`MISTRAL_API_KEY`); ohne Schlüssel das Vercel AI Gateway (USA) und von dort das Modell aus `AI_MODELS`. **Im Plan «Experiment» dürfen Eingaben und Ausgaben für das Training der Modelle genutzt werden** (Quelle: help.mistral.ai, Stand 04.10.2026, vor der Veröffentlichung der Datenschutzerklärung erneut prüfen). Der Server speichert und loggt den Text nicht (nur Statuscode und Fehlerklasse) | Beim Klick auf «Umschreiben» bzw. «Mit KI prüfen» | `app/api/text/route.ts`, `lib/ai.ts` (`mistralChat`, `generateFreeText`), `tools/text-umschreiber/logic.ts` |
 | Daten beim Konto (nur angemeldet, nur wenn Redis bereitsteht) | Firmenprofil (Betrieb, Branche, Ort, Website, Zielgruppen, Marke und weitere Felder), Merkliste, Zwischenstände der Werkzeuge (Antworten, Ergebnisse) | Eigener Server, dann Redis (Upstash) | Beim Laden der Seite, 2 Sekunden nach einer Änderung, beim Zurückkehren in den Tab und beim Abmelden | `app/api/account/data/route.ts`, `lib/sync.ts`, `components/site/AccountSync.tsx` |
 
 Ohne Anmeldung bleiben alle Eingaben in Werkzeugen im Browser (localStorage: Firmenprofil `mt:profile`, Zwischenstände `mt:<slug>`, Merkliste `mt:merkliste`, Abgleich-Buchhaltung `mt:_sync`, `mt:_konto`). Mit Anmeldung liegt eine Kopie im Konto (siehe Zeile oben).
@@ -23,7 +23,7 @@ Ohne Anmeldung bleiben alle Eingaben in Werkzeugen im Browser (localStorage: Fir
 | `unlocked:<iphash>` | Freischaltung eines Geräts | 365 Tage |
 | `acct:<acchash>` | Freischaltung eines Kontos | 365 Tage |
 | `popular:<slug>` | Aufrufzähler pro Werkzeug, ohne Personenbezug | unbegrenzt |
-| `ai:<acchash>:<Tag>`, `aitext:<acchash>:<Tag>`, `ai:global:<Tag>` | Zähler der Einordnungen und der Umschreibungen (nur Zahlen, kein Text) | 2 Tage |
+| `ai:<acchash>:<Tag>`, `ai:global:<Tag>` | Zähler der Einordnungen je Konto und aller KI-Anfragen insgesamt (nur Zahlen, kein Text) | 2 Tage |
 | `data:<acchash>` | **Daten des Kontos**: Firmenprofil, Merkliste und Zwischenstände der Werkzeuge als JSON, je Schlüssel mit Zeitpunkt der letzten Änderung. Der Server liest die Werte nicht und loggt sie nicht. Löschungen bleiben als leerer Eintrag 60 Tage stehen. Höchstens 60 Schlüssel, 600'000 Zeichen. **Nicht verschlüsselt auf Anwendungsebene** (Upstash verschlüsselt im Ruhezustand [Vermutung, bei Upstash zu prüfen]) | **Kein Ablauf**: bis die Person sie unter «Meine Daten im Konto löschen» (oder «Alles löschen») entfernt |
 | `aicache:<hash>` | Fertige Einordnung (Text kann den Betriebsnamen enthalten) | 24 Stunden |
 | `rl:<name>` | Zähler der Ratenbegrenzung pro `iphash` | wenige Minuten bis Stunden |
@@ -58,7 +58,7 @@ Server-Routen loggen Route, Statuscode und ein Stichwort (`lib/log.ts`). Nie Inh
 | Google (Gmail) | Benachrichtigungsmail an kontakt@alperna.ch mit den Angaben des Leads | USA | Workflow «Tools-Lead» |
 | Clerk, Inc. | Anmeldung und Benutzerverwaltung (Konten, Sitzungen), Skript im Browser, Rückfragen unseres Servers zu E-Mail und Name | USA; Standort der Daten laut Vertrag zu prüfen | `lib/auth.ts`, `lib/clerk-bridge.ts` |
 | Google, Microsoft, Apple | Nur wenn die Person den jeweiligen Weg im Fenster von Clerk wählt (Anmeldung über deren Konto) | USA | Einstellung im Clerk-Dashboard |
-| Mistral AI | Modellanbieter der KI (Standard) | EU | `lib/ai.ts` |
+| Mistral AI | Modellanbieter der KI. Mit `MISTRAL_API_KEY` direkt (Plan «Experiment»: Eingaben dürfen zum Training genutzt werden), sonst über das Vercel AI Gateway | Frankreich (EU); Standort der Verarbeitung laut Vertrag zu prüfen | `lib/ai.ts` |
 | Umami | Statistik: im Code nur als Ereignis-Markierungen, **kein Skript geladen** | offen | `components/tool/DocumentExport.tsx` |
 | Fremde Websites | Der Check ruft die vom Besucher genannte Adresse ab (User-Agent `AlpernaCheck/1.0`) | beliebig | `lib/check/net.ts` |
 
@@ -67,13 +67,13 @@ Server-Routen loggen Route, Statuscode und ein Stichwort (`lib/log.ts`). Nie Inh
 - Check und Ergebnis: Dienst erbringen.
 - Zähler und Freischaltung: den freien Durchlauf begrenzen und Missbrauch verhindern.
 - Lead: Alperna meldet sich persönlich zum Ergebnis, wenn die Person eingewilligt hat. Die Einwilligung ist im Formular ein Häkchen, bei der Anmeldung ein Häkchen vor dem Öffnen des Fensters.
-- KI: nur für angemeldete, freigeschaltete Personen, mit Hinweis im Formular vor dem Start.
+- KI-Einordnung im Check: nur für angemeldete, freigeschaltete Personen, mit Hinweis im Formular vor dem Start. Text-Umschreiber und KI-Prüfung im Textcheck: ohne Konto, mit Hinweis im Werkzeug («Gib nichts Vertrauliches ein»).
 
 ## 7. Offen für die Prüfung
 
 1. **`lead_queue`:** Ablauf (30 Tage ab dem letzten Eintrag, gilt für die ganze Liste, nicht je Eintrag) und Obergrenze von 1000 sind umgesetzt (04.10.2026). Ein einzelner Eintrag kann bei laufendem Zustrom länger als 30 Tage liegen. Ob 30 Tage die richtige Frist sind, entscheidet die Rechtsprüfung.
 2. **Speicherdauer von Leads im CRM** und Löschweg auf Anfrage: Sache von Alperna.
-3. **Auftragsbearbeitung:** Verträge mit Vercel, Upstash, Mistral (über das Gateway) und gegebenenfalls n8n.
+3. **Auftragsbearbeitung:** Verträge mit Vercel, Upstash, Mistral (direkt oder über das Gateway) und gegebenenfalls n8n. Im kostenlosen Mistral-Plan gibt es keinen Vertrag zur Auftragsbearbeitung nach nDSG [Vermutung, bei Mistral zu klären]; der bezahlte Plan «Scale» schliesst das Training aus.
 4. **Auslandübermittlung (USA):** Clerk, Vercel, AI Gateway; Google, Microsoft und Apple nur auf Wunsch der Person.
 5. **Welche Modelle:** Wird `AI_MODELS` geändert (zum Beispiel Alibaba), ändert sich Abschnitt 5.
 6. **Verlinkung:** Die Datenschutzerklärung muss von der Startseite und vom Anmeldefenster verlinkt sein (beim Fenster vor der Anmeldung und im Fenster beim Werkzeug umgesetzt). Eigene Google-App (OAuth-Zustimmung) entfällt, solange Clerk die Anmeldung macht; im Produktivbetrieb braucht Clerk für Google, Microsoft und Apple eigene Zugangsdaten.

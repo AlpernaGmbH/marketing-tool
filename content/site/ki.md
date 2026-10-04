@@ -1,50 +1,56 @@
 ---
 title: "KI-Werkzeuge für Schweizer KMU"
-description: "Antworten auf Bewertungen, Beiträge und Ideen mit KI entwerfen: wie die KI-Werkzeuge für Schweizer KMU funktionieren und was dabei an Google geht."
+description: "Texte mit KI umschreiben und prüfen: wie die KI-Werkzeuge für Schweizer KMU funktionieren, was mit deinem Text passiert und was du prüfen musst."
 h1: "KI-Werkzeuge für Schweizer KMU"
 seoHeading: "KI im Marketing: was sie kann und was du beachten solltest"
-pfadText: "KI-Werkzeuge entstehen zuletzt. Sie bauen auf dem Firmenprofil auf, das du mit den anderen Werkzeugen füllst."
+pfadText: "Die KI-Werkzeuge schreiben und prüfen Texte. Sie laufen ohne Konto: Der erste Durchlauf ist frei."
 ---
 ## Einleitung
-Künstliche Intelligenz kann Texte entwerfen, Ideen vorschlagen und Antworten formulieren. Für Betriebe ohne Marketingabteilung ist das eine Erleichterung: Eine Antwort auf eine Google-Bewertung, ein Entwurf für einen Beitrag oder eine Liste von Ideen sind schneller da, als wenn du bei null beginnst. Wichtig bleibt, dass du das Ergebnis liest, anpasst und verantwortest.
+KI nimmt dir Schreibarbeit ab, aber was veröffentlicht wird, entscheidest du. Das gibt es heute:
 
-Diese Kategorie ist im Aufbau. KI-Werkzeuge entstehen zuletzt, weil sie auf dem aufbauen, was du mit den anderen Werkzeugen festgelegt hast: deinem Firmenprofil mit Positionierung, Tonalität und Wörtern, die du nie benutzt. Aus diesem Profil entstehen Entwürfe, die nach deinem Betrieb klingen und nicht nach einem Standardtext.
+- Text-Umschreiber: aus deinem Text wird ein LinkedIn-Post, eine Instagram-Caption, ein Google-Beitrag, eine Medienmitteilung, ein Newsletter oder ein Website-Text, auf Wunsch nur korrigiert, einfacher oder kürzer
+- Textcheck: Rechtschreibung und Grammatik prüft die KI auf Knopfdruck
+- Digitaler-Auftritt-Check: eine kurze KI-Einordnung zu deinem Ergebnis, wenn du angemeldet und freigeschaltet bist
+- ein erster Durchlauf pro Werkzeug, kostenlos und ohne Konto
 
-Für die KI-Werkzeuge gelten besondere Regeln, die wir offen nennen. Sie laufen über einen zentralen Dienst, und die Eingaben werden zur Verarbeitung an einen externen Anbieter übermittelt. Darum schreibst du keine Firmengeheimnisse hinein. Jedes Werkzeug zeigt diesen Hinweis an. Die Nutzung ist erst nach dem kurzen Formular möglich, und es gibt ein Tageslimit, damit der Dienst für alle verfügbar bleibt.
-
-Wenn das Limit erreicht ist oder der Dienst nicht antwortet, siehst du einen ruhigen Hinweis und kannst mit statischen Vorlagen weiterarbeiten. Das Ergebnis siehst du immer sofort am Bildschirm.
-
-Wer KI nutzt, beginnt am besten klein. Ein Werkzeug, eine Aufgabe, ein Entwurf, den du prüfst: So lernst du, was funktioniert und wo Vorsicht nötig ist. Nach einigen Versuchen hast du ein Gefühl dafür, welche Aufgaben sich eignen und welche du lieber selbst erledigst. Die Werkzeuge helfen dir, diese Erfahrung ohne Risiko zu sammeln.
+Danach genügt ein kurzes Formular oder eine Anmeldung.
 
 ## Hintergrund
-KI ist ein Werkzeug, kein Ersatz für Urteilsvermögen. Sie kann gut formulieren, aber sie kennt deinen Betrieb nur so, wie du ihn beschreibst. Darum hängt die Qualität des Ergebnisses stark davon ab, wie klar deine Angaben sind. Ein Profil mit konkreter Positionierung und klarer Tonalität liefert deutlich bessere Entwürfe als ein leeres Feld.
+### So wird der Entwurf brauchbar
+Die Fassung ist nur so gut wie dein Ausgangstext.
+- Schreibe hinein, wer, was, wann und wo. Fehlen Fakten, füllt die KI mit Allgemeinplätzen.
+- Wähle für jeden Kanal den passenden Stil, denn ein LinkedIn-Post wirkt auf Instagram fremd.
+- Ersetze Platzhalter in eckigen Klammern, bevor du kopierst.
 
-Typische Einsatzfälle für KMU sind kurze, wiederkehrende Texte. Antworten auf Bewertungen sind ein gutes Beispiel: Sie sollen freundlich, konkret und ehrlich sein, und sie wiederholen sich in der Struktur. Ein Entwurf spart Zeit, und du ergänzt, was nur du weisst, etwa einen Namen oder einen Termin. Ähnlich ist es bei Beiträgen: Aus einer Idee in zwei Sätzen entsteht ein Entwurf mit Einstieg, Hauptteil und Aufruf, den du in deiner Stimme überarbeitest.
+=> Gleich darunter: wohin dein Text dabei geht.
 
-Beim Datenschutz ist Vorsicht angebracht. Alles, was du in ein KI-Werkzeug eingibst, wird verarbeitet. Gib deshalb keine Personendaten Dritter ein, keine Vertragsdetails und keine vertraulichen Zahlen. Beschreibe Situationen allgemein. Einzelheiten zur Übermittlung stehen in der Datenschutzerklärung und bei jedem Werkzeug.
+### Wohin dein Text geht
+Dein Text geht an unseren Server und von dort an unseren KI-Anbieter.
+- Wir speichern ihn nicht und schreiben ihn nicht ins Protokoll.
+- Gib nichts Vertrauliches ein und keine Daten Dritter, etwa von Kundschaft oder Mitgliedern.
+- Firmenprofil und Zwischenstände bleiben in deinem Browser. Wenn du angemeldet bist, liegen sie zusätzlich im Konto und stehen auf jedem Gerät bereit.
 
-Die Schweizer Besonderheiten gelten auch für KI-Texte. Rechtschreibung mit ss, «Anführungszeichen», Du oder Sie nach deinem Profil und eine ruhige Sprache ohne Superlative. Die Werkzeuge korrigieren diese Punkte zusätzlich in der Antwort. Trotzdem lohnt sich ein genauer Blick, denn KI formuliert manchmal Dinge, die nicht stimmen. Prüfe Namen, Zahlen und Aussagen immer selbst.
+=> Danach: was die KI trotz allem falsch machen kann.
 
-Schliesslich ist die Haltung wichtig. Veröffentliche keine Texte, die du nicht selbst vertreten kannst. Wenn Kundinnen und Kunden merken, dass ein Text nichts mit dem Betrieb zu tun hat, verlierst du Vertrauen. Gut eingesetzt spart KI dir Zeit für das, was nur du kannst: den persönlichen Kontakt.
-
-Auf die Eingabe kommt es an. Je klarer du beschreibst, was du brauchst, für wen der Text gedacht ist und in welchem Ton er klingen soll, desto besser wird der Entwurf. Ein Satz wie «Antworte auf diese Bewertung» liefert Allerweltsworte. Ein Satz mit Anlass, Ton und einer Bitte um ein Gesprächsangebot liefert einen Text, den du fast übernehmen kannst. Die Werkzeuge fragen deshalb gezielt nach und fügen deine Profilangaben im Hintergrund hinzu.
-
-KI hat auch Grenzen. Sie kann Dinge erfinden, die plausibel klingen, aber nicht stimmen: einen Preis, einen Namen, ein Datum oder eine Rechtsregel. Bei Antworten auf Bewertungen ist das besonders heikel, denn ein erfundenes Detail fällt der Kundin sofort auf. Lies darum jeden Entwurf Wort für Wort und streiche, was du nicht belegen kannst. Rechtliche Aussagen lässt du von Menschen prüfen.
-
-Auch der Ton verlangt Aufmerksamkeit. KI-Texte neigen zu Superlativen, zu Floskeln und zu Ausrufezeichen. Das passt selten zu einem Schweizer Betrieb. Unsere Werkzeuge versuchen, solche Muster zu vermeiden, und prüfen die Antwort auf Schweizer Rechtschreibung. Ein letzter Blick von dir ist trotzdem nötig. Wenn ein Text nicht nach dir klingt, passe ihn an, bis er stimmt.
+### Wo die KI Fehler macht
+Die KI kann Fehler machen und Dinge erfinden, die plausibel klingen.
+- Der Text-Umschreiber warnt, wenn die Fassung Zahlen, Links oder Platzhalter enthält, die nicht in deinem Text standen.
+- Prüfe Namen, Daten, Preise und Aussagen trotzdem selbst, bevor du etwas veröffentlichst.
+- Rechtliche Aussagen lässt du von einem Menschen prüfen.
+- Die Schweizer Schreibweise (ss, «Anführungszeichen») bringt das Werkzeug mit. Ob der Ton nach dir klingt, entscheidest du.
 
 ## Häufige Fragen
-### Gibt es die KI-Werkzeuge schon?
-Diese Kategorie ist im Aufbau. Sobald ein Werkzeug bereit ist, erscheint es hier mit allen Hinweisen zu Datenschutz und Limit.
+### Brauche ich ein Konto?
+Nein. Jedes Werkzeug kannst du einmal vollständig und kostenlos ohne Konto durchlaufen. Danach erscheint ein kurzes Formular mit Name, Firma und E-Mail, oder du meldest dich an. Dann sind alle Werkzeuge und Downloads offen.
+
+### Gibt es eine Grenze, wie oft ich die KI nutzen darf?
+Für den Text-Umschreiber und den Textcheck gibt es kein Tageslimit pro Person. Eine Schutzgrenze bremst nur viele Anfragen in kurzer Zeit. Die KI-Einordnung im Digitaler-Auftritt-Check hat ein Tageslimit pro Konto.
 
 ### Was passiert mit dem, was ich eingebe?
-Die Eingaben werden zur Verarbeitung an einen externen Anbieter übermittelt. Gib darum keine Firmengeheimnisse und keine Personendaten Dritter ein. Die Werkzeuge speichern deine Eingaben nicht auf unserem Server. Ausnahme: Wenn du angemeldet bist, liegt dein Zwischenstand in deinem Konto, damit du ihn auf jedem Gerät findest.
+Dein Text geht an unseren Server und von dort an unseren KI-Anbieter. Wir speichern ihn nicht. Gib darum nichts Vertrauliches und keine Daten Dritter ein.
 
-### Warum brauche ich dafür das Formular oder eine Anmeldung?
-Die KI-Werkzeuge verursachen laufende Kosten. Darum stehen sie erst nach dem kurzen Formular oder der Anmeldung zur Verfügung. So bleiben sie für alle kostenlos.
-
-### Was ist, wenn das Tageslimit erreicht ist?
-Dann zeigt das Werkzeug einen ruhigen Hinweis, und du kannst am nächsten Tag weiterarbeiten. Wo es passt, gibt es statische Vorlagen als Ersatz.
+### Erfindet die KI Inhalte?
+Sie kann es. Der Text-Umschreiber warnt, wenn in der Fassung Zahlen, Links oder Platzhalter stehen, die nicht in deinem Text standen. Lies trotzdem jede Fassung selbst, bevor du sie veröffentlichst.
 
 ### Darf ich KI-Texte unverändert veröffentlichen?
-Besser nicht. Lies jeden Text, prüfe die Aussagen und passe ihn an deine Stimme an. Die Verantwortung für den Inhalt bleibt bei dir.
+Besser nicht. Lies jeden Text, prüfe die Aussagen und passe ihn an deine Stimme an. Veröffentliche nur, was du selbst vertreten kannst. Die Verantwortung für den Inhalt bleibt bei dir.
