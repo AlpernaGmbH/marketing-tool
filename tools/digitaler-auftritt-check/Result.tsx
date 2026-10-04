@@ -7,6 +7,8 @@ import { ResultCard } from "@/components/tool/ResultCard";
 import { ScoreBadge } from "@/components/tool/ScoreBadge";
 import { Button } from "@/components/ui/button";
 import { dateCH } from "@/lib/ch";
+import type { Einordnung } from "@/lib/check/ai";
+import type { EinordnungReason } from "@/lib/check/ai-client";
 import type { CheckCategory, CheckItem, CheckResult } from "@/lib/check/types";
 import { getTool } from "@/lib/registry";
 import { scoreBand } from "@/lib/score";
@@ -76,13 +78,78 @@ function CategoryBlock({ cat }: { cat: CheckCategory }) {
   );
 }
 
+/** Zustand der KI-Einordnung. «none»: Besucher ohne Konto, der Block erscheint nicht. */
+export type AiView =
+  | { status: "none" }
+  | { status: "loading" }
+  | { status: "ok"; einordnung: Einordnung }
+  | { status: "unavailable"; reason: EinordnungReason };
+
+const AI_UNAVAILABLE: Record<EinordnungReason, string> = {
+  failed: "Die Einordnung ist gerade nicht verfügbar. Das Ergebnis unten ist vollständig.",
+  not_signed_in: "Für die Einordnung musst du angemeldet sein. Das Ergebnis unten ist vollständig.",
+  limit: "Du hast heute alle Einordnungen verbraucht. Morgen geht es wieder. Das Ergebnis unten ist vollständig.",
+  capacity: "Die Einordnungen sind für heute aufgebraucht. Das Ergebnis unten ist vollständig.",
+};
+
+function EinordnungBlock({ ai, result, onRetry }: { ai: AiView; result: CheckResult; onRetry?: () => void }) {
+  if (ai.status === "none") return null;
+  const titelOf = (id: string) => result.massnahmen.findIndex((m) => m.itemId === id);
+  return (
+    <section aria-labelledby="dac-einordnung" className="grid gap-3 rounded-xl border border-line bg-surface p-4" data-testid="einordnung">
+      <h4 id="dac-einordnung" className="font-heading text-lg font-semibold">
+        Einordnung
+      </h4>
+      {ai.status === "loading" && (
+        <p role="status" className="text-muted-foreground">
+          Die Einordnung wird geschrieben. Das dauert einige Sekunden.
+        </p>
+      )}
+      {ai.status === "unavailable" && (
+        <>
+          <p>{AI_UNAVAILABLE[ai.reason]}</p>
+          {(ai.reason === "failed" || ai.reason === "not_signed_in") && onRetry && (
+            <div>
+              <Button variant="outline" size="sm" onClick={onRetry}>
+                Noch einmal versuchen
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+      {ai.status === "ok" && (
+        <>
+          <p>{ai.einordnung.zusammenfassung}</p>
+          <ol className="grid gap-3">
+            {ai.einordnung.prioritaeten.map((p) => {
+              const nr = titelOf(p.schritt);
+              return (
+                <li key={p.schritt} className="grid gap-0.5">
+                  <span className="font-medium">
+                    {nr >= 0 && nr < SHOWN ? `Schritt ${nr + 1}: ` : ""}
+                    {p.titel}
+                  </span>
+                  <span className="text-muted-foreground">{p.text}</span>
+                </li>
+              );
+            })}
+          </ol>
+          <p className="text-sm text-muted-foreground">Von einer KI formuliert, nur auf Basis der Messwerte dieses Checks. Prüfe sie, bevor du handelst.</p>
+        </>
+      )}
+    </section>
+  );
+}
+
 type Props = {
   result: CheckResult;
   onRestart: () => void;
   headingRef?: React.Ref<HTMLHeadingElement>;
+  ai?: AiView;
+  onRetryAi?: () => void;
 };
 
-export function CheckResultView({ result, onRestart, headingRef }: Props) {
+export function CheckResultView({ result, onRestart, headingRef, ai = { status: "none" }, onRetryAi }: Props) {
   const shown = result.massnahmen.slice(0, SHOWN);
   const { ok, total } = countItems(result);
 
@@ -90,7 +157,7 @@ export function CheckResultView({ result, onRestart, headingRef }: Props) {
     <ResultCard
       title="Dein Ergebnis"
       headingRef={headingRef}
-      actions={<DocumentExport model={toDocument(result)} />}
+      actions={<DocumentExport model={toDocument(result, ai.status === "ok" ? ai.einordnung : null)} />}
     >
       <ScoreBadge score={result.score} label={`Gesamtpunktzahl für ${host(result.url)}`} />
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -101,6 +168,8 @@ export function CheckResultView({ result, onRestart, headingRef }: Props) {
           Erneut prüfen
         </Button>
       </div>
+
+      <EinordnungBlock ai={ai} result={result} onRetry={onRetryAi} />
 
       <section aria-labelledby="dac-schritte" className="grid gap-3">
         <h4 id="dac-schritte" className="font-heading text-lg font-semibold">

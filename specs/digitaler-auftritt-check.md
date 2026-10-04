@@ -57,10 +57,19 @@ Alle Felder ausser Branche und Social Media kommen aus dem Firmenprofil und werd
 - Zwischenstand der Fragebogen-Version oder beschädigte Daten: Start, nichts geht verloren.
 
 ## Nicht Teil dieses Werkzeugs
-- Keine KI (Etappe 2). Die Einordnung und Priorisierung sind regelbasiert.
+- Die Punktzahl, die Bereiche und die Schritte sind regelbasiert und entstehen ohne KI. Nur die Einordnung (siehe unten) schreibt eine KI, und nur für angemeldete, freigeschaltete Personen.
 - Kein Zwischenspeicher je Domain (braucht Redis, die Integration ist noch nicht verbunden).
 - Keine Unterseiten, kein Rendern von JavaScript, keine PageSpeed-Messung. Eine Website, die Inhalte erst im Browser lädt, erscheint leerer, als sie ist.
 - Kein Auslesen von Instagram, LinkedIn, TikTok oder Google ohne Schnittstelle.
+
+## KI-Einordnung (Etappe 2)
+- Voraussetzung: Konto (Google) und Freischaltung; das Ergebnis trägt die Signatur des Servers (`sig`). Ohne eines davon erscheint der Block nicht und der Browser ruft `/api/ai` gar nicht erst auf.
+- Inhalt: zwei bis drei Sätze Zusammenfassung und bis zu drei Prioritäten, je mit Verweis auf einen Schritt aus der Liste und ein bis zwei Sätzen Begründung. Das Modell sieht nur das Fakten-JSON (`buildFakten`), keine Seite und keine Eingaben ausser Betrieb, Ort, Branche und Host.
+- Prüfung vor der Anzeige: Schema, Länge, nur Zahlen aus den Fakten, nur bekannte Schrittkennungen, Alperna-Sperrliste, keine Ausrufezeichen, Emojis, Links. Sonst verworfen.
+- Grenzen: 5 pro Konto und Tag, 200 pro Tag insgesamt, 20 pro Stunde und IP-Hash. Fertige Einordnungen liegen 24 Stunden im Zwischenspeicher.
+- Fehlerbild: Der Check bleibt vollständig. Der Block sagt ruhig, dass die Einordnung gerade nicht verfügbar ist, und bietet einen neuen Versuch (nicht bei verbrauchtem Tageslimit).
+- Export: Die Einordnung steht im Dokument unter «Einordnung (von einer KI formuliert)», wenn sie vorhanden ist.
+- Tests: `lib/check/{ai,ai-client,sign}.test.ts`, `lib/ai-quota` über `app/api/ai/route.test.ts`, `Result.test.tsx`, Smoke-Tests «KI-Einordnung im Browser».
 
 ## Texte
 - Seitentext: `content/tools/digitaler-auftritt-check.md` (Beispiel Malerei Keller, Gossau mit dem echten Ergebnis der Engine auf einer Beispielseite).

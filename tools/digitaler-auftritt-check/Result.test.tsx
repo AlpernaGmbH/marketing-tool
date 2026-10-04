@@ -66,4 +66,51 @@ describe("CheckResultView", () => {
     expect(screen.getByText(/nichts Dringendes/)).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/undefined|NaN|\[object/);
   });
+
+  describe("KI-Einordnung", () => {
+    const einordnung = (id: string, titel: string) => ({
+      zusammenfassung: "Die Grundlagen stehen, die grösste Lücke liegt bei den Suchmaschinen.",
+      prioritaeten: [{ schritt: id, titel, text: "Hier lohnt sich der Anfang, weil der Aufwand klein ist." }],
+    });
+
+    it("zeigt ohne Konto keinen Block", () => {
+      render(<CheckResultView result={result} onRestart={() => {}} />);
+      expect(screen.queryByTestId("einordnung")).toBeNull();
+    });
+
+    it("zeigt beim Laden einen ruhigen Hinweis", () => {
+      render(<CheckResultView result={result} onRestart={() => {}} ai={{ status: "loading" }} />);
+      expect(within(screen.getByTestId("einordnung")).getByRole("status")).toHaveTextContent("wird geschrieben");
+    });
+
+    it("zeigt Zusammenfassung, Priorität mit Schrittnummer und die KI-Kennzeichnung", () => {
+      const m = result.massnahmen[1];
+      render(<CheckResultView result={result} onRestart={() => {}} ai={{ status: "ok", einordnung: einordnung(m.itemId, m.titel) }} />);
+      const box = screen.getByTestId("einordnung");
+      expect(box).toHaveTextContent("Die Grundlagen stehen");
+      expect(box).toHaveTextContent(`Schritt 2: ${m.titel}`);
+      expect(box).toHaveTextContent("Von einer KI formuliert");
+    });
+
+    it("lässt die Schrittnummer weg, wenn der Schritt nicht in der Liste oben steht", () => {
+      render(<CheckResultView result={result} onRestart={() => {}} ai={{ status: "ok", einordnung: einordnung("gibt-es-nicht", "Unbekannter Schritt") }} />);
+      const box = screen.getByTestId("einordnung");
+      expect(box).toHaveTextContent("Unbekannter Schritt");
+      expect(box).not.toHaveTextContent("Schritt 1:");
+    });
+
+    it("sagt bei einem Ausfall, dass das Ergebnis vollständig ist, und bietet einen neuen Versuch", async () => {
+      const onRetryAi = vi.fn();
+      render(<CheckResultView result={result} onRestart={() => {}} ai={{ status: "unavailable", reason: "failed" }} onRetryAi={onRetryAi} />);
+      expect(screen.getByTestId("einordnung")).toHaveTextContent("Das Ergebnis unten ist vollständig");
+      await userEvent.click(screen.getByRole("button", { name: "Noch einmal versuchen" }));
+      expect(onRetryAi).toHaveBeenCalledTimes(1);
+    });
+
+    it("bietet bei verbrauchtem Tageslimit keinen neuen Versuch an", () => {
+      render(<CheckResultView result={result} onRestart={() => {}} ai={{ status: "unavailable", reason: "limit" }} onRetryAi={() => {}} />);
+      expect(screen.getByTestId("einordnung")).toHaveTextContent("Morgen geht es wieder");
+      expect(screen.queryByRole("button", { name: "Noch einmal versuchen" })).toBeNull();
+    });
+  });
 });

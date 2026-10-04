@@ -16,9 +16,11 @@ export const keys = {
   /** Freischaltung eines Kontos (HMAC der E-Mail-Adresse), gilt auf allen Geräten. */
   account: (acchash: string) => `acct:${acchash}`,
   popular: (slug: string) => `popular:${slug}`,
-  ai: (iphash: string, day: string) => `ai:${iphash}:${day}`,
+  ai: (acchash: string, day: string) => `ai:${acchash}:${day}`,
   lookup: (iphash: string, day: string) => `lookup:${iphash}:${day}`,
   aiGlobal: (day: string) => `ai:global:${day}`,
+  /** Zwischenspeicher der KI-Einordnung je Ergebnis (Hash der Signatur), 24 Stunden. */
+  aiCache: (hash: string) => `aicache:${hash}`,
   leadQueue: "lead_queue",
 } as const;
 

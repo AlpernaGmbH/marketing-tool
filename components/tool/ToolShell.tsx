@@ -10,6 +10,8 @@ type ToolContextValue = {
   slug: string;
   /** Freigeschaltet (Formular ausgefüllt): alle Werkzeuge und Downloads offen. */
   unlocked: boolean;
+  /** Angemeldet mit einem Konto (Google). Nur dann gibt es die KI-Einordnung. */
+  signedIn: boolean;
   /**
    * Vor dem Tool-Start aufrufen. true: starten. false: Besucher hat das Formular geschlossen.
    * Ist der freie Durchlauf verbraucht, öffnet sich das LeadGate und die Funktion wartet darauf.
@@ -41,6 +43,7 @@ type Props = {
 export function ToolShell({ slug, name, usesProfile = false, children }: Props) {
   const [unlocked, setUnlocked] = useState(false);
   const [login, setLogin] = useState<LoginProvider | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [gate, setGate] = useState<{ open: boolean; reason: LeadGateReason }>({ open: false, reason: "zweites_tool" });
   const waiting = useRef<((ok: boolean) => void) | null>(null);
@@ -77,6 +80,7 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
       if (alive) {
         setUnlocked(a.unlocked);
         setLogin(a.login);
+        setSignedIn(a.signedIn);
       }
     })();
     return () => {
@@ -103,6 +107,7 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
     const access = await checkAccess(slug);
     setUnlocked(access.unlocked);
     setLogin(access.login);
+    setSignedIn(access.signedIn);
     return access.allowed ? true : openGate("zweites_tool");
   }, [slug, openGate]);
 
@@ -116,6 +121,7 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
         if (unlocked) return void (await action());
         const access = await checkAccess(slug);
         setLogin(access.login);
+        setSignedIn(access.signedIn);
         if (access.unlocked) {
           setUnlocked(true);
           return void (await action());
@@ -127,8 +133,8 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
   );
 
   const value = useMemo<ToolContextValue>(
-    () => ({ slug, unlocked, requestStart, completeRun, guardDownload }),
-    [slug, unlocked, requestStart, completeRun, guardDownload],
+    () => ({ slug, unlocked, signedIn, requestStart, completeRun, guardDownload }),
+    [slug, unlocked, signedIn, requestStart, completeRun, guardDownload],
   );
 
   return (

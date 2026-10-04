@@ -156,13 +156,13 @@ test.describe("Kategorieseiten", () => {
 });
 
 /** Ersetzt /api/check im Browser: Der Server dürfte localhost nicht abrufen (SSRF-Schutz), und der Test soll nicht von fremden Seiten abhängen. */
-async function mockCheck(page: Page, outcome: "result" | "error" = "result") {
+async function mockCheck(page: Page, outcome: "result" | "error" = "result", sig?: string) {
   const events =
     outcome === "result"
       ? [
           { type: "step", id: "fetch", state: "start" },
           { type: "step", id: "fetch", state: "done" },
-          { type: "result", result: await sampleResult() },
+          { type: "result", result: { ...(await sampleResult()), ...(sig ? { sig } : {}) } },
         ]
       : [{ type: "error", code: "unreachable", message: "Die Website konnte nicht geladen werden. Stimmt die Adresse?" }];
   await page.route("**/api/check", (route) =>
@@ -191,6 +191,7 @@ test.describe("Referenz-Werkzeug im Browser", () => {
     await page.goto(`/tools/${TOOL}`);
     const start = page.getByRole("button", { name: "Website prüfen" });
     await expect(start).toBeEnabled();
+    await expect(page.getByText("Eine KI schreibt zusätzlich eine kurze Einordnung")).toHaveCount(0); // ohne Konto kein Hinweis auf die KI
     await start.click();
     await expect(page.getByRole("alert").filter({ hasText: "Bitte gib den Firmennamen an." })).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -214,6 +215,7 @@ test.describe("Referenz-Werkzeug im Browser", () => {
     await runToResult(page);
     await page.reload();
     await expect(page.getByText("Dein Ergebnis")).toBeVisible();
+    await expect(page.getByTestId("einordnung")).toHaveCount(0); // ohne Konto keine KI-Einordnung
     const profile = await page.evaluate(() => JSON.parse(localStorage.getItem("mt:profile") ?? "{}"));
     expect(profile).toMatchObject({ firma: "Malerei Keller", website: "malerei-keller.ch", branche: "Handwerk / Bau / Garten" });
     expect(profile.kanaele).toEqual([{ name: "Instagram", url: "instagram.com/malereikeller" }]);
@@ -247,6 +249,73 @@ test.describe("Referenz-Werkzeug im Browser", () => {
     await page.getByRole("button", { name: "Erneut prüfen" }).click();
     await page.getByRole("button", { name: "Website prüfen" }).click();
     await expect(page.getByRole("dialog").getByText("Dein erstes Ergebnis war gratis.")).toBeVisible();
+  });
+});
+
+test.describe("KI-Einordnung im Browser (mit Konto)", () => {
+  /** Meldet den Besucher als angemeldet und freigeschaltet und ersetzt /api/ai. Gibt die Zahl der Aufrufe zurück. */
+  async function signedIn(page: Page, replies: { status: number; body: unknown }[]) {
+    const calls = { n: 0 };
+    await page.route("**/api/access", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ allowed: true, unlocked: true, reason: "unlocked", login: "google", signedIn: true }) }),
+    );
+    await page.route("**/api/ai", (route) => {
+      const reply = replies[Math.min(calls.n++, replies.length - 1)];
+      return route.fulfill({ status: reply.status, contentType: "application/json", body: JSON.stringify(reply.body) });
+    });
+    return calls;
+  }
+
+  async function einordnung() {
+    const first = (await sampleResult()).massnahmen[0];
+    return {
+      zusammenfassung: "Die Grundlagen stehen, die grösste Lücke liegt bei den Suchmaschinen.",
+      prioritaeten: [{ schritt: first.itemId, titel: first.titel, text: "Hier lohnt sich der Anfang, weil der Aufwand klein ist." }],
+    };
+  }
+
+  test("holt die Einordnung einmal, zeigt sie mit KI-Kennzeichnung und behält sie nach dem Neuladen", async ({ page }) => {
+    const calls = await signedIn(page, [{ status: 200, body: { ok: true, einordnung: await einordnung(), cached: false } }]);
+    await mockCheck(page, "result", "e2e-sig");
+    await fillForm(page);
+    await expect(page.getByText("Eine KI schreibt zusätzlich eine kurze Einordnung")).toBeVisible(); // Hinweis, welche Daten an die KI gehen
+    await page.getByRole("button", { name: "Website prüfen" }).click();
+
+    const box = page.getByTestId("einordnung");
+    await expect(box).toContainText("Die Grundlagen stehen");
+    await expect(box).toContainText("Schritt 1:");
+    await expect(box).toContainText("Von einer KI formuliert");
+
+    await page.reload();
+    await expect(page.getByTestId("einordnung")).toContainText("Die Grundlagen stehen");
+    expect(calls.n).toBe(1);
+  });
+
+  test("ein Ausfall der KI lässt den Check stehen und erlaubt einen neuen Versuch", async ({ page }) => {
+    const calls = await signedIn(page, [
+      { status: 502, body: { error: "ai_rejected" } },
+      { status: 200, body: { ok: true, einordnung: await einordnung(), cached: false } },
+    ]);
+    await mockCheck(page, "result", "e2e-sig");
+    await fillForm(page);
+    await page.getByRole("button", { name: "Website prüfen" }).click();
+
+    const box = page.getByTestId("einordnung");
+    await expect(box).toContainText("Das Ergebnis unten ist vollständig");
+    await expect(page.getByText("Das würde ich zuerst tun")).toBeVisible();
+    await box.getByRole("button", { name: "Noch einmal versuchen" }).click();
+    await expect(box).toContainText("Die Grundlagen stehen");
+    expect(calls.n).toBe(2);
+  });
+
+  test("ohne Signatur im Ergebnis (älterer Stand) fragt der Browser die KI gar nicht erst", async ({ page }) => {
+    const calls = await signedIn(page, [{ status: 200, body: { ok: true, einordnung: await einordnung(), cached: false } }]);
+    await mockCheck(page);
+    await fillForm(page);
+    await page.getByRole("button", { name: "Website prüfen" }).click();
+    await expect(page.getByText("Dein Ergebnis")).toBeVisible();
+    await expect(page.getByTestId("einordnung")).toHaveCount(0);
+    expect(calls.n).toBe(0);
   });
 });
 
@@ -299,6 +368,12 @@ test.describe("Zugang: ein freier Durchlauf, dann Formular", () => {
     const used = await post("/api/check", { company: "A", website: "keller.ch" });
     expect(used.status()).toBe(403);
     expect((await used.json()).error).toBe("gate");
+  });
+
+  test("/api/ai: ohne gültig signiertes Ergebnis 400, nie ohne Konto etwas erzeugen", async ({ request }) => {
+    const res = await request.post("/api/ai", { data: { result: { v: 1, sig: "gefaelscht" } } });
+    expect(res.status()).toBe(400);
+    expect((await request.post("/api/ai", { data: "kein json" })).status()).toBe(400);
   });
 
   test("Konto-Anmeldung ist ohne Einrichtung aus: /api/auth 404, /api/lead/account 401, /api/access bietet nur das Formular", async ({ request }) => {

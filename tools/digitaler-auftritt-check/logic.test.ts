@@ -34,6 +34,15 @@ describe("parseCheckState", () => {
     expect(saved.result?.score).toBe(result.score);
   });
 
+  it("behält eine gültige Einordnung zum Ergebnis und verwirft eine kaputte", async () => {
+    result = await sampleResult();
+    const einordnung = { zusammenfassung: "Die Grundlagen stehen.", prioritaeten: [{ schritt: "a", titel: "Titel", text: "Text zum Schritt." }] };
+    const base = { v: 1, phase: "result", counted: true, form: EMPTY_FORM, result };
+    expect(parseCheckState(JSON.parse(JSON.stringify({ ...base, einordnung }))).einordnung).toEqual(einordnung);
+    expect(parseCheckState(JSON.parse(JSON.stringify({ ...base, einordnung: { zusammenfassung: 3 } }))).einordnung).toBeUndefined();
+    expect(parseCheckState({ phase: "intro", einordnung }).einordnung).toBeUndefined();
+  });
+
   it("verwirft ein beschädigtes Ergebnis und behält die Formulardaten", () => {
     const saved = parseCheckState({ phase: "result", counted: true, result: { v: 1, score: "viel" }, form: { industry: "gastro" } });
     expect(saved.phase).toBe("intro");
@@ -155,6 +164,18 @@ describe("toDocument", () => {
     const rows = table && table.type === "table" ? table.rows.map((r) => r[0]) : [];
     expect(rows).not.toContain("Online-Shop");
     expect(rows).toContain("Website und SEO");
+  });
+
+  it("nimmt die Einordnung nur auf, wenn es sie gibt, und kennzeichnet sie als KI-Text", async () => {
+    result = await sampleResult();
+    const einordnung = { zusammenfassung: "Die Grundlagen stehen.", prioritaeten: [{ schritt: "a", titel: "Google-Profil", text: "Das Profil kommt zuerst." }] };
+    const without = toMarkdown(toDocument(result));
+    expect(without).not.toContain("Einordnung");
+    const md = toMarkdown(toDocument(result, einordnung));
+    expect(md).toContain("Einordnung (von einer KI formuliert)");
+    expect(md).toContain("Google-Profil: Das Profil kommt zuerst.");
+    expect(md.indexOf("Einordnung")).toBeLessThan(md.indexOf("Nächste Schritte"));
+    expect(md).not.toMatch(/undefined|NaN|\[object/);
   });
 
   it("schreibt bei leerer Massnahmenliste einen Satz statt einer Tabelle", async () => {

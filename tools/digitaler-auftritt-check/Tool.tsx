@@ -6,11 +6,12 @@ import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { fetchEinordnung, type EinordnungReason } from "@/lib/check/ai-client";
 import { runCheck } from "@/lib/check/client";
 import { CHECK_STEPS, INDUSTRY_KEYS, INDUSTRY_LABELS, POSTING_FREQUENCIES, SOCIAL_NETWORKS, type CheckStepId, type IndustryKey } from "@/lib/check/types";
 import { useLocalJson } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
-import { CheckResultView } from "./Result";
+import { CheckResultView, type AiView } from "./Result";
 import { EMPTY_FORM, SLUG, buildInput, formProblem, host, industryFor, parseCheckState, profilePatch, type FormState } from "./logic";
 import config from "./tool.config";
 
@@ -21,7 +22,7 @@ type StepState = "wait" | "run" | "done";
 const STEP_TEXT: Record<StepState, string> = { wait: "wartet", run: "läuft", done: "fertig" };
 const freshSteps = (): Record<CheckStepId, StepState> => Object.fromEntries(CHECK_STEPS.map((s) => [s.id, "wait"])) as Record<CheckStepId, StepState>;
 
-function Intro() {
+function Intro({ withAi }: { withAi: boolean }) {
   return (
     <>
       <p>
@@ -32,6 +33,12 @@ function Intro() {
       <p>
         Die Adresse geht an unseren Server, der die Seite abruft. Wir speichern sie nicht. Das Ergebnis bleibt in deinem Browser.
       </p>
+      {withAi && (
+        <p>
+          Du bist angemeldet: Eine KI schreibt zusätzlich eine kurze Einordnung. Dafür gehen Betrieb, Ort, Branche und die Messwerte des Checks an unseren
+          KI-Anbieter, nicht die Seite selbst.
+        </p>
+      )}
     </>
   );
 }
@@ -51,6 +58,50 @@ function CheckFlow() {
   const [steps, setSteps] = useState(freshSteps);
   const [error, setError] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // KI-Einordnung: nur mit Konto und Freischaltung, einmal pro Ergebnis (Kennung = Signatur des Servers).
+  // Der Zwischenspeicher im Browser hält sie fest, der Server hält sie 24 Stunden vor.
+  const [aiFailed, setAiFailed] = useState<{ sig: string; reason: EinordnungReason } | null>(null);
+  const [aiTry, setAiTry] = useState(0);
+  const savedRef = useRef(saved);
+  useEffect(() => {
+    savedRef.current = saved;
+  }, [saved]);
+  const requested = useRef<string | null>(null);
+  const sig = saved.result?.sig;
+  const canAi = ready && ctx.signedIn && ctx.unlocked && saved.phase === "result" && !!sig && !saved.einordnung;
+
+  useEffect(() => {
+    if (!canAi || !sig || requested.current === `${sig}:${aiTry}`) return;
+    requested.current = `${sig}:${aiTry}`;
+    const current = savedRef.current;
+    if (!current.result) return;
+    void fetchEinordnung(current.result).then((outcome) => {
+      const now = savedRef.current;
+      // Hat der Besucher inzwischen neu geprüft, gehört die Antwort nicht mehr zum Ergebnis.
+      if (now.result?.sig !== sig) return;
+      if (outcome.ok) {
+        setAiFailed(null);
+        set({ ...now, einordnung: outcome.einordnung });
+      } else {
+        setAiFailed({ sig, reason: outcome.reason });
+      }
+    });
+  }, [canAi, sig, aiTry, set]);
+
+  const ai: AiView = !ctx.signedIn || !ctx.unlocked || !sig
+    ? { status: "none" }
+    : saved.einordnung
+      ? { status: "ok", einordnung: saved.einordnung }
+      : aiFailed?.sig === sig
+        ? { status: "unavailable", reason: aiFailed.reason }
+        : { status: "loading" };
+
+  const retryAi = () => {
+    setAiFailed(null);
+    setAiTry((n) => n + 1);
+  };
+
   // Fokus nur nach einer Aktion des Besuchers, nicht beim Wiederherstellen aus dem Speicher.
   const shouldFocus = useRef(false);
 
@@ -109,7 +160,7 @@ function CheckFlow() {
 
   // ---- Ergebnis --------------------------------------------------------------------------------
   if (ready && saved.phase === "result" && saved.result && !running) {
-    return <CheckResultView result={saved.result} onRestart={restart} headingRef={headingRef} />;
+    return <CheckResultView result={saved.result} onRestart={restart} headingRef={headingRef} ai={ai} onRetryAi={retryAi} />;
   }
 
   // ---- Prüfung läuft ---------------------------------------------------------------------------
@@ -159,7 +210,7 @@ function CheckFlow() {
       }}
     >
       <div className="content">
-        <Intro />
+        <Intro withAi={ctx.signedIn && ctx.unlocked} />
       </div>
 
       <fieldset className="grid gap-4 rounded-xl border border-line p-4 md:grid-cols-2">

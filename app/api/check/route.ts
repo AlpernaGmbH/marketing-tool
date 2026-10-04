@@ -3,6 +3,7 @@ import { canStart, clientIp, defaultStore, gateSecret, ipHash, readGateCookie } 
 import { requestAccount } from "@/lib/account";
 import { readJson, respond } from "@/lib/api";
 import { analyze, normalizeUrl } from "@/lib/check/analyze";
+import { signResult } from "@/lib/check/sign";
 import { CheckError, checkInputSchema, type CheckEvent } from "@/lib/check/types";
 import { logStatus } from "@/lib/log";
 import { withinLimit } from "@/lib/ratelimit";
@@ -60,7 +61,8 @@ export async function POST(req: NextRequest) {
           onStep: (id, state) => send({ type: "step", id, state }),
           gbp: { placesKey: process.env.GOOGLE_PLACES_API_KEY },
         });
-        send({ type: "result", result });
+        // Mit Signatur, damit /api/ai nur echte Ergebnisse annimmt. Ohne GATE_SECRET gibt es keine KI.
+        send({ type: "result", result: secret ? signResult(result, secret) : result });
         logStatus(ROUTE, 200, "check_ok");
       } catch (e) {
         const err = e instanceof CheckError ? e : new CheckError("Der Check ist fehlgeschlagen. Bitte versuche es später noch einmal.", "failed");

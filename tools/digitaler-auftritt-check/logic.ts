@@ -1,4 +1,6 @@
 import { dateCH } from "@/lib/ch";
+import type { Einordnung } from "@/lib/check/ai";
+import { parseEinordnung } from "@/lib/check/ai-client";
 import { guessIndustry, isIndustryKey } from "@/lib/check/industries";
 import {
   INDUSTRY_LABELS,
@@ -45,6 +47,8 @@ export type SavedCheck = {
   counted: boolean;
   form: FormState;
   result?: CheckResult;
+  /** KI-Einordnung zum gespeicherten Ergebnis (nur mit Konto). Fehlt sie, bleibt der Check vollständig. */
+  einordnung?: Einordnung;
 };
 
 export const EMPTY_SAVED: SavedCheck = { v: 1, phase: "intro", step: 0, answers: {}, counted: false, form: EMPTY_FORM };
@@ -88,10 +92,11 @@ function isResult(v: unknown): v is CheckResult {
 /** Liest den Zwischenstand. Kaputte oder alte Daten (Fragebogen-Version) fallen auf den Start zurück. */
 export function parseCheckState(raw: unknown): SavedCheck {
   if (typeof raw !== "object" || raw === null) return EMPTY_SAVED;
-  const r = raw as { phase?: unknown; counted?: unknown; form?: unknown; result?: unknown };
+  const r = raw as { phase?: unknown; counted?: unknown; form?: unknown; result?: unknown; einordnung?: unknown };
   const form = parseForm(r.form);
   if (r.phase === "result" && isResult(r.result)) {
-    return { ...EMPTY_SAVED, phase: "result", counted: true, form, result: r.result };
+    const einordnung = parseEinordnung(r.einordnung);
+    return { ...EMPTY_SAVED, phase: "result", counted: true, form, result: r.result, ...(einordnung ? { einordnung } : {}) };
   }
   return { ...EMPTY_SAVED, counted: r.counted === true, form };
 }
@@ -190,8 +195,8 @@ export function measurementNotes(result: CheckResult): string[] {
 
 const mark = (ok: boolean, info?: boolean) => (ok ? "erfüllt" : info ? "Hinweis" : "offen");
 
-/** DocumentModel für PDF, DOCX und Markdown. */
-export function toDocument(result: CheckResult): DocumentModel {
+/** DocumentModel für PDF, DOCX und Markdown. Die KI-Einordnung steht nur im Dokument, wenn es sie gibt. */
+export function toDocument(result: CheckResult, einordnung?: Einordnung | null): DocumentModel {
   const datum = dateCH(result.checkedAt);
   const weighted = result.categories.filter((c) => c.weight > 0);
   const totalWeight = weighted.reduce((s, c) => s + c.weight, 0);
@@ -216,8 +221,17 @@ export function toDocument(result: CheckResult): DocumentModel {
       widths: [3, 1.4, 1],
       rows: weighted.map((c) => [c.title, `${percent(c.score)} von 100`, `${Math.round((c.weight / totalWeight) * 100)} %`]),
     },
-    { type: "heading", level: 1, text: "Nächste Schritte" },
   ];
+
+  if (einordnung) {
+    blocks.push(
+      { type: "heading", level: 1, text: "Einordnung (von einer KI formuliert)" },
+      { type: "paragraph", text: einordnung.zusammenfassung },
+      { type: "list", items: einordnung.prioritaeten.map((p) => `${p.titel}: ${p.text}`) },
+      { type: "paragraph", text: "Die Einordnung stützt sich nur auf die Messwerte dieses Checks." },
+    );
+  }
+  blocks.push({ type: "heading", level: 1, text: "Nächste Schritte" });
 
   if (result.massnahmen.length === 0) {
     blocks.push({ type: "paragraph", text: "Hier gibt es nichts Dringendes. Prüfe die Punkte in einigen Monaten erneut." });

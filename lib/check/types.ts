@@ -167,6 +167,11 @@ export type CheckResult = {
   categories: CheckCategory[];
   facts: CheckFacts;
   massnahmen: Massnahme[];
+  /**
+   * Signatur des Servers über alle anderen Felder (lib/check/sign.ts). Sie belegt, dass /api/check das Ergebnis erzeugt hat.
+   * /api/ai nimmt nur signierte Ergebnisse an, damit niemand beliebigen Text an die KI schicken kann.
+   */
+  sig?: string;
 };
 
 export const CHECK_STEPS = [

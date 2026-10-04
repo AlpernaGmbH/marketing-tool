@@ -39,8 +39,9 @@ better-auth.session_data, notwendig, 30 Tage, kein Banner), keine Datenbank.
 for erstes Element) mit GATE_SECRET, gekürzt auf 16 Byte. Redis-Keys: run:
 <iphash> (Zähler, TTL 30 Tage), unlocked:<iphash> (TTL 365 Tage), acct:<acchash>
 (Konto freigeschaltet, TTL 365 Tage), popular:
-<slug> (Zähler), ai:<iphash>:<YYYY-MM-DD> und lookup:<iphash>:<YYYY-MM-DD>
-(TTL 2 Tage). Dazu ein signiertes Cookie mt_gate {runs, unlocked, iat}
+<slug> (Zähler), ai:<acchash>:<YYYY-MM-DD> (Einordnungen pro Konto), ai:global:
+<YYYY-MM-DD> und lookup:<iphash>:<YYYY-MM-DD> (TTL 2 Tage), aicache:<hash der
+Signatur> (fertige Einordnung, TTL 24 Stunden). Dazu ein signiertes Cookie mt_gate {runs, unlocked, iat}
 (HttpOnly, SameSite=Lax, 365 Tage). Gesperrt ist, wer in Redis ODER Cookie
 als gebraucht steht; freigeschaltet, wer in Redis ODER Cookie als
 freigeschaltet steht.
@@ -77,7 +78,11 @@ app/api/lead/route.ts – Zugang und Leads
 Freischalten mit Konto
 - app/api/check/route.ts – Marketing-Check: ruft die Website des Besuchers ab
 (SSRF-Schutz in lib/check/net.ts), streamt Schritte und Ergebnis als NDJSON
-- app/api/ai/route.ts, app/api/lookup/route.ts – Etappe 2
+- app/api/ai/route.ts – KI-Einordnung zu einem Check-Ergebnis: nur mit Konto und
+Freischaltung, nur für von /api/check signierte Ergebnisse (lib/check/sign.ts),
+Tageslimits (lib/ai-quota.ts), 24 Stunden Zwischenspeicher, Antwort der KI wird
+geprüft (lib/check/ai.ts) und sonst verworfen
+- app/api/lookup/route.ts – Etappe 3
 - app/sitemap.ts, app/robots.ts, app/opengraph-image.tsx
 - tools/<slug>/tool.config.ts – Metadaten (Schema unten)
 - tools/<slug>/Tool.tsx – Client-Komponente, nutzt ToolShell
@@ -99,7 +104,11 @@ aus der Sitzung, Rückkehr von Google (Browser)
 - lib/profile.ts – Profil-Typen, Validierung, Export/Import JSON (rein, ohne React)
 - lib/use-profile.ts – useProfile(): localStorage-Key mt:profile
 - lib/check/ – Engine des Marketing-Checks (Port aus dem Agentur-Tool): net.ts,
-analyze.ts, seo.ts, social.ts, gbp.ts, detect.ts, massnahmen.ts, client.ts
+analyze.ts, seo.ts, social.ts, gbp.ts, detect.ts, massnahmen.ts, client.ts,
+sign.ts (Signatur des Ergebnisses), ai.ts (Fakten, Prompt, Prüfung der KI-Antwort),
+ai-client.ts (Browser)
+- lib/ai.ts, lib/ai-quota.ts – KI über das Vercel AI Gateway (Modelle aus
+AI_MODELS), Tageslimits und Zwischenspeicher
 - lib/storage.ts, lib/use-local.ts – localStorage mit Rückfall auf Arbeitsspeicher
 - lib/ch.ts – chf(), dateCH(), typoCH(), uidValid()
 - data/*.json – Schweizer Datensätze, jede Datei mit meta {source, url, asOf}

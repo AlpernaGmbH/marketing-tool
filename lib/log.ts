@@ -17,7 +17,12 @@ export type LogNote =
   | "gate_used"
   | "auth_disabled"
   | "auth_error"
-  | "account_unlocked";
+  | "account_unlocked"
+  | "ai_ok"
+  | "ai_cached"
+  | "ai_failed"
+  | "ai_limit"
+  | "ai_capacity";
 
 export function logStatus(route: string, status: number, note: LogNote = "ok"): void {
   console.log(JSON.stringify({ route, status, note }));
