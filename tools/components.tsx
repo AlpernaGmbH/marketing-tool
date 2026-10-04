@@ -6,5 +6,6 @@ import type { ComponentType } from "react";
 // (und ergänzt `import dynamic from "next/dynamic"`, falls es fehlt).
 export const toolComponents: Record<string, ComponentType> = {
   "digitaler-auftritt-check": dynamic(() => import("./digitaler-auftritt-check/Tool")),
+  "textcheck": dynamic(() => import("./textcheck/Tool")),
   // new-tool:components
 };

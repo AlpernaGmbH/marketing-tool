@@ -252,6 +252,74 @@ test.describe("Referenz-Werkzeug im Browser", () => {
   });
 });
 
+test.describe("Textcheck im Browser", () => {
+  async function open(page: Page) {
+    await page.goto("/tools/textcheck");
+    await expect(page.getByRole("button", { name: "Text prüfen" })).toBeEnabled();
+  }
+  async function runSample(page: Page) {
+    await open(page);
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.getByRole("button", { name: "Text prüfen" }).click();
+    await expect(page.getByRole("heading", { name: "Dein Textcheck" })).toBeVisible();
+  }
+
+  test("leerer Text zeigt eine Meldung, ohne Gate", async ({ page }) => {
+    await open(page);
+    await page.getByRole("button", { name: "Text prüfen" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Füge zuerst einen Text ein." })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("Beispieltext: Ergebnis mit Funden, bereinigter Text ohne Eszett, bleibt nach dem Neuladen", async ({ page }) => {
+    await runSample(page);
+    await expect(page.getByText("Das fällt auf")).toBeVisible();
+    await expect(page.getByText("Eszett (ß)")).toBeVisible();
+    await expect(page.getByText("qualitativ hochwertig / höchste Qualität")).toBeVisible();
+    const cleaned = page.getByLabel("Bereinigter Text");
+    await expect(cleaned).toHaveValue(/«Sauber gestrichen, sauber gerechnet»/);
+    expect(await cleaned.inputValue()).not.toContain("ß");
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Dein Textcheck" })).toBeVisible();
+  });
+
+  test("Text ändern führt zurück zum Feld mit dem Text, ohne neues Gate", async ({ page }) => {
+    await runSample(page);
+    await page.getByRole("button", { name: "Text ändern" }).click();
+    await expect(page.getByLabel("Dein Text")).toHaveValue(/Malerei Keller/);
+    await page.getByRole("button", { name: "Text prüfen" }).click();
+    await expect(page.getByRole("heading", { name: "Dein Textcheck" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("ein neuer Text nach dem freien Durchlauf zeigt das Formular", async ({ page }) => {
+    await runSample(page);
+    await page.getByRole("button", { name: "Neuen Text prüfen" }).click();
+    await page.getByRole("button", { name: "Beispieltext einfügen" }).click();
+    await page.getByRole("button", { name: "Text prüfen" }).click();
+    await expect(page.getByRole("dialog").getByText("Dein erstes Ergebnis war gratis.")).toBeVisible();
+  });
+
+  test("der Text verlässt den Browser nicht: keine Anfrage enthält ihn", async ({ page }) => {
+    const bodies: string[] = [];
+    page.on("request", (r) => {
+      if (r.method() === "POST") bodies.push(`${r.url()} ${r.postData() ?? ""}`);
+    });
+    await runSample(page);
+    await page.waitForLoadState("networkidle");
+    expect(bodies.some((b) => /Malerei Keller|Sauber gestrichen/.test(b))).toBe(false);
+  });
+
+  test("bei 375 px ragt nichts über den Rand", async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 375, height: 800 } });
+    const page = await ctx.newPage();
+    await runSample(page);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    await ctx.close();
+  });
+});
+
 test.describe("Konto in der Kopfzeile", () => {
   const route = (page: Page, body: unknown) =>
     page.route("**/api/account", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) }));

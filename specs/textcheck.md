@@ -1,0 +1,59 @@
+# Textcheck (textcheck)
+
+Klasse A (Analyse, regelbasiert, ohne Server und ohne KI), Stand 04.10.2026. Alles läuft im Browser; `logic.ts` ist rein und getestet.
+
+## Nutzen in einem Satz
+Für Inhaberinnen und Inhaber von KMU und Vereinen: einen Text einfügen und in unter einer Minute sehen, wo er Fehler, eine fremde Schreibweise, Floskeln oder zu lange Sätze hat, samt bereinigter Fassung zum Kopieren.
+
+## Kategorie und Verknüpfung
+Kategorie: content (erster Schritt im Pfad «Content»), Zielgruppe: kmu (die Seite spricht KMU an; eine Fassung für Vereine kann später folgen, dann mit eigener Seite)
+Liest aus Profil: nichts
+Schreibt ins Profil: nichts
+Verwandte Tools: digitaler-auftritt-check; newsletter-check und ideen-aus-website entstehen später (die Seite verlinkt nur, was es gibt)
+`needsServer: false`: der Text geht an keine Route.
+
+## Eingaben
+| Feld | Typ | Pflicht | Vorbefüllung | Validierung | Hilfetext |
+|---|---|---|---|---|---|
+| Dein Text | text (mehrzeilig) | ja | gespeicherter Stand `mt:textcheck` | mindestens ein Wort; höchstens 20'000 Zeichen (`maxLength` und `inputProblem`) | Zähler «n von 20'000 Zeichen»; Knopf «Beispieltext einfügen» |
+
+## Logik
+Alle Regeln in `tools/textcheck/logic.ts`. Treffer werden je Regel gruppiert (Anzahl, höchstens vier Beispielstellen mit Umgebung).
+
+1. **Fehler** (`fehler`): doppeltes Wort («der der»); Leerzeichen vor `, ; ! ?` sowie vor `.` und `:` am Satzende; fehlendes Leerzeichen nach Komma und Strichpunkt zwischen Buchstaben; mehrere Leerzeichen hintereinander (Einrückung am Zeilenanfang ausgenommen); `!!`, `??`, vier oder mehr Punkte.
+2. **Schweizer Schreibweise** (`schreibweise`): Eszett; gerade, deutsche (unten beginnende) und englische Anführungszeichen statt «…»; Prozent ohne Leerzeichen; `CHF` hinter dem Betrag (Hinweis: üblich ist CHF davor); Tausender mit Punkt (`12.500`, Hinweis: Apostroph). Datum, Dezimalzahlen und Versionsnummern gelten nicht als Tausender.
+3. **Floskeln** (`floskel`): `data/floskeln.json`, 39 Einträge mit Muster, Anzeigetext und Alternative. Quelle in `meta.source`: Teil A Auszug aus ANTI-PATTERNS.md und BRAND-VOICE-CORE.md von Alperna (Version 2.0 vom 24.07.2026), Teil B gängige Werbe- und Amtsfloskeln, von Alperna zusammengestellt. Kein Treffer ist ein Urteil, es sind Hinweise.
+4. **Satzlänge** (`satz`): Sätze mit mehr als 25 Wörtern (`LONG_SENTENCE_WORDS`). Annahme: Richtwert dieses Werkzeugs, keine Norm, im UI so gekennzeichnet.
+5. **Lesbarkeit**: Index nach Toni Amstad (Deutsch): `180 − ASL − 58,5 × ASW` mit ASL = Wörter pro Satz und ASW = Silben pro Wort. Quelle: Amstad, «Wie verständlich sind unsere Zeitungen?», Universität Zürich 1978, Zusammenfassung auf de.wikipedia.org/wiki/Lesbarkeitsindex (abgerufen am 04.10.2026). Stufen (von … bis unter …): 0–30 sehr schwer, 30–50 schwer, 50–60 mittelschwer, 60–70 mittel, 70–80 mittelleicht, 80–90 leicht, 90–100 sehr leicht. **Annahme:** Silben werden aus Selbstlautgruppen geschätzt (Kürzel ohne Selbstlaut zählen je Buchstabe); das ist eine Näherung. Das Beispiel der Quelle («Alle meine Entchen», 14 Wörter, 22 Silben, Index 74) ist als Test hinterlegt. Ab 30 Wörtern (`MIN_WORDS_FOR_INDEX`, Regel dieses Werkzeugs) wird die Zahl gezeigt, darunter nicht.
+6. **Sätze und Wörter**: Ein Satz endet an `. ! ? …` vor Leerraum oder Textende und an Zeilenumbrüchen. Punkte in Kürzeln (z. B., ca., usw.), Zahlen (8,5; 1.250; 03.10.2026), Ordnungszahlen vor Monatsnamen oder Kleinbuchstaben, Adressen und E-Mail-Adressen beenden keinen Satz. Wörter sind Folgen aus Buchstaben und Ziffern mit mindestens einem Buchstaben.
+7. **Bereinigen** (`cleanText`): ersetzt Eszett durch ss; stellt Anführungszeichen zeilenweise auf «…» um (deutsch: „ öffnet, “ oder ” schliesst; englisch “…”; gerade nur bei gerader Anzahl in der Zeile, sonst unverändert); entfernt Leerzeichen vor Satzzeichen und doppelte Leerzeichen; setzt Leerzeichen nach dem Komma; schreibt Prozent mit Leerzeichen. Alles andere bleibt dem Besucher. Ein bereinigter Text hat keine automatisch behebbaren Funde mehr (Test).
+
+## Ausgaben
+- Ergebnis (sofort, frei): Wörter, Sätze, Lesbarkeit mit Stufe, Zahl der Fundstellen; «Das fällt auf» nach Gruppen; bereinigter Text in einem lesbaren Feld.
+- Kopieren (frei): bereinigter Text; Bericht als Markdown (`reportMarkdown`).
+- Keine Dateien, kein Download, also kein Formular vor dem Ergebnis. Das LeadGate erscheint nur beim zweiten Start («Neuen Text prüfen»).
+- Stand: `mt:textcheck` (`phase`, `text`, `counted`); der Text wird 500 ms nach der letzten Eingabe gespeichert. Bei angemeldeten Personen geht er mit dem Abgleich ins Konto (`mt:`-Schlüssel, bis 150'000 Zeichen).
+
+## Edge Cases (getestet)
+- Leerer Text, nur Leerraum, nur Zahlen, nur Satzzeichen, Emojis, Steuerzeichen: Meldung oder leeres Ergebnis, nie ein Fehler.
+- Weniger als 30 Wörter: kein Index, Hinweis im Ergebnis.
+- Ungepaarte gerade Anführungszeichen: unverändert, weiter als Fund gemeldet.
+- Eingerückte Listen, Zeilenumbrüche, Beträge wie CHF 1'250.-, Datum: unberührt.
+- Bösartige Eingaben mit 20'000 Zeichen (nur Buchstaben, nur `!`, nur Ziffern, nur Leerzeichen, `a@` wiederholt): jede Analyse unter 30 ms gemessen; Test mit Grenze 1,5 s.
+- Gespeicherter Stand kaputt oder zu lang: leerer Stand bzw. auf 20'000 Zeichen gekürzt.
+- Kaputte Muster in `floskeln.json`: der Eintrag fällt weg, der Rest läuft.
+
+## Texte
+- Tagline: «Wir finden Floskeln und Tippfehler, prüfen die Schweizer Schreibweise und messen die Lesbarkeit.» (96 Zeichen)
+- SEO-Title: «Textcheck Schweiz: Floskeln und Lesbarkeit prüfen»; Meta-Description in `content/tools/textcheck.md`
+- Erklärtext, FAQ (6) und Alperna-Satz: `content/tools/textcheck.md`. Wörter und Beispiele im Seitentext dürfen die Sperrliste und die Stilregeln der Seitentexte nicht verletzen (kein Eszett, keine geraden Anführungszeichen, kein Leerzeichen vor Satzzeichen); deshalb zeigt die Seite die Fehlerarten beschrieben statt wörtlich.
+
+## Tests
+`tools/textcheck/logic.test.ts` (35 Fälle): Silben, Quellen-Beispiel Index 74, Stufen, Sätze mit Kürzeln und Datum, Fehlerregeln, Schweizer Schreibweise, Floskeln samt Datei-Prüfung, lange Sätze, Bereinigung (inkl. Wiederholbarkeit), Gesamtbericht, Eingabe und Stand, Randfälle und Laufzeit. Browser: sechs Fälle in `tests/e2e/smoke.spec.ts` («Textcheck im Browser»), darunter «keine Anfrage enthält den Text» und 375 px.
+
+## Nicht Teil dieses Tools
+- Grammatik, Wörterbuch-Rechtschreibung, Stil über die Liste hinaus: dafür bräuchte es ein Wörterbuch oder eine KI.
+- URL statt Text (der Plan v2 nennt «Text oder URL»): kommt, wenn die Website-Import-Funktion aus `ideen-aus-website` steht; sie braucht den Server.
+- KI-Vorschläge für Umformulierungen (Plan v2): nach Etappe 2 möglich, bisher bewusst nicht gebaut, damit der Text den Browser nie verlässt.
+- Markieren der Stellen im Originaltext: die Liste zeigt Stellen mit Umgebung; ein markierter Text wäre ein eigener Ausbau.
+- Rechtsaussagen (Regel 8): keine.
