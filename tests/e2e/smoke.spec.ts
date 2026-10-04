@@ -824,6 +824,150 @@ test.describe("Welle 1 im Browser", () => {
   });
 });
 
+test.describe("Welle 2a im Browser (Strategie-Generatoren)", () => {
+  /** Entwürfe, die die Ausgabe-Schemas der Generatoren erfüllen (der Browser prüft die Antwort gegen das Schema). */
+  const ICP = {
+    segmentName: "Eigentümer älterer Einfamilienhäuser in der Region",
+    beschreibung:
+      "Menschen, die ihr Haus seit vielen Jahren besitzen, die Fassade pflegen wollen und einen Betrieb aus der Nähe suchen, der Termine einhält und die Farbwahl erklärt. Sie fragen meist nach einer Empfehlung aus der Nachbarschaft an.",
+    merkmale: ["Einfamilienhaus im Besitz der Familie", "Wohnen in Gossau und den Nachbargemeinden", "Fassade oder Innenräume seit Jahren nicht erneuert", "Entscheiden gemeinsam im Haushalt"],
+    ausloeser: ["Die Fassade blättert sichtbar ab", "Ein Verkauf oder eine Übergabe steht an", "Nachbarn haben frisch streichen lassen"],
+    einwaende: ["Kostet das mehr als bei einem grossen Anbieter?", "Hält der Termin im Frühling?"],
+    signale: ["Fragen nach der Dauer der Arbeiten", "Bitte um eine Besichtigung vor Ort", "Hinweis auf eine Empfehlung aus der Nachbarschaft"],
+    nichtIdeal: ["Reine Preisanfragen ohne Besichtigung", "Grossprojekte mit Generalunternehmer"],
+    punktekarte: [
+      { kriterium: "Haus in der Region", punkte: 3, warum: "Kurze Wege halten den Preis und die Termine." },
+      { kriterium: "Besichtigung vor Ort gewünscht", punkte: 3, warum: "Wer sich Zeit nimmt, entscheidet nach Qualität." },
+      { kriterium: "Empfehlung aus der Nachbarschaft", punkte: 2, warum: "Empfohlene Kundschaft kommt mit Vertrauen." },
+      { kriterium: "Fassade und Innenräume zusammen", punkte: 2, warum: "Grössere Aufträge füllen die Saison." },
+      { kriterium: "Zeitfenster im Frühling oder Herbst", punkte: 2, warum: "Passt zur Auslastung des Betriebs." },
+      { kriterium: "Fragen zur Farbwahl", punkte: 2, warum: "Beratung ist die Stärke des Betriebs." },
+    ],
+  };
+  const NUTZEN = {
+    kurz: "Fassaden in Gossau, die lange halten.",
+    mittel: "Wir streichen Fassaden und Innenräume in Gossau und Umgebung. Du bekommst eine Offerte, die hält, und einen Termin, der steht.",
+    lang: "Die Malerei Keller streicht Fassaden und Innenräume für Eigentümer in Gossau und Umgebung. Du bekommst eine Beratung vor Ort, eine Offerte ohne Überraschungen und eine Fassade, die viele Jahre hält. Die Arbeiten laufen zum vereinbarten Termin, und am Ende bleibt die Baustelle sauber zurück.",
+    nutzen: ["Du bekommst eine Offerte, die am Ende auch die Rechnung ist.", "Du hast einen Termin, der eingehalten wird.", "Du bekommst eine Farbwahl, die zum Haus passt."],
+    beweise: ["[Zahl der Projekte seit der Gründung]"],
+    bausteine: {
+      websiteTitel: "Malerei Keller: Fassaden und Innenräume in Gossau",
+      websiteUntertitel: "Beratung vor Ort, Offerte ohne Überraschung, Termin, der steht.",
+      googleBeschreibung:
+        "Die Malerei Keller streicht Fassaden und Innenräume in Gossau und Umgebung. Wir beraten vor Ort, erklären die Farbwahl und halten Termine ein. Eigentümer von Einfamilienhäusern und Verwaltungen arbeiten seit Jahren mit uns.",
+      instagramBio: "Malerei in Gossau. Fassaden, Innenräume, Farbberatung vor Ort.",
+      einSatzAmTelefon: "Wir streichen Fassaden und Innenräume in Gossau, mit Beratung vor Ort und einer Offerte, die hält.",
+    },
+  };
+  const PERSONA = {
+    name: "Regula Brunner",
+    kurz: "Regula Brunner ist zwischen 30 und 45, Privatperson und besitzt mit ihrem Partner ein Einfamilienhaus in Gossau.",
+    alltag:
+      "Unter der Woche pendelt sie nach St. Gallen, am Samstag erledigt sie den Einkauf im Dorf und schaut dabei auf die Fassaden der Nachbarn. Das Haus hat sie von den Eltern übernommen, und die Fassade blättert an der Wetterseite. Am Sonntag sucht sie auf dem Handy nach einem Maler in der Nähe.",
+    ziele: ["Eine Fassade, die wieder gepflegt aussieht", "Eine Offerte, die sie versteht", "Einen Termin vor dem Winter"],
+    sorgen: ["Dass die Arbeiten länger dauern als gesagt", "Dass am Ende mehr auf der Rechnung steht", "Dass die Farbe nicht zum Haus passt"],
+    informationswege: ["Google auf dem Handy", "Empfehlung von Nachbarn", "Gemeindeblatt"],
+    einwaende: ["Ich hole noch eine zweite Offerte ein.", "Könnt ihr das vor dem Herbst machen?"],
+    soSprichstDuSieAn: { ton: "Du, in kurzen Sätzen, ohne Fachwörter, mit klaren Angaben zu Dauer und Preis.", woerter: ["vor Ort", "Termin", "hält lange", "verständlich"], vermeiden: ["Fassadensanierung", "Premium", "Lösung"] },
+    zitat: "Ich will einfach wissen, wann ihr kommt und was es kostet.",
+  };
+
+  /** /api/generate antwortet mit `output`; zählt die Aufrufe. */
+  async function stubGenerate(page: Page, output: unknown) {
+    const calls = { generate: 0 };
+    await page.route("**/api/generate", (route) => {
+      calls.generate++;
+      return route.fulfill(json({ ok: true, output }));
+    });
+    return calls;
+  }
+
+  async function grunddaten(page: Page) {
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Branche", { exact: true }).fill("Malerei");
+    await page.getByLabel("Ort", { exact: true }).fill("Gossau");
+  }
+
+  test("ICP-Builder: Angaben, Entwurf, Punktekarte zum Bewerten, Lead mit Eingabe und Ausgabe, Profil, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubGenerate(page, ICP);
+    await page.goto("/tools/icp-builder");
+    await grunddaten(page);
+    await page.getByLabel("Was bietest du an?").fill("Fassaden streichen, Innenräume renovieren, Farbberatung vor Ort.");
+    await page.getByLabel("Wer sind heute deine besten Kunden, und warum?").fill("Eigentümer älterer Einfamilienhäuser in Gossau, die Wert auf Beratung legen.");
+    const start = page.getByRole("button", { name: "Profil erstellen" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Idealkundenprofil" })).toBeVisible();
+    const kriterien = page.getByRole("list", { name: "Kriterien der Punktekarte" });
+    await expect(kriterien.getByRole("listitem")).toHaveCount(6);
+    await kriterien.getByRole("checkbox").first().check();
+    await expect(page.getByTestId("bewertung")).toContainText("von");
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls).toEqual({ generate: 1 });
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("icp-builder");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.firma).toBe("Malerei Keller");
+    expect(lead.eingabe).toContain("Fassaden streichen");
+    expect(lead.ausgabe).toContain(ICP.segmentName);
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("mt:profile") ?? "")).toContain(ICP.segmentName);
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Idealkundenprofil" })).toBeVisible();
+    expect(calls).toEqual({ generate: 1 });
+  });
+
+  test("Nutzenversprechen: Angaben, Entwurf in drei Längen mit fünf Textbausteinen, Lead, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubGenerate(page, NUTZEN);
+    await page.goto("/tools/nutzenversprechen");
+    await grunddaten(page);
+    await page.getByLabel("Für wen?", { exact: true }).fill("Eigentümer von Einfamilienhäusern in Gossau");
+    await page.getByLabel("Was bietest du an?").fill("Fassaden streichen, Innenräume renovieren, Farbberatung vor Ort.");
+    await page.getByLabel("Welches Problem löst du für diese Kundschaft?").fill("Die Fassade blättert, Offerten kommen spät, niemand erklärt die Farbwahl.");
+    await page.getByLabel("Was hat die Kundschaft danach?").fill("Eine Fassade, die zwanzig Jahre hält, und eine Rechnung ohne Überraschung.");
+    const start = page.getByRole("button", { name: "Nutzenversprechen erstellen" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Nutzenversprechen" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Textbausteine je Kanal" }).getByRole("listitem")).toHaveCount(5);
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls).toEqual({ generate: 1 });
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("nutzenversprechen");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Fassaden streichen");
+    expect(lead.ausgabe).toContain(NUTZEN.kurz);
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Nutzenversprechen" })).toBeVisible();
+    expect(calls).toEqual({ generate: 1 });
+  });
+
+  test("Persona-Generator: Angaben, Entwurf, Lead, Persona im Profil, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubGenerate(page, PERSONA);
+    await page.goto("/tools/persona");
+    await grunddaten(page);
+    await page.getByLabel("Für wen ist das Angebot?").fill("Eigentümer von Einfamilienhäusern in Gossau");
+    await page.getByLabel("Was bietest du dieser Gruppe an?").fill("Fassaden streichen, Innenräume renovieren, Farbberatung vor Ort.");
+    await page.getByLabel("Altersgruppe").selectOption({ label: "30 bis 45" });
+    await page.getByLabel("Rolle").selectOption({ label: "Privatperson" });
+    const start = page.getByRole("button", { name: "Persona erstellen" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Persona" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Deine Persona" })).toContainText("Regula Brunner");
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls).toEqual({ generate: 1 });
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("persona");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Fassaden streichen");
+    expect(lead.ausgabe).toContain("Regula Brunner");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("mt:profile") ?? "")).toContain("Regula Brunner");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Persona" })).toContainText("Regula Brunner");
+    expect(calls).toEqual({ generate: 1 });
+  });
+});
+
 test.describe("Zugang v3 über die Routen", () => {
   /** Eigener Kontext ohne Cookies; mt_gate wird wie in einem Browser von Hand mitgeführt (der Cookie-Jar der Fixture schickt «Secure»-Cookies nicht über http). */
   async function client(playwright: PlaywrightWorkerArgs["playwright"]) {
