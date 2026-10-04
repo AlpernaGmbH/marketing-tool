@@ -7,6 +7,7 @@ import reifegradCheckConfig from "./reifegrad-check/tool.config";
 import wettbewerbsvergleichConfig from "./wettbewerbsvergleich/tool.config";
 import ideenAusWebsiteConfig from "./ideen-aus-website/tool.config";
 import icpBuilderConfig from "./icp-builder/tool.config";
+import nutzenversprechenConfig from "./nutzenversprechen/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -20,5 +21,6 @@ export const tools: ToolConfig[] = [
   wettbewerbsvergleichConfig,
   ideenAusWebsiteConfig,
   icpBuilderConfig,
+  nutzenversprechenConfig,
   // new-tool:configs
 ];
