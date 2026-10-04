@@ -252,6 +252,54 @@ test.describe("Referenz-Werkzeug im Browser", () => {
   });
 });
 
+test.describe("Konto in der Kopfzeile", () => {
+  const route = (page: Page, body: unknown) =>
+    page.route("**/api/account", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) }));
+
+  test("ohne eingerichtete Anmeldung bleibt «Mein Profil» in der Kopfzeile", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("banner").getByRole("link", { name: "Mein Profil" })).toBeVisible();
+    await expect(page.getByRole("banner").getByRole("button", { name: "Anmelden" })).toHaveCount(0);
+  });
+
+  test("Besucher sehen Anmelden und Registrieren, aber kein «Mein Profil»; das Fenster öffnet sich", async ({ page }) => {
+    await route(page, { login: "google", account: null });
+    await page.goto("/");
+    const header = page.getByRole("banner");
+    await expect(header.getByRole("button", { name: "Anmelden" })).toBeVisible();
+    await expect(header.getByRole("button", { name: "Registrieren" })).toBeVisible();
+    await expect(header.getByRole("link", { name: "Mein Profil" })).toHaveCount(0);
+    await header.getByRole("button", { name: "Registrieren" }).click();
+    const dialog = page.getByTestId("signin-dialog");
+    await expect(dialog.getByRole("heading", { name: "Konto erstellen" })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Mit Google anmelden" })).toBeVisible();
+  });
+
+  test("Angemeldete sehen ein Menü mit Mein Profil und Abmelden; die Profilseite zeigt das Konto", async ({ page }) => {
+    await route(page, { login: "google", account: { name: "Anna Keller", email: "anna@keller.ch" } });
+    await page.goto("/");
+    await page.getByTestId("account-button").click();
+    await expect(page.locator("#account-menu")).toContainText("anna@keller.ch");
+    await page.locator("#account-menu").getByRole("link", { name: "Mein Profil" }).click();
+    await expect(page).toHaveURL(/\/profil$/);
+    await expect(page.getByTestId("konto-karte")).toContainText("Angemeldet als Anna Keller");
+    await expect(page.getByTestId("konto-karte").getByRole("button", { name: "Abmelden" })).toBeVisible();
+  });
+
+  test("bei 375 px ragt die Kopfzeile nicht über den Rand, mit Anmelden-Knopf und mit Konto", async ({ browser }) => {
+    for (const body of [{ login: "google", account: null }, { login: "google", account: { name: "Anna", email: "a@k.ch" } }]) {
+      const ctx = await browser.newContext({ viewport: { width: 375, height: 800 } });
+      const page = await ctx.newPage();
+      await route(page, body);
+      await page.goto("/");
+      await expect(page.getByRole("banner").getByRole("button", { name: /Anmelden|Konto von/ })).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+      await ctx.close();
+    }
+  });
+});
+
 test.describe("KI-Einordnung im Browser (mit Konto)", () => {
   /** Meldet den Besucher als angemeldet und freigeschaltet und ersetzt /api/ai. Gibt die Zahl der Aufrufe zurück. */
   async function signedIn(page: Page, replies: { status: number; body: unknown }[]) {

@@ -161,7 +161,6 @@ describe("Randfälle aus dem Review", () => {
       await buildDocx(model({ firma: "Keller\u0008AG", blocks: [{ type: "paragraph", text: "Titel mit \u0001 und \u000B Steuerzeichen\nZweite Zeile" }] })),
     );
     const xml = await zip.file("word/document.xml")!.async("string");
-    // eslint-disable-next-line no-control-regex
     expect(xml).not.toMatch(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/);
     expect(xml).toContain("Steuerzeichen");
   });

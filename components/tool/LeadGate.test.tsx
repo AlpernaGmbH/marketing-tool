@@ -187,3 +187,60 @@ describe("LeadGate mit Google", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Mit Google anmelden" })).toBeEnabled());
   });
 });
+
+describe("LeadGate für bereits angemeldete Personen", () => {
+  function setupSignedIn(fetchImpl: typeof fetch) {
+    vi.stubGlobal("fetch", fetchImpl);
+    const onSuccess = vi.fn();
+    const onOpenChange = vi.fn();
+    render(<LeadGate open onOpenChange={onOpenChange} tool="smoke-test" reason="zweites_tool" login="google" signedIn onSuccess={onSuccess} />);
+    return { user: userEvent.setup(), onSuccess, onOpenChange };
+  }
+  const ok = () => vi.fn(async () => new Response(JSON.stringify({ ok: true, known: false }), { status: 200 })) as unknown as typeof fetch;
+
+  afterEach(() => {
+    localStorage.clear();
+    startSignIn.mockReset();
+  });
+
+  it("verlangt nur das Häkchen und schaltet ohne Umweg über Google frei", async () => {
+    const f = ok();
+    const { user, onSuccess, onOpenChange } = setupSignedIn(f);
+    expect(screen.getByText(/Du bist angemeldet\. Setz das Häkchen/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mit Google anmelden" })).toBeNull();
+
+    await user.click(within(screen.getByTestId("konto-google")).getByRole("button", { name: "Freischalten" }));
+    expect(await screen.findByText("Bitte stimm der Kontaktaufnahme zu.")).toBeInTheDocument();
+    expect(f).not.toHaveBeenCalled();
+
+    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
+    await user.click(within(screen.getByTestId("konto-google")).getByRole("button", { name: "Freischalten" }));
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(startSignIn).not.toHaveBeenCalled();
+    const [url, init] = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/lead/account");
+    expect(JSON.parse(String(init.body))).toMatchObject({ tool: "smoke-test", consent: true });
+  });
+
+  it("fällt auf den Weg über Google zurück, wenn der Server die Sitzung nicht mehr kennt", async () => {
+    const f = vi.fn(async () => new Response("{}", { status: 401 })) as unknown as typeof fetch;
+    const { user, onSuccess } = setupSignedIn(f);
+    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
+    await user.click(within(screen.getByTestId("konto-google")).getByRole("button", { name: "Freischalten" }));
+    expect(await screen.findByText(/Deine Anmeldung ist abgelaufen/)).toBeInTheDocument();
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Mit Google anmelden" })).toBeInTheDocument();
+  });
+
+  it("meldet einen Serverfehler und lässt es noch einmal versuchen", async () => {
+    const f = vi.fn(async () => new Response("{}", { status: 500 })) as unknown as typeof fetch;
+    const { user, onSuccess } = setupSignedIn(f);
+    await user.click(within(screen.getByTestId("konto-google")).getByRole("checkbox"));
+    await user.click(within(screen.getByTestId("konto-google")).getByRole("button", { name: "Freischalten" }));
+    expect(await screen.findByText(/Das Freischalten hat nicht geklappt/)).toBeInTheDocument();
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(within(screen.getByTestId("konto-google")).getByRole("button", { name: "Freischalten" })).toBeEnabled();
+  });
+});
+

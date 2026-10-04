@@ -29,10 +29,15 @@ export function clearPending(): void {
   removeLocal(KEY);
 }
 
+/** Name des Abfrageparameters nach der Rückkehr von Google: «konto» (Freischalten im Werkzeug) oder «anmeldung» (Kopfzeile). */
+export type ReturnParam = "konto" | "anmeldung";
+
 /** Adresse der aktuellen Seite ohne Konto-Parameter, plus neuer Wert. Nur Pfad und Abfrage, nie fremde Hosts. */
-export function returnPath(location: Pick<Location, "pathname" | "search">, konto: "ok" | "fehler"): string {
+export function returnPath(location: Pick<Location, "pathname" | "search">, value: "ok" | "fehler", param: ReturnParam = "konto"): string {
   const params = new URLSearchParams(location.search);
-  params.set("konto", konto);
+  params.delete("konto");
+  params.delete("anmeldung");
+  params.set(param, value);
   return `${location.pathname}?${params.toString()}`;
 }
 
@@ -40,13 +45,13 @@ export function returnPath(location: Pick<Location, "pathname" | "search">, kont
  * Startet die Anmeldung bei Google (Weiterleitung). Gibt nur zurück, wenn etwas schiefging.
  * Die Bibliothek lädt erst beim Klick, damit sie die Seite nicht verlangsamt.
  */
-export async function startGoogleSignIn(location: Pick<Location, "pathname" | "search">): Promise<boolean> {
+export async function startGoogleSignIn(location: Pick<Location, "pathname" | "search">, param: ReturnParam = "konto"): Promise<boolean> {
   try {
     const { createAuthClient } = await import("better-auth/client");
     const { error } = await createAuthClient().signIn.social({
       provider: "google",
-      callbackURL: returnPath(location, "ok"),
-      errorCallbackURL: returnPath(location, "fehler"),
+      callbackURL: returnPath(location, "ok", param),
+      errorCallbackURL: returnPath(location, "fehler", param),
     });
     return !error;
   } catch {

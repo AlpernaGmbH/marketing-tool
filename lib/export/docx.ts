@@ -26,7 +26,6 @@ const SURFACE = "F3F1EC";
 const MUTED = "65645F";
 
 // Steuerzeichen sind in XML 1.0 verboten; Word meldet sonst «beschädigter Inhalt». Zeilenumbruch (\n) und Tab bleiben.
-// eslint-disable-next-line no-control-regex
 const clean = (s: string) => s.replace(/\r/g, "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, "");
 
 function runs(text: string, opts: { bold?: boolean; font?: string; size?: number; color?: string } = {}): TextRun[] {

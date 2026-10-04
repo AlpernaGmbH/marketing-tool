@@ -161,6 +161,7 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
         reason={gate.reason}
         tool={slug}
         login={login}
+        signedIn={signedIn}
         onOpenChange={(open) => {
           setGate((g) => ({ ...g, open }));
           if (!open) settle(false);

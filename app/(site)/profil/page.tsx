@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
+import { KontoKarte } from "./KontoKarte";
 import { ProfilEditor } from "./ProfilEditor";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function ProfilPage() {
       <p className="measure mt-4 text-lg text-muted-foreground">
         Wird nur in deinem Browser gespeichert. Exportiere es, wenn du es behalten willst.
       </p>
+      <KontoKarte />
       <ProfilEditor />
     </div>
   );

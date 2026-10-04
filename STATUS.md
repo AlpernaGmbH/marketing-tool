@@ -4,6 +4,17 @@ Stand: 04.10.2026. **Etappe 1c ist gebaut** (Marketing-Check mit Crawler ersetzt
 
 ## Fertig
 
+**Konto-Oberfläche (04.10.2026): Anmelden, Registrieren, Konto-Menü, Profilseite**
+
+- **Kopfzeile** (`components/site/AccountMenu.tsx`, Route `GET /api/account`): Besucher sehen «Anmelden» und «Registrieren», Angemeldete einen Kreis mit Anfangsbuchstaben und ein Menü mit Name, E-Mail, «Mein Profil» und «Abmelden». «Mein Profil» steht nur noch dort. Ist die Anmeldung nicht eingerichtet (oder der Server nicht erreichbar), bleibt der Link «Mein Profil» wie bisher, damit die Profilseite erreichbar bleibt.
+- **Fenster «Anmelden / Konto erstellen»** (`SignInDialog`): bei Google ein Vorgang; die Anmeldung allein schaltet nichts frei und schickt nichts an Alperna. Rückkehr mit `?anmeldung=ok|fehler`, Meldung unter der Kopfzeile.
+- **Profilseite:** neue Konto-Karte oben (angemeldet als …, Abmelden; sonst Anmelden und Registrieren). Das Firmenprofil bleibt im Browser.
+- **Fenster beim Werkzeug** (`LeadGate`): Wer schon angemeldet ist, setzt nur das Häkchen und klickt «Freischalten», ohne erneuten Gang zu Google. Kennt der Server die Sitzung nicht mehr, kommt der Weg über Google zurück.
+- **Warum das Fenster bei dir nicht mehr erschien:** Wer sich einmal freigeschaltet hat, ist auf diesem Gerät und auf dieser IP-Adresse ein Jahr lang freigeschaltet (`mt_gate`-Cookie und `unlocked:<iphash>` in Redis). Das ist so gewollt, macht Tests aber mühsam. Zum Testen: anderes Netz (Mobilfunk statt WLAN) und privates Fenster.
+- **Abmelden** löscht die Sitzung, nicht die Freischaltung des Geräts. Die KI-Einordnung braucht weiterhin Sitzung und Freischaltung.
+- **Nicht getestet:** das Verhalten im echten Browser mit echter Google-Anmeldung (die Tests nutzen gemockte Antworten).
+- **Lighthouse mobil, Tool-Seite:** In dieser Umgebung schwankt die Performance auch beim Stand vor dieser Änderung zwischen 92 und 96 (je vier Läufe: davor 92, 94, 93, 96; danach 95, 92, 95, 91); SEO 100, Accessibility 100. Die Kopfzeile lädt das Anmelde-Fenster erst beim Klick und fragt das Konto erst, wenn der Browser Luft hat. Verbindlich messen wir auf dem Vercel-Deployment (Launch-Checkliste). Hinweis zu `npm run lh`: Es beendet nur den Startbefehl, nicht den Next-Server dahinter; alte Server auf Port 3199 liefern danach den alten Build. Vor jeder Messung `next-server` beenden.
+
 **Audit der letzten Etappen (04.10.2026): zwei unabhängige Code-Reviews, Fehler behoben**
 
 Zwei Reviewer (Zugang/Konto/Leads; Check-Engine/KI) haben den Code gelesen und jeden Befund mit einem Test oder Skript belegt. Ich habe jeden Befund am Code nachgeprüft. Behoben (Commits `9380de0` und dieser):

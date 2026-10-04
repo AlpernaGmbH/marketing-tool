@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { AccountMenu } from "@/components/site/AccountMenu";
 import { MobileMenu } from "@/components/site/MobileMenu";
 import { Search, type SearchItem } from "@/components/site/Search";
 import { CATEGORY_LABELS, CATEGORY_PAGES, getTools } from "@/lib/registry";
@@ -39,20 +40,11 @@ export function Header() {
           </ul>
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <Search items={items} hideOn="/" />
-          <Link
-            href="/profil"
-            className="inline-flex h-11 items-center whitespace-nowrap rounded-full border border-line-strong px-5 text-[0.95rem] font-medium transition-colors duration-300 hover:border-ink hover:bg-ink hover:text-page"
-          >
-            Mein Profil
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-2 md:hidden">
-          <Link href="/profil" className="px-2 py-3 text-base font-medium underline-offset-4 hover:underline">
-            Mein Profil
-          </Link>
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="hidden md:block">
+            <Search items={items} hideOn="/" />
+          </div>
+          <AccountMenu />
           <MobileMenu links={NAV_LINKS} searchItems={items} />
         </div>
       </div>

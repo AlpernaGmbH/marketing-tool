@@ -11,7 +11,6 @@ export const MAX_ANALYZED_HTML = 1_000_000;
 export const TAG_MAX = 1500;
 
 // Zeichen, die in XML 1.0 und damit in DOCX verboten sind.
-// eslint-disable-next-line no-control-regex
 const XML_FORBIDDEN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g;
 
 const NAMED: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " " };

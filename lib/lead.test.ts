@@ -67,7 +67,7 @@ describe("forwardToN8n", () => {
 
 describe("drainLeads", () => {
   const lead = (n: number) => JSON.stringify({ name: `Anna ${n}`, firma: "Keller", email: `anna${n}@keller.ch`, telefon: "", tool: "x", kategorie: "strategie", quelle: "tools.alperna.ch", zeit: "2026-10-04T10:00:00.000Z" });
-  const okFetch = () => vi.fn(async (_url: string, _init?: RequestInit) => new Response("{}", { status: 200 }));
+  const okFetch = () => vi.fn(async (...args: [string, RequestInit?]) => (void args, new Response("{}", { status: 200 })));
 
   afterEach(() => {
     vi.unstubAllEnvs();

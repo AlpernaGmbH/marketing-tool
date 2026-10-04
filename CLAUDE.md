@@ -77,7 +77,8 @@ exportieren/importieren, alles löschen
 - app/api/access/route.ts, app/api/access/complete/route.ts,
 app/api/lead/route.ts – Zugang und Leads
 - app/api/auth/[...all]/route.ts – Anmeldung (Better Auth, Google); app/api/lead/account/route.ts –
-Freischalten mit Konto
+Freischalten mit Konto; app/api/account/route.ts – wer ist angemeldet (Name, E-Mail) für
+Kopfzeile und Profilseite
 - app/api/check/route.ts – Marketing-Check: ruft die Website des Besuchers ab
 (SSRF-Schutz in lib/check/net.ts), streamt Schritte und Ergebnis als NDJSON
 - app/api/ai/route.ts – KI-Einordnung zu einem Check-Ergebnis: nur mit Konto und
@@ -96,7 +97,7 @@ geprüft (lib/check/ai.ts) und sonst verworfen
 DocumentExport, ProfileBanner, LeadGate, ScoreBadge, ResultCard, CopyButton,
 LegalDisclaimer, AlpernaPitch, RelatedTools
 - components/site/ – Header, Footer, Search, PathCard, ToolCard, TrustLine,
-Breadcrumbs
+Breadcrumbs, AccountMenu (Konto in der Kopfzeile), SignInDialog
 - lib/define-tool.ts – defineTool(), zod-Schema, Typen (getrennt von der Registry, sonst Zirkelimport)
 - lib/registry.ts – getTools(), getToolsByCategory(), getTool(), getRelated(), getPath()
 - lib/access.ts – ipHash(), readGateCookie(), writeGateCookie(), canStart(),
@@ -131,6 +132,12 @@ groesse, zielgruppen[], primaersegment, personas[], positionierung, marke
 {werte, persoenlichkeit, tonalitaet, woerter, bewertungsregeln}, kanaele[],
 budgetJahr, contentSaeulen[]. Tool-Zwischenstände unter mt:<slug>. Merkliste
 unter mt:merkliste.
+Kopfzeile: Ist die Anmeldung eingerichtet, sehen Besucher «Anmelden» und
+«Registrieren» (bei Google derselbe Vorgang, die Anmeldung allein schaltet nichts
+frei und schickt nichts an Alperna). «Mein Profil» steht nur im Menü der angemeldeten
+Person, zusammen mit «Abmelden». Ohne eingerichtete Anmeldung bleibt der Link
+«Mein Profil» wie bisher. Die Seite /profil ist per Adresse erreichbar und zeigt
+oben die Konto-Karte.
 Jedes Tool mit usesProfile zeigt ProfileBanner («Dein Firmenprofil: Malerei
 Keller, Gossau – bearbeiten»). Hinweis auf /profil: «Wird nur in deinem
 Browser gespeichert. Exportiere es, wenn du es behalten willst.»
