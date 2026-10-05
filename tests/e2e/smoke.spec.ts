@@ -1847,6 +1847,34 @@ test.describe("Welle 4 im Browser (Content, KI und Vereine)", () => {
   });
 });
 
+test.describe("Welle 8 im Browser (Rechner und Planer)", () => {
+  test("Engagement-Rate-Rechner: Beispiel einfügen, Fehler ohne Follower, Ergebnis mit Diagramm und Tabelle, CSV, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/engagement-rate");
+    await hydrated(page.getByRole("button", { name: "Rate berechnen" }));
+    await page.getByRole("button", { name: "Beispiel einfügen" }).click();
+    await expect(page.getByTestId("er-beitrag")).toHaveCount(5);
+    await page.locator("#er-follower").fill("");
+    await page.getByRole("button", { name: "Rate berechnen" }).click();
+    await expect(page.locator("#er-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#er-follower").fill("1240");
+    await page.getByRole("button", { name: "Rate berechnen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Engagement-Rate" })).toBeVisible();
+    await expect(page.getByTestId("er-diagramm").getByRole("img")).toBeVisible();
+    await expect(page.getByTestId("er-tabelle")).toContainText("Schnitt");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: /CSV/ }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.csv$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("engagement-rate");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Plattform: Instagram");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Engagement-Rate" })).toBeVisible();
+  });
+
+  // new-wave-8:tests
+});
+
 test.describe("Zugang v3 über die Routen", () => {
   /** Eigener Kontext ohne Cookies; mt_gate wird wie in einem Browser von Hand mitgeführt (der Cookie-Jar der Fixture schickt «Secure»-Cookies nicht über http). */
   async function client(playwright: PlaywrightWorkerArgs["playwright"]) {

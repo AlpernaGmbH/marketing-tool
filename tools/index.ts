@@ -30,6 +30,7 @@ import anspruchsgruppenConfig from "./anspruchsgruppen/tool.config";
 import vereinsKommunikationConfig from "./vereins-kommunikation/tool.config";
 import sponsoringDossierConfig from "./sponsoring-dossier/tool.config";
 import empfehlungsprogrammConfig from "./empfehlungsprogramm/tool.config";
+import engagementRateConfig from "./engagement-rate/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -66,5 +67,6 @@ export const tools: ToolConfig[] = [
   vereinsKommunikationConfig,
   sponsoringDossierConfig,
   empfehlungsprogrammConfig,
+  engagementRateConfig,
   // new-tool:configs
 ];

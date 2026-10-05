@@ -36,5 +36,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "vereins-kommunikation": dynamic(() => import("./vereins-kommunikation/Tool")),
   "sponsoring-dossier": dynamic(() => import("./sponsoring-dossier/Tool")),
   "empfehlungsprogramm": dynamic(() => import("./empfehlungsprogramm/Tool")),
+  "engagement-rate": dynamic(() => import("./engagement-rate/Tool")),
   // new-tool:components
 };
