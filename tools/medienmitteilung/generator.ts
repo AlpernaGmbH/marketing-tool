@@ -46,7 +46,7 @@ export const LIMITS = {
 
 /** Richtwerte von Alperna, keine Statistik: Lead und Gesamtlänge einer Medienmitteilung. */
 export const LEAD_MAX_WORDS = 40;
-export const LAENGE_MIN_WORDS = 250;
+export const LAENGE_MIN_WORDS = 150;
 export const LAENGE_MAX_WORDS = 400;
 
 export const medienInput = z.object({
@@ -200,7 +200,7 @@ export function zitatStimmt(output: Pick<MedienOutput, "zitat">, input: Pick<Med
 /**
  * Prüfung, die nur dieses Werkzeug kennt. Gibt den Grund zurück oder null:
  * «lead» (mehr als 40 Wörter), «w-fragen» (Betrieb oder Ort fehlt im Lead), «zahl» (Ziffer ohne Angabe),
- * «laenge» (Gesamtlänge ausserhalb von 250 bis 400 Wörtern), «zitat» (Zitat nicht aus den Angaben).
+ * «laenge» (Gesamtlänge ausserhalb von 150 bis 400 Wörtern), «zitat» (Zitat nicht aus den Angaben).
  */
 export function checkMitteilung(output: MedienOutput, input: MedienInput): string | null {
   if (wordCount(output.lead) > LEAD_MAX_WORDS) return "lead";

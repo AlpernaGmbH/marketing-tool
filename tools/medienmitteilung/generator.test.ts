@@ -173,13 +173,13 @@ describe("medienmitteilung: checkMitteilung", () => {
     // Ein Datum am Anfang der Angabe zählt nicht als Listenmarke.
     expect(fremdeZahlen(output(), { ...input, wann: "14. November 2026, 10 bis 16 Uhr" })).toEqual([]);
   });
-  it("laenge: 249 und 401 Wörter fallen durch, 250 und 400 passen", () => {
-    expect(gesamtWoerter(mitLaenge(250))).toBe(LAENGE_MIN_WORDS);
+  it("laenge: 149 und 401 Wörter fallen durch, 150 und 400 passen", () => {
+    expect(gesamtWoerter(mitLaenge(150))).toBe(LAENGE_MIN_WORDS);
     expect(checkMitteilung(mitLaenge(LAENGE_MIN_WORDS), input)).toBeNull();
     expect(checkMitteilung(mitLaenge(LAENGE_MIN_WORDS - 1), input)).toBe("laenge");
     expect(checkMitteilung(mitLaenge(LAENGE_MAX_WORDS), input)).toBeNull();
     expect(checkMitteilung(mitLaenge(LAENGE_MAX_WORDS + 1), input)).toBe("laenge");
-    expect(checkMitteilung(mitLaenge(240), input)).toBe("laenge");
+    expect(checkMitteilung(mitLaenge(140), input)).toBe("laenge");
     expect(checkMitteilung(mitLaenge(410), input)).toBe("laenge");
   });
   it("zitat: ein erfundenes Zitat fällt durch, auch ein umformuliertes", () => {
@@ -237,7 +237,7 @@ describe("medienmitteilung: Generator mit checkGenerated", () => {
   it("verwirft fremde Zahl, erfundenes Zitat, zu langen Lead und zu kurzen Text mit «check»", () => {
     expect(checkGenerated(medienGenerator, output({ lead: BEISPIEL_OUTPUT.lead.replace("40-jähriges", "50-jähriges") }), input)).toEqual({ ok: false, reason: "check" });
     expect(checkGenerated(medienGenerator, BEISPIEL_OUTPUT, { ...input, zitat: "", zitatVon: "" })).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(medienGenerator, mitLaenge(200), input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(medienGenerator, mitLaenge(140), input)).toEqual({ ok: false, reason: "check" });
   });
   it("verwirft Ausrufezeichen, Links aus dem Nichts, falsche Form und Text ohne JSON", () => {
     expect(checkGenerated(medienGenerator, output({ titel: "Malerei Keller feiert 40 Jahre mit einem Fest!" }), input)).toEqual({ ok: false, reason: "regel" });

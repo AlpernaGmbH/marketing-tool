@@ -123,7 +123,7 @@ describe("Medienmitteilung: Ablauf im Browser", () => {
     expect(punkte).toHaveLength(7);
     for (const p of punkte) expect(p).toHaveAttribute("data-ok", "true");
     expect(within(card).getByTestId("pruefung-lead")).toHaveTextContent("Der Lead hat 30 Wörter.");
-    expect(within(card).getByText("Lead höchstens 40 Wörter, Gesamtlänge 250 bis 400 Wörter: Richtwert von Alperna, keine Statistik.")).toBeInTheDocument();
+    expect(within(card).getByText("Lead höchstens 40 Wörter, Gesamtlänge 150 bis 400 Wörter: Richtwert von Alperna, keine Statistik.")).toBeInTheDocument();
 
     // Mitteilung mit Zitat, Boilerplate und Kontakt.
     const mitteilung = within(card).getByTestId("mitteilung");

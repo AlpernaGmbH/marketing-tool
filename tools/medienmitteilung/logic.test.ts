@@ -81,7 +81,7 @@ describe("medienmitteilung: Hilfen", () => {
   it("nennt die Grenzen als Richtwert von Alperna, keine Statistik", () => {
     expect(RICHTWERT_HINWEIS).toContain("Richtwert von Alperna, keine Statistik");
     expect(RICHTWERT_HINWEIS).toContain("40 Wörter");
-    expect(RICHTWERT_HINWEIS).toContain("250 bis 400 Wörter");
+    expect(RICHTWERT_HINWEIS).toContain("150 bis 400 Wörter");
   });
 });
 
@@ -325,7 +325,7 @@ describe("medienmitteilung: checkDraft", () => {
     expect(p.hinweis).toContain("25");
   });
   it("laenge: sagt, ob zu kurz oder zu lang", () => {
-    const kurz = punkt(output({ text: [BEISPIEL_OUTPUT.text[0], BEISPIEL_OUTPUT.text[1]] }), "laenge");
+    const kurz = punkt(output({ text: ["Die Malerei Keller feiert 40 Jahre in Gossau mit einem Tag der offenen Tür für alle.", "Beat Keller und das Team zeigen die Werkstatt und beantworten Fragen zum Handwerk."] }), "laenge");
     expect(kurz.ok).toBe(false);
     expect(kurz.hinweis).toContain("Ergänze Einzelheiten.");
     const lang = punkt(output({ text: Array(5).fill(Array.from({ length: 80 }, () => "Gast").join(" ")) }), "laenge");
