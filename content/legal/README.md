@@ -42,3 +42,9 @@ Bei `geprueft: ja` müssen `geprueft_von` und `geprueft_am` stehen, und im Text 
 ## Wer gibt frei
 
 Eine Fachperson, die Alperna bestimmt (Anwältin oder Anwalt mit Datenschutz- und Lauterkeitsrecht). Bis dahin bleiben `/impressum` und `/datenschutz` Platzhalter, und die vier Rechts-Werkzeuge werden nicht gebaut.
+
+## Von der Freigabe zur Seite
+
+`eigene-impressum.md` und `eigene-datenschutz.md` sind die Texte der Seiten `/impressum` und `/datenschutz`. Der Seitentext steht im **ersten Codeblock ```` ```text ````** der Datei, in Markdown (`## Überschrift`, `- Aufzählung`, zwei Leerzeichen am Zeilenende für einen Umbruch); die Erläuterungen und Fragen darum erscheinen nie auf der Seite. Setzt die Fachperson `status: geprueft`, `geprueft: ja`, `geprueft_von` und `geprueft_am` und sind alle `PRÜFEN:`-Fragen und `[OFFEN]`-Lücken gelöscht, zeigt die Seite den Text beim nächsten Deploy von selbst (`lib/legal.ts`); `{{datum}}` wird durch das Datum von `stand` ersetzt. Vorher bleibt der Platzhalter. Ein Test (`lib/legal.test.ts`) schlägt an, wenn eine freigegebene Datei sich nicht laden lässt.
+
+Für Suchmaschinen bleibt die ganze Seite gesperrt, bis `NEXT_PUBLIC_INDEXABLE=true` gesetzt ist (`lib/launch.ts`).

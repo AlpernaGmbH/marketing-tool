@@ -65,12 +65,13 @@ test.describe("Seiten", () => {
     await context.close();
   });
 
-  test("robots.txt sperrt /api und /profil, sitemap.xml ist erreichbar", async ({ request }) => {
+  test("Launch-Sperre: robots.txt und meta robots sperren die Seite, solange NEXT_PUBLIC_INDEXABLE nicht true ist; sitemap.xml ist erreichbar", async ({ page, request }) => {
     const robots = await (await request.get("/robots.txt")).text();
-    expect(robots).toContain("Disallow: /api/");
-    expect(robots).toContain("Disallow: /profil");
-    expect(robots).toContain("Sitemap:");
+    expect(robots).toMatch(/^Disallow: \/$/m);
+    expect(robots).not.toContain("Sitemap:");
     expect((await request.get("/sitemap.xml")).status()).toBe(200);
+    await page.goto("/");
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   });
 
   test("Rechts-Platzhalter sind noindex", async ({ page }) => {

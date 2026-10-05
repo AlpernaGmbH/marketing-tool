@@ -7,6 +7,7 @@ import path from "node:path";
 import { CONTENT_DIR, readToolContent, toolContentPath } from "@/lib/content";
 import { brandHits } from "@/lib/brand-rules";
 import { checkToolContent, type Issue } from "@/lib/content-rules";
+import { isIndexable } from "@/lib/launch";
 import { LEGAL_IGNORED, checkLegalFile } from "@/lib/legal-rules";
 import { loadBausteine } from "@/lib/pitch";
 import { getTools } from "@/lib/registry";
@@ -129,6 +130,13 @@ for (const env of ["NEXT_PUBLIC_WHATSAPP_NUMBER", "NEXT_PUBLIC_ERSTGESPRAECH_URL
   if (!process.env[env]) {
     report("env", [{ level: strict ? "error" : "warn", code: "env", message: `${env} ist nicht gesetzt; der Knopf entfällt` }]);
   }
+}
+
+// Launch-Sperre (lib/launch.ts): Vor dem Launch ist die Seite für Suchmaschinen gesperrt. Im Launch-Modus (--strict) ist das ein Fehler.
+if (!isIndexable()) {
+  report("launch", [
+    { level: strict ? "error" : "warn", code: "indexable", message: "NEXT_PUBLIC_INDEXABLE ist nicht «true»: Die Seite ist für Suchmaschinen gesperrt (robots.txt, meta robots)." },
+  ]);
 }
 
 console.log(`content-check: ${errors} Fehler, ${warnings} Hinweis(e)`);

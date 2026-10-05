@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { geist, geistMono, instrumentSerif } from "@/app/fonts";
+import { isIndexable } from "@/lib/launch";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tools.alperna.ch";
@@ -19,6 +20,8 @@ export const metadata: Metadata = {
     siteName: "Alperna Marketing-Tools",
   },
   alternates: { canonical: "./" },
+  // Vor dem Launch für Suchmaschinen gesperrt (lib/launch.ts, NEXT_PUBLIC_INDEXABLE).
+  ...(isIndexable() ? {} : { robots: { index: false, follow: false } }),
 };
 
 export const viewport: Viewport = {
