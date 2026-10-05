@@ -37,6 +37,7 @@ import kpiBaumConfig from "./kpi-baum/tool.config";
 import storyPostConfig from "./story-post/tool.config";
 import postingPlanConfig from "./posting-plan/tool.config";
 import kundenwegConfig from "./kundenweg/tool.config";
+import kampagnenPlanerConfig from "./kampagnen-planer/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -80,5 +81,6 @@ export const tools: ToolConfig[] = [
   storyPostConfig,
   postingPlanConfig,
   kundenwegConfig,
+  kampagnenPlanerConfig,
   // new-tool:configs
 ];

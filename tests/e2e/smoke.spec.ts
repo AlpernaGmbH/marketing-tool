@@ -2056,6 +2056,35 @@ test.describe("Welle 9 im Browser (Planer und Bausteine)", () => {
     await expect(page.getByRole("region", { name: "Dein Kundenweg" })).toBeVisible();
   });
 
+  test("Kampagnen-Planer: ohne Angaben eine Meldung, acht Wochen mit Phasen und Budget, Kalenderdatei, Lead, Neuladen", async ({ page, request }) => {
+    const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+    await page.goto("/tools/kampagnen-planer");
+    await hydrated(page.getByRole("button", { name: "Kampagne planen" }));
+    await page.getByRole("button", { name: "Kampagne planen" }).click();
+    await expect(page.locator("#kp-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#kp-firma").fill("Malerei Keller");
+    await page.locator("#kp-zielgruppe").fill("Hausbesitzer in Gossau und Umgebung");
+    await page.locator("#kp-botschaft").fill("Wir streichen Fassaden, die lange halten.");
+    await page.locator("#kp-angebot").fill("Herbstaktion Fassadenanstrich");
+    await page.locator("#kp-start").fill(inDays(7));
+    await page.locator("#kp-ende").fill(inDays(7 + 55)); // das Ende zählt mit: 56 Tage = 8 Wochen
+    await page.locator("#kp-budget").fill("1200");
+    await expect(page.getByTestId("kp-wochen")).toContainText("8 Wochen");
+    await page.getByRole("button", { name: "Kampagne planen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Kampagnenplan" })).toBeVisible();
+    await expect(page.getByTestId("kp-woche")).toHaveCount(8);
+    await expect(page.getByTestId("kp-phasen")).toBeVisible();
+    const download = page.waitForEvent("download");
+    await page.getByTestId("kp-ics").click();
+    expect((await download).suggestedFilename()).toMatch(/\.ics$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("kampagnen-planer");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Ziel:");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Kampagnenplan" })).toBeVisible();
+  });
+
   // new-wave-9:tests
 });
 
