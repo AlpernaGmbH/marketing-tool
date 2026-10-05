@@ -1,7 +1,7 @@
 ---
 title: "Anlass planen Schweiz: Zeitplan rückwärts vom Datum"
 description: "Anlass planen für Schweizer KMU und Vereine: Zeitplan rückwärts vom Datum mit Aufgaben, Kanälen, Kalenderdatei und PDF. Kostenlos, ohne Konto."
-h1: "Anlass-Rückwärtsplaner für Schweizer KMU"
+h1: "Anlass planen mit dem Rückwärtsplaner für Schweizer KMU"
 tagline: "Vom Datum rückwärts planen: Zeitplan mit Aufgaben, Kanälen und Werkzeugen, als Kalender, Checkliste und PDF."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:
