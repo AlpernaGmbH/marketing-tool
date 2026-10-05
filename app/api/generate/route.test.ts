@@ -106,7 +106,7 @@ describe("POST /api/generate", () => {
     process.env.AI_DAILY_CAP = "1";
     const res = await call();
     expect(res.status).toBe(502);
-    expect(await res.json()).toEqual({ error: "ai_rejected" });
+    expect(await res.json()).toMatchObject({ error: "ai_rejected", detail: expect.stringMatching(/^(regel|stimme)$/) });
     gen.fn.mockResolvedValue({ titel: "Fassaden in Gossau", punkte: ["a"] });
     expect((await call()).status).toBe(200); // der Platz war nicht verbraucht
   });
@@ -115,7 +115,7 @@ describe("POST /api/generate", () => {
     gen.fn.mockRejectedValue(Object.assign(new Error("Meldung mit Malerei Keller"), { name: "MistralHttpError", statusCode: 500 }));
     const res = await call();
     expect(res.status).toBe(502);
-    expect(await res.json()).toEqual({ error: "ai_failed" });
+    expect(await res.json()).toEqual({ error: "ai_failed", detail: "MistralHttpError:500" });
     const all = logs.join("\n");
     expect(all).toContain("MistralHttpError:500");
     expect(all).not.toContain("Malerei");

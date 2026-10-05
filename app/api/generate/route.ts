@@ -13,6 +13,8 @@ import { getGenerator } from "@/tools/generators";
 // Schutz: Ratenbegrenzung pro IP-Hash und die globale Tagesgrenze (Bereich «text»), kein Limit pro Person.
 // Geloggt werden nur Statuscode, Stichwort und Fehlerart, nie Eingaben oder Entwürfe (Harte Regel 1).
 // Jede Antwort der KI wird geprüft (checkGenerated) und sonst verworfen; gespeichert wird nichts.
+// Bei einem Fehler nennt die Antwort die Fehlerart («detail», zum Beispiel MistralHttpError:401 oder den Grund der Prüfung), nie Text des Anbieters
+// und nie Eingaben: So lässt sich ein Ausfall auch ohne Zugang zu den Protokollen eingrenzen.
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,12 +52,12 @@ export async function POST(req: NextRequest) {
     raw = await generateJson({ system: systemPrompt(def), prompt: def.prompt(input.data), maxOutputTokens: def.maxTokens, temperature: def.temperature });
   } catch (error) {
     await releaseSlot(store, null, new Date(), "text"); // ohne Entwurf kein verbrauchter Platz
-    return respond(ROUTE, 502, { error: "ai_failed" }, "ai_failed", describeAiError(error));
+    return respond(ROUTE, 502, { error: "ai_failed", detail: describeAiError(error) }, "ai_failed", describeAiError(error));
   }
   const checked = checkGenerated(def, raw, input.data);
   if (!checked.ok) {
     await releaseSlot(store, null, new Date(), "text");
-    return respond(ROUTE, 502, { error: "ai_rejected" }, "ai_failed", `rejected:${checked.reason}`);
+    return respond(ROUTE, 502, { error: "ai_rejected", detail: checked.reason }, "ai_failed", `rejected:${checked.reason}`);
   }
   return respond(ROUTE, 200, { ok: true, output: checked.output }, "ai_ok");
 }
