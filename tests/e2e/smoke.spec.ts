@@ -2089,6 +2089,47 @@ test.describe("Welle 9 im Browser (Planer und Bausteine)", () => {
   // new-wave-9:tests
 });
 
+test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
+  test("LinkedIn-Profil-Score: acht Fragen werden verlangt, Punktwert mit Meter, drei Headline-Vorschläge, PDF-Download, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/linkedin-profil");
+    await hydrated(page.getByRole("button", { name: "Profil auswerten" }));
+    await page.getByRole("button", { name: "Profil auswerten" }).click();
+    await expect(page.locator("#lp-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#lp-firma").fill("Malerei Keller");
+    await page.locator("#lp-branche").fill("Malerei");
+    const antworten = [
+      "Nur Jobtitel und Firma",
+      "Gut erkennbares Gesicht oder Logo, ruhiger Hintergrund",
+      "Das Standardbild",
+      "Mit meinem Lebenslauf",
+      "Nichts verlinkt",
+      "Nur Titel und Daten",
+      "Eine oder zwei Empfehlungen",
+      "Gar nicht",
+    ];
+    for (const a of antworten) await page.getByRole("radio", { name: a, exact: true }).check();
+    await expect(page.getByTestId("lp-fortschritt")).toContainText("8 von 8");
+    await page.locator("#lp-zielgruppe").fill("Hausbesitzer in Gossau");
+    await page.locator("#lp-ergebnis").fill("Fassaden, die zehn Jahre halten");
+    await page.getByRole("button", { name: "Profil auswerten" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein LinkedIn-Profil-Score" })).toBeVisible();
+    await expect(page.getByRole("meter", { name: "LinkedIn-Profil-Score" })).toHaveAttribute("aria-valuenow", "42");
+    await expect(page.getByTestId("lp-score")).toContainText("Solide Basis");
+    await expect(page.getByRole("list", { name: "Headline-Vorschläge" }).getByRole("listitem")).toHaveCount(3);
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("linkedin-profil");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Betrieb: Malerei Keller");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein LinkedIn-Profil-Score" })).toBeVisible();
+  });
+
+  // new-wave-10:tests
+});
+
 test.describe("Zugang v3 über die Routen", () => {
   /** Eigener Kontext ohne Cookies; mt_gate wird wie in einem Browser von Hand mitgeführt (der Cookie-Jar der Fixture schickt «Secure»-Cookies nicht über http). */
   async function client(playwright: PlaywrightWorkerArgs["playwright"]) {
