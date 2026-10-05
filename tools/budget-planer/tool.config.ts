@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: ["budgetJahr"],
   outputs: ["copy", "pdf", "docx", "csv"],
   estimatedMinutes: 4,
-  pathStep: { path: "strategie", order: 9 },
+  pathStep: { path: "strategie", order: 13 },
   featured: false,
 });

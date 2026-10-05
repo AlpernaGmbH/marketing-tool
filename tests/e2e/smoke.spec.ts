@@ -2217,6 +2217,41 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
     expect((await received(request)).filter((l) => l.email === email).length).toBe(1);
   });
 
+  test("Zielgruppen-Segmente: leeres Formular wird gemeldet, zwei Segmente ergeben Vier-Felder-Matrix und Fokus, PDF, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/zielgruppen-segmente");
+    await hydrated(page.getByRole("button", { name: "Segmente auswerten" }));
+    await page.getByRole("button", { name: "Segmente auswerten" }).click();
+    await expect(page.locator("#zs-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#zs-firma").fill("Malerei Keller");
+    await page.locator("#zs-branche").fill("Malerei");
+    const segment = async (k: string, n: number, v: { name: string; beduerfnis: string; kaufmotiv: string; nutzen: string; groesse: string; zahlung: string; erreich: string; wettbewerb: string }) => {
+      await page.locator(`#zs-${k}-name`).fill(v.name);
+      await page.locator(`#zs-${k}-beduerfnis`).fill(v.beduerfnis);
+      await page.locator(`#zs-${k}-kaufmotiv`).fill(v.kaufmotiv);
+      await page.locator(`#zs-${k}-nutzen`).fill(v.nutzen);
+      await page.locator(`#zs-${k}-groesse`).fill(v.groesse);
+      await page.getByRole("group", { name: `Segment ${n}: Zahlungsbereitschaft` }).getByRole("radio", { name: v.zahlung }).check();
+      await page.getByRole("group", { name: `Segment ${n}: Erreichbarkeit` }).getByRole("radio", { name: v.erreich }).check();
+      await page.getByRole("group", { name: `Segment ${n}: Wettbewerbsdruck` }).getByRole("radio", { name: v.wettbewerb }).check();
+    };
+    await segment("s1", 1, { name: "Hauseigentümer in Gossau", beduerfnis: "Fassade erneuern, ohne Stress", kaufmotiv: "Werterhalt", nutzen: "saubere Arbeit zum Fixpreis", groesse: "1200", zahlung: "4 eher hoch", erreich: "4 eher leicht", wettbewerb: "3 mittel" });
+    await segment("s2", 2, { name: "Hausverwaltungen in der Region", beduerfnis: "Wohnungen schnell neu vermieten", kaufmotiv: "Leerstand vermeiden", nutzen: "feste Termine und eine Ansprechperson", groesse: "80", zahlung: "5 hoch", erreich: "2 eher schwer", wettbewerb: "3 mittel" });
+    await page.getByRole("button", { name: "Segmente auswerten" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Zielgruppen-Segmente" })).toBeVisible();
+    await expect(page.getByTestId("zs-fokus")).toContainText("Hauseigentümer in Gossau");
+    await expect(page.getByTestId("zs-matrix")).toBeVisible();
+    await expect(page.getByTestId("zs-tabelle")).toContainText("Hausverwaltungen in der Region");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("zielgruppen-segmente");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Segment 1: Hauseigentümer in Gossau");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Zielgruppen-Segmente" })).toBeVisible();
+  });
+
   // new-wave-10:tests
 });
 

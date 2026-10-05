@@ -41,6 +41,7 @@ import kampagnenPlanerConfig from "./kampagnen-planer/tool.config";
 import linkedinProfilConfig from "./linkedin-profil/tool.config";
 import vorherNachherConfig from "./vorher-nachher/tool.config";
 import angebotsgrafikConfig from "./angebotsgrafik/tool.config";
+import zielgruppenSegmenteConfig from "./zielgruppen-segmente/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -88,5 +89,6 @@ export const tools: ToolConfig[] = [
   linkedinProfilConfig,
   vorherNachherConfig,
   angebotsgrafikConfig,
+  zielgruppenSegmenteConfig,
   // new-tool:configs
 ];

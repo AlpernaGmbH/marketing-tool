@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: ["zielgruppen", "primaersegment"],
   outputs: ["copy", "pdf", "docx"],
   estimatedMinutes: 5,
-  pathStep: { path: "strategie", order: 2 },
+  pathStep: { path: "strategie", order: 3 },
   featured: true,
 });
