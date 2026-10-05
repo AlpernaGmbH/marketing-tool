@@ -798,7 +798,7 @@ describe("kundenweg: Konfiguration", () => {
       writesProfile: [],
       outputs: ["copy", "pdf", "docx"],
       estimatedMinutes: 8,
-      pathStep: { path: "strategie", order: 13 },
+      pathStep: { path: "strategie", order: 11 },
       featured: false,
     });
     expect(config.tagline).toBe("Der Weg deiner Kundschaft in sechs Phasen: wo sie dir begegnet, was fehlt, und was du zuerst ergänzt.");
