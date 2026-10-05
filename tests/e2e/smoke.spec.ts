@@ -2000,6 +2000,31 @@ test.describe("Welle 9 im Browser (Planer und Bausteine)", () => {
     await expect(page.getByRole("region", { name: "Dein Beitrag" })).toBeVisible();
   });
 
+  test("Posting-Plan: ohne Säule eine Meldung, vier Wochen mit Produktionsblock, CSV-Download, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/posting-plan");
+    await hydrated(page.getByRole("button", { name: "Plan erstellen" }));
+    await page.getByRole("button", { name: "Plan erstellen" }).click();
+    await expect(page.locator("#pp-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#pp-firma").fill("Malerei Keller");
+    await page.locator("#pp-stunden").fill("4");
+    await page.getByRole("checkbox", { name: "Foto", exact: true }).check();
+    await page.locator("#pp-saeule-0").fill("Vorher und nachher");
+    await page.locator("#pp-saeule-1").fill("Einblick in den Alltag");
+    await page.getByRole("button", { name: "Plan erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Posting-Plan" })).toBeVisible();
+    await expect(page.getByTestId("pp-plan")).toContainText("Produktionsblock");
+    await expect(page.getByTestId("pp-plan")).toContainText("Woche 4");
+    const download = page.waitForEvent("download");
+    await page.getByTestId("pp-csv").click();
+    expect((await download).suggestedFilename()).toMatch(/\.csv$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("posting-plan");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Stunden pro Woche: 4");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Posting-Plan" })).toBeVisible();
+  });
+
   // new-wave-9:tests
 });
 
