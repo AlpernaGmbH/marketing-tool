@@ -12,6 +12,7 @@ import postGeneratorGenerator from "./post-generator/generator";
 import medienmitteilungGenerator from "./medienmitteilung/generator";
 import bewertungsantwortGenerator from "./bewertungsantwort/generator";
 import vereinsKommunikationGenerator from "./vereins-kommunikation/generator";
+import sponsoringDossierGenerator from "./sponsoring-dossier/generator";
 // new-tool:generator-imports
 
 // Explizite Liste aller Generatoren (kein Glob), wie tools/index.ts. Jeder Eintrag ist tools/<slug>/generator.ts.
@@ -34,6 +35,7 @@ export const generators: AnyGenerator[] = [
   medienmitteilungGenerator,
   bewertungsantwortGenerator,
   vereinsKommunikationGenerator,
+  sponsoringDossierGenerator,
   // new-tool:generators
 ];
 

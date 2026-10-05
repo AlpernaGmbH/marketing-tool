@@ -1750,6 +1750,58 @@ test.describe("Welle 4 im Browser (Content, KI und Vereine)", () => {
     await page.setViewportSize({ width: 375, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
+
+  const SPONSORING_TEXTE = {
+    portraet:
+      "Der FC Trogen spielt auf der Sportanlage Landhaus in Trogen. Der Verein hat 280 Mitglieder und führt eine Juniorenabteilung. Er fördert Jugend und Dorfleben und lädt Betriebe aus der Region zum Mitmachen ein, damit der Sport im Dorf bezahlbar bleibt.",
+    warum:
+      "Bei den Heimspielen sehen im Schnitt viele Familien und junge Erwachsene aus Trogen und Umgebung zu. Das Logo eines Betriebs steht dort, wo die Leute ohnehin zusammenkommen, und bleibt über die ganze Saison sichtbar.",
+    dank: "Wir danken allen Betrieben, die den Verein unterstützen oder dies erwägen. Im nächsten Schritt besprechen wir gerne in einem Gespräch, welches Paket zu Ihrem Betrieb passt.",
+  };
+
+  test("Sponsoring-Dossier: Zahlen und Paket, Fenster, Dossier mit Ampel, PDF, KI-Texte auf Wunsch, Lead ohne Kontaktdaten", async ({ page, request }) => {
+    const calls = await stubGenerate(page, SPONSORING_TEXTE);
+    await page.goto("/tools/sponsoring-dossier");
+    await expect(page.locator("label[for=sd-firma]")).toContainText("Name des Vereins");
+    await page.getByRole("button", { name: "Dossier erstellen" }).click();
+    await expect(page.locator("#sd-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#sd-firma").fill("FC Trogen");
+    await page.locator("#sd-ort").fill("Trogen");
+    await page.locator("#sd-kanton").selectOption("AR");
+    await page.locator("#sd-z-mitglieder").fill("280");
+    await page.locator("#sd-zielgruppe").fill("Betriebe aus Trogen, Speicher und Teufen, die bei Familien sichtbar sein wollen.");
+    await page.locator("#sd-p1-preis").fill("500");
+    await page.getByRole("checkbox", { name: "Paket 1: Logo auf Website" }).check();
+    await page.locator("#sd-k-name").fill("Beat Keller");
+    await page.locator("#sd-stichworte").fill("Gegründet 1948, Heimspiele auf dem Landhaus, grosse Juniorenabteilung");
+    await page.getByRole("button", { name: "Dossier erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Sponsoring-Dossier" })).toBeVisible();
+    await expect(page.getByTestId("ampel-1")).toBeVisible();
+    await expect(page.getByTestId("ampel-hinweis")).toContainText("keine Marktdaten");
+    await expect(page.getByTestId("dossier")).toContainText("Pakete im Vergleich");
+    expect(calls.generate).toBe(0);
+    const pdf = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await pdf).suggestedFilename()).toBe("sponsoring-dossier-fc-trogen.pdf");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("sponsoring-dossier");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Verein: FC Trogen");
+    expect(lead.eingabe).toContain("Mitglieder: 280");
+    expect(lead.ausgabe).toContain("# Sponsoring FC Trogen");
+    expect(lead.eingabe + lead.ausgabe).not.toContain("Beat Keller");
+    await page.getByRole("button", { name: "Texte von der KI schreiben lassen" }).click();
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    await expect(page.getByTestId("dossier")).toContainText("Porträt des Vereins");
+    expect(calls.generate).toBe(1);
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Sponsoring-Dossier" })).toBeVisible();
+    await expect(page.getByTestId("dossier")).toContainText("Porträt des Vereins");
+    expect(calls.generate).toBe(1);
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
 });
 
 test.describe("Zugang v3 über die Routen", () => {
