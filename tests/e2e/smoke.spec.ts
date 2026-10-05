@@ -1608,6 +1608,39 @@ test.describe("Welle 4 im Browser (Content, KI und Vereine)", () => {
     await expect(page.getByRole("list", { name: "Varianten" }).getByRole("listitem")).not.toHaveCount(0);
     await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.ausgabe).toContain("Vorlage (ohne KI)");
   });
+
+  test("Anspruchsgruppen: Verein wählen, zwei Gruppen bewerten, Fenster, Matrix und Plan, PDF, Lead mit Bewertung, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/anspruchsgruppen");
+    await page.getByRole("radio", { name: "Verein" }).check();
+    await page.locator("#ag-firma").fill("FC Trogen");
+    await expect(page.getByTestId("gruppe-1")).toContainText("Mitglieder");
+    await page.getByRole("button", { name: "Analyse erstellen" }).click();
+    await expect(page.locator("#ag-error")).toContainText("mindestens zwei");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#ag-g1-interesse").selectOption("5");
+    await page.locator("#ag-g1-einfluss").selectOption("4");
+    await page.locator("#ag-g1-beziehung").selectOption("eng");
+    await page.locator("#ag-g3-interesse").selectOption("5");
+    await page.locator("#ag-g3-einfluss").selectOption("5");
+    await page.getByRole("button", { name: "Analyse erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Anspruchsgruppen" })).toBeVisible();
+    await expect(page.getByTestId("ag-matrix")).toBeVisible();
+    await expect(page.getByTestId("ag-plan")).toBeVisible();
+    await expect(page.getByTestId("ag-zusammenfassung")).toContainText("2 Gruppen bewertet");
+    const pdf = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await pdf).suggestedFilename()).toMatch(/\.pdf$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("anspruchsgruppen");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Verein: FC Trogen");
+    expect(lead.eingabe).toContain("Mitglieder: Interesse 5, Einfluss 4");
+    expect(lead.ausgabe).toContain("# Anspruchsgruppen-Analyse: FC Trogen");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Anspruchsgruppen" })).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
 });
 
 test.describe("Zugang v3 über die Routen", () => {
