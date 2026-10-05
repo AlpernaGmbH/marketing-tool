@@ -337,6 +337,8 @@
   .content {
     max-width: var(--measure);
     line-height: 1.6;
+    /* Lange Adressen (zum Beispiel wa.me-Links im Beispielkasten) brechen um, statt die Seite bei 375 px zu verbreitern. */
+    overflow-wrap: anywhere;
   }
   .content > * + * {
     margin-top: 1rem;
