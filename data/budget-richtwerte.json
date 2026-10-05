@@ -1,0 +1,15 @@
+{
+  "meta": {
+    "source": "The CMO Survey, Highlights and Insights Report 2026 (Duke University Fuqua School of Business, Deloitte, American Marketing Association), Folien 6, 52 und 53. Umfrage vom 7. bis 29. Januar 2026 unter 2'111 Marketingverantwortlichen gewinnorientierter US-Firmen, 308 Antworten (Rücklauf 14,6 %), 97 % der Antwortenden auf VP-Stufe oder höher.",
+    "url": "https://cmosurvey.org/wp-content/uploads/2026/04/The_CMO_Survey-Highlights_and_Insights_Report-2026.pdf",
+    "asOf": "2026-10-05",
+    "note": "«phasen» bleibt leer: Keine geöffnete Quelle nennt Spannen des Marketing-Budgets in Prozent des Umsatzes nach Phase (Start, Wachstum, etabliert) für kleine Betriebe, und für Schweizer KMU gibt es keine belastbare Zahl; Schweizer Agentur-Seiten nennen Spannen ohne Quelle (nicht übernommen). Das Werkzeug rechnet darum mit dem Anteil, den die Person selbst angibt. «vergleich» sind Durchschnittswerte (Mittelwerte) aus The CMO Survey 2026, Frage «Marketing expenses account for what percent of your company's sales revenues?»: alle Antwortenden 9,0 %, Firmen mit weniger als 50 Mitarbeitenden 16,3 %, Firmen mit weniger als 10 Mio. US-Dollar Umsatz 13,3 %. Grenzen: US-Firmen, überwiegend grosse Unternehmen (die kleinste Umsatzklasse endet bei 10 Mio. US-Dollar), Mittelwerte ohne Streuung, keine Phasen, keine Branchen der Schweiz. Die Werte dienen nur als Vergleich im Text, nie als Vorbelegung oder Empfehlung."
+  },
+  "phasen": {},
+  "vergleich": {
+    "jahr": 2026,
+    "gesamt": 9.0,
+    "unter50Mitarbeitende": 16.3,
+    "umsatzUnter10MioUsd": 13.3
+  }
+}
