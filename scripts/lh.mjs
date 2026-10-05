@@ -39,6 +39,11 @@ async function waitFor(url, ms = 30_000) {
   throw new Error(`Server unter ${url} nicht erreichbar`);
 }
 
+// Die Launch-Sperre (lib/launch.ts) setzt noindex, solange NEXT_PUBLIC_INDEXABLE nicht «true» ist.
+// Dann würde «is-crawlable» jede Seite auf SEO 69 drücken; der Wert sagt über die Seite nichts aus.
+// Mit NEXT_PUBLIC_INDEXABLE=true (Build und Lauf) bleibt die Prüfung aktiv.
+const SKIP_AUDITS = process.env.NEXT_PUBLIC_INDEXABLE === "true" ? [] : ["is-crawlable"];
+
 async function main() {
   const arg = process.argv[2];
   if (!arg) {
@@ -66,7 +71,7 @@ async function main() {
     });
     try {
       // Standard von Lighthouse: Mobile-Emulation mit gedrosselter Verbindung.
-      const result = await lighthouse(url, { port: chrome.port, output: "json", logLevel: "error", onlyCategories: ["performance", "seo", "accessibility"] });
+      const result = await lighthouse(url, { port: chrome.port, output: "json", logLevel: "error", onlyCategories: ["performance", "seo", "accessibility"], skipAudits: SKIP_AUDITS });
       const cats = result?.lhr.categories;
       if (!cats) throw new Error("Lighthouse lieferte kein Ergebnis");
       let failed = false;
