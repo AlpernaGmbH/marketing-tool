@@ -32,6 +32,7 @@ import sponsoringDossierConfig from "./sponsoring-dossier/tool.config";
 import empfehlungsprogrammConfig from "./empfehlungsprogramm/tool.config";
 import engagementRateConfig from "./engagement-rate/tool.config";
 import anlassPlanerConfig from "./anlass-planer/tool.config";
+import angebotsarchitekturConfig from "./angebotsarchitektur/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -70,5 +71,6 @@ export const tools: ToolConfig[] = [
   empfehlungsprogrammConfig,
   engagementRateConfig,
   anlassPlanerConfig,
+  angebotsarchitekturConfig,
   // new-tool:configs
 ];

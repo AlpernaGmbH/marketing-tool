@@ -1900,6 +1900,40 @@ test.describe("Welle 8 im Browser (Rechner und Planer)", () => {
     await expect(page.getByRole("checkbox", { name: "Ziel und Budget klären" })).toBeChecked();
   });
 
+  test("Angebotsarchitektur: ohne Firma eine Meldung, drei Leistungen ergeben drei Stufen mit Warnung, PDF-Download, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/angebotsarchitektur");
+    await hydrated(page.getByRole("button", { name: "Angebot aufbauen" }));
+    await page.getByRole("button", { name: "Angebot aufbauen" }).click();
+    await expect(page.locator("#aa-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#aa-firma").fill("Malerei Keller");
+    const zeilen: [string, string, string, string][] = [
+      ["Zimmer auffrischen", "1500", "9", "150"],
+      ["Wohnung streichen (3 Zimmer)", "3000", "22", "500"],
+      ["Fassade Einfamilienhaus", "6400", "36", "1000"],
+    ];
+    for (const [i, [name, preis, aufwand, kosten]] of zeilen.entries()) {
+      await page.locator(`#aa-name-${i + 1}`).fill(name);
+      await page.locator(`#aa-preis-${i + 1}`).fill(preis);
+      await page.locator(`#aa-aufwand-${i + 1}`).fill(aufwand);
+      await page.locator(`#aa-kosten-${i + 1}`).fill(kosten);
+    }
+    await page.locator("#aa-satz").fill("85");
+    await page.getByRole("button", { name: "Angebot aufbauen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Angebot in drei Stufen" })).toBeVisible();
+    await expect(page.getByTestId("aa-richtwert")).toContainText("Faustregel");
+    await expect(page.getByTestId("aa-vergleich").getByRole("listitem")).toHaveCount(3);
+    await expect(page.getByTestId("aa-stufe-kern")).toContainText("CHF 3'390.-");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("angebotsarchitektur");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Leistung 1: Zimmer auffrischen");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Angebot in drei Stufen" })).toBeVisible();
+  });
+
   // new-wave-8:tests
 });
 
