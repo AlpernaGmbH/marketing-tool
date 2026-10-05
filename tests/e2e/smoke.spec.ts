@@ -1934,7 +1934,41 @@ test.describe("Welle 8 im Browser (Rechner und Planer)", () => {
     await expect(page.getByRole("region", { name: "Dein Angebot in drei Stufen" })).toBeVisible();
   });
 
-  // new-wave-8:tests
+  test("Ziel- und KPI-Baum: ohne Angaben eine Meldung, Baum mit Marketingziel und Kennzahl, Rückwärtsrechnung, CSV-Vorlage, Lead, Neuladen", async ({ page, request }) => {
+    const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+    await page.goto("/tools/kpi-baum");
+    await hydrated(page.getByRole("button", { name: "Baum erstellen" }));
+    await page.getByRole("button", { name: "Baum erstellen" }).click();
+    await expect(page.locator("#kb-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#kb-firma").fill("Malerei Keller");
+    await page.locator("#kb-branche").fill("Malerei");
+    await page.locator("#kb-art").selectOption("auftraege");
+    await page.locator("#kb-zielwert").fill("30");
+    await page.locator("#kb-ausgang").fill("18");
+    await page.locator("#kb-ende").fill(inDays(250));
+    await page.locator("#kb-z1-text").fill("Mehr Anfragen über Google");
+    await page.locator("#kb-z1-kanal").selectOption("gbp");
+    await page.locator("#kb-z1-k1-kpi").selectOption("anfragen");
+    await page.locator("#kb-z1-k1-zielwert").fill("17");
+    await page.locator("#kb-z1-k1-zeitraum").selectOption("monat");
+    await page.locator("#kb-z1-k1-quelle").selectOption({ index: 1 });
+    await page.locator("#kb-q-offerten").selectOption("5");
+    await page.locator("#kb-q-auftraege").selectOption("4");
+    await page.getByRole("button", { name: "Baum erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Ziel- und KPI-Baum" })).toBeVisible();
+    await expect(page.getByTestId("kb-baum-liste")).toContainText("Mehr Anfragen über Google");
+    await expect(page.getByTestId("kb-dokument")).toContainText("Rückwärtsrechnung");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "CSV-Vorlage herunterladen" }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.csv$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("kpi-baum");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Unternehmensziel: 30 Aufträge bis");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Ziel- und KPI-Baum" })).toBeVisible();
+  });
+
 });
 
 test.describe("Zugang v3 über die Routen", () => {
