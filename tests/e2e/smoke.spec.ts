@@ -1802,6 +1802,42 @@ test.describe("Welle 4 im Browser (Content, KI und Vereine)", () => {
     await page.setViewportSize({ width: 375, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
+
+  test("Empfehlungsprogramm: Rechnung, Fenster, Anreiz-Spanne, Ablauf, Vorlagen, Karte mit QR, PDF, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/empfehlungsprogramm");
+    await page.getByRole("button", { name: "Programm entwerfen" }).click();
+    await expect(page.locator("#ep-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#ep-firma").fill("Malerei Keller");
+    await page.locator("#ep-kundenwert").fill("3000");
+    await page.locator("#ep-marge").fill("25");
+    await expect(page.getByTestId("ep-db")).toContainText("750");
+    await page.locator("#ep-anreiz").selectOption("gutschein");
+    await page.getByRole("checkbox", { name: "Beide Seiten belohnen" }).check();
+    await page.locator("#ep-kanal").selectOption("karte");
+    await page.locator("#ep-nummer").fill("079 123 45 67");
+    await page.getByRole("radio", { name: "Du", exact: true }).check();
+    await page.getByRole("button", { name: "Programm entwerfen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Empfehlungsprogramm" })).toBeVisible();
+    await expect(page.getByTestId("anreiz-spanne")).toContainText("CHF");
+    await expect(page.getByTestId("anreiz-richtwert")).toContainText("keine Statistik");
+    await expect(page.getByTestId("mechanik").getByRole("listitem")).toHaveCount(5);
+    await expect(page.getByRole("list", { name: "Vorlagen" }).getByRole("listitem")).toHaveCount(3);
+    await expect(page.getByTestId("qr-image")).toBeVisible();
+    const karte = page.waitForEvent("download");
+    await page.getByTestId("download-karte").click();
+    expect((await karte).suggestedFilename()).toMatch(/^empfehlungskarte-a6-malerei-keller.*\.pdf$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("empfehlungsprogramm");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Betrieb: Malerei Keller");
+    expect(lead.eingabe).toContain("Kundenwert pro Jahr: CHF 3'000.-");
+    expect(lead.ausgabe).toContain("# Empfehlungsprogramm Malerei Keller");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Empfehlungsprogramm" })).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
 });
 
 test.describe("Zugang v3 über die Routen", () => {
