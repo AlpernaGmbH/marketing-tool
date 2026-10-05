@@ -21,5 +21,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "swot": dynamic(() => import("./swot/Tool")),
   "content-saeulen": dynamic(() => import("./content-saeulen/Tool")),
   "whatsapp-link": dynamic(() => import("./whatsapp-link/Tool")),
+  "qr-set": dynamic(() => import("./qr-set/Tool")),
   // new-tool:components
 };
