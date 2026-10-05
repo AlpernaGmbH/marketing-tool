@@ -2,12 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import JSZip from "jszip";
 import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildDocx } from "@/lib/export/docx";
 import { FONT_PATHS, loadPdfFonts } from "@/lib/export/fonts";
 import { safeFilename, toMarkdown, type DocumentModel } from "@/lib/export/model";
 import { buildPdf, wrapLines, type PdfFonts } from "@/lib/export/pdf";
-import { PDFDocument as PD } from "pdf-lib";
+import { PDFDocument as PD, PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 
 const read = (p: string) => new Uint8Array(fs.readFileSync(path.join(process.cwd(), "public", p)));
@@ -72,10 +72,66 @@ describe("PDF", () => {
     expect(doc.getPageCount()).toBeGreaterThanOrEqual(1);
   });
 
+  it("wiederholt den Tabellenkopf auf jeder Folgeseite und lässt ihn nie allein am Seitenende stehen", async () => {
+    const rows = Array.from({ length: 70 }, (_, i) => [`Zelle ${i}`, "x"]);
+    const header = ["Spaltenkopf", "Wert"];
+    const pagesWith = (text: string, calls: { page: PDFPage; text: string }[]) => new Set(calls.filter((c) => c.text === text).map((c) => c.page));
+    const calls: { page: PDFPage; text: string }[] = [];
+    const original = PDFPage.prototype.drawText;
+    const spy = vi.spyOn(PDFPage.prototype, "drawText").mockImplementation(function (this: PDFPage, text, options) {
+      calls.push({ page: this, text: String(text) });
+      return original.call(this, text, options);
+    });
+    try {
+      const doc = await PDFDocument.load(await buildPdf(model({ blocks: [{ type: "table", header, rows }] }), fonts));
+      expect(doc.getPageCount()).toBeGreaterThanOrEqual(2);
+      const mitKopf = pagesWith("Spaltenkopf", calls);
+      const mitZeilen = new Set(calls.filter((c) => /^Zelle \d+$/.test(c.text)).map((c) => c.page));
+      expect(mitZeilen.size).toBeGreaterThanOrEqual(2);
+      // Jede Seite mit Tabellenzeilen trägt den Kopf, und keine Seite trägt einen Kopf ohne Zeilen.
+      expect([...mitZeilen].every((p) => mitKopf.has(p))).toBe(true);
+      expect([...mitKopf].every((p) => mitZeilen.has(p))).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("schneidet eine Tabellenzeile ab, die höher als eine Seite ist, statt Seiten zu verschwenden", async () => {
     const huge = Array.from({ length: 400 }, (_, i) => `Zeile ${i}`).join("\n");
     const doc = await PDFDocument.load(await buildPdf(model({ blocks: [{ type: "table", header: ["A", "B"], rows: [[huge, "x"]] }] }), fonts));
     expect(doc.getPageCount()).toBeLessThanOrEqual(3);
+  });
+
+  it("druckt auf Wunsch A4 quer, auf jeder Seite", async () => {
+    const rows = Array.from({ length: 60 }, (_, i) => [`Phase ${i}`, "Wer macht so etwas in meiner Nähe?", "Website, Google-Unternehmensprofil", "Teilweise", "Anna Keller", "Lücke"]);
+    const table = { type: "table" as const, header: ["Phase", "Frage", "Berührungspunkte", "Inhalt", "Verantwortlich", "Lücke"], rows, widths: [1.3, 2, 2, 1, 1.3, 1] };
+    const doc = await PDFDocument.load(await buildPdf({ ...model({ blocks: [table] }), landscape: true }, fonts));
+    expect(doc.getPageCount()).toBeGreaterThan(1);
+    for (const page of doc.getPages()) {
+      const { width, height } = page.getSize();
+      expect([Math.round(width), Math.round(height)]).toEqual([842, 595]);
+    }
+  });
+
+  it("bleibt ohne Angabe oder mit landscape false hochformatig (rückwärtskompatibel)", async () => {
+    for (const m of [model(), { ...model(), landscape: false }]) {
+      const { width, height } = (await PDFDocument.load(await buildPdf(m, fonts))).getPage(0).getSize();
+      expect([Math.round(width), Math.round(height)]).toEqual([595, 842]);
+    }
+  });
+
+  it("nutzt im Querformat die ganze Breite: dieselbe Tabelle braucht quer weniger Zeilenumbrüche", async () => {
+    const d = await PD.create();
+    d.registerFontkit(fontkit);
+    const font = await d.embedFont(fonts.body, { subset: true });
+    const text = "Google-Unternehmensprofil mit Fotos und Öffnungszeiten, regelmässige Beiträge, Empfehlungen";
+    const hoch = wrapLines(text, font, 9.5, (595.28 - 112) / 6 - 12).length;
+    const quer = wrapLines(text, font, 9.5, (841.89 - 112) / 6 - 12).length;
+    expect(quer).toBeLessThan(hoch);
+    // und das PDF selbst lässt sich quer mit einer Zeile über Seitenhöhe abschneiden
+    const huge = Array.from({ length: 400 }, (_, i) => `Zeile ${i}`).join("\n");
+    const pdf = await PDFDocument.load(await buildPdf({ ...model({ blocks: [{ type: "table", header: ["A", "B"], rows: [[huge, "x"]] }] }), landscape: true }, fonts));
+    expect(pdf.getPageCount()).toBeLessThanOrEqual(3);
   });
 
   it("funktioniert ohne Blöcke, ohne Firma und ohne Datum", async () => {

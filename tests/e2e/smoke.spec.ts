@@ -2025,6 +2025,37 @@ test.describe("Welle 9 im Browser (Planer und Bausteine)", () => {
     await expect(page.getByRole("region", { name: "Dein Posting-Plan" })).toBeVisible();
   });
 
+  test("Kundenweg-Mapper: leeres Formular wird gemeldet, vier beschriebene Phasen ergeben Gesamtaussage und Lückenliste, PDF quer, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/kundenweg");
+    await hydrated(page.getByRole("button", { name: "Kundenweg erstellen" }));
+    await page.getByRole("button", { name: "Kundenweg erstellen" }).click();
+    await expect(page.locator("#kw-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#kw-firma").fill("Malerei Keller");
+    const phase = (n: number) => page.getByTestId(`phase-${n}`);
+    await page.locator("#kw-p1-frage").fill("Wer streicht Fassaden in Gossau?");
+    await phase(1).getByRole("checkbox", { name: "Website", exact: true }).check();
+    await phase(1).getByRole("radio", { name: "Ja", exact: true }).check();
+    await page.locator("#kw-p3-frage").fill("Warum Keller und nicht der andere Maler?");
+    await phase(3).getByRole("checkbox", { name: "Empfehlungen", exact: true }).check();
+    await phase(3).getByRole("radio", { name: "Teilweise", exact: true }).check();
+    await page.locator("#kw-p4-frage").fill("Kann ich dem vertrauen, und wie melde ich mich?");
+    await phase(4).getByRole("radio", { name: "Nein", exact: true }).check();
+    await page.getByRole("button", { name: "Kundenweg erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Kundenweg" })).toBeVisible();
+    await expect(page.getByTestId("gesamtaussage")).toContainText("von 6 Phasen");
+    expect(await page.getByTestId("phase-karte").count()).toBe(6);
+    expect(await page.getByTestId("luecke").count()).toBeGreaterThan(0);
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("kundenweg");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("1. Aufmerksam werden");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Kundenweg" })).toBeVisible();
+  });
+
   // new-wave-9:tests
 });
 

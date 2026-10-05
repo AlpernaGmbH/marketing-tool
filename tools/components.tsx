@@ -42,5 +42,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "kpi-baum": dynamic(() => import("./kpi-baum/Tool")),
   "story-post": dynamic(() => import("./story-post/Tool")),
   "posting-plan": dynamic(() => import("./posting-plan/Tool")),
+  "kundenweg": dynamic(() => import("./kundenweg/Tool")),
   // new-tool:components
 };
