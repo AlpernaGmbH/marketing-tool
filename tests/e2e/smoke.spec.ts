@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext, type Page, type PlaywrightWorkerArgs } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Locator, type Page, type PlaywrightWorkerArgs } from "@playwright/test";
 import { sampleResult } from "../../lib/check/fixtures";
 import { tools } from "../../tools/index";
 
@@ -9,6 +9,11 @@ const sec = (page: Page, id: string) => page.locator(`section[aria-labelledby="$
 const json = (body: unknown, status = 200) => ({ status, contentType: "application/json", body: JSON.stringify(body) });
 const lead = (over: Record<string, unknown> = {}) => ({ email: "anna@keller.ch", consent: true, tool: TOOL, ...over });
 const fresh = () => `browser-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.ch`;
+
+/** Wartet, bis React ein Element übernommen hat. Das Server-HTML ist schon sichtbar; Eingaben davor gehen bei der Hydrierung verloren (unter Last). */
+async function hydrated(el: Locator) {
+  await expect.poll(() => el.evaluate((node) => Object.keys(node).some((k) => k.startsWith("__reactProps") || k.startsWith("__reactFiber")))).toBe(true);
+}
 
 /** Alles, was der n8n-Stub bisher erhalten hat. */
 async function received(request: APIRequestContext): Promise<Record<string, string>[]> {
@@ -54,6 +59,7 @@ test.describe("Seiten", () => {
       expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), path).toBe(false);
     }
     await page.goto("/");
+    await hydrated(page.getByRole("button", { name: "Menü" }));
     await page.getByRole("button", { name: "Menü" }).click();
     await expect(page.getByRole("link", { name: "Strategie" }).last()).toBeVisible();
     await context.close();
@@ -1372,6 +1378,7 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
   test("Content-Ideen: Filter, Idee merken, CSV hinter dem Fenster, Lead mit Branche und Titeln, Merkliste nach dem Neuladen", async ({ page, request }) => {
     await page.goto("/tools/content-ideen");
     await expect(page.getByTestId("ci-count")).toContainText("Ideen");
+    await hydrated(page.locator("#ci-branche"));
     await page.locator("#ci-branche").selectOption("handwerk");
     await page.locator("#ci-monat").selectOption("10");
     await expect(page.getByTestId("ci-card").first()).toBeVisible();
