@@ -4,6 +4,12 @@ Stand: 04.10.2026. **Zugang v3 ist gebaut** (kein Konto, E-Mail-Adresse vor dem 
 
 ## Fertig
 
+**Welle 4 der Etappen 3 bis 6 (05.10.2026): Content, KI und Vereine**
+
+Gleiche Arbeitsweise wie Welle 3 (Helfer-Agenten, Abnahme und Commit einzeln durch mich, Prüfung im sauberen Worktree). Hier stehen die Werkzeuge in der Reihenfolge, in der sie abgenommen wurden.
+
+- **Post-Generator (`post-generator`, KI, Schritt 4, Zielgruppe beide, featured):** Generator. Aus einer Idee (20 bis 600 Zeichen), Plattform, Format, Ziel der Aufforderung, Anrede und Emoji-Schalter schreibt die KI über `/api/generate` zwei Hooks (Frage und Aussage), Hauptteil, Aufforderung und einen Hinweis. Der Ton kommt aus dem Profil (Positionierung, Werte, Tonalität, zu vermeidende Wörter, Säule, Persona-Namen). Vorschau mit Faltkante und Zähler aus dem Caption-Baukasten (Richtwerte von Alperna, so gekennzeichnet). Hashtags schreibt die Person. Gemerkte Content-Ideen lassen sich übernehmen, bis zu zehn Entwürfe liegen unter `mt:post-generator`. `checkPost` prüft jede Antwort: zwei verschiedene Hooks, Länge je Plattform, Ziffern nur aus den Angaben, Emoji, Hashtag, Sie-Form, vermiedene Wörter. 81 Tests, Seitentext 684 Wörter. **Korrektur im Kern:** `lib/generator.ts` verwarf jede Antwort mit Emoji; der Haken «Emojis erlauben» hätte nie gewirkt. Neu: `allowEmoji` je Werkzeug (Test im Kern, Eintrag in `docs/TOOL-BAUEN.md`); die Regel «keine Emojis» gilt für alle anderen Generatoren unverändert. **Offen:** Die KI hat in diesem Werkzeug wie in den übrigen Generatoren nie echt geantwortet (nur Stub im Browser-Test); `seo-check` verlangt das Keyword «Social-Media-Beitrag schreiben» in der H1; die Hauptteil-Grenzen 900 und 1'200 sind Richtwerte von Alperna; das CRM kürzt `ausgabe` auf 1'900 Zeichen, bei sehr langem Hauptteil können Aufforderung und Hinweis am Ende wegfallen.
+
 **Welle 3 der Etappen 3 bis 6 (05.10.2026): Schweizer Praxis-Werkzeuge und Strategie-Abschluss**
 
 Die Helfer von gbp-feiertage und den folgenden Wellen wurden unterbrochen (Nutzungslimit); ihre Gerüste liegen unregistriert im Arbeitsverzeichnis. Gebaut nach `docs/TOOL-BAUEN.md` und einem gemeinsamen Auftrag je Welle (Leseliste, Vertrag Zugang v3, Daten nur mit geöffneter Quelle, Tests, Prüfungen); registriert, geprüft und committet je Werkzeug.

@@ -1465,6 +1465,53 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
   });
 });
 
+test.describe("Welle 4 im Browser (Content, KI und Vereine)", () => {
+  async function stubGenerate(page: Page, output: unknown) {
+    const calls = { generate: 0 };
+    await page.route("**/api/generate", (route) => {
+      calls.generate++;
+      return route.fulfill(json({ ok: true, output }));
+    });
+    return calls;
+  }
+
+  const BEITRAG = {
+    hooks: ["Was machst du, wenn der Anstrich nach wenigen Wintern abblättert?", "Ein Anstrich hält nur so gut wie der Untergrund darunter."],
+    hauptteil:
+      "An der Wetterseite zeigt sich schnell, ob der Untergrund stimmt.\n\nWir schleifen, grundieren und streichen mit Silikatfarbe, die Feuchte abgibt. So bleibt die Fassade in Gossau länger schön.",
+    cta: "Wie ist das bei deiner Fassade? Schreib es uns in die Kommentare.",
+    hinweis: "Ein Foto der fertigen Fassade würde den Beitrag stärken.",
+  };
+
+  test("Post-Generator: Idee, Fenster, Beitrag mit zwei Hooks und Vorschau, Lead, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubGenerate(page, BEITRAG);
+    await page.goto("/tools/post-generator");
+    await page.locator("#pg-firma").fill("Malerei Keller");
+    await page.locator("#pg-branche").fill("Malerei");
+    await page.locator("#pg-ort").fill("Gossau");
+    await page.getByRole("button", { name: "Beitrag schreiben" }).click();
+    await expect(page.locator("#pg-error")).toContainText("Idee");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#pg-idee").fill("Wir zeigen, warum ein Anstrich an der Wetterseite oft schon nach wenigen Wintern abblättert und was man dagegen tut.");
+    await page.getByRole("button", { name: "Beitrag schreiben" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Beitrag" })).toBeVisible();
+    await expect(page.getByRole("radiogroup", { name: "Hook" }).getByRole("radio")).toHaveCount(2);
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    await expect(page.getByTestId("pg-counter")).toContainText("Zeichen");
+    expect(calls.generate).toBe(1);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("post-generator");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Plattform: Instagram");
+    expect(lead.ausgabe).toContain("# Beitrag: Instagram");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Beitrag" })).toBeVisible();
+    expect(calls.generate).toBe(1);
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+});
+
 test.describe("Zugang v3 über die Routen", () => {
   /** Eigener Kontext ohne Cookies; mt_gate wird wie in einem Browser von Hand mitgeführt (der Cookie-Jar der Fixture schickt «Secure»-Cookies nicht über http). */
   async function client(playwright: PlaywrightWorkerArgs["playwright"]) {
