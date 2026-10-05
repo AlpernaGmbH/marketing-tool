@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type APIRequestContext, type Locator, type Page, type PlaywrightWorkerArgs } from "@playwright/test";
 import { sampleResult } from "../../lib/check/fixtures";
 import { tools } from "../../tools/index";
@@ -2125,6 +2126,55 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
     expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Betrieb: Malerei Keller");
     await page.reload();
     await expect(page.getByRole("region", { name: "Dein LinkedIn-Profil-Score" })).toBeVisible();
+  });
+
+  test("Vorher-Nachher-Collage: ohne Bilder eine Meldung, zwei echte Fotos ergeben PNG in 1080 Pixel und ZIP, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/vorher-nachher");
+    await hydrated(page.getByRole("button", { name: "Collage erstellen" }));
+    await page.getByRole("button", { name: "Collage erstellen" }).click();
+    await expect(page.locator("#vn-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    // zwei echte, dekodierbare Bilder im Browser zeichnen
+    const bild = async (farbe: string) =>
+      Buffer.from(
+        (await page.evaluate((f) => {
+          const c = document.createElement("canvas");
+          c.width = 400;
+          c.height = 300;
+          const g = c.getContext("2d")!;
+          g.fillStyle = f;
+          g.fillRect(0, 0, 400, 300);
+          g.fillStyle = "#ffffff";
+          g.fillRect(150, 100, 100, 100);
+          return c.toDataURL("image/png").split(",")[1];
+        }, farbe)) as string,
+        "base64",
+      );
+    await page.locator("#vn-firma").fill("Malerei Keller");
+    await page.getByLabel("Vorher-Bild").setInputFiles({ name: "fassade-alt.png", mimeType: "image/png", buffer: await bild("#8a8a80") });
+    await expect(page.getByTestId("vn-vorher-datei")).toContainText("fassade-alt.png");
+    await page.getByLabel("Nachher-Bild").setInputFiles({ name: "fassade-neu.png", mimeType: "image/png", buffer: await bild("#d8c9a3") });
+    await expect(page.getByTestId("vn-nachher-datei")).toContainText("fassade-neu.png");
+    await page.locator("#vn-format-portrait").check();
+    await page.getByRole("button", { name: "Collage erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Collage" })).toBeVisible();
+    await expect(page.getByTestId("collagen").getByRole("listitem")).toHaveCount(2);
+    const pngDownload = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PNG herunterladen: Feed 1:1" }).click();
+    const png = await pngDownload;
+    expect(png.suggestedFilename()).toBe("malerei-keller-feed.png");
+    const bytes = readFileSync((await png.path())!);
+    expect(bytes.subarray(1, 4).toString("latin1")).toBe("PNG");
+    expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([1080, 1080]);
+    const zipDownload = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Alle als ZIP herunterladen" }).click();
+    expect((await zipDownload).suggestedFilename()).toMatch(/\.zip$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("vorher-nachher");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Vorher-Bild: fassade-alt.png");
+    await page.reload();
+    await hydrated(page.getByRole("button", { name: "Collage erstellen" }));
+    await expect(page.getByTestId("vn-bilder-neu")).toBeVisible();
   });
 
   // new-wave-10:tests

@@ -45,5 +45,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "kundenweg": dynamic(() => import("./kundenweg/Tool")),
   "kampagnen-planer": dynamic(() => import("./kampagnen-planer/Tool")),
   "linkedin-profil": dynamic(() => import("./linkedin-profil/Tool")),
+  "vorher-nachher": dynamic(() => import("./vorher-nachher/Tool")),
   // new-tool:components
 };

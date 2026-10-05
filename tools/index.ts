@@ -39,6 +39,7 @@ import postingPlanConfig from "./posting-plan/tool.config";
 import kundenwegConfig from "./kundenweg/tool.config";
 import kampagnenPlanerConfig from "./kampagnen-planer/tool.config";
 import linkedinProfilConfig from "./linkedin-profil/tool.config";
+import vorherNachherConfig from "./vorher-nachher/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -84,5 +85,6 @@ export const tools: ToolConfig[] = [
   kundenwegConfig,
   kampagnenPlanerConfig,
   linkedinProfilConfig,
+  vorherNachherConfig,
   // new-tool:configs
 ];
