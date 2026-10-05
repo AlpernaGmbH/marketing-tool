@@ -50,9 +50,17 @@ export function mistralModelsFromEnv(raw: string | undefined = process.env.MISTR
   return list.length > 0 ? list : DEFAULT_MISTRAL_MODELS;
 }
 
+/**
+ * Der Schlüssel aus der Umgebung. Umgebungsvariablen unterscheiden Gross- und Kleinschreibung: Wer die Variable auf Vercel
+ * klein geschrieben anlegt (mistral_api_key), bekäme sonst still den Weg über das Gateway und einen 403. Beide Schreibweisen gelten.
+ */
+export function mistralKey(env: Record<string, string | undefined> = process.env): string | undefined {
+  return env.MISTRAL_API_KEY || env.mistral_api_key || undefined;
+}
+
 /** Läuft die KI über Mistral direkt? */
 export function usesMistral(env: Record<string, string | undefined> = process.env): boolean {
-  return Boolean(env.MISTRAL_API_KEY);
+  return Boolean(mistralKey(env));
 }
 
 /** Fehler der Mistral-Schnittstelle. Trägt nur Name und Statuscode, nie Text des Anbieters (kann Eingaben enthalten). */
@@ -113,7 +121,7 @@ async function mistralOnce(model: string, args: ChatArgs, key: string, fetchImpl
  * Modell der Liste. Ein falscher Schlüssel oder eine falsche Anfrage (andere 4xx) hilft mit einem anderen Modell nicht: sofort Schluss.
  */
 export async function mistralChat(args: ChatArgs, fetchImpl: typeof fetch = fetch, env: Record<string, string | undefined> = process.env): Promise<string> {
-  const key = env.MISTRAL_API_KEY;
+  const key = mistralKey(env);
   if (!key) throw new MistralError("MistralNoKey");
   let last: unknown;
   for (const model of mistralModelsFromEnv(env.MISTRAL_MODELS)) {

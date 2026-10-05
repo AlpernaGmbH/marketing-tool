@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_AI_MODELS, DEFAULT_MISTRAL_MODELS, MistralError, describeAiError, mistralChat, mistralModelsFromEnv, usesMistral } from "@/lib/ai";
+import { DEFAULT_AI_MODELS, DEFAULT_MISTRAL_MODELS, MistralError, describeAiError, mistralChat, mistralKey, mistralModelsFromEnv, usesMistral } from "@/lib/ai";
 import { modelsFromEnv } from "@/lib/ai";
 
 describe("modelsFromEnv", () => {
@@ -70,6 +70,16 @@ describe("Mistral direkt", () => {
     expect(usesMistral({})).toBe(false);
     expect(usesMistral({ MISTRAL_API_KEY: "" })).toBe(false);
     expect(usesMistral(ENV)).toBe(true);
+  });
+
+  it("liest den Schlüssel auch klein geschrieben (mistral_api_key) und bevorzugt die grosse Schreibweise", async () => {
+    expect(usesMistral({ mistral_api_key: "klein" })).toBe(true);
+    expect(mistralKey({ mistral_api_key: "klein" })).toBe("klein");
+    expect(mistralKey({ MISTRAL_API_KEY: "gross", mistral_api_key: "klein" })).toBe("gross");
+    expect(mistralKey({ MISTRAL_API_KEY: "", mistral_api_key: "" })).toBeUndefined();
+    const fetchFn = vi.fn(async () => ok("Antwort"));
+    await mistralChat({ system: "s", prompt: "p", maxTokens: 10, temperature: 0, timeoutMs: 1000 }, asFetch(fetchFn), { mistral_api_key: "klein" });
+    expect((fetchFn.mock.calls[0] as unknown as [string, RequestInit])[1].headers).toMatchObject({ authorization: "Bearer klein" });
   });
 
   it("liest die Modellliste aus MISTRAL_MODELS und fällt bei Müll auf den Standard", () => {
