@@ -7,6 +7,7 @@ import path from "node:path";
 import { CONTENT_DIR, readToolContent, toolContentPath } from "@/lib/content";
 import { brandHits } from "@/lib/brand-rules";
 import { checkToolContent, type Issue } from "@/lib/content-rules";
+import { LEGAL_IGNORED, checkLegalFile } from "@/lib/legal-rules";
 import { loadBausteine } from "@/lib/pitch";
 import { getTools } from "@/lib/registry";
 import { SITE_FILES, readCategory, readSimple, siteFile } from "@/lib/site-content";
@@ -76,6 +77,14 @@ const siteDir = path.join(CONTENT_DIR, "site");
 if (fs.existsSync(siteDir)) {
   for (const file of fs.readdirSync(siteDir).filter((f) => f.endsWith(".md") && !siteKnown.has(f))) {
     report("content", [{ level: "warn", code: "orphan", message: `content/site/${file} wird nirgends verwendet` }]);
+  }
+}
+
+// Rechtstexte (content/legal/*.md): Kopf und Freigabe-Status; Entwürfe sind Hinweise (Harte Regel 8)
+const legalDir = path.join(CONTENT_DIR, "legal");
+if (fs.existsSync(legalDir)) {
+  for (const file of fs.readdirSync(legalDir).filter((f) => f.endsWith(".md") && !LEGAL_IGNORED.has(f))) {
+    report(`legal/${file}`, checkLegalFile(file, fs.readFileSync(path.join(legalDir, file), "utf8")));
   }
 }
 

@@ -140,8 +140,9 @@ Seitentext, Prüfung); vor jedem neuen Werkzeug lesen
 - content/site/*.md – Startseite, Kategorien, FAQ
 - content/pitch/bausteine.md – Alperna-Bausteine und Einstiegsangebot (von
 Alperna geliefert)
-- content/legal/*.md – Rechtstexte, von Menschen geprüft, nie selbst
-formulieren
+- content/legal/*.md – Rechtstexte, von Menschen geprüft. Entwürfe von Claude
+Code tragen `status: entwurf` und dürfen nirgends erscheinen, bevor ein Mensch
+sie freigibt (`lib/legal-rules.ts`, `content/legal/README.md`)
 - specs/<slug>.md – Spec pro Tool, vor dem Bauen lesen
 - scripts/new-tool.ts, scripts/content-check.ts, scripts/seo-check.ts
 - PLAN.md, STATUS.md, IDEAS.md – Arbeitsdateien

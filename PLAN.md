@@ -176,6 +176,59 @@ Diese Punkte hat Alperna genannt. Sie gehören nicht zur laufenden Etappe.
 - **Nicht tun:** Plattformen gegen ihre Nutzungsbedingungen auslesen (Anmeldung simulieren, Sperren umgehen). Das ist ein rechtliches Risiko und fällt bei der ersten Änderung der Plattform aus.
 - **Ergebnis soll ehrlich bleiben:** Was nicht prüfbar ist, steht als «nicht prüfbar» im Ergebnis (wie heute das Google-Profil ohne Schlüssel).
 
+### Scraping-Plan (Plan von Alperna, 05.10.2026; nicht jetzt bauen)
+
+Entscheid von Alperna: Das Scraping kommt später, andere Werkzeuge werden zuerst gebaut. Dieser Abschnitt hält den Plan fest und ergänzt «Bessere Analyse und ein kostenloser Crawler» oben. Die Aussagen und ihre Kennzeichnung stammen von Alperna; was ich geprüft oder ergänzt habe, steht unter «Anmerkungen».
+
+**1. Offene Daten (stabil, gratis)**
+
+- [Wahrscheinlich] **Zefix:** REST-API, Zugang per Registrierung. Liefert Name, UID, Sitz, Rechtsform, Zweck und Status.
+- [Wahrscheinlich] **UID-Register des BFS:** eigene kostenlose Schnittstelle. Ergänzt Zefix um Adresse und NOGA-Branchencode und enthält auch Firmen, die nicht im Handelsregister stehen.
+- [Wahrscheinlich] **BFS über STAT-TAB und opendata.swiss:** Branchenstruktur, Internetnutzung, Konsum.
+- [Wahrscheinlich] **Eurostat-API** für EU-Vergleiche und **OpenAlex** für Studien.
+- [Wahrscheinlich] **PageSpeed Insights und Chrome UX Report** für die Website-Qualität.
+- [Wahrscheinlich] **swisstopo (geo.admin.ch)** für Adressen zu Koordinaten, **OpenStreetMap/Overpass** für Betriebe.
+
+**2. Websites ohne Firecrawl**
+
+- [Wahrscheinlich] **Crawl4AI** (Open Source) oder **n8n** mit HTTP-Request plus Parser auf einem eigenen Server, sequenziell, höchstens 1 bis 2 Browser gleichzeitig.
+- [Wahrscheinlich] Erst `sitemap.xml`, Impressum und JSON-LD per einfachem Abruf holen, den Browser nur bei JavaScript-Seiten starten.
+- [Wahrscheinlich] Firecrawl-Credits nur noch für Seiten, die der eigene Crawler nicht schafft.
+
+**3. Socials über Apify**
+
+- [Sicher] Das Guthaben im Free-Plan liegt bei 5 Dollar pro Monat (Quelle laut Alperna: use-apify.com/blog/best-free-web-scraping-tools-2026).
+- [Wahrscheinlich] So reicht es länger: Ergebnisse je Profil 30 Tage zwischenspeichern, Actors mit Pay-per-Result wählen, vor jedem Lauf ein Kostenlimit setzen, erst mit 5 Profilen testen.
+- [Wahrscheinlich] Zusätzlich Instagram Business Discovery für Business-Konten (App-Prüfung nötig) und TikTok oEmbed für Video-Links.
+
+**4. Notfallreserve**
+
+- [Wahrscheinlich] Tavily und Exa (Suche), Diffbot und ScraperAPI haben kleine Gratis-Kontingente. Nur für Einzelfälle.
+
+**Lücken, die bleiben**
+
+- [Wahrscheinlich] Fremde LinkedIn-Profile in Masse gibt es gratis nicht.
+- [Wahrscheinlich] Google-Maps-Daten in Masse gehen nur mit der Places API und selbst gesetzten Quotas, sonst droht eine Rechnung.
+- [Sicher] Kommerzielle Marktstudien haben keine freie API.
+
+**Reihenfolge**
+
+1. Zefix-Zugang beantragen (dauert am längsten).
+2. UID- und BFS-Endpunkte in n8n testen.
+3. Crawler mit 20 Seiten auf dem Server testen und den Speicherverbrauch messen.
+4. Apify mit 5 Profilen testen und die Kosten je Profil ausrechnen.
+
+**Risiko laut Alperna:** Ohne Schritt 4 ist unbekannt, ob 5 Dollar für 50 oder für 500 Profile reichen. Erst diese Zahl zeigt, ob Socials in der Menge gratis gehen.
+
+**Anmerkungen (Claude, 05.10.2026, nichts davon ist gebaut):**
+
+1. **Widerspruch zu Plan v2 und zur Zeile oben «Nicht tun»:** Plan v2 (Baustein 4) schliesst Scraping von Instagram, LinkedIn und TikTok aus, und die Tabelle führt `engagement-rate` wegen «lässt sich nicht auslesen» als Klasse C. Abschnitt 3 (Apify) macht das Gegenteil. Der Grund für das Verbot gilt weiter: Die Nutzungsbedingungen der Meta-Seiten verbieten das automatisierte Sammeln von Inhalten ohne Erlaubnis (Facebook Pages Terms, Abschnitt «Collection of Data», abgerufen am 05.10.2026; die abgerufene Fassung trägt das Datum 08.03.2018, die aktuelle Fassung ist vor dem Bau zu prüfen). Ein Dienst wie Apify ändert daran nichts, er verlagert nur den Abruf. **Vorschlag:** Abschnitt 3 auf die offiziellen Wege beschränken (Business Discovery mit App-Prüfung, oEmbed) und den Rest erst nach einer Entscheidung von Alperna bauen, ob das Risiko tragbar ist.
+2. **Ein «eigener Server» ist nicht Vercel.** Crawl4AI und ein Browser laufen nicht in den Funktionen von Vercel (kein dauerhafter Prozess, Speicher- und Zeitgrenzen). Es braucht einen Rechner mit Docker; der n8n-Server (Adresse `hstgr.cloud`, vermutlich ein Hostinger-VPS [Vermutung]) wäre ein Kandidat. Ob dort Platz ist, zeigt Schritt 3 der Reihenfolge.
+3. **Zweck bestimmt die Rechtslage.** Daten von Unternehmen aus offenen Quellen für Auswertungen im Werkzeug (Branchenzahlen, Wettbewerber des Besuchers) sind etwas anderes als Adresslisten für die Akquise durch Alperna. Bei Namen und Kontaktangaben natürlicher Personen gilt das Datenschutzgesetz (Informationspflicht Art. 19 nDSG), bei Werbeanrufen und Werbemails das UWG Art. 3 Abs. 1 lit. o, u und v (siehe `content/legal/uwg-mailwerbung.md`, Entwurf). Vor Schritt 2 festlegen, wofür die Daten dienen.
+4. **Keine Zahl ohne Quelle (Regel 7):** Zahlen aus BFS, Zefix und Eurostat gehören mit `meta {source, url, asOf}` in `data/*.json`; die Werkzeuge lesen nur diese Dateien. So bleibt der Build prüfbar, und ein Ausfall der Schnittstelle zeigt sich nicht beim Besucher.
+5. **Welche Werkzeuge davon profitieren** [Vorschlag]: `marktpotenzial` (BFS STATENT/STATPOP, UID-Register), `wettbewerbskarte` und `wettbewerbsvergleich` (Crawler), `gbp-check` (Places), `verzeichnisse` und `keywords-lokal` (Quelle der Vorschläge offen), `ideen-aus-website` (Crawler statt Einzelabruf).
+6. **Zugang zu Zefix:** Registrierung und Nutzungsbedingungen der Schnittstelle vor dem Bau prüfen (Weitergabe, Zwischenspeicherung, Nennung der Quelle). Das habe ich nicht geprüft [Vermutung].
+
 ## Nächster Schritt
 
 Stand 04.10.2026 (spät): Etappe 1c, Etappe 2 (KI über Mistral direkt) und Zugang v3 sind gebaut; Textcheck und Text-Umschreiber aus Etappe 3 beziehungsweise 6 ebenfalls. Dazu der **Generator-Baustein** (`/api/generate`, `lib/generator.ts`, `useGenerator`, `DocView`) und **Website lesen** (`/api/read`), damit Werkzeuge der Klasse B aus Angaben und Website-Text einen geprüften Entwurf machen. Die Bauanleitung je Werkzeug steht in `docs/TOOL-BAUEN.md`.
@@ -192,6 +245,6 @@ Die Etappen 3 bis 6 werden in **Wellen** gebaut (je Welle vier Werkzeuge paralle
 | 6 (Etappe 6) | caption-baukasten, medienmitteilung, bewertungsantwort, post-generator | B |
 | 7 (Etappe 6, Vereine) | anspruchsgruppen, vereins-kommunikation, sponsoring-dossier, empfehlungsprogramm | B/C mit Vereins-Begriffen (`audience: verein`), Beispiel «FC Trogen» |
 
-Verschoben, weil eine Voraussetzung fehlt: gbp-check (Places-Schlüssel mit Zahlungsmittel), impressum, datenschutz, gewinnspiel-check, uwg-mailcheck (`content/legal/` von Menschen, Regel 8), keywords-lokal (Quelle der Suchvorschläge offen), marktpotenzial und bevoelkerung-nahe Werkzeuge (BFS-Daten noch nicht im Repo), angebotsgrafik und vorher-nachher (PNG-Erzeugung, eigener Baustein).
+Verschoben, weil eine Voraussetzung fehlt: gbp-check (Places-Schlüssel mit Zahlungsmittel), impressum, datenschutz, gewinnspiel-check, uwg-mailcheck (`content/legal/`: Entwürfe liegen seit dem 05.10.2026 vor, die Freigabe durch einen Menschen fehlt, Regel 8), keywords-lokal (Quelle der Suchvorschläge offen), marktpotenzial und bevoelkerung-nahe Werkzeuge (BFS-Daten noch nicht im Repo), angebotsgrafik und vorher-nachher (PNG-Erzeugung, eigener Baustein).
 
 Voraussetzungen von Alperna: keine für den Bau. Für die Produktion: `MISTRAL_API_KEY` (gesetzt), Upstash verbunden (gesetzt), Datenschutzerklärung mit dem Stand aus `docs/DATENSCHUTZ-FAKTEN.md`.
