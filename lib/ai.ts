@@ -47,9 +47,16 @@ export type AiProvider = "openrouter" | "gateway" | "mistral";
 const MISTRAL_URL = "https://api.mistral.ai/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const DEFAULT_MISTRAL_MODELS = ["mistral-small-latest", "open-mistral-nemo"];
-// Kostenlose Modelle von OpenRouter, die stärksten allgemeinen zuerst (Liste openrouter.ai/api/v1/models, 05.10.2026). Mit echten
-// Anfragen noch nicht verglichen; OPENROUTER_MODELS überschreibt die Liste, bis zu drei Einträge, der erste zuerst.
-export const DEFAULT_OPENROUTER_MODELS = ["google/gemma-4-31b-it:free", "nvidia/nemotron-3-super-120b-a12b:free", "qwen/qwen3.8-27b:free"];
+// Kostenlose Modelle von OpenRouter. Am 05.10.2026 mit den Anweisungen von drei Werkzeugen ausprobiert: Nemotron 3 Super und Ultra
+// antworteten (ohne «Denken») gültig, aber knapp; Gemma 4 und Qwen 3.8 meldeten fast immer «upstream rate-limited» (429) und kosten dann
+// keine der 50 Tagesanfragen. Die Liste geht darum der Reihe nach durch. OPENROUTER_MODELS überschreibt sie (bis zu fünf Einträge,
+// der erste zuerst, auch bezahlte wie mistralai/mistral-large-2512 für bessere und längere Texte).
+export const DEFAULT_OPENROUTER_MODELS = [
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "google/gemma-4-31b-it:free",
+  "qwen/qwen3.8-27b:free",
+];
 
 /** Mistral-Modelle aus MISTRAL_MODELS (kommagetrennt, erstes zuerst); ungültige Einträge fallen weg, leer gilt der Standard. */
 export function mistralModelsFromEnv(raw: string | undefined = process.env.MISTRAL_MODELS): string[] {
@@ -61,13 +68,13 @@ export function mistralModelsFromEnv(raw: string | undefined = process.env.MISTR
   return list.length > 0 ? list : DEFAULT_MISTRAL_MODELS;
 }
 
-/** OpenRouter-Modelle aus OPENROUTER_MODELS (`anbieter/modell`, auch mit «:free»); ungültige Einträge fallen weg, leer gilt der Standard. */
+/** OpenRouter-Modelle aus OPENROUTER_MODELS (`anbieter/modell`, auch mit «:free», bis zu fünf); ungültige Einträge fallen weg, leer gilt der Standard. */
 export function openrouterModelsFromEnv(raw: string | undefined = process.env.OPENROUTER_MODELS): string[] {
   const list = (raw ?? "")
     .split(",")
     .map((m) => m.trim())
     .filter((m) => /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._:-]*$/i.test(m))
-    .slice(0, 3);
+    .slice(0, 5);
   return list.length > 0 ? list : DEFAULT_OPENROUTER_MODELS;
 }
 
@@ -127,7 +134,15 @@ function contentText(content: unknown): string {
   return "";
 }
 
-type Endpoint = { label: "Mistral" | "OpenRouter"; url: string; jsonMode: boolean };
+type Endpoint = {
+  label: "Mistral" | "OpenRouter";
+  url: string;
+  jsonMode: boolean;
+  /** Zusätzliche Felder im Anfrage-Körper. */
+  extra?: Record<string, unknown>;
+  /** Fehlercodes, bei denen ein anderes Modell nichts nützt (falscher Schlüssel). Sonst geht es mit dem nächsten Modell weiter. */
+  fatal: (status: number) => boolean;
+};
 
 async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string, fetchImpl: typeof fetch): Promise<string> {
   let res: Response;
@@ -144,6 +159,7 @@ async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string
         temperature: args.temperature,
         max_tokens: args.maxTokens,
         ...(args.json && ep.jsonMode ? { response_format: { type: "json_object" } } : {}),
+        ...ep.extra,
       }),
       signal: AbortSignal.timeout(args.timeoutMs),
     });
@@ -162,10 +178,7 @@ async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string
   return text;
 }
 
-/**
- * Eine Anfrage mit Rückfall auf das nächste Modell der Liste, wenn das erste überlastet (429), ausgefallen (5xx), zu langsam oder
- * leer war. Ein falscher Schlüssel oder eine falsche Anfrage (andere 4xx) hilft mit einem anderen Modell nicht: sofort Schluss.
- */
+/** Eine Anfrage mit Rückfall auf das nächste Modell der Liste, wenn das erste ausfiel, zu langsam oder leer war (siehe `fatal`). */
 async function chatWithFallback(ep: Endpoint, models: string[], args: ChatArgs, key: string, fetchImpl: typeof fetch): Promise<string> {
   let last: unknown;
   for (const model of models) {
@@ -174,7 +187,7 @@ async function chatWithFallback(ep: Endpoint, models: string[], args: ChatArgs, 
     } catch (e) {
       last = e;
       const status = e instanceof MistralError ? e.statusCode : undefined;
-      if (status !== undefined && status !== 429 && status < 500) break;
+      if (status !== undefined && ep.fatal(status)) break;
     }
   }
   throw last;
@@ -184,17 +197,25 @@ async function chatWithFallback(ep: Endpoint, models: string[], args: ChatArgs, 
 export async function mistralChat(args: ChatArgs, fetchImpl: typeof fetch = fetch, env: Record<string, string | undefined> = process.env): Promise<string> {
   const key = mistralKey(env);
   if (!key) throw new MistralError("MistralNoKey");
-  return chatWithFallback({ label: "Mistral", url: MISTRAL_URL, jsonMode: true }, mistralModelsFromEnv(env.MISTRAL_MODELS), args, key, fetchImpl);
+  // Bei Mistral direkt hilft ein anderes Modell nur bei Überlastung (429) und Serverfehlern; ein falscher Schlüssel oder eine falsche Anfrage bricht ab.
+  const fatal = (status: number) => status !== 429 && status < 500;
+  return chatWithFallback({ label: "Mistral", url: MISTRAL_URL, jsonMode: true, fatal }, mistralModelsFromEnv(env.MISTRAL_MODELS), args, key, fetchImpl);
 }
 
 /**
- * Eine Anfrage an OpenRouter. Ohne `response_format`: Nicht jeder Anbieter eines kostenlosen Modells unterstützt es, und OpenRouter
- * antwortet dann mit 404 «No endpoints found». Das JSON verlangt die Anweisung, gelesen wird es mit parseJsonObject.
+ * Eine Anfrage an OpenRouter.
+ * - Ohne `response_format`: Nicht jeder Anbieter eines kostenlosen Modells unterstützt es, und OpenRouter antwortet dann mit 404
+ *   «No endpoints found». Das JSON verlangt die Anweisung, gelesen wird es mit parseJsonObject.
+ * - Mit `reasoning: { enabled: false }`: Modelle, die erst «denken», brauchten sonst die ganze Ausgabegrenze dafür und lieferten eine
+ *   leere Antwort (am 05.10.2026 bei Nemotron 3 Super und Qwen 3.8 gemessen). Ein Modell, das das nicht erlaubt, antwortet mit 400:
+ *   dann gilt das nächste.
+ * - Ein anderes Modell hilft bei jedem Fehler ausser einem ungültigen Schlüssel (401).
  */
 export async function openrouterChat(args: ChatArgs, fetchImpl: typeof fetch = fetch, env: Record<string, string | undefined> = process.env): Promise<string> {
   const key = openrouterKey(env);
   if (!key) throw new MistralError("OpenRouterNoKey");
-  return chatWithFallback({ label: "OpenRouter", url: OPENROUTER_URL, jsonMode: false }, openrouterModelsFromEnv(env.OPENROUTER_MODELS), args, key, fetchImpl);
+  const ep: Endpoint = { label: "OpenRouter", url: OPENROUTER_URL, jsonMode: false, extra: { reasoning: { enabled: false } }, fatal: (status) => status === 401 };
+  return chatWithFallback(ep, openrouterModelsFromEnv(env.OPENROUTER_MODELS), args, key, fetchImpl);
 }
 
 export type GenerateRaw = (fakten: Fakten) => Promise<unknown>;

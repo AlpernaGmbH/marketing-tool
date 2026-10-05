@@ -177,7 +177,7 @@ describe("OpenRouter", () => {
     expect(DEFAULT_OPENROUTER_MODELS.every((m) => m.endsWith(":free"))).toBe(true);
     expect(openrouterModelsFromEnv(" google/gemma-4-31b-it:free , qwen/qwen3.8-27b:free ")).toEqual(["google/gemma-4-31b-it:free", "qwen/qwen3.8-27b:free"]);
     expect(openrouterModelsFromEnv("../x,;drop,http://a,ohne-anbieter")).toEqual(DEFAULT_OPENROUTER_MODELS);
-    expect(openrouterModelsFromEnv("a/a,b/b,c/c,d/d")).toHaveLength(3);
+    expect(openrouterModelsFromEnv("a/a,b/b,c/c,d/d,e/e,f/f")).toHaveLength(5);
   });
 
   it("schickt Schlüssel und Nachrichten an OpenRouter, ohne response_format, und gibt den Text zurück", async () => {
@@ -190,6 +190,7 @@ describe("OpenRouter", () => {
     const body = bodyOf(fetchImpl);
     expect(body).toMatchObject({ model: DEFAULT_OPENROUTER_MODELS[0], temperature: 0.4, max_tokens: 300 });
     expect(body.response_format).toBeUndefined();
+    expect(body.reasoning).toEqual({ enabled: false });
     expect(body.messages).toEqual([
       { role: "system", content: "Regeln" },
       { role: "user", content: "Ausgangstext" },
@@ -206,12 +207,18 @@ describe("OpenRouter", () => {
     expect(bodyOf(empty, 2).model).toBe(DEFAULT_OPENROUTER_MODELS[2]);
   });
 
-  it("versucht bei falschem Schlüssel oder falscher Anfrage nichts weiter und nennt die Fehlerart", async () => {
-    for (const status of [401, 402, 404]) {
-      const fetchImpl = vi.fn(async () => fail(status));
-      await expect(openrouterChat(ARGS, asFetch(fetchImpl), ENV)).rejects.toMatchObject({ name: "OpenRouterHttpError", statusCode: status });
-      expect(fetchImpl).toHaveBeenCalledTimes(1);
+  it("versucht bei einem ungültigen Schlüssel (401) nichts weiter, bei allen anderen Fehlern das nächste Modell", async () => {
+    const key = vi.fn(async () => fail(401));
+    await expect(openrouterChat(ARGS, asFetch(key), ENV)).rejects.toMatchObject({ name: "OpenRouterHttpError", statusCode: 401 });
+    expect(key).toHaveBeenCalledTimes(1);
+    for (const status of [400, 402, 404]) {
+      const fetchImpl = vi.fn().mockResolvedValueOnce(fail(status)).mockResolvedValueOnce(ok("Nächstes Modell."));
+      expect(await openrouterChat(ARGS, asFetch(fetchImpl), ENV)).toBe("Nächstes Modell.");
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
     }
+    const all = vi.fn(async () => fail(404));
+    await expect(openrouterChat(ARGS, asFetch(all), ENV)).rejects.toMatchObject({ name: "OpenRouterHttpError", statusCode: 404 });
+    expect(all).toHaveBeenCalledTimes(DEFAULT_OPENROUTER_MODELS.length);
     expect(describeAiError(new MistralError("OpenRouterHttpError", 429))).toBe("OpenRouterHttpError:429");
   });
 
