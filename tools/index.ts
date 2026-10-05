@@ -34,6 +34,7 @@ import engagementRateConfig from "./engagement-rate/tool.config";
 import anlassPlanerConfig from "./anlass-planer/tool.config";
 import angebotsarchitekturConfig from "./angebotsarchitektur/tool.config";
 import kpiBaumConfig from "./kpi-baum/tool.config";
+import storyPostConfig from "./story-post/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -74,5 +75,6 @@ export const tools: ToolConfig[] = [
   anlassPlanerConfig,
   angebotsarchitekturConfig,
   kpiBaumConfig,
+  storyPostConfig,
   // new-tool:configs
 ];

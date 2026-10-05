@@ -1971,6 +1971,38 @@ test.describe("Welle 8 im Browser (Rechner und Planer)", () => {
 
 });
 
+test.describe("Welle 9 im Browser (Planer und Bausteine)", () => {
+  test("Story-Post-Builder: leere Felder werden gemeldet, sechs Antworten ergeben LinkedIn- und Instagram-Fassung, Word-Download, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/story-post");
+    await hydrated(page.getByRole("button", { name: "Beitrag zusammenstellen" }));
+    await page.getByRole("button", { name: "Beitrag zusammenstellen" }).click();
+    await expect(page.locator("#sp-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#sp-firma").fill("Malerei Keller");
+    await page.locator("#sp-ausgangslage").fill("Frau Z. aus Gossau rief an: Ihre Fassade blätterte nach drei Wintern ab.");
+    await page.locator("#sp-problem").fill("Zwei andere Maler hatten nur übergestrichen und die Feuchte nicht beachtet.");
+    await page.locator("#sp-wendepunkt").fill("Wir haben erst die Feuchte im Putz gemessen und dann die Farbe gewählt.");
+    await page.locator("#sp-ergebnis").fill("Die Fassade hält seit zwei Jahren.");
+    await page.locator("#sp-lehre").fill("Erst messen, dann streichen, so hält der Anstrich länger.");
+    await page.locator("#sp-bezug").fill("Wie ist das bei deinem Haus?");
+    await page.getByRole("button", { name: "Beitrag zusammenstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Beitrag" })).toBeVisible();
+    await expect(page.getByTestId("sp-linkedin-text")).toContainText("Die Fassade hält seit zwei Jahren.");
+    await expect(page.getByTestId("sp-instagram-counter")).toContainText("Zeichen");
+    await expect(page.getByTestId("sp-lesezeit")).toContainText("Lesezeit");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Word herunterladen" }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.docx$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("story-post");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Ausgangslage: Frau Z.");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Beitrag" })).toBeVisible();
+  });
+
+  // new-wave-9:tests
+});
+
 test.describe("Zugang v3 über die Routen", () => {
   /** Eigener Kontext ohne Cookies; mt_gate wird wie in einem Browser von Hand mitgeführt (der Cookie-Jar der Fixture schickt «Secure»-Cookies nicht über http). */
   async function client(playwright: PlaywrightWorkerArgs["playwright"]) {
