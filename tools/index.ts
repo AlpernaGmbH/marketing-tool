@@ -20,6 +20,7 @@ import bewertungsKitConfig from "./bewertungs-kit/tool.config";
 import budgetPlanerConfig from "./budget-planer/tool.config";
 import strategieEinseiterConfig from "./strategie-einseiter/tool.config";
 import captionBaukastenConfig from "./caption-baukasten/tool.config";
+import gbpFeiertageConfig from "./gbp-feiertage/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -46,5 +47,6 @@ export const tools: ToolConfig[] = [
   budgetPlanerConfig,
   strategieEinseiterConfig,
   captionBaukastenConfig,
+  gbpFeiertageConfig,
   // new-tool:configs
 ];

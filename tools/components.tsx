@@ -26,5 +26,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "budget-planer": dynamic(() => import("./budget-planer/Tool")),
   "strategie-einseiter": dynamic(() => import("./strategie-einseiter/Tool")),
   "caption-baukasten": dynamic(() => import("./caption-baukasten/Tool")),
+  "gbp-feiertage": dynamic(() => import("./gbp-feiertage/Tool")),
   // new-tool:components
 };

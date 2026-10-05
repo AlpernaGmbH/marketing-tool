@@ -1339,6 +1339,33 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     await expect(page.getByRole("region", { name: "Dein Marketing-Budget" })).toBeVisible();
   });
 
+  test("Feiertagsplaner: ohne Kanton eine Meldung, mit Kanton Liste, Kalender-Download, Lead mit Kanton und Tagen, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/gbp-feiertage");
+    await page.getByRole("button", { name: "Liste erstellen" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Kanton" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#gf-kanton").selectOption("SG");
+    await page.locator("#gf-jahr").selectOption("2027");
+    await page.getByRole("button", { name: "Liste erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Sonderöffnungszeiten" })).toBeVisible();
+    await expect(page.getByTestId("sonderzeiten")).toContainText("Karfreitag");
+    const ics = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Kalender (.ics) herunterladen" }).click();
+    expect((await ics).suggestedFilename()).toBe("sonderoeffnungszeiten-sg-2027.ics");
+    const csv = page.waitForEvent("download");
+    await page.getByRole("button", { name: "CSV herunterladen" }).click();
+    expect((await csv).suggestedFilename()).toBe("sonderoeffnungszeiten-sg-2027.csv");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("gbp-feiertage");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Kanton: St. Gallen (SG)");
+    expect(lead.ausgabe).toContain("Karfreitag");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Sonderöffnungszeiten" })).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+
   test("Caption-Baukasten: drei Schritte, Fenster vor dem Ergebnis, Vorschau je Plattform, Lead mit Hook und Texten, Neuladen", async ({ page, request }) => {
     await page.goto("/tools/caption-baukasten");
     await page.getByRole("button", { name: "Weiter" }).click();

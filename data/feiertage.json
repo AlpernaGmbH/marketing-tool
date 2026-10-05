@@ -1,0 +1,502 @@
+{
+  "meta": {
+    "source": "Kantonale Ruhetags- und Feiertagsregelungen der 18 Kantone unter «quellen» (Gesetzessammlungen und Seiten der Kantone, am 05.10.2026 geöffnet). Für Neujahr, Auffahrt und Weihnachtstag in allen Kantonen: Bundesamt für Justiz, «Gesetzliche Feiertage und Tage, die in der Schweiz wie gesetzliche Feiertage behandelt werden», Stand 1. Januar 2011 (Vorbemerkung 2). Für den Bundesfeiertag: SECO, «Freizeit und Feiertage».",
+    "url": "https://www.bj.admin.ch/dam/de/sd-web/MW4dthCLc4Nv/kant-feiertage.pdf",
+    "asOf": "2026-10-05",
+    "note": "Belegt sind AG, AI, AR, BE, BL, BS, GL, GR, LU, NW, OW, SG, SH, SZ, TG, UR, ZG und ZH, je mit der Quelle unter «quellen». Für FR, GE, JU, NE, SO, TI, VD und VS fehlt eine geöffnete Quelle: Das Werkzeug zeigt dort nur Neujahr, Auffahrt, den 1. August und Weihnachten und sagt, dass die Liste nicht geprüft ist. «gesetzlich» heisst: Die Quelle nennt den Tag als Feiertag oder öffentlichen Ruhetag des Kantons. «ortsueblich» heisst: Der Tag gilt nur in Teilen des Kantons (Bezirk, Gemeinde, innerer Landesteil). Bewegliche Tage stehen als Abstand zum Ostersonntag (Karfreitag -2, Ostermontag +1, Auffahrt +39, Pfingstmontag +50, Fronleichnam +60); das Datum berechnet logic.ts mit der Gauss-Osterformel. Feste Daten kirchlicher Feiertage nennen NW und OW in ihren Gesetzen (Josefstag 19. März, Maria Himmelfahrt 15. August, Bruderklausenfest 25. September, Allerheiligen 1. November, Maria Empfängnis 8. Dezember); für die übrigen Kantone stammen die Daten (Berchtoldstag 2. Januar, Dreikönigstag 6. Januar, Josefstag 19. März, Maria Himmelfahrt 15. August, Mauritiustag 22. September, Allerheiligen 1. November, Maria Empfängnis 8. Dezember) aus dem Verzeichnis des Bundesamts für Justiz. Der Tag der Näfelser Fahrt (GL) steht nur für 2026 und 2027 auf gl.ch. Das Verzeichnis des Bundesamts für Justiz (Stand 1. Januar 2011) dient der Berechnung von Fristen und ist laut den Hinweisen des Bundesamts (Stand 17.12.2012) keine allgemeine Liste der Ruhe- oder Feiertage der Kantone; dafür gelten die Regelungen der Kantone. Es dient hier nur für Neujahr, Auffahrt und Weihnachtstag in den nicht belegten Kantonen und als Quelle fester Daten. Nicht aufgenommen, weil nicht im Ruhetagsrecht des Kantons genannt oder ohne Datum in der Quelle: Sechseläuten, Knabenschiessen und Fasnachtsmontag (ZH, lokal), Berchtoldstag in ZH, SH, SG, GL, AI, LU, OW, NW und ZG, Ostermontag, Pfingstmontag und Stephanstag in NW, OW und ZG sowie Gemeindefeiertage und Patroziniumsfeste."
+  },
+  "jahre": [
+    2026,
+    2027
+  ],
+  "bund": [
+    {
+      "titel": "SECO, Freizeit und Feiertage (FAQ): Der 1. August ist der einzige eidgenössische Feiertag und arbeitsgesetzlich den Sonntagen gleichgestellt",
+      "url": "https://www.seco.admin.ch/de/faq-freizeit-und-feiertage",
+      "stand": "Seite ohne Datum, am 05.10.2026 geöffnet"
+    },
+    {
+      "titel": "Bundesamt für Justiz, Gesetzliche Feiertage und Tage, die in der Schweiz wie gesetzliche Feiertage behandelt werden: Neujahr, Auffahrt und Weihnachtstag haben alle Kantone als gesetzliche Feiertage bezeichnet",
+      "url": "https://www.bj.admin.ch/dam/de/sd-web/MW4dthCLc4Nv/kant-feiertage.pdf",
+      "stand": "1. Januar 2011"
+    },
+    {
+      "titel": "Bundesamt für Justiz, Hinweise zum Verzeichnis: Das Verzeichnis dient der Berechnung von Fristen und ist keine allgemeine Liste der Ruhe- oder Feiertage der Kantone",
+      "url": "https://www.bj.admin.ch/dam/de/sd-web/4Ad6GMn8rA0i/hinweise-kant-feiertage.pdf",
+      "stand": "17.12.2012"
+    }
+  ],
+  "quellen": {
+    "AG": {
+      "titel": "Einführungsgesetz zum Arbeitsrecht (EG ArR, SAR 961.200), § 6: den Sonntagen gleichgestellte Feiertage je Bezirk und Gemeinde",
+      "url": "https://gesetzessammlungen.ag.ch/app/de/texts_of_law/961.200",
+      "stand": "aktuelle Fassung, am 05.10.2026 geöffnet"
+    },
+    "AI": {
+      "titel": "Gesetz über die öffentlichen Ruhetage (GS 822.200): Sonntage gleichgestellte Feiertage und lokale Feiertage",
+      "url": "https://ai.clex.ch/app/de/texts_of_law/822.200",
+      "stand": "Stand 01.01.2011 laut Seite"
+    },
+    "AR": {
+      "titel": "Kanton Appenzell Ausserrhoden, Hallo AR: Öffnungszeiten / Feiertage",
+      "url": "https://www.hallo-ar.ch/de/gut-zu-wissen/oeffnungszeiten-feiertage",
+      "stand": "Seite ohne Datum, am 05.10.2026 geöffnet"
+    },
+    "BE": {
+      "titel": "Gesetz über die Ruhe an öffentlichen Feiertagen (FRG, BSG 555.1)",
+      "url": "https://www.belex.sites.be.ch/app/de/texts_of_law/555.1",
+      "stand": "Stand 01.04.2021 laut Seite"
+    },
+    "BL": {
+      "titel": "Kanton Basel-Landschaft, Ruhetagsgesetz (Seite des Kantons)",
+      "url": "https://www.baselland.ch/politik-und-behorden/direktionen/volkswirtschafts-und-gesundheitsdirektion/kiga/alles-rund-ums-thema-arbeit/arbeitnehmerschutz/ruhetagsgesetz",
+      "stand": "Seite ohne Datum, am 05.10.2026 geöffnet"
+    },
+    "BS": {
+      "titel": "Kanton Basel-Stadt, Feiertage im Kanton Basel-Stadt (neun gesetzliche Feiertage)",
+      "url": "https://www.bs.ch/themen/arbeit-und-steuern/feiertage-im-kanton-basel-stadt",
+      "stand": "Seite geändert am 28.07.2026"
+    },
+    "GL": {
+      "titel": "Gesetz über die öffentlichen Ruhetage (GS IX B/21/1), allgemeine Feiertage",
+      "url": "https://gesetze.gl.ch/app/de/texts_of_law/IX%20B%2F21%2F1",
+      "stand": "aktuelle Fassung, am 05.10.2026 geöffnet",
+      "weitere": [
+        {
+          "titel": "Kanton Glarus, Öffentliche Feiertage (Datum der Näfelser Fahrt 2026 und 2027)",
+          "url": "https://www.gl.ch/verwaltung/staatskanzlei/oeffentliche-feiertage.html/1335",
+          "stand": "Seite ohne Datum, am 05.10.2026 geöffnet"
+        }
+      ]
+    },
+    "GR": {
+      "titel": "Gesetz über die öffentlichen Ruhetage (BR 520.100), Art. 2",
+      "url": "https://www.gr-lex.gr.ch/app/de/texts_of_law/520.100",
+      "stand": "Stand 01.01.2016 laut Seite"
+    },
+    "LU": {
+      "titel": "Gesetz über die Ruhetage und die Öffnungs- und Schliessungszeiten der Verkaufsgeschäfte (SRL 855), § 1a",
+      "url": "https://srl.lu.ch/app/de/texts_of_law/855",
+      "stand": "Stand 27.09.2026 laut Seite"
+    },
+    "NW": {
+      "titel": "Gesetz über die öffentlichen Ruhetage (NG 921.1), Art. 2",
+      "url": "https://gesetze.nw.ch/app/de/texts_of_law/921.1",
+      "stand": "Stand 01.01.2016 laut Seite"
+    },
+    "OW": {
+      "titel": "Gesetz über die öffentlichen Ruhetage (GDB 975.2)",
+      "url": "https://gdb.ow.ch/app/de/texts_of_law/975.2",
+      "stand": "Stand 01.08.2009 laut Seite"
+    },
+    "SG": {
+      "titel": "Gesetz über Ruhetag und Ladenöffnung (RLG, sGS 552.1), Art. 2",
+      "url": "https://www.gesetzessammlung.sg.ch/app/de/texts_of_law/552.1",
+      "stand": "Stand 22.01.2008 laut Seite"
+    },
+    "SH": {
+      "titel": "Gesetz betreffend die öffentlichen Ruhetage und den Ladenschluss (SHR 900.200)",
+      "url": "https://rechtsbuch.sh.ch/app/de/texts_of_law/900.200",
+      "stand": "Stand 01.01.2007 laut Seite"
+    },
+    "SZ": {
+      "titel": "Kanton Schwyz, Feiertagsregelung (Merkblatt)",
+      "url": "https://www.sz.ch/public/upload/assets/36693/Feiertagsregelung_Kanton_Schwyz.pdf?fp=3",
+      "stand": "Merkblatt ohne Datum, am 05.10.2026 geöffnet"
+    },
+    "TG": {
+      "titel": "Ruhetagsgesetz (RB 822.9), § 1",
+      "url": "https://www.rechtsbuch.tg.ch/app/de/texts_of_law/822.9/versions/2949",
+      "stand": "Stand 01.01.2026 laut Seite"
+    },
+    "UR": {
+      "titel": "Gesetz über den Ladenschluss und die Sonntagsruhe (RB 70.1421)",
+      "url": "https://rechtsbuch.ur.ch/app/de/texts_of_law/70.1421",
+      "stand": "Gesetz in Kraft seit 01.01.2003 laut Seite"
+    },
+    "ZG": {
+      "titel": "Ruhetags- und Ladenöffnungsgesetz (BGS 942.31), § 1",
+      "url": "https://bgs.zg.ch/app/de/texts_of_law/942.31",
+      "stand": "Stand 22.08.2025 laut Seite"
+    },
+    "ZH": {
+      "titel": "Kanton Zürich, Feiertage (gesetzliche Feiertage 2026 und 2027)",
+      "url": "https://www.zh.ch/de/wirtschaft-arbeit/arbeitsbedingungen/arbeitsssicherheit-gesundheitsschutz/arbeits-ruhezeiten/feiertage.html",
+      "stand": "Seite ohne Datum, am 05.10.2026 geöffnet"
+    }
+  },
+  "hinweise": {
+    "AG": "Im Aargau hängen die Feiertage vom Bezirk und teilweise von der Gemeinde ab. Für den ganzen Kanton gelten Neujahr, Karfreitag, Auffahrt, der 1. August und Weihnachten. Die übrigen Tage sind als «ortsüblich» aufgeführt, mit den Bezirken, in denen sie gelten. Sie stehen zuerst auf «nicht eintragen».",
+    "AI": "Der Mauritiustag gilt nur im inneren Landesteil. Maria Himmelfahrt, Allerheiligen und Maria Empfängnis führt das Ruhetagsgesetz als lokale Feiertage.",
+    "GR": "Die Gemeinden können weitere konfessionelle Feiertage als lokale Ruhetage bezeichnen. Frag bei deiner Gemeinde nach.",
+    "LU": "Einzelne Gemeinden erklären zusätzlich den Josefstag oder das Patroziniumsfest ihrer Kirchgemeinde zum öffentlichen Ruhetag. Frag bei deiner Gemeinde nach.",
+    "NW": "Die politischen Gemeinden können weitere Feiertage in einem Reglement bezeichnen. Frag bei deiner Gemeinde nach.",
+    "OW": "Die Einwohnergemeinden können einen Lokalfeiertag festlegen. Frag bei deiner Gemeinde nach.",
+    "SH": "Das Ruhetagsgesetz nennt den Berchtoldstag (2. Januar) nicht. Ob du an diesem Tag schliesst, entscheidest du.",
+    "SZ": "Einzelne Gemeinden und der Bezirk Einsiedeln kennen weitere Feiertage (zum Beispiel Antoniustag in Rothenthurm oder Meinradstag in Einsiedeln). Frag bei deiner Gemeinde nach.",
+    "UR": "Die Gemeinden können weitere Feiertage für ihr Gebiet bezeichnen. Frag bei deiner Gemeinde nach.",
+    "ZH": "Lokale Tage wie Sechseläuten, Fasnachtsmontag, Knabenschiessen oder Berchtoldstag sind laut Kanton keine gesetzlichen Feiertage. Ob du an diesen Tagen schliesst, entscheidest du."
+  },
+  "feiertage": [
+    {
+      "id": "neujahr",
+      "name": "Neujahrstag",
+      "datum": "fix:01-01",
+      "kantone": "alle",
+      "art": "gesetzlich"
+    },
+    {
+      "id": "auffahrt",
+      "name": "Auffahrt",
+      "datum": "ostern:+39",
+      "kantone": "alle",
+      "art": "gesetzlich"
+    },
+    {
+      "id": "bundesfeier",
+      "name": "Bundesfeiertag",
+      "datum": "fix:08-01",
+      "kantone": "alle",
+      "art": "gesetzlich"
+    },
+    {
+      "id": "weihnachten",
+      "name": "Weihnachtstag",
+      "datum": "fix:12-25",
+      "kantone": "alle",
+      "art": "gesetzlich"
+    },
+    {
+      "id": "berchtoldstag",
+      "name": "Berchtoldstag",
+      "datum": "fix:01-02",
+      "kantone": [
+        "BE",
+        "TG"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "berchtoldstag",
+      "name": "Berchtoldstag",
+      "datum": "fix:01-02",
+      "kantone": [
+        "AG"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Bezirken Aarau, Brugg, Kulm, Lenzburg, Zofingen und Zurzach sowie in der Gemeinde Bergdietikon."
+    },
+    {
+      "id": "dreikoenig",
+      "name": "Dreikönigstag",
+      "datum": "fix:01-06",
+      "kantone": [
+        "SZ",
+        "UR"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "josefstag",
+      "name": "Josefstag",
+      "datum": "fix:03-19",
+      "kantone": [
+        "NW",
+        "SZ",
+        "UR"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "karfreitag",
+      "name": "Karfreitag",
+      "datum": "ostern:-2",
+      "kantone": [
+        "AG",
+        "AI",
+        "AR",
+        "BE",
+        "BL",
+        "BS",
+        "GL",
+        "GR",
+        "LU",
+        "NW",
+        "OW",
+        "SG",
+        "SH",
+        "SZ",
+        "TG",
+        "UR",
+        "ZG",
+        "ZH"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "fahrtsfest",
+      "name": "Näfelser Fahrt",
+      "datum": "fix-jahr:2026-04-09",
+      "kantone": [
+        "GL"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "fahrtsfest",
+      "name": "Näfelser Fahrt",
+      "datum": "fix-jahr:2027-04-01",
+      "kantone": [
+        "GL"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "ostermontag",
+      "name": "Ostermontag",
+      "datum": "ostern:+1",
+      "kantone": [
+        "AI",
+        "AR",
+        "BE",
+        "BL",
+        "BS",
+        "GL",
+        "GR",
+        "SG",
+        "SH",
+        "SZ",
+        "TG",
+        "UR",
+        "ZH"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "ostermontag",
+      "name": "Ostermontag",
+      "datum": "ostern:+1",
+      "kantone": [
+        "AG"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Bezirken Aarau, Brugg, Kulm, Lenzburg, Zofingen und Baden sowie in den Gemeinden Kaiseraugst, Magden, Möhlin, Olsberg, Rheinfelden, Wallbach, Zeiningen und Zuzgen."
+    },
+    {
+      "id": "tag-der-arbeit",
+      "name": "Tag der Arbeit",
+      "datum": "fix:05-01",
+      "kantone": [
+        "BL",
+        "BS",
+        "SH",
+        "TG",
+        "ZH"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "pfingstmontag",
+      "name": "Pfingstmontag",
+      "datum": "ostern:+50",
+      "kantone": [
+        "AI",
+        "AR",
+        "BE",
+        "BL",
+        "BS",
+        "GL",
+        "GR",
+        "SG",
+        "SH",
+        "SZ",
+        "TG",
+        "UR",
+        "ZH"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "pfingstmontag",
+      "name": "Pfingstmontag",
+      "datum": "ostern:+50",
+      "kantone": [
+        "AG"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Bezirken Aarau, Brugg, Kulm, Lenzburg, Zofingen und Baden sowie in den Gemeinden Kaiseraugst, Magden, Möhlin, Olsberg, Rheinfelden, Wallbach, Zeiningen und Zuzgen."
+    },
+    {
+      "id": "fronleichnam",
+      "name": "Fronleichnam",
+      "datum": "ostern:+60",
+      "kantone": [
+        "AI",
+        "LU",
+        "NW",
+        "OW",
+        "SZ",
+        "UR",
+        "ZG"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "fronleichnam",
+      "name": "Fronleichnam",
+      "datum": "ostern:+60",
+      "kantone": [
+        "AG"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur im Bezirk Baden (ohne Bergdietikon), in den Bezirken Bremgarten, Laufenburg, Muri und Zurzach sowie in den Gemeinden Hellikon, Mumpf, Obermumpf, Schupfart, Stein und Wegenstetten."
+    },
+    {
+      "id": "maria-himmelfahrt",
+      "name": "Maria Himmelfahrt",
+      "datum": "fix:08-15",
+      "kantone": [
+        "AI",
+        "LU",
+        "NW",
+        "OW",
+        "SZ",
+        "UR",
+        "ZG"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "maria-himmelfahrt",
+      "name": "Maria Himmelfahrt",
+      "datum": "fix:08-15",
+      "kantone": [
+        "AG"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Bezirken Bremgarten, Laufenburg und Muri sowie in den Gemeinden Hellikon, Mumpf, Obermumpf, Schupfart, Stein und Wegenstetten."
+    },
+    {
+      "id": "mauritiustag",
+      "name": "Mauritiustag",
+      "datum": "fix:09-22",
+      "kantone": [
+        "AI"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur im inneren Landesteil von Appenzell Innerrhoden."
+    },
+    {
+      "id": "bruderklausenfest",
+      "name": "Bruderklausenfest",
+      "datum": "fix:09-25",
+      "kantone": [
+        "OW"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "allerheiligen",
+      "name": "Allerheiligen",
+      "datum": "fix:11-01",
+      "kantone": [
+        "AI",
+        "GL",
+        "LU",
+        "NW",
+        "OW",
+        "SG",
+        "SZ",
+        "UR",
+        "ZG"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "allerheiligen",
+      "name": "Allerheiligen",
+      "datum": "fix:11-01",
+      "kantone": [
+        "AG"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Bezirken Bremgarten, Laufenburg, Muri, Rheinfelden und Zurzach."
+    },
+    {
+      "id": "maria-empfaengnis",
+      "name": "Maria Empfängnis",
+      "datum": "fix:12-08",
+      "kantone": [
+        "AI",
+        "LU",
+        "NW",
+        "OW",
+        "SZ",
+        "UR",
+        "ZG"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "maria-empfaengnis",
+      "name": "Maria Empfängnis",
+      "datum": "fix:12-08",
+      "kantone": [
+        "AG"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Bezirken Laufenburg und Muri sowie in den Gemeinden Hellikon, Mumpf, Obermumpf, Schupfart, Stein und Wegenstetten."
+    },
+    {
+      "id": "stephanstag",
+      "name": "Stephanstag",
+      "datum": "fix:12-26",
+      "kantone": [
+        "BE",
+        "BL",
+        "BS",
+        "GL",
+        "GR",
+        "LU",
+        "SG",
+        "SH",
+        "SZ",
+        "TG",
+        "UR",
+        "ZH"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "stephanstag",
+      "name": "Stephanstag",
+      "datum": "fix:12-26",
+      "kantone": [
+        "AR"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Der Stephanstag wird nicht gefeiert, wenn der Weihnachtstag auf einen Montag oder Freitag fällt.",
+      "bedingung": "weihnachten-nicht-mo-fr"
+    },
+    {
+      "id": "stephanstag",
+      "name": "Stephanstag",
+      "datum": "fix:12-26",
+      "kantone": [
+        "AI"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Der Stephanstag gilt nur, wenn durch ihn nicht drei Ruhetage aufeinander folgen. Prüfe das für dein Jahr."
+    },
+    {
+      "id": "stephanstag",
+      "name": "Stephanstag",
+      "datum": "fix:12-26",
+      "kantone": [
+        "AG"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Bezirken Aarau, Brugg, Kulm, Lenzburg, Zofingen, Baden, Bremgarten und Zurzach sowie in den Gemeinden Kaiseraugst, Magden, Möhlin, Olsberg, Rheinfelden, Wallbach, Zeiningen und Zuzgen."
+    }
+  ]
+}
