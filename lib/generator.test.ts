@@ -28,6 +28,11 @@ describe("parseJsonObject", () => {
     expect(parseJsonObject('```json\n{"a": 1}\n```')).toEqual({ a: 1 });
     expect(parseJsonObject('Hier dein Entwurf: {"a": {"b": [1, 2]}} Gern.')).toEqual({ a: { b: [1, 2] } });
   });
+  it("liest auch Zeichenketten mit echten Zeilenumbrüchen und Tabs (Absätze, die ein Modell nicht maskiert hat)", () => {
+    const text = '```json\n{"hooks": ["Warum?"], "hauptteil": "Erster Absatz.\n\nZweiter \\"Absatz\\" mit\tTab.", "n": 2}\n```';
+    expect(parseJsonObject(text)).toEqual({ hooks: ["Warum?"], hauptteil: 'Erster Absatz.\n\nZweiter "Absatz" mit\tTab.', n: 2 });
+    expect(parseJsonObject('{"a": "Pfad C:\\\\x\nneu"}')).toEqual({ a: "Pfad C:\\x\nneu" });
+  });
   it("gibt null bei Listen, Müll und fehlendem Objekt", () => {
     expect(parseJsonObject("[1,2]")).toBeNull();
     expect(parseJsonObject("kein json")).toBeNull();

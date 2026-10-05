@@ -124,7 +124,16 @@ export class MistralError extends Error {
   }
 }
 
-type ChatArgs = { system: string; prompt: string; maxTokens: number; temperature: number; json?: boolean; timeoutMs: number };
+type ChatArgs = {
+  system: string;
+  prompt: string;
+  maxTokens: number;
+  temperature: number;
+  json?: boolean;
+  timeoutMs: number;
+  /** Prüft die Antwort; fällt sie durch, gilt das nächste Modell (zum Beispiel: enthält die Antwort ein lesbares JSON-Objekt). */
+  accept?: (text: string) => boolean;
+};
 
 function contentText(content: unknown): string {
   if (typeof content === "string") return content;
@@ -178,12 +187,17 @@ async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string
   return text;
 }
 
-/** Eine Anfrage mit Rückfall auf das nächste Modell der Liste, wenn das erste ausfiel, zu langsam oder leer war (siehe `fatal`). */
+/** Eine Anfrage mit Rückfall auf das nächste Modell der Liste, wenn das erste ausfiel, zu langsam, leer oder nicht brauchbar (`accept`) war (siehe `fatal`). */
 async function chatWithFallback(ep: Endpoint, models: string[], args: ChatArgs, key: string, fetchImpl: typeof fetch): Promise<string> {
   let last: unknown;
   for (const model of models) {
     try {
-      return await chatOnce(ep, model, args, key, fetchImpl);
+      const text = await chatOnce(ep, model, args, key, fetchImpl);
+      if (args.accept && !args.accept(text)) {
+        last = new MistralError("AiBadJson");
+        continue;
+      }
+      return text;
     } catch (e) {
       last = e;
       const status = e instanceof MistralError ? e.statusCode : undefined;
@@ -226,7 +240,7 @@ export const generateRaw: GenerateRaw = async (fakten) => {
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000 });
+    const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000, accept: (t) => parseJsonObject(t) !== null });
     const value = parseJsonObject(text); // geprüft wird danach in pruefeEinordnung
     if (value === null) throw new MistralError("AiBadJson");
     return value;
@@ -263,7 +277,7 @@ export const generateJson: GenerateJson = async ({ system, prompt, maxOutputToke
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000 });
+    text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000, accept: (t) => parseJsonObject(t) !== null });
   } else {
     const [model, ...fallbacks] = modelsFromEnv();
     const out = await generateText({

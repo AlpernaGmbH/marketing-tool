@@ -59,12 +59,38 @@ export function parseJsonObject(text: string): unknown | null {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   if (start < 0 || end <= start) return null;
-  try {
-    const value = JSON.parse(text.slice(start, end + 1)) as unknown;
-    return typeof value === "object" && value !== null && !Array.isArray(value) ? value : null;
-  } catch {
-    return null;
+  const slice = text.slice(start, end + 1);
+  for (const candidate of [slice, escapeControlInStrings(slice)]) {
+    try {
+      const value = JSON.parse(candidate) as unknown;
+      return typeof value === "object" && value !== null && !Array.isArray(value) ? value : null;
+    } catch {
+      // nächster Versuch
+    }
   }
+  return null;
+}
+
+/**
+ * Modelle schreiben Absätze oft als echte Zeilenumbrüche in eine JSON-Zeichenkette (am 05.10.2026 bei Mistral Large gemessen);
+ * das ist kein gültiges JSON. Hier werden Zeilenumbrüche, Wagenrückläufe und Tabs innerhalb von Zeichenketten maskiert.
+ */
+function escapeControlInStrings(json: string): string {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+  for (const ch of json) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      else if (ch === "\n") { out += "\\n"; continue; }
+      else if (ch === "\r") continue;
+      else if (ch === "\t") { out += "\\t"; continue; }
+    } else if (ch === '"') inString = true;
+    out += ch;
+  }
+  return out;
 }
 
 /** Alle Zeichenketten in einer Ausgabe (auch verschachtelt), in fester Reihenfolge. */

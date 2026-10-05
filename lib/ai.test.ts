@@ -222,6 +222,16 @@ describe("OpenRouter", () => {
     expect(describeAiError(new MistralError("OpenRouterHttpError", 429))).toBe("OpenRouterHttpError:429");
   });
 
+  it("versucht das nächste Modell, wenn die Antwort nicht angenommen wird (kein lesbares JSON)", async () => {
+    const accept = (t: string) => t.startsWith("{");
+    const fetchImpl = vi.fn().mockResolvedValueOnce(ok("Hier dein Text ohne JSON.")).mockResolvedValueOnce(ok('{"a": 1}'));
+    expect(await openrouterChat({ ...ARGS, accept }, asFetch(fetchImpl), ENV)).toBe('{"a": 1}');
+    expect(bodyOf(fetchImpl, 1).model).toBe(DEFAULT_OPENROUTER_MODELS[1]);
+    const none = vi.fn(async () => ok("immer Text"));
+    await expect(openrouterChat({ ...ARGS, accept }, asFetch(none), ENV)).rejects.toMatchObject({ name: "AiBadJson" });
+    expect(none).toHaveBeenCalledTimes(DEFAULT_OPENROUTER_MODELS.length);
+  });
+
   it("wirft ohne Schlüssel und bei Netzfehlern mit lesbarer Fehlerart", async () => {
     await expect(openrouterChat(ARGS, asFetch(vi.fn()), {})).rejects.toMatchObject({ name: "OpenRouterNoKey" });
     const net = vi.fn(async () => {
