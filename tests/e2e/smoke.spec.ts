@@ -1273,6 +1273,86 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     await page.setViewportSize({ width: 375, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
+
+  test("QR-Set: Ziel mit Adresse und Beschriftung, Fenster, QR-Code, PDF-Download, Lead", async ({ page, request }) => {
+    await page.goto("/tools/qr-set");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    const ziel = page.getByTestId("ziel-1");
+    await ziel.getByLabel("Adresse").fill("https://malerei-keller.ch");
+    await ziel.getByLabel("Beschriftung").fill("Unsere Website");
+    await page.getByRole("button", { name: "QR-Set erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein QR-Set" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "QR-Codes" }).getByRole("listitem")).toHaveCount(1);
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: /Druckbogen \(PDF\)/ }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("qr-set");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("malerei-keller.ch");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein QR-Set" })).toBeVisible();
+  });
+
+  test("Bewertungs-Kit: fremder Link wird abgelehnt, Google-Link ergibt QR, Vorlagen und Download", async ({ page, request }) => {
+    await page.goto("/tools/bewertungs-kit");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Dein Google-Bewertungslink").fill("https://example.com/bewerten");
+    await page.getByLabel("Du", { exact: true }).check();
+    await page.getByRole("button", { name: "Kit erstellen" }).click();
+    await expect(page.getByRole("alert")).toContainText("Google");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByLabel("Dein Google-Bewertungslink").fill("https://g.page/r/CabcDEFghi/review");
+    await page.getByRole("button", { name: "Kit erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Bewertungs-Kit" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "QR-Code zu deiner Google-Bewertung" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Vorlagen" }).getByRole("listitem")).toHaveCount(3);
+    const download = page.waitForEvent("download");
+    await page.getByTestId("download-png").click();
+    expect((await download).suggestedFilename()).toMatch(/\.png$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("bewertungs-kit");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("g.page/r/CabcDEFghi");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Bewertungs-Kit" })).toBeVisible();
+  });
+
+  test("Marketing-Budget-Planer: Umsatz und Kanäle, Tabelle mit Summe, CSV-Download, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/budget-planer");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Jahresumsatz in CHF (ungefähr)").fill("900000");
+    await page.getByLabel("Phase", { exact: true }).selectOption({ index: 1 });
+    await page.getByLabel("Ziel für dieses Jahr").selectOption({ index: 2 });
+    await expect(page.getByTestId("bp-betrag")).toContainText("CHF");
+    await page.getByRole("button", { name: "Budget berechnen" }).click();
+    const email = await giveEmail(page);
+    const region = page.getByRole("region", { name: "Dein Marketing-Budget" });
+    await expect(region).toBeVisible();
+    await expect(page.getByTestId("bp-dokument")).toContainText("Summe");
+    await expect(page.getByTestId("bp-richtwert")).toBeVisible();
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: /CSV/ }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.csv$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("budget-planer");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("900");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("mt:profile") ?? "")).toContain("budgetJahr");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Marketing-Budget" })).toBeVisible();
+  });
+
+  test("Strategie-Einseiter: liest die Stände aus dem Browser, fehlende Bausteine bleiben Platzhalter, Lead mit Bausteinen", async ({ page, request }) => {
+    await page.goto("/tools/strategie-einseiter");
+    await page.evaluate(() =>
+      localStorage.setItem("mt:icp-builder", JSON.stringify({ v: 1, input: null, output: null })),
+    );
+    await expect(page.getByTestId("vollstaendigkeit")).toContainText("von 8");
+    await page.getByTestId("erstellen").click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Marketingstrategie auf einer Seite" })).toBeVisible();
+    await expect(page.getByTestId("hinweis-offen")).toBeVisible();
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("strategie-einseiter");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Marketingstrategie auf einer Seite" })).toBeVisible();
+  });
 });
 
 test.describe("Zugang v3 über die Routen", () => {

@@ -24,5 +24,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "qr-set": dynamic(() => import("./qr-set/Tool")),
   "bewertungs-kit": dynamic(() => import("./bewertungs-kit/Tool")),
   "budget-planer": dynamic(() => import("./budget-planer/Tool")),
+  "strategie-einseiter": dynamic(() => import("./strategie-einseiter/Tool")),
   // new-tool:components
 };

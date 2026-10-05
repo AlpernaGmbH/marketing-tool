@@ -18,6 +18,7 @@ import whatsappLinkConfig from "./whatsapp-link/tool.config";
 import qrSetConfig from "./qr-set/tool.config";
 import bewertungsKitConfig from "./bewertungs-kit/tool.config";
 import budgetPlanerConfig from "./budget-planer/tool.config";
+import strategieEinseiterConfig from "./strategie-einseiter/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -42,5 +43,6 @@ export const tools: ToolConfig[] = [
   qrSetConfig,
   bewertungsKitConfig,
   budgetPlanerConfig,
+  strategieEinseiterConfig,
   // new-tool:configs
 ];
