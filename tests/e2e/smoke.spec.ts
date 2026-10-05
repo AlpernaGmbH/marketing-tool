@@ -1510,6 +1510,55 @@ test.describe("Welle 4 im Browser (Content, KI und Vereine)", () => {
     await page.setViewportSize({ width: 375, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
+
+  const MITTEILUNG = {
+    titel: "Malerei Keller in Gossau feiert 40 Jahre mit einem Tag der offenen Tür",
+    lead: "Die Malerei Keller lädt am 14. November 2026 in Gossau zu einem Tag der offenen Tür ein und feiert damit ihr 40-jähriges Bestehen.",
+    text: [
+      "Die Malerei Keller besteht seit 40 Jahren und beschäftigt in Gossau mehrere Malerinnen und Maler. Zum Jubiläum öffnet der Betrieb am 14. November 2026 die Werkstatt für alle Interessierten.",
+      "Besucherinnen und Besucher sehen, wie Fassaden vorbereitet werden, und können Farbmuster direkt vergleichen. Der Betrieb zeigt auch, wie er ältere Anstriche prüft, bevor er neu streicht.",
+    ],
+    zitat: "",
+    boilerplate: "Die Malerei Keller ist ein Handwerksbetrieb in Gossau und streicht Fassaden und Innenräume für Privatkundschaft und Gewerbe in der Region St. Gallen.",
+    bildzeile: "",
+  };
+
+  test("Medienmitteilung: Angaben, Fenster, Mitteilung mit Prüfung und Checkliste, Lead ohne Kontaktdaten, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubGenerate(page, MITTEILUNG);
+    await page.goto("/tools/medienmitteilung");
+    await page.locator("#mm-firma").fill("Malerei Keller");
+    await page.locator("#mm-ort").fill("Gossau");
+    await page.locator("#mm-kanton").selectOption("SG");
+    const start = page.getByRole("button", { name: "Medienmitteilung erstellen" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    await expect(page.locator("#mm-error")).toContainText("Anlass");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#mm-anlass").selectOption("jubilaeum");
+    await page.locator("#mm-was").fill("Die Malerei Keller feiert 40 Jahre und lädt zu einem Tag der offenen Tür ein.");
+    await page.locator("#mm-wann").fill("14. November 2026");
+    await page.locator("#mm-warum").fill("Der Betrieb gehört seit vier Jahrzehnten zum Ortsbild von Gossau.");
+    await page.locator("#mm-kontakt-name").fill("Beat Keller");
+    await start.click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Medienmitteilung" })).toBeVisible();
+    await expect(page.getByTestId("mitteilung")).toContainText("Malerei Keller");
+    await expect(page.getByRole("list", { name: "Prüfung" }).getByRole("listitem")).toHaveCount(7);
+    await expect(page.getByRole("list", { name: "Versand-Checkliste" })).toBeVisible();
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls.generate).toBe(1);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("medienmitteilung");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Betrieb: Malerei Keller");
+    expect(lead.eingabe).toContain("Anlass: Jubiläum");
+    expect(lead.ausgabe).toContain("# Medienmitteilung");
+    expect(lead.eingabe + lead.ausgabe).not.toContain("Beat Keller");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Medienmitteilung" })).toBeVisible();
+    expect(calls.generate).toBe(1);
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
 });
 
 test.describe("Zugang v3 über die Routen", () => {

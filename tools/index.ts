@@ -24,6 +24,7 @@ import gbpFeiertageConfig from "./gbp-feiertage/tool.config";
 import contentIdeenConfig from "./content-ideen/tool.config";
 import contentKalenderConfig from "./content-kalender/tool.config";
 import postGeneratorConfig from "./post-generator/tool.config";
+import medienmitteilungConfig from "./medienmitteilung/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -54,5 +55,6 @@ export const tools: ToolConfig[] = [
   contentIdeenConfig,
   contentKalenderConfig,
   postGeneratorConfig,
+  medienmitteilungConfig,
   // new-tool:configs
 ];
