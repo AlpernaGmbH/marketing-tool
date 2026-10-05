@@ -1339,6 +1339,35 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     await expect(page.getByRole("region", { name: "Dein Marketing-Budget" })).toBeVisible();
   });
 
+  test("Caption-Baukasten: drei Schritte, Fenster vor dem Ergebnis, Vorschau je Plattform, Lead mit Hook und Texten, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/caption-baukasten");
+    await page.getByRole("button", { name: "Weiter" }).click();
+    await expect(page.locator("#cb-error")).toContainText("Situation");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByLabel("Situation").fill("der Anstrich schon nach wenigen Wintern abblättert");
+    await page.getByRole("button", { name: "Weiter" }).click();
+    await page.getByLabel("Problem", { exact: true }).fill("Billige Farbe hält an der Wetterseite selten länger als fünf Jahre.");
+    await page.getByLabel("Lösung", { exact: true }).fill("Wir schleifen, grundieren und streichen mit Silikatfarbe, die Feuchte abgibt.");
+    await page.getByRole("button", { name: "Weiter" }).click();
+    await expect(page.locator("#cb-cta")).not.toHaveValue("");
+    await page.getByRole("button", { name: "Caption erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Caption" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Instagram", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("cb-counter")).toContainText("vor der Faltkante");
+    await page.getByRole("button", { name: "LinkedIn", exact: true }).click();
+    await expect(page.getByRole("region", { name: "Vorschau LinkedIn" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Im Textcheck prüfen" })).toHaveAttribute("href", "/tools/textcheck");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("caption-baukasten");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Hook-Formel: Frage");
+    expect(lead.ausgabe).toContain("Instagram (");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Caption" })).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+
   test("Strategie-Einseiter: liest die Stände aus dem Browser, fehlende Bausteine bleiben Platzhalter, Lead mit Bausteinen", async ({ page, request }) => {
     await page.goto("/tools/strategie-einseiter");
     await page.evaluate(() =>
