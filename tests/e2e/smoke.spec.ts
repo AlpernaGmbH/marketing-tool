@@ -1339,6 +1339,36 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     await expect(page.getByRole("region", { name: "Dein Marketing-Budget" })).toBeVisible();
   });
 
+  test("Content-Kalender: ohne Kanton eine Meldung, mit Kanton und eigenem Termin Jahreskalender, .ics hinter dem Fenster, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/content-kalender");
+    await page.getByRole("button", { name: "Kalender erstellen" }).click();
+    await expect(page.locator("#ck-error")).toContainText("Kanton");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#ck-kanton").selectOption("SG");
+    await page.getByTestId("ck-jahr").selectOption("2027");
+    await page.locator("#ck-termin-datum").fill("2027-03-12");
+    await page.locator("#ck-termin-titel").fill("Tag der offenen Tür");
+    await page.getByRole("button", { name: "Termin hinzufügen" }).click();
+    await expect(page.getByRole("list", { name: "Eigene Termine" })).toContainText("Tag der offenen Tür");
+    await page.getByRole("button", { name: "Kalender erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Content-Kalender" })).toBeVisible();
+    await expect(page.getByTestId("ck-months")).toContainText("Muttertag");
+    await expect(page.getByTestId("ck-months")).toContainText("Tag der offenen Tür");
+    const ics = page.waitForEvent("download");
+    await page.getByTestId("ck-ics").click();
+    expect((await ics).suggestedFilename()).toMatch(/^content-kalender-2027.*\.ics$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("content-kalender");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Kanton: St. Gallen (SG)");
+    expect(lead.eingabe).toContain("Tag der offenen Tür");
+    expect(lead.ausgabe).toContain("# Content-Kalender 2027");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Content-Kalender" })).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+
   test("Content-Ideen: Filter, Idee merken, CSV hinter dem Fenster, Lead mit Branche und Titeln, Merkliste nach dem Neuladen", async ({ page, request }) => {
     await page.goto("/tools/content-ideen");
     await expect(page.getByTestId("ci-count")).toContainText("Ideen");

@@ -1,0 +1,141 @@
+{
+  "meta": {
+    "source": "Wikipedia (Osterdatum, Schmutziger Donnerstag, Fastnacht, Black Friday, Valentinstag, Silvester, Nikolaustag), feiertage.ch, Präsenz Schweiz (EDA), ferienwiki.ch (Muttertag), männer.ch (Vätertag), baslerfasnacht.info, Stadt St.Gallen, Appenzellerland Tourismus, St. Galler Tagblatt (Fasnacht Ostschweiz), OLMA Messen St. Gallen, familienleben.ch (Samichlaus), Blick (Adventsfenster); Vorschläge und Zuordnungen: Alperna",
+    "url": "https://feiertage.ch/bundesfeiertag",
+    "asOf": "2026-10-05",
+    "note": "Alle verlinkten Seiten am 05.10.2026 geöffnet. Daten und Regeln stammen von dort: Ostern (erster Sonntag nach dem ersten Frühlingsvollmond), Schmutziger Donnerstag (52 Tage vor Ostersonntag, Fasnacht bis Fasnachtsdienstag, 47 Tage vor Ostersonntag), Basler Fasnacht (Montag nach Aschermittwoch, drei Tage), Muttertag (zweiter Sonntag im Mai), Schweizer Vätertag (erster Sonntag im Juni), Black Friday (Freitag nach dem vierten Donnerstag im November), Samichlaus (6. Dezember), Adventsfenster (ab 1. Dezember jeden Abend ein Fenster, hier 1. bis 24. Dezember), OLMA 2026 (8. bis 18. Oktober) und OLMA 2027 (14. bis 24. Oktober) laut Olma Messen St. Gallen. Schulbeginn leitet das Werkzeug aus den Sommerferien in schulferien.json ab (Tag nach dem Ende). Fasnacht erscheint nur in Kantonen, für die eine geöffnete Seite sie belegt: St. Gallen (Stadt St.Gallen), Appenzell Innerrhoden (Appenzellerland Tourismus), Thurgau (St. Galler Tagblatt), Luzern, Schwyz und die Innerschweiz (Wikipedia). Für alle anderen Kantone fehlt eine geöffnete Quelle; dort trägst du die Fasnacht als eigenen Termin ein. Die Zuordnung der übrigen Anlässe zu Branchen und alle Vorschläge sind redaktionelle Texte von Alperna, keine Statistik. Fehlt eine Region oder Branche, gilt «alle». Schreibweise von datum: fix:MM-TT oder fix:MM-TT/MM-TT (mehrere Tage), ostern:N oder ostern:N..M (Tage ab Ostersonntag), regel:<name> (2-sonntag-mai, 1-sonntag-juni, black-friday, schulbeginn), fix-jahr:JJJJ-MM-TT oder fix-jahr:JJJJ-MM-TT/JJJJ-MM-TT (nur in diesem Jahr); mehrere Angaben als Liste.",
+    "links": [
+      {
+        "label": "Feiertage der Schweiz (feiertage.ch)",
+        "url": "https://feiertage.ch/bundesfeiertag"
+      },
+      {
+        "label": "Nationalfeiertag (Präsenz Schweiz, EDA)",
+        "url": "https://www.aboutswitzerland.eda.admin.ch/de/nationalfeiertag-und-nationalhymne"
+      },
+      {
+        "label": "Valentinstag (Wikipedia)",
+        "url": "https://de.wikipedia.org/wiki/Valentinstag"
+      },
+      {
+        "label": "Osterdatum (Wikipedia)",
+        "url": "https://de.wikipedia.org/wiki/Osterdatum"
+      },
+      {
+        "label": "Schmutziger Donnerstag (Wikipedia)",
+        "url": "https://de.wikipedia.org/wiki/Schmutziger_Donnerstag"
+      },
+      {
+        "label": "Basler Fasnacht: Morgenstreich (baslerfasnacht.info)",
+        "url": "https://www.baslerfasnacht.info/basler-fasnacht/montag/morgenstreich/index.php"
+      },
+      {
+        "label": "Muttertag (ferienwiki.ch)",
+        "url": "https://www.ferienwiki.ch/feiertage/muttertag"
+      },
+      {
+        "label": "Schweizer Vätertag (männer.ch)",
+        "url": "https://www.maenner.ch/mencare/vaetertag/"
+      },
+      {
+        "label": "OLMA 2026 (olma.ch)",
+        "url": "https://olma.ch/"
+      },
+      {
+        "label": "OLMA 2027 (Olma Messen St. Gallen)",
+        "url": "https://www.olma-messen.ch/st-galler-blasmusikverband-ist-ehrengast-der-olma-2027/"
+      },
+      {
+        "label": "Samichlaus (familienleben.ch)",
+        "url": "https://www.familienleben.ch/freizeit/feste/samichlaus-in-der-schweiz-braeuche-und-regionale-unterschiede-9910"
+      },
+      {
+        "label": "Nikolaustag (Wikipedia)",
+        "url": "https://de.wikipedia.org/wiki/Nikolaustag"
+      },
+      {
+        "label": "Adventsfenster (Blick)",
+        "url": "https://www.blick.ch/gesellschaft/adventsfenster-ein-junger-schweizer-brauch-die-aargauer-habens-erfunden-id19205809.html"
+      },
+      {
+        "label": "Black Friday (Wikipedia)",
+        "url": "https://de.wikipedia.org/wiki/Black_Friday"
+      },
+      {
+        "label": "Silvester (Wikipedia)",
+        "url": "https://de.wikipedia.org/wiki/Silvester"
+      },
+      {
+        "label": "Fasnacht St.Gallen 2026 (Stadt St.Gallen)",
+        "url": "https://stgallen24.ch/articles/361487-die-fuenfte-jahreszeit-kehrt-in-die-stadt-zurueck"
+      },
+      {
+        "label": "Fasnacht im Appenzellerland (Appenzellerland Tourismus)",
+        "url": "https://www.appenzell.ch/de/kultur-und-braeuche/braeuche-und-traditionen/fasnacht.html"
+      },
+      {
+        "label": "Fasnacht 2026 in der Ostschweiz (St. Galler Tagblatt)",
+        "url": "https://www.tagblatt.ch/ostschweiz/fuenfte-jahreszeit-fasnachtsumzuege-und-maskenbaelle-welche-anlaesse-in-der-ostschweiz-stattfinden-eine-uebersicht-ld.2229076"
+      },
+      {
+        "label": "Fastnacht (Wikipedia)",
+        "url": "https://de.wikipedia.org/wiki/Fastnacht"
+      }
+    ]
+  },
+  "anlaesse": [
+    {"id": "neujahr", "name": "Neujahr", "datum": "fix:01-01", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Guter Start ins neue Jahr", "format": "Foto mit kurzem Text", "hook": "Ein neues Jahr beginnt. Wir sind ab dem ersten Werktag wieder für dich da."}},
+    {"id": "neujahr", "name": "Neujahr", "datum": "fix:01-01", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Neujahrsgruss mit Öffnungszeiten", "format": "Foto mit kurzem Text", "hook": "Auf ein gutes neues Jahr. Ab wann bei uns wieder aufgetischt wird, steht hier."}},
+    {"id": "valentinstag", "name": "Valentinstag", "datum": "fix:02-14", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Eine kleine Aufmerksamkeit", "format": "Foto mit kurzem Text", "hook": "Zum Valentinstag eine kleine Geste für alle, die dir wichtig sind."}},
+    {"id": "valentinstag", "name": "Valentinstag", "datum": "fix:02-14", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Tisch für zwei", "format": "Foto mit kurzem Text", "hook": "Am Valentinstag decken wir den Tisch für zwei. Reserviere früh, die Plätze sind begrenzt."}},
+    {"id": "valentinstag", "name": "Valentinstag", "datum": "fix:02-14", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Geschenkidee zum Valentinstag", "format": "Karussell mit Produktbildern", "hook": "Noch keine Idee für den Valentinstag? Wir haben ein paar kleine Geschenke für dich zusammengestellt."}},
+    {"id": "valentinstag", "name": "Valentinstag", "datum": "fix:02-14", "region": "alle", "branchen": ["dienstleistung"], "vorschlag": {"titel": "Gutschein zum Verschenken", "format": "Foto mit kurzem Text", "hook": "Zeit verschenken: Unseren Gutschein gibt es auch zum Valentinstag."}},
+    {"id": "fasnacht", "name": "Fasnacht", "datum": "ostern:-52..-47", "region": ["LU", "UR", "SZ", "OW", "NW", "ZG", "SG", "AI", "TG"], "branchen": "alle", "vorschlag": {"titel": "Fasnacht in der Region", "format": "Foto mit kurzem Text", "hook": "Fasnachtszeit: Bei uns gelten in diesen Tagen angepasste Öffnungszeiten."}},
+    {"id": "fasnacht", "name": "Fasnacht", "datum": "ostern:-52..-47", "region": ["LU", "UR", "SZ", "OW", "NW", "ZG", "SG", "AI", "TG"], "branchen": ["gastronomie"], "vorschlag": {"titel": "Fasnachtsspezialität", "format": "Foto mit kurzem Text", "hook": "Zur Fasnacht gibt es bei uns, was nach dem Umzug gut tut: warm, deftig und schnell serviert."}},
+    {"id": "fasnacht", "name": "Fasnacht", "datum": "ostern:-52..-47", "region": ["LU", "UR", "SZ", "OW", "NW", "ZG", "SG", "AI", "TG"], "branchen": ["verein"], "vorschlag": {"titel": "Wir sind an der Fasnacht dabei", "format": "Foto vom Umzug oder Anlass", "hook": "Treffpunkt, Zeit und Ort: So findest du uns an der Fasnacht."}},
+    {"id": "basler-fasnacht", "name": "Basler Fasnacht", "datum": "ostern:-41..-39", "region": ["BS", "BL"], "branchen": "alle", "vorschlag": {"titel": "Basler Fasnacht", "format": "Foto mit kurzem Text", "hook": "Der Morgenstreich bringt die Stadt in Bewegung. Unsere Öffnungszeiten für die drei Tage findest du hier."}},
+    {"id": "basler-fasnacht", "name": "Basler Fasnacht", "datum": "ostern:-41..-39", "region": ["BS", "BL"], "branchen": ["gastronomie"], "vorschlag": {"titel": "Mehlsuppe und Käsewähe", "format": "Foto mit kurzem Text", "hook": "Nach dem Cortège wärmt eine Mehlsuppe. Wir haben für dich geöffnet."}},
+    {"id": "ostern", "name": "Ostern", "datum": "ostern:0", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Frohe Ostern", "format": "Foto mit kurzem Text", "hook": "Wir wünschen dir ruhige Ostertage. Wann wir wieder für dich da sind, steht hier."}},
+    {"id": "ostern", "name": "Ostern", "datum": "ostern:0", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Osterbrunch oder Ostermenü", "format": "Foto mit kurzem Text", "hook": "Zu Ostern decken wir für deine Familie. Reservieren geht am einfachsten per Anruf."}},
+    {"id": "ostern", "name": "Ostern", "datum": "ostern:0", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Geschenke zu Ostern", "format": "Karussell mit Produktbildern", "hook": "Kleine Osterfreuden für Gross und Klein, frisch eingetroffen."}},
+    {"id": "ostern", "name": "Ostern", "datum": "ostern:0", "region": "alle", "branchen": ["handwerk"], "vorschlag": {"titel": "Frühling im Haus", "format": "Vorher-Nachher-Bilder", "hook": "Mit dem Frühling kommt die Lust auf frische Wände und einen aufgeräumten Garten. Wir beraten dich gern vor Ort."}},
+    {"id": "ostern", "name": "Ostern", "datum": "ostern:0", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Ostergruss des Vereins", "format": "Foto mit kurzem Text", "hook": "Der Vorstand wünscht allen Mitgliedern schöne Ostertage."}},
+    {"id": "muttertag", "name": "Muttertag", "datum": "regel:2-sonntag-mai", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Danke an alle Mütter", "format": "Foto mit kurzem Text", "hook": "Zum Muttertag sagen wir Danke an alle, die für andere da sind."}},
+    {"id": "muttertag", "name": "Muttertag", "datum": "regel:2-sonntag-mai", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Muttertagsbrunch", "format": "Foto mit kurzem Text", "hook": "Am Muttertag lädt unsere Küche zum Brunch ein. Ein Platz für Mama ist schnell reserviert."}},
+    {"id": "muttertag", "name": "Muttertag", "datum": "regel:2-sonntag-mai", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Geschenkidee für Mama", "format": "Karussell mit Produktbildern", "hook": "Du suchst noch ein Geschenk für Mama? Hier sind unsere Ideen."}},
+    {"id": "muttertag", "name": "Muttertag", "datum": "regel:2-sonntag-mai", "region": "alle", "branchen": ["dienstleistung"], "vorschlag": {"titel": "Gutschein für Mama", "format": "Foto mit kurzem Text", "hook": "Zeit für sich selbst: Unser Gutschein ist ein Geschenk, das bleibt."}},
+    {"id": "vatertag", "name": "Schweizer Vätertag", "datum": "regel:1-sonntag-juni", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Danke an die Väter", "format": "Foto mit kurzem Text", "hook": "Am Schweizer Vätertag ein Dank an alle Väter, die für ihre Kinder da sind."}},
+    {"id": "vatertag", "name": "Schweizer Vätertag", "datum": "regel:1-sonntag-juni", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Vätertag bei uns", "format": "Foto mit kurzem Text", "hook": "Väter und Kinder sind am Vätertag bei uns willkommen."}},
+    {"id": "vatertag", "name": "Schweizer Vätertag", "datum": "regel:1-sonntag-juni", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Vätertag im Verein", "format": "Foto vom letzten Anlass", "hook": "Väter und Kinder sind bei uns willkommen. Mach mit bei unserem nächsten Anlass."}},
+    {"id": "schulbeginn", "name": "Schulbeginn", "datum": "regel:schulbeginn", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Zurück im Alltag", "format": "Foto mit kurzem Text", "hook": "Die Sommerferien sind vorbei, der Alltag kommt zurück. Wir sind wie gewohnt für dich da."}},
+    {"id": "schulbeginn", "name": "Schulbeginn", "datum": "regel:schulbeginn", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Alles für den Schulstart", "format": "Karussell mit Produktbildern", "hook": "Der Schulstart naht: Hier findest du, was Kinder in der Schule brauchen."}},
+    {"id": "schulbeginn", "name": "Schulbeginn", "datum": "regel:schulbeginn", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Neue Mitglieder zum Schuljahr", "format": "Foto mit kurzem Text", "hook": "Mit dem neuen Schuljahr starten auch unsere Trainings wieder. Schnuppern ist jederzeit möglich."}},
+    {"id": "bundesfeier", "name": "Bundesfeier", "datum": "fix:08-01", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Schöne Bundesfeier", "format": "Foto mit kurzem Text", "hook": "Wir wünschen dir einen schönen Nationalfeiertag."}},
+    {"id": "bundesfeier", "name": "Bundesfeier", "datum": "fix:08-01", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Brunch zum Nationalfeiertag", "format": "Foto mit kurzem Text", "hook": "Am Nationalfeiertag servieren wir Brunch mit Zutaten aus der Region."}},
+    {"id": "bundesfeier", "name": "Bundesfeier", "datum": "fix:08-01", "region": "alle", "branchen": ["handwerk"], "vorschlag": {"titel": "Sommerpause und Erreichbarkeit", "format": "Foto mit kurzem Text", "hook": "Wir sind in der Sommerpause. Im Notfall erreichst du uns unter der bekannten Nummer."}},
+    {"id": "bundesfeier", "name": "Bundesfeier", "datum": "fix:08-01", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Bundesfeier im Dorf", "format": "Foto mit kurzem Text", "hook": "Der Verein ist an der Bundesfeier dabei. Hier findest du uns."}},
+    {"id": "olma", "name": "OLMA St. Gallen", "datum": ["fix-jahr:2026-10-08/2026-10-18", "fix-jahr:2027-10-14/2027-10-24"], "region": ["SG", "AR", "AI", "TG"], "branchen": "alle", "vorschlag": {"titel": "OLMA-Zeit in der Region", "format": "Foto mit kurzem Text", "hook": "Die OLMA bringt Leben nach St. Gallen. Wir sind in diesen Tagen auch für dich da."}},
+    {"id": "olma", "name": "OLMA St. Gallen", "datum": ["fix-jahr:2026-10-08/2026-10-18", "fix-jahr:2027-10-14/2027-10-24"], "region": ["SG", "AR", "AI", "TG"], "branchen": ["gastronomie"], "vorschlag": {"titel": "Vor oder nach der OLMA", "format": "Foto mit kurzem Text", "hook": "Nach dem Rundgang über das Messegelände ist bei uns ein Tisch für dich frei."}},
+    {"id": "olma", "name": "OLMA St. Gallen", "datum": ["fix-jahr:2026-10-08/2026-10-18", "fix-jahr:2027-10-14/2027-10-24"], "region": ["SG", "AR", "AI", "TG"], "branchen": ["detailhandel"], "vorschlag": {"titel": "Regionale Ideen zur OLMA", "format": "Karussell mit Produktbildern", "hook": "Aus der Region für die Region: Das haben wir zur OLMA für dich ausgesucht."}},
+    {"id": "samichlaus", "name": "Samichlaus", "datum": "fix:12-06", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Samichlaus-Gruss", "format": "Foto mit kurzem Text", "hook": "Zum Samichlaus ein Dankeschön an alle, die uns das ganze Jahr treu geblieben sind."}},
+    {"id": "samichlaus", "name": "Samichlaus", "datum": "fix:12-06", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Süsses zum Samichlaus", "format": "Foto mit kurzem Text", "hook": "Nüsse, Mandarinen und Lebkuchen: Zum Samichlaus gibt es bei uns eine kleine Überraschung."}},
+    {"id": "samichlaus", "name": "Samichlaus", "datum": "fix:12-06", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Kleine Geschenke für den Chlaussack", "format": "Karussell mit Produktbildern", "hook": "Für den Chlaussack: kleine Dinge, die Freude machen."}},
+    {"id": "samichlaus", "name": "Samichlaus", "datum": "fix:12-06", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Chlausabend", "format": "Foto mit kurzem Text", "hook": "Der Samichlaus besucht unseren Verein. Schau vorbei und bring die Kinder mit."}},
+    {"id": "adventsfenster", "name": "Adventsfenster", "datum": "fix:12-01/12-24", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Unser Adventsfenster", "format": "Foto des Fensters", "hook": "Jeden Abend öffnet sich im Dorf ein neues Fenster. Schau bei uns vorbei, wenn wir an der Reihe sind."}},
+    {"id": "adventsfenster", "name": "Adventsfenster", "datum": "fix:12-01/12-24", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Schaufenster im Advent", "format": "Foto des Schaufensters", "hook": "Unser Schaufenster leuchtet im Advent. Komm auf einem Abendspaziergang vorbei."}},
+    {"id": "adventsfenster", "name": "Adventsfenster", "datum": "fix:12-01/12-24", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Adventsfenster des Vereins", "format": "Foto des Fensters", "hook": "Der Verein gestaltet ein Fenster im Quartier. Wir laden dich zum Apéro ein."}},
+    {"id": "black-friday", "name": "Black Friday", "datum": "regel:black-friday", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Aktion zum Black Friday", "format": "Karussell mit Produktbildern", "hook": "Zum Black Friday gibt es bei uns eine Auswahl zu besonderen Preisen. Hier siehst du, was dabei ist."}},
+    {"id": "black-friday", "name": "Black Friday", "datum": "regel:black-friday", "region": "alle", "branchen": ["dienstleistung"], "vorschlag": {"titel": "Black Friday mit Gutschein", "format": "Foto mit kurzem Text", "hook": "Zum Black Friday schenken wir dir etwas dazu, wenn du einen Gutschein kaufst."}},
+    {"id": "black-friday", "name": "Black Friday", "datum": "regel:black-friday", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Gutscheine für Geniesser", "format": "Foto mit kurzem Text", "hook": "Zum Black Friday gibt es bei uns Gutscheine zum Verschenken. Eine Idee für Weihnachten."}},
+    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Frohe Weihnachten", "format": "Foto mit kurzem Text", "hook": "Wir wünschen dir frohe Weihnachten und ruhige Tage mit den Menschen, die dir wichtig sind."}},
+    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Weihnachtsmenü und Öffnungszeiten", "format": "Foto mit kurzem Text", "hook": "Über die Festtage kochen wir für dich. Unser Menü und die Öffnungszeiten findest du hier."}},
+    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Letzte Geschenkideen", "format": "Karussell mit Produktbildern", "hook": "Ein Geschenk fehlt noch? Wir helfen dir bei der Auswahl."}},
+    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": ["handwerk"], "vorschlag": {"titel": "Betriebsferien über die Festtage", "format": "Foto mit kurzem Text", "hook": "Über die Festtage ist unser Betrieb geschlossen. Im Notfall erreichst du uns unter der bekannten Nummer."}},
+    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": ["dienstleistung"], "vorschlag": {"titel": "Gutschein als Geschenk", "format": "Foto mit kurzem Text", "hook": "Zeit ist ein Geschenk, das bleibt. Unseren Gutschein bekommst du auch kurzfristig."}},
+    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Weihnachtsgruss des Vereins", "format": "Foto mit kurzem Text", "hook": "Der Vorstand dankt allen Mitgliedern für das Jahr und wünscht frohe Festtage."}},
+    {"id": "jahresende", "name": "Jahresende", "datum": "fix:12-31", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Danke für das Jahr", "format": "Rückblick mit Fotos", "hook": "Ein Jahr geht zu Ende. Danke für dein Vertrauen und die vielen guten Gespräche."}},
+    {"id": "jahresende", "name": "Jahresende", "datum": "fix:12-31", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Silvester bei uns", "format": "Foto mit kurzem Text", "hook": "Zum Jahresende feiern wir gemeinsam. Plätze reservierst du bei uns."}},
+    {"id": "jahresende", "name": "Jahresende", "datum": "fix:12-31", "region": "alle", "branchen": ["handwerk"], "vorschlag": {"titel": "Jahresrückblick auf Projekte", "format": "Fotos der Projekte", "hook": "Das waren unsere Projekte in diesem Jahr: vom Wohnzimmer bis zur Fassade."}},
+    {"id": "jahresende", "name": "Jahresende", "datum": "fix:12-31", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Jahresrückblick des Vereins", "format": "Rückblick mit Fotos", "hook": "Das war unser Vereinsjahr: Anlässe, Erfolge und Gesichter."}}
+  ]
+}
