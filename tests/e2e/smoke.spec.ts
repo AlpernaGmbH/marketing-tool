@@ -1641,6 +1641,115 @@ test.describe("Welle 4 im Browser (Content, KI und Vereine)", () => {
     await page.setViewportSize({ width: 375, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
+
+  const KONZEPT = {
+      "ausgangslage": "Der FC Trogen hat 180 Mitglieder, und die Zahl wächst. Heute laufen die Website und WhatsApp-Gruppen. Für die Kommunikation stehen 6 Stunden pro Monat zur Verfügung. Ein Budget ist nicht angegeben.",
+      "ziele": [
+          {
+              "ziel": "Mehr Kinder und Jugendliche für den Nachwuchs gewinnen",
+              "messgroesse": "Anmeldungen im Nachwuchs"
+          },
+          {
+              "ziel": "Neue Mitglieder aus Trogen und Umgebung gewinnen",
+              "messgroesse": "Neue Mitglieder im Vereinsjahr"
+          }
+      ],
+      "zielgruppen": [
+          {
+              "name": "Mitglieder",
+              "erwartung": "Wissen, wann Training, Spiele und Anlässe stattfinden."
+          },
+          {
+              "name": "Eltern",
+              "erwartung": "Erfahren, wie ihre Kinder im Nachwuchs mitmachen können."
+          }
+      ],
+      "kernbotschaft": "Der FC Trogen bringt Kinder, Familien und Dorf auf dem Sportplatz zusammen.",
+      "kanalplan": [
+          {
+              "kanal": "Website",
+              "zweck": "Termine, Kontakt und Anmeldung für den Nachwuchs.",
+              "rhythmus": "bei jeder Änderung",
+              "verantwortlich": "Betreuung Website"
+          },
+          {
+              "kanal": "WhatsApp-Gruppen",
+              "zweck": "Kurze Hinweise an Aktive und Eltern.",
+              "rhythmus": "vor jedem Spiel",
+              "verantwortlich": ""
+          },
+          {
+              "kanal": "Aushang (neu)",
+              "zweck": "Einladung zum Dorffest im Dorf sichtbar machen.",
+              "rhythmus": "vor dem Dorffest",
+              "verantwortlich": "Vorstand"
+          }
+      ],
+      "jahreskalender": [
+          {
+              "monat": 6,
+              "anlass": "Dorffest",
+              "kommunikation": "Einladung per Aushang und WhatsApp-Gruppen, danach Bilder auf der Website."
+          }
+      ],
+      "rollen": [
+          {
+              "rolle": "Betreuung Website",
+              "aufgaben": "Hält Termine und Hinweise aktuell.",
+              "stundenProMonat": 3
+          },
+          {
+              "rolle": "Betreuung WhatsApp-Gruppen",
+              "aufgaben": "Schickt die Hinweise vor den Spielen.",
+              "stundenProMonat": 3
+          }
+      ],
+      "erfolgsmessung": [
+          "Zahl der Mitglieder am Ende des Vereinsjahrs",
+          "Anmeldungen im Nachwuchs und Besucher am Dorffest"
+      ]
+  };
+
+  test("Vereins-Kommunikationskonzept: Angaben, Fenster, Konzept mit acht Kapiteln, PDF, Lead mit Verein und Zahlen, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubGenerate(page, KONZEPT);
+    await page.goto("/tools/vereins-kommunikation");
+    await page.getByRole("button", { name: "Konzept erstellen" }).click();
+    await expect(page.locator("#vk-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#vk-firma").fill("FC Trogen");
+    await page.locator("#vk-ort").fill("Trogen");
+    await page.locator("#vk-kanton").selectOption("AR");
+    await page.locator("#vk-zweck").fill("Fussballclub mit Aktiven, Senioren und Juniorinnen und Junioren. Heimspiele auf dem Sportplatz in Trogen.");
+    await page.locator("#vk-mitglieder").fill("180");
+    await page.locator("#vk-entwicklung").selectOption("waechst");
+    await page.getByRole("checkbox", { name: "Mitglieder gewinnen" }).check();
+    await page.getByRole("checkbox", { name: "Nachwuchs", exact: true }).check();
+    await page.locator("#vk-anlass-a1-name").fill("Dorffest");
+    await page.locator("#vk-anlass-a1-monat").selectOption("6");
+    await page.getByRole("checkbox", { name: "Website", exact: true }).check();
+    await page.getByRole("checkbox", { name: "WhatsApp-Gruppen" }).check();
+    await page.locator("#vk-stunden").fill("6");
+    await page.getByRole("button", { name: "Konzept erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Kommunikationskonzept" })).toBeVisible();
+    await expect(page.getByTestId("konzept")).toContainText("1. Ausgangslage");
+    await expect(page.getByTestId("konzept")).toContainText("8. Erfolgsmessung");
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls.generate).toBe(1);
+    const pdf = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await pdf).suggestedFilename()).toMatch(/\.pdf$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("vereins-kommunikation");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Verein: FC Trogen, Trogen");
+    expect(lead.eingabe).toContain("Mitglieder: 180");
+    expect(lead.ausgabe).toContain("# Kommunikationskonzept");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Kommunikationskonzept" })).toBeVisible();
+    expect(calls.generate).toBe(1);
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
 });
 
 test.describe("Zugang v3 über die Routen", () => {

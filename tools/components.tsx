@@ -33,5 +33,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "medienmitteilung": dynamic(() => import("./medienmitteilung/Tool")),
   "bewertungsantwort": dynamic(() => import("./bewertungsantwort/Tool")),
   "anspruchsgruppen": dynamic(() => import("./anspruchsgruppen/Tool")),
+  "vereins-kommunikation": dynamic(() => import("./vereins-kommunikation/Tool")),
   // new-tool:components
 };

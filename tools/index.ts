@@ -27,6 +27,7 @@ import postGeneratorConfig from "./post-generator/tool.config";
 import medienmitteilungConfig from "./medienmitteilung/tool.config";
 import bewertungsantwortConfig from "./bewertungsantwort/tool.config";
 import anspruchsgruppenConfig from "./anspruchsgruppen/tool.config";
+import vereinsKommunikationConfig from "./vereins-kommunikation/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -60,5 +61,6 @@ export const tools: ToolConfig[] = [
   medienmitteilungConfig,
   bewertungsantwortConfig,
   anspruchsgruppenConfig,
+  vereinsKommunikationConfig,
   // new-tool:configs
 ];
