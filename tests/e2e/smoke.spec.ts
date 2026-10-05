@@ -1613,7 +1613,7 @@ test.describe("Welle 4 im Browser (Content, KI und Vereine)", () => {
     await page.goto("/tools/anspruchsgruppen");
     await page.getByRole("radio", { name: "Verein" }).check();
     await page.locator("#ag-firma").fill("FC Trogen");
-    await expect(page.getByTestId("gruppe-1")).toContainText("Mitglieder");
+    await expect(page.locator("#ag-g1-name")).toHaveValue("Mitglieder");
     await page.getByRole("button", { name: "Analyse erstellen" }).click();
     await expect(page.locator("#ag-error")).toContainText("mindestens zwei");
     await expect(page.getByRole("dialog")).toHaveCount(0);
