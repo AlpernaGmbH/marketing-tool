@@ -43,6 +43,9 @@ import vorherNachherConfig from "./vorher-nachher/tool.config";
 import angebotsgrafikConfig from "./angebotsgrafik/tool.config";
 import zielgruppenSegmenteConfig from "./zielgruppen-segmente/tool.config";
 import verzeichnisseConfig from "./verzeichnisse/tool.config";
+import kanalstrategieConfig from "./kanalstrategie/tool.config";
+import testimonialConfig from "./testimonial/tool.config";
+import contentStrategieConfig from "./content-strategie/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -92,5 +95,8 @@ export const tools: ToolConfig[] = [
   angebotsgrafikConfig,
   zielgruppenSegmenteConfig,
   verzeichnisseConfig,
+  kanalstrategieConfig,
+  testimonialConfig,
+  contentStrategieConfig,
   // new-tool:configs
 ];

@@ -49,5 +49,8 @@ export const toolComponents: Record<string, ComponentType> = {
   "angebotsgrafik": dynamic(() => import("./angebotsgrafik/Tool")),
   "zielgruppen-segmente": dynamic(() => import("./zielgruppen-segmente/Tool")),
   "verzeichnisse": dynamic(() => import("./verzeichnisse/Tool")),
+  "kanalstrategie": dynamic(() => import("./kanalstrategie/Tool")),
+  "testimonial": dynamic(() => import("./testimonial/Tool")),
+  "content-strategie": dynamic(() => import("./content-strategie/Tool")),
   // new-tool:components
 };

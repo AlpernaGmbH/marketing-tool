@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: [],
   outputs: ["copy", "pdf", "docx", "ics"],
   estimatedMinutes: 8,
-  pathStep: { path: "strategie", order: 14 },
+  pathStep: { path: "strategie", order: 15 },
   featured: false,
 });

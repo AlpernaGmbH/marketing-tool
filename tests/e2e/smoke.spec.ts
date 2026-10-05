@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type APIRequestContext, type Locator, type Page, type PlaywrightWorkerArgs } from "@playwright/test";
 import { sampleResult } from "../../lib/check/fixtures";
+import { output as strategieAntwort } from "../../tools/content-strategie/testdata";
 import { tools } from "../../tools/index";
 
 const TOOL = "digitaler-auftritt-check";
@@ -2284,6 +2285,119 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
     expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Firma: Malerei Keller");
     await page.reload();
     await expect(page.getByRole("region", { name: "Deine Verzeichnis-Prüfung" })).toBeVisible();
+  });
+
+  test("Kanalstrategie: unvollständige Angaben werden gemeldet, Beispielangaben ergeben Rollen für zehn Kanäle, PDF, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/kanalstrategie");
+    await hydrated(page.getByRole("button", { name: "Kanäle bewerten" }));
+    await page.getByRole("button", { name: "Kanäle bewerten" }).click();
+    await expect(page.locator("#ks-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#ks-firma").fill("Malerei Keller");
+    const radio = (gruppe: string, name: string) => page.getByRole("group", { name: gruppe }).getByRole("radio", { name, exact: true }).check();
+    await radio("Was soll dein Auftritt zuerst erreichen?", "Anfragen und Aufträge");
+    await radio("Wen willst du erreichen?", "Privatpersonen");
+    await radio("Suchen die Leute aktiv nach dir?", "Ja, sie suchen, wenn sie etwas brauchen");
+    await radio("Wie gross ist dein Einzugsgebiet?", "Meine Region oder mein Kanton");
+    await page.locator("#ks-zeit").selectOption("2");
+    for (const f of ["Text", "Foto"]) await page.getByRole("group", { name: "Was könnt ihr gut?" }).getByRole("checkbox", { name: f, exact: true }).check();
+    for (const k of ["Website", "Facebook"]) await page.getByRole("group", { name: "Wo seid ihr heute aktiv?" }).getByRole("checkbox", { name: k, exact: true }).check();
+    await page.getByRole("button", { name: "Kanäle bewerten" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Kanalstrategie" })).toBeVisible();
+    await expect(page.getByTestId("kanal-karte")).toHaveCount(10);
+    await expect(page.locator('[data-testid="kanal-karte"][data-kanal="website"]')).toHaveAttribute("data-rolle", "basis");
+    await expect(page.locator('[data-testid="kanal-karte"][data-kanal="whatsapp"]')).toHaveAttribute("data-rolle", "fokus");
+    await expect(page.getByTestId("ks-pausieren")).toContainText("Facebook");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await download).suggestedFilename()).toBe("kanalstrategie-malerei-keller.pdf");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("kanalstrategie");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Ziel: Anfragen und Aufträge");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Kanalstrategie" })).toBeVisible();
+  });
+
+  test("Testimonial-Baukasten: Bitte um ein Zitat ohne Vornamen im CRM, danach Referenz mit gekürztem Zitat und Fallstudie als PDF", async ({ page, request }) => {
+    await page.goto("/tools/testimonial");
+    await hydrated(page.getByRole("button", { name: "Nachricht erstellen" }));
+    await page.getByRole("button", { name: "Nachricht erstellen" }).click();
+    await expect(page.locator("#tb-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#tb-firma").fill("Malerei Keller");
+    await page.locator("#tb-vorname").fill("Regula");
+    await page.locator("#tb-leistung").fill("den Anstrich der Fassade in Gossau");
+    await page.getByRole("button", { name: "Nachricht erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Nachricht" })).toBeVisible();
+    await expect(page.getByTestId("tb-fassung-kurz-text")).toContainText("Hallo Regula");
+    await expect(page.getByTestId("tb-fassung-kurz-zeichen")).toContainText("Zeichen");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("testimonial");
+    const anfrage = (await received(request)).find((l) => l.email === email)!;
+    expect(anfrage.eingabe).toContain("Vorname: ja");
+    expect(anfrage.eingabe).not.toContain("Regula");
+    // zweiter Weg: Referenz bauen
+    await page.getByRole("button", { name: "Neu beginnen" }).click();
+    await page.getByRole("radio", { name: "Ich habe ein Zitat und baue die Referenz" }).check();
+    await page.locator("#tb-firma").fill("Malerei Keller");
+    await page.locator("#tb-zitat").fill("Die Fassade sieht nach zwei Wintern noch aus wie am ersten Tag. Die Handwerker waren pünktlich und sauber. Ich würde die Malerei jederzeit weiterempfehlen.");
+    await page.getByRole("checkbox", { name: /Die Handwerker waren pünktlich/ }).uncheck();
+    await page.locator("#tb-name").fill("Regula");
+    await page.locator("#tb-ortfirma").fill("Gossau");
+    await page.locator("#tb-gemacht").fill("Fassadenanstrich an einem Einfamilienhaus");
+    await page.locator("#tb-ausgangslage").fill("Die Fassade blätterte nach drei Wintern ab.");
+    await page.locator("#tb-getan").fill("Wir haben erst die Feuchte im Putz gemessen und dann neu gestrichen.");
+    await page.locator("#tb-ergebnis").fill("Die Fassade hält seit zwei Jahren.");
+    await page.getByRole("button", { name: "Referenz bauen" }).click();
+    await expect(page.getByRole("region", { name: "Deine Referenz" })).toBeVisible();
+    await expect(page.getByTestId("tb-kachel-zitat")).toContainText("[…]");
+    await expect(page.getByTestId("tb-kachel-zitat")).not.toContainText("pünktlich");
+    await expect(page.getByTestId("tb-kachel-quelle")).toContainText("Regula, Gossau");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await download).suggestedFilename()).toMatch(/^fallstudie-.*\.pdf$/);
+    await expect.poll(async () => (await received(request)).filter((l) => l.email === email).length).toBe(2);
+    const referenz = (await received(request)).filter((l) => l.email === email)[1];
+    expect(referenz.eingabe).toContain("Weg: Referenz bauen");
+    expect(referenz.eingabe).toContain("Gezeigte Sätze: 2 von 3");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Referenz" })).toBeVisible();
+  });
+
+  test("Content-Strategie: Ziel fehlt wird gemeldet, Angaben ergeben Dokument mit 90-Tage-Plan, PDF, Lead, Säulen im Profil, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    let generate = 0;
+    await page.route("**/api/generate", (route) => {
+      generate++;
+      return route.fulfill(json({ ok: true, output: strategieAntwort() }));
+    });
+    await page.goto("/tools/content-strategie");
+    await hydrated(page.getByRole("button", { name: "Strategie erstellen" }));
+    await page.getByRole("button", { name: "Strategie erstellen" }).click();
+    await expect(page.locator("#cs-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(generate).toBe(0);
+    await page.locator("#cs-firma").fill("Malerei Keller");
+    await page.locator("#cs-branche").fill("Malerei");
+    await page.locator("#cs-ort").fill("Gossau");
+    await page.getByRole("radio", { name: "Anfragen und Aufträge", exact: true }).check();
+    await page.locator("#cs-angebot").fill("Fassaden und Innenräume streichen; die Kundschaft fragt nach Dauer, Preis und Farbe.");
+    await expect(page.getByRole("checkbox", { name: "Instagram", exact: true })).toBeChecked();
+    await page.locator("#cs-beitraege").selectOption("2");
+    await page.getByRole("button", { name: "Strategie erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Content-Strategie" })).toBeVisible();
+    await expect(page.getByTestId("strategie")).toContainText("Die ersten 90 Tage");
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(generate).toBe(1);
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("content-strategie");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Betrieb: Malerei Keller");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("mt:profile") ?? "")).toContain("Fassaden vorher und nachher");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Content-Strategie" })).toBeVisible();
+    expect(generate).toBe(1);
   });
 
   // new-wave-10:tests
