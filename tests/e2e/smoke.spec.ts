@@ -1299,7 +1299,7 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     await page.getByLabel("Dein Google-Bewertungslink").fill("https://example.com/bewerten");
     await page.getByLabel("Du", { exact: true }).check();
     await page.getByRole("button", { name: "Kit erstellen" }).click();
-    await expect(page.getByRole("alert")).toContainText("Google");
+    await expect(page.locator("#bk-error")).toContainText("Google");
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await page.getByLabel("Dein Google-Bewertungslink").fill("https://g.page/r/CabcDEFghi/review");
     await page.getByRole("button", { name: "Kit erstellen" }).click();

@@ -307,7 +307,7 @@ function BudgetFlow() {
         <ul className="grid gap-2 sm:grid-cols-2" aria-label="Kanäle">
           {KANAELE.map((k) => (
             <li key={k.key} className="flex min-h-11 items-center gap-3">
-              <Checkbox id={`bp-kanal-${k.key}`} checked={ready && kanaele.includes(k.key)} onCheckedChange={(v) => toggleKanal(k.key, v === true)} disabled={!ready} />
+              <Checkbox id={`bp-kanal-${k.key}`} aria-label={k.label} className="size-6" checked={ready && kanaele.includes(k.key)} onCheckedChange={(v) => toggleKanal(k.key, v === true)} disabled={!ready} />
               <label htmlFor={`bp-kanal-${k.key}`} className="cursor-pointer">
                 {k.label}
               </label>
