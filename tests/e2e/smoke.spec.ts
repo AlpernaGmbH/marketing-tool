@@ -2253,6 +2253,39 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
     await expect(page.getByRole("region", { name: "Deine Zielgruppen-Segmente" })).toBeVisible();
   });
 
+  test("Verzeichnis-Check: leere Angaben werden gemeldet, Stammdaten und Status ergeben Aufgabenliste mit Abweichung, PDF, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/verzeichnisse");
+    await hydrated(page.getByRole("button", { name: "Verzeichnisse prüfen" }));
+    await page.getByRole("button", { name: "Verzeichnisse prüfen" }).click();
+    await expect(page.locator("#vz-fehler")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#vz-firma").fill("Malerei Keller");
+    await page.locator("#vz-ort").fill("Gossau");
+    await page.locator("#vz-strasse").fill("Wilerstrasse 24");
+    await page.locator("#vz-plz").fill("9200");
+    await page.locator("#vz-telefon").fill("071 123 45 67");
+    const gruppe = (name: RegExp) => page.getByRole("group", { name });
+    await gruppe(/^Google Unternehmensprofil: Bist du schon eingetragen/).getByRole("radio", { name: "Ja", exact: true }).check();
+    await page.locator("#vz-google-unternehmensprofil-name").fill("Malerei Keller");
+    await page.locator("#vz-google-unternehmensprofil-adresse").fill("Wilerstr. 24, 9200 Gossau");
+    await page.locator("#vz-google-unternehmensprofil-telefon").fill("071 123 45 67");
+    await gruppe(/^Bing Places/).getByRole("radio", { name: "Nein", exact: true }).check();
+    await page.getByRole("button", { name: "Verzeichnisse prüfen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Verzeichnis-Prüfung" })).toBeVisible();
+    await expect(page.locator('[data-testid="aufgabe"][data-id="google-unternehmensprofil"]')).toHaveAttribute("data-status", "angleichen");
+    await expect(page.locator('[data-testid="aufgabe"][data-id="bing-places"]')).toHaveAttribute("data-status", "eintragen");
+    expect(await page.getByTestId("abweichung").count()).toBeGreaterThan(0);
+    await expect(page.getByTestId("kopiervorlage")).toContainText("+41 71 123 45 67");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    expect((await download).suggestedFilename()).toBe("verzeichnisse-malerei-keller.pdf");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("verzeichnisse");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Firma: Malerei Keller");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Verzeichnis-Prüfung" })).toBeVisible();
+  });
+
   // new-wave-10:tests
 });
 

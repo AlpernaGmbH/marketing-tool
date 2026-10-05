@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "source": "Eigene Seiten der Anbieter (Google, Apple, Microsoft Bing, localsearch, Tripadvisor), je Eintrag unter «quelle»",
+    "url": "https://business.google.com/de/business-profile/",
+    "asOf": "2026-10-05",
+    "note": "Alle unter «quelle» genannten Seiten am 05.10.2026 geöffnet. Aufgenommen ist nur, was dort steht. «kostenlos» ist null, wenn die Seite es nicht eindeutig sagt (Apple Business). «bestaetigung» ist null, wenn die geöffnete Seite kein Verfahren nennt (Bing Places, dessen Hilfeseiten sich nicht lesen liessen). Die Reihenfolge der Typen im Werkzeug ist ein Richtwert von Alperna, keine Statistik. Nicht aufgenommen: Moneyhouse (keine Seite zum Anlegen oder Beanspruchen eines Eintrags geöffnet) und search.ch als eigener Eintrag (local.ch und search.ch teilen laut localsearch einen Eintrag). Angebote und Bedingungen ändern sich; das Werkzeug sagt im Ergebnis, dass du sie auf der Seite des Anbieters prüfst."
+  },
+  "eintraege": [
+    {
+      "id": "google-unternehmensprofil",
+      "name": "Google Unternehmensprofil",
+      "typ": "karte",
+      "url": "https://business.google.com/de/business-profile/",
+      "eintragUrl": "https://business.google.com/create/new",
+      "kostenlos": true,
+      "bestaetigung": "Google zeigt dir die möglichen Methoden: Telefon, SMS, E-Mail, Live-Videoanruf oder Postkarte. Welche du bekommst, hängt von deinem Unternehmen ab.",
+      "hinweis": "Lege das Profil an oder beanspruche ein bestehendes und bestätige es, damit du Angaben, Öffnungszeiten und Fotos selbst pflegst.",
+      "quelle": "https://business.google.com/de/business-profile/",
+      "quelleBestaetigung": "https://support.google.com/business/answer/7107242?hl=de",
+      "geprueft": "2026-10-05"
+    },
+    {
+      "id": "apple-business",
+      "name": "Apple Business (früher Apple Business Connect)",
+      "typ": "karte",
+      "url": "https://business.apple.com/",
+      "eintragUrl": "https://support.apple.com/de-ch/guide/business/abcb98816a34/web",
+      "kostenlos": null,
+      "bestaetigung": "Ein Standort, der in Karten schon besteht, wird mit einem Anruf und einem vierstelligen Code bestätigt. Beim ersten Standort lässt du deine Organisation von Apple prüfen.",
+      "hinweis": "Füge deinen Standort in Apple Business hinzu, damit du die Angaben auf der Standortkarte in Karten selbst bestimmst.",
+      "quelle": "https://support.apple.com/de-ch/guide/business/abcb98816a34/web",
+      "geprueft": "2026-10-05"
+    },
+    {
+      "id": "bing-places",
+      "name": "Bing Places for Business",
+      "typ": "karte",
+      "url": "https://www.bing.com/forbusiness/",
+      "eintragUrl": "https://www.bing.com/forbusiness/management",
+      "kostenlos": true,
+      "bestaetigung": null,
+      "hinweis": "Beanspruche deinen Eintrag bei Bing Places oder lege ihn an, damit die Angaben dort mit den anderen übereinstimmen.",
+      "quelle": "https://www.bing.com/forbusiness/",
+      "geprueft": "2026-10-05"
+    },
+    {
+      "id": "local-search-ch",
+      "name": "local.ch und search.ch",
+      "typ": "telefonbuch",
+      "url": "https://www.local.ch/de",
+      "eintragUrl": "https://customercenter.local.ch/de/update",
+      "kostenlos": true,
+      "bestaetigung": "Die Swisscom Directories AG prüft neue und geänderte Einträge und gibt sie frei, danach erscheinen sie auf local.ch und search.ch.",
+      "hinweis": "Ein Eintrag gilt für local.ch und search.ch: Gib die Telefonnummer ein, wähle den Eintrag und melde dich mit einem localsearch-Konto an.",
+      "quelle": "https://www.localsearch.ch/de/ihr-eintrag",
+      "quelleBestaetigung": "https://customercenter.local.ch/de/update",
+      "geprueft": "2026-10-05"
+    },
+    {
+      "id": "tripadvisor",
+      "name": "Tripadvisor",
+      "typ": "bewertung",
+      "branchen": [
+        "Restaurant",
+        "Unterkunft"
+      ],
+      "url": "https://www.tripadvisor.ch/Owners",
+      "eintragUrl": "https://www.tripadvisor.ch/Owners",
+      "kostenlos": true,
+      "bestaetigung": "Nach dem Beanspruchen lässt du deine Identität überprüfen.",
+      "hinweis": "Beanspruche deinen Eintrag, damit du Angaben und Fotos pflegst und auf Bewertungen antwortest; findest du dein Haus nicht, kannst du es als Ort hinzufügen.",
+      "quelle": "https://www.tripadvisor.ch/Owners",
+      "geprueft": "2026-10-05"
+    }
+  ]
+}
