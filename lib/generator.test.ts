@@ -55,6 +55,11 @@ describe("textIssue", () => {
     expect(textIssue(["Mehr auf https://malerei-keller.ch."], JSON.stringify(input))).toBeNull();
     expect(textIssue(["Schreib an info@keller.ch"], "")).toBe("link");
   });
+  it("lässt Emojis nur zu, wenn das Werkzeug sie erlaubt", () => {
+    expect(textIssue(["Neu im Programm 🎨"], "")).toBe("regel");
+    expect(textIssue(["Neu im Programm 🎨"], "", { emoji: true })).toBeNull();
+    expect(textIssue(["Neu im Programm 🎨!"], "", { emoji: true })).toBe("regel");
+  });
   it("findet Links und Adressen ohne Satzzeichen am Ende", () => {
     expect(linksIn("Siehe www.Keller.ch, oder Info@Keller.ch.")).toEqual(["www.keller.ch", "info@keller.ch"]);
   });
@@ -74,6 +79,13 @@ describe("checkGenerated", () => {
     expect(checkGenerated(def, { titel: "Mehrwert für alle", punkte: ["a"] }, input)).toEqual({ ok: false, reason: "stimme" });
     expect(checkGenerated(def, { titel: "Fassaden in Gossau", punkte: ["www.fremd.ch"] }, input)).toEqual({ ok: false, reason: "link" });
     expect(checkGenerated(def, { titel: "Fassaden in Gossau", punkte: ["verboten"] }, input)).toEqual({ ok: false, reason: "check" });
+  });
+  it("erlaubt Emojis nur für ein Werkzeug mit allowEmoji und nur, wenn die Eingabe es erlaubt", () => {
+    const withEmoji = defineGenerator({ ...def, input: z.object({ betrieb: z.string(), emojis: z.boolean() }), allowEmoji: (i) => i.emojis });
+    const out = { titel: "Fassaden in Gossau 🎨", punkte: ["a"] };
+    expect(checkGenerated(withEmoji, out, { betrieb: "Keller", emojis: true }).ok).toBe(true);
+    expect(checkGenerated(withEmoji, out, { betrieb: "Keller", emojis: false })).toEqual({ ok: false, reason: "regel" });
+    expect(checkGenerated(def, out, input)).toEqual({ ok: false, reason: "regel" });
   });
   it("lässt Zahlen und Platzhalter zu und listet die Platzhalter", () => {
     const out = checkGenerated(def, { titel: "Seit 1998 in Gossau", punkte: ["Ruf an: [Telefonnummer]", "Ab [Datum]"] }, input);
