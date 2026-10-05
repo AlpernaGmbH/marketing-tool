@@ -247,6 +247,7 @@ Die Etappen 3 bis 6 werden in **Wellen** gebaut (je Welle vier Werkzeuge paralle
 | 8 (Etappe 5/6, 05.10.2026) | engagement-rate, kpi-baum, angebotsarchitektur, anlass-planer | C (Rechner und Planer ohne Server und KI; Quoten, Faustregeln und Vorlagen gekennzeichnet) |
 | 9 (Etappe 5/6, 05.10.2026) | story-post, posting-plan, kundenweg, kampagnen-planer | C (Planer ohne Server und KI; Annahmen gekennzeichnet; PDF quer und Tabellenkopf im gemeinsamen Export) |
 | 10 (Etappe 5/6, 05.10.2026) | angebotsgrafik, vorher-nachher, zielgruppen-segmente, linkedin-profil | C (Canvas-Grafiken im Browser mit PNG-Baustein; Matrix als SVG; Selbsteinschätzung mit Richtwerten von Alperna; Strategie-Pfad neu nummeriert) |
+| 11 (Etappe 5/6, 05.10.2026) | kanalstrategie, content-strategie, testimonial, verzeichnisse | C ohne Prozentzahlen (kanalstrategie), B Generator (content-strategie), C mit Datensatz und Quelle je Eintrag (verzeichnisse), C mit wörtlichem Zitat (testimonial) |
 
 Verschoben, weil eine Voraussetzung fehlt: gbp-check (Places-Schlüssel mit Zahlungsmittel), impressum, datenschutz, gewinnspiel-check, uwg-mailcheck (`content/legal/`: Entwürfe liegen seit dem 05.10.2026 vor, die Freigabe durch einen Menschen fehlt, Regel 8), keywords-lokal (Quelle der Suchvorschläge offen), marktpotenzial und bevoelkerung-nahe Werkzeuge (BFS-Daten noch nicht im Repo), angebotsgrafik und vorher-nachher (PNG-Erzeugung, eigener Baustein).
 
