@@ -1559,6 +1559,55 @@ test.describe("Welle 4 im Browser (Content, KI und Vereine)", () => {
     await page.setViewportSize({ width: 375, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
+
+  test("Bewertungsantwort: Bewertung und Sterne, Fenster, zwei Varianten, Lead mit Sternen, bei Ausfall der KI eine feste Vorlage", async ({ page, request }) => {
+    const calls = await stubGenerate(page, {
+      varianten: [
+        { text: "Danke für deine ehrliche Rückmeldung. Dass sich der Termin zweimal verschoben hat, tut uns leid. Wir melden uns persönlich bei dir.\n\nBeat Keller, Malerei Keller", ton: "ruhig und persönlich" },
+        { text: "Vielen Dank für die Bewertung. Die Verschiebung des Termins ärgert uns selbst, wir planen künftig mit mehr Reserve.\n\nBeat Keller, Malerei Keller", ton: "sachlich und kurz" },
+      ],
+    });
+    await page.goto("/tools/bewertungsantwort");
+    await page.locator("#bw-firma").fill("Malerei Keller");
+    await page.getByRole("button", { name: "Antwort schreiben" }).click();
+    await expect(page.locator("#bw-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#bw-anrede").selectOption("du");
+    await page.locator("#bw-unterschrift").fill("Beat Keller, Malerei Keller");
+    await page.locator("#bw-bewertung").fill("Die Fassade ist schön geworden, aber der Termin hat sich zweimal verschoben.");
+    await page.getByRole("radio", { name: "3 Sterne" }).click();
+    await page.getByRole("button", { name: "Antwort schreiben" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Antwort" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Varianten" }).getByRole("listitem")).toHaveCount(2);
+    await expect(page.getByTestId("variante-1-text")).toContainText("Beat Keller");
+    await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
+    expect(calls.generate).toBe(1);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("bewertungsantwort");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Sterne: 3");
+    expect(lead.ausgabe).toContain("# Antwort auf eine Bewertung");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Antwort" })).toBeVisible();
+    expect(calls.generate).toBe(1);
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+
+  test("Bewertungsantwort: antwortet die KI nicht, erscheint eine feste Vorlage mit Hinweis", async ({ page, request }) => {
+    await page.route("**/api/generate", (route) => route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: "ai_failed" }) }));
+    await page.goto("/tools/bewertungsantwort");
+    await page.locator("#bw-firma").fill("Malerei Keller");
+    await page.locator("#bw-anrede").selectOption("sie");
+    await page.locator("#bw-unterschrift").fill("Beat Keller, Malerei Keller");
+    await page.locator("#bw-bewertung").fill("Sehr freundliche Mitarbeitende und saubere Arbeit, danke.");
+    await page.getByRole("radio", { name: "5 Sterne" }).click();
+    await page.getByRole("button", { name: "Antwort schreiben" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByTestId("vorlage-hinweis")).toBeVisible();
+    await expect(page.getByRole("list", { name: "Varianten" }).getByRole("listitem")).not.toHaveCount(0);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.ausgabe).toContain("Vorlage (ohne KI)");
+  });
 });
 
 test.describe("Zugang v3 über die Routen", () => {
