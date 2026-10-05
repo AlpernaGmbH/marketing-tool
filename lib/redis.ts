@@ -19,6 +19,8 @@ export const keys = {
   ai: (acchash: string, day: string) => `ai:${acchash}:${day}`,
   lookup: (iphash: string, day: string) => `lookup:${iphash}:${day}`,
   aiGlobal: (day: string) => `ai:global:${day}`,
+  /** Marke «Tagesgrenze der KI heute gemeldet», damit die Mail nur einmal am Tag rausgeht. */
+  aiAlert: (day: string) => `ai:alert:${day}`,
   /** Zwischenspeicher der KI-Einordnung je Ergebnis (Hash der Signatur), 24 Stunden. */
   aiCache: (hash: string) => `aicache:${hash}`,
   leadQueue: "lead_queue",

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_AI_MODELS, DEFAULT_MISTRAL_MODELS, MistralError, describeAiError, mistralChat, mistralKey, mistralModelsFromEnv, usesMistral } from "@/lib/ai";
+import { DEFAULT_AI_MODELS, DEFAULT_MISTRAL_MODELS, DEFAULT_OPENROUTER_MODELS, MistralError, aiProvider, describeAiError, mistralChat, mistralKey, mistralModelsFromEnv, openrouterChat, openrouterModelsFromEnv, usesMistral, usesOpenrouter } from "@/lib/ai";
 import { modelsFromEnv } from "@/lib/ai";
 
 describe("modelsFromEnv", () => {
@@ -147,5 +147,79 @@ describe("Mistral direkt", () => {
   it("Fehler tragen nie Text des Anbieters: die Fehlerart im Protokoll bleibt kurz", () => {
     const e = new MistralError("MistralHttpError", 429);
     expect(describeAiError(e)).toBe("MistralHttpError:429");
+  });
+});
+
+describe("OpenRouter", () => {
+  const ARGS = { system: "Regeln", prompt: "Ausgangstext", maxTokens: 300, temperature: 0.4, timeoutMs: 5_000 };
+  const ENV = { OPENROUTER_API_KEY: "or-key" };
+  const ok = (content: unknown) => new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200, headers: { "content-type": "application/json" } });
+  const fail = (status: number) => new Response("{}", { status });
+  const asFetch = (fn: ReturnType<typeof vi.fn>) => fn as unknown as typeof fetch;
+  const bodyOf = (fn: ReturnType<typeof vi.fn>, n = 0) => JSON.parse((fn.mock.calls[n] as unknown as [string, RequestInit])[1].body as string);
+
+  it("wählt den Weg: OpenRouter mit Schlüssel, sonst das Gateway, Mistral nur auf ausdrücklichen Wunsch", () => {
+    expect(aiProvider({})).toBe("gateway");
+    expect(aiProvider(ENV)).toBe("openrouter");
+    expect(aiProvider({ openrouter_api_key: "klein" })).toBe("openrouter");
+    expect(aiProvider({ ...ENV, AI_PROVIDER: "openrouter" })).toBe("openrouter");
+    expect(aiProvider({ ...ENV, AI_PROVIDER: "gateway" })).toBe("gateway");
+    expect(aiProvider({ AI_PROVIDER: "openrouter" })).toBe("gateway"); // ohne Schlüssel
+    expect(aiProvider({ MISTRAL_API_KEY: "m" })).toBe("gateway"); // ein Mistral-Schlüssel allein ändert nichts
+    expect(aiProvider({ ...ENV, MISTRAL_API_KEY: "m", AI_PROVIDER: "mistral" })).toBe("mistral");
+    expect(aiProvider({ ...ENV, AI_PROVIDER: "mistral" })).toBe("gateway"); // Mistral gewünscht, aber kein Schlüssel
+    expect(usesOpenrouter(ENV)).toBe(true);
+    expect(usesMistral(ENV)).toBe(false);
+  });
+
+  it("liest die Modellliste aus OPENROUTER_MODELS (auch mit «:free») und fällt bei Müll auf den Standard", () => {
+    expect(openrouterModelsFromEnv(undefined)).toEqual(DEFAULT_OPENROUTER_MODELS);
+    expect(DEFAULT_OPENROUTER_MODELS.every((m) => m.endsWith(":free"))).toBe(true);
+    expect(openrouterModelsFromEnv(" google/gemma-4-31b-it:free , qwen/qwen3.8-27b:free ")).toEqual(["google/gemma-4-31b-it:free", "qwen/qwen3.8-27b:free"]);
+    expect(openrouterModelsFromEnv("../x,;drop,http://a,ohne-anbieter")).toEqual(DEFAULT_OPENROUTER_MODELS);
+    expect(openrouterModelsFromEnv("a/a,b/b,c/c,d/d")).toHaveLength(3);
+  });
+
+  it("schickt Schlüssel und Nachrichten an OpenRouter, ohne response_format, und gibt den Text zurück", async () => {
+    const fetchImpl = vi.fn(async () => ok('{"a": 1}'));
+    const out = await openrouterChat({ ...ARGS, json: true }, asFetch(fetchImpl), ENV);
+    expect(out).toBe('{"a": 1}');
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://openrouter.ai/api/v1/chat/completions");
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer or-key");
+    const body = bodyOf(fetchImpl);
+    expect(body).toMatchObject({ model: DEFAULT_OPENROUTER_MODELS[0], temperature: 0.4, max_tokens: 300 });
+    expect(body.response_format).toBeUndefined();
+    expect(body.messages).toEqual([
+      { role: "system", content: "Regeln" },
+      { role: "user", content: "Ausgangstext" },
+    ]);
+  });
+
+  it("versucht bei Überlastung, Serverfehler oder leerer Antwort das nächste Modell", async () => {
+    const limit = vi.fn().mockResolvedValueOnce(fail(429)).mockResolvedValueOnce(ok("Zweites Modell."));
+    expect(await openrouterChat(ARGS, asFetch(limit), ENV)).toBe("Zweites Modell.");
+    expect(bodyOf(limit, 1).model).toBe(DEFAULT_OPENROUTER_MODELS[1]);
+
+    const empty = vi.fn().mockResolvedValueOnce(ok("  ")).mockResolvedValueOnce(fail(503)).mockResolvedValueOnce(ok("Drittes Modell."));
+    expect(await openrouterChat(ARGS, asFetch(empty), ENV)).toBe("Drittes Modell.");
+    expect(bodyOf(empty, 2).model).toBe(DEFAULT_OPENROUTER_MODELS[2]);
+  });
+
+  it("versucht bei falschem Schlüssel oder falscher Anfrage nichts weiter und nennt die Fehlerart", async () => {
+    for (const status of [401, 402, 404]) {
+      const fetchImpl = vi.fn(async () => fail(status));
+      await expect(openrouterChat(ARGS, asFetch(fetchImpl), ENV)).rejects.toMatchObject({ name: "OpenRouterHttpError", statusCode: status });
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+    }
+    expect(describeAiError(new MistralError("OpenRouterHttpError", 429))).toBe("OpenRouterHttpError:429");
+  });
+
+  it("wirft ohne Schlüssel und bei Netzfehlern mit lesbarer Fehlerart", async () => {
+    await expect(openrouterChat(ARGS, asFetch(vi.fn()), {})).rejects.toMatchObject({ name: "OpenRouterNoKey" });
+    const net = vi.fn(async () => {
+      throw new TypeError("fetch failed");
+    });
+    await expect(openrouterChat(ARGS, asFetch(net), ENV)).rejects.toMatchObject({ name: "OpenRouterNetworkError" });
   });
 });

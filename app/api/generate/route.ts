@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
-import { defaultAiStore, limitsFromEnv, releaseSlot, takeSlot } from "@/lib/ai-quota";
+import { defaultAiStore, limitsFromEnv, notifyCapacity, releaseSlot, takeSlot } from "@/lib/ai-quota";
 import { describeAiError, generateJson } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
 import { checkGenerated, systemPrompt } from "@/lib/generator";
@@ -44,8 +44,12 @@ export async function POST(req: NextRequest) {
   if (!readGateCookie(req, secret)) return respond(ROUTE, 403, { error: "gate" }, "gate_used");
 
   const store = defaultAiStore();
-  const slot = await takeSlot(store, null, limitsFromEnv(), new Date(), "text");
-  if (slot === "capacity") return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity");
+  const limits = limitsFromEnv();
+  const slot = await takeSlot(store, null, limits, new Date(), "text");
+  if (slot === "capacity") {
+    await notifyCapacity(store, limits);
+    return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity");
+  }
 
   let raw: unknown;
   try {

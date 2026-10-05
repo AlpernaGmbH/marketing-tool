@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Redis } from "@upstash/redis";
+import { aiProvider } from "@/lib/ai";
 import { TTL, dayKey, getRedis, keys, withTimeout } from "@/lib/redis";
 
 // Kontingente und Zwischenspeicher der KI-Einordnung. Alles in Redis; ohne Redis (oder bei Ausfall) gibt es keine Grenze
@@ -62,7 +63,9 @@ export type Scope = "einordnung" | "text";
 
 export function limitsFromEnv(env: Record<string, string | undefined> = process.env): Limits {
   const n = (v: string | undefined, d: number) => (v && /^\d+$/.test(v) ? Number(v) : d);
-  return { perAccount: n(env.AI_ACCOUNT_DAILY, 5), global: n(env.AI_DAILY_CAP, 2000) };
+  // Mit OpenRouter (kostenlose Modelle) gelten 50 Anfragen am Tag, fehlgeschlagene und Wiederholungen eingerechnet: 40 lässt Luft.
+  const defaultCap = aiProvider(env) === "openrouter" ? 40 : 2000;
+  return { perAccount: n(env.AI_ACCOUNT_DAILY, 5), global: n(env.AI_DAILY_CAP, defaultCap) };
 }
 
 /**
@@ -98,5 +101,34 @@ export async function releaseSlot(store: AiStore | null, acchash: string | null,
     await store.decr(keys.aiGlobal(day));
   } catch {
     /* Rückbuchung ist Komfort */
+  }
+}
+
+/**
+ * Meldet höchstens einmal am Tag, dass die Tagesgrenze der KI erreicht ist: ein Aufruf an ALERT_WEBHOOK_URL (n8n schickt daraus eine Mail).
+ * Ohne die Variable oder ohne Redis tut es nichts. Es wirft nie und blockiert die Antwort an den Besucher nicht länger als 5 Sekunden.
+ * Im Aufruf stehen nur Datum, Grenze und Anbieter, nie Eingaben oder Adressen.
+ */
+export async function notifyCapacity(
+  store: AiStore | null,
+  limits: Limits,
+  now = new Date(),
+  fetchImpl: typeof fetch = fetch,
+  env: Record<string, string | undefined> = process.env,
+): Promise<boolean> {
+  const url = env.ALERT_WEBHOOK_URL;
+  if (!store || !url) return false;
+  const day = dayKey(now);
+  try {
+    if ((await store.incr(keys.aiAlert(day), TTL.daily)) !== 1) return false;
+    const res = await fetchImpl(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ event: "ki_tageslimit", datum: day, limit: limits.global, anbieter: aiProvider(env) }),
+      signal: AbortSignal.timeout(5000),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 }

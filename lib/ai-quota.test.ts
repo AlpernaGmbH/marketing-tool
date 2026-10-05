@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { limitsFromEnv, releaseSlot, takeSlot, type AiStore, type Limits } from "@/lib/ai-quota";
+import { describe, expect, it, vi } from "vitest";
+import { limitsFromEnv, notifyCapacity, releaseSlot, takeSlot, type AiStore, type Limits } from "@/lib/ai-quota";
 
 class Memory implements AiStore {
   counters = new Map<string, number>();
@@ -26,6 +26,11 @@ describe("limitsFromEnv", () => {
     expect(limitsFromEnv({})).toEqual({ perAccount: 5, global: 2000 });
     expect(limitsFromEnv({ AI_ACCOUNT_DAILY: "2", AI_DAILY_CAP: "50" })).toEqual({ perAccount: 2, global: 50 });
     expect(limitsFromEnv({ AI_DAILY_CAP: "viele" }).global).toBe(2000);
+  });
+  it("setzt mit OpenRouter (50 Gratis-Anfragen am Tag) die Grenze auf 40, sofern nichts anderes steht", () => {
+    expect(limitsFromEnv({ OPENROUTER_API_KEY: "k" }).global).toBe(40);
+    expect(limitsFromEnv({ OPENROUTER_API_KEY: "k", AI_DAILY_CAP: "900" }).global).toBe(900);
+    expect(limitsFromEnv({ OPENROUTER_API_KEY: "k", AI_PROVIDER: "gateway" }).global).toBe(2000);
   });
 });
 
@@ -93,5 +98,39 @@ describe("takeSlot für Texte (ohne Limit pro Person)", () => {
     store.failing = true;
     expect(await takeSlot(store, null, limits, NOW, "text")).toBe("ok");
     expect(await takeSlot(null, null, limits, NOW, "text")).toBe("ok");
+  });
+});
+
+describe("notifyCapacity", () => {
+  const limits: Limits = { perAccount: 5, global: 40 };
+  const ENV = { ALERT_WEBHOOK_URL: "https://n8n.example/webhook/alarm", OPENROUTER_API_KEY: "k" };
+  const okFetch = () => vi.fn(async () => new Response("{}", { status: 200 }));
+  const asFetch = (fn: ReturnType<typeof vi.fn>) => fn as unknown as typeof fetch;
+
+  it("meldet einmal am Tag, mit Datum, Grenze und Anbieter, sonst nichts", async () => {
+    const store = new Memory();
+    const fetchFn = okFetch();
+    expect(await notifyCapacity(store, limits, NOW, asFetch(fetchFn), ENV)).toBe(true);
+    expect(await notifyCapacity(store, limits, NOW, asFetch(fetchFn), ENV)).toBe(false);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(ENV.ALERT_WEBHOOK_URL);
+    expect(JSON.parse(init.body as string)).toEqual({ event: "ki_tageslimit", datum: "2026-10-04", limit: 40, anbieter: "openrouter" });
+    // am nächsten Tag wieder
+    expect(await notifyCapacity(store, limits, new Date("2026-10-05T10:00:00Z"), asFetch(fetchFn), ENV)).toBe(true);
+  });
+
+  it("tut ohne Adresse, ohne Redis oder bei Fehlern nichts und wirft nie", async () => {
+    const fetchFn = okFetch();
+    expect(await notifyCapacity(new Memory(), limits, NOW, asFetch(fetchFn), {})).toBe(false);
+    expect(await notifyCapacity(null, limits, NOW, asFetch(fetchFn), ENV)).toBe(false);
+    const down = new Memory();
+    down.failing = true;
+    expect(await notifyCapacity(down, limits, NOW, asFetch(fetchFn), ENV)).toBe(false);
+    const broken = vi.fn(async () => {
+      throw new Error("n8n down");
+    });
+    expect(await notifyCapacity(new Memory(), limits, NOW, asFetch(broken), ENV)).toBe(false);
+    expect(fetchFn).not.toHaveBeenCalled();
   });
 });
