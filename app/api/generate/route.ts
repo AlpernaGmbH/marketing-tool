@@ -54,9 +54,11 @@ export async function POST(req: NextRequest) {
   // Besteht der Entwurf die Prüfung nicht, bekommt dasselbe Modell die Rückmeldung und einen zweiten Versuch, danach antwortet das nächste Modell
   // der Liste (lib/ai.ts); der Grund der letzten Ablehnung bleibt für die Fehlermeldung.
   let lastReason: string | null = null;
+  let lastRule: string | undefined;
   const accept = (value: unknown): true | string => {
     const outcome = checkGenerated(def, value, input.data);
     lastReason = outcome.ok ? null : outcome.reason;
+    lastRule = outcome.ok ? undefined : outcome.detail;
     return outcome.ok ? true : repairHint(outcome.reason, outcome.detail);
   };
   let raw: unknown;
@@ -65,13 +67,13 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     await releaseSlot(store, null, new Date(), "text"); // ohne Entwurf kein verbrauchter Platz
     const kind = describeAiError(error);
-    if (kind === "AiBadJson" && lastReason) return respond(ROUTE, 502, { error: "ai_rejected", detail: lastReason }, "ai_failed", `rejected:${lastReason}`);
+    if (kind === "AiBadJson" && lastReason) return respond(ROUTE, 502, { error: "ai_rejected", detail: lastReason, ...(lastRule ? { rule: lastRule } : {}) }, "ai_failed", `rejected:${lastReason}${lastRule ? `:${lastRule}` : ""}`);
     return respond(ROUTE, 502, { error: "ai_failed", detail: kind }, "ai_failed", kind);
   }
   const checked = checkGenerated(def, raw, input.data);
   if (!checked.ok) {
     await releaseSlot(store, null, new Date(), "text");
-    return respond(ROUTE, 502, { error: "ai_rejected", detail: checked.reason }, "ai_failed", `rejected:${checked.reason}`);
+    return respond(ROUTE, 502, { error: "ai_rejected", detail: checked.reason, ...(checked.detail ? { rule: checked.detail } : {}) }, "ai_failed", `rejected:${checked.reason}${checked.detail ? `:${checked.detail}` : ""}`);
   }
   return respond(ROUTE, 200, { ok: true, output: checked.output }, "ai_ok");
 }

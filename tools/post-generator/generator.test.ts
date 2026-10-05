@@ -285,7 +285,7 @@ describe("post-generator: checkGenerated und Prompt", () => {
   it("lässt ein Emoji im Kern nur durch, wenn die Person es erlaubt hat (allowEmoji)", () => {
     const mitEmoji = output({ hauptteil: `${output().hauptteil}\n\nAlles trocken 🎨` });
     expect(checkGenerated(postGenerator, mitEmoji, { ...input, emojis: true }).ok).toBe(true);
-    expect(checkGenerated(postGenerator, mitEmoji, { ...input, emojis: false })).toEqual({ ok: false, reason: "regel" });
+    expect(checkGenerated(postGenerator, mitEmoji, { ...input, emojis: false })).toMatchObject({ ok: false, reason: "regel" });
   });
 
   it("verwirft Antworten mit Hashtag, fremder Zahl, gleichen Hooks, zu langem Hauptteil und Wort aus «vermeiden» mit dem Grund «check»", () => {
@@ -303,9 +303,9 @@ describe("post-generator: checkGenerated und Prompt", () => {
   it("verwirft falsche Form, Ausrufezeichen, Sperrwörter und fremde Links", () => {
     expect(checkGenerated(postGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
     expect(checkGenerated(postGenerator, { hooks: ["nur einer"], hauptteil: "x" }, input)).toEqual({ ok: false, reason: "schema" });
-    expect(checkGenerated(postGenerator, output({ cta: "Schreib uns in die Kommentare!" }), input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(postGenerator, output({ hauptteil: `${output().hauptteil}\n\nEine innovative Lösung für die Fassade.` }), input)).toEqual({ ok: false, reason: "stimme" });
-    expect(checkGenerated(postGenerator, output({ cta: "Mehr dazu auf https://example.com in den Kommentaren." }), input)).toEqual({ ok: false, reason: "link" });
+    expect(checkGenerated(postGenerator, output({ cta: "Schreib uns in die Kommentare!" }), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(postGenerator, output({ hauptteil: `${output().hauptteil}\n\nEine innovative Lösung für die Fassade.` }), input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(postGenerator, output({ cta: "Mehr dazu auf https://example.com in den Kommentaren." }), input)).toMatchObject({ ok: false, reason: "link" });
   });
 
   it("macht aus typografischen Anführungszeichen «» und beschreibt Aufgabe, Form und Regeln, ohne Eingaben in der Anweisung", () => {

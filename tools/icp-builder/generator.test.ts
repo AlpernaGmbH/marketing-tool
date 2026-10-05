@@ -144,7 +144,7 @@ describe("icp-builder: Generator mit checkGenerated", () => {
     expect(checkGenerated(icpGenerator, output({ punktekarte: karte([3, 3, 2, 2, 2]) }), input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(icpGenerator, { segmentName: "x" }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(icpGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
-    expect(checkGenerated(icpGenerator, output({ beschreibung: `${output().beschreibung} Jetzt anfragen.` }), input)).toEqual({ ok: false, reason: "regel" });
+    expect(checkGenerated(icpGenerator, output({ beschreibung: `${output().beschreibung} Jetzt anfragen.` }), input)).toMatchObject({ ok: false, reason: "regel" });
   });
   it("hält Eingaben aus der Anweisung heraus und kennzeichnet sie in der Nutzernachricht als Daten", () => {
     const system = systemPrompt(icpGenerator);

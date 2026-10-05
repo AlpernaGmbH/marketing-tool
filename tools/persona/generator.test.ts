@@ -148,8 +148,8 @@ describe("persona: Generator mit checkGenerated", () => {
     expect(checkGenerated(personaGenerator, output({ kurz: "Ruth Hungerbühler, 52 Jahre alt, wohnt mit ihrem Mann in einem Einfamilienhaus in Gossau." }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(personaGenerator, output({ name: "Malerei Keller" }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(personaGenerator, { name: "Ruth", ziele: [] }, input)).toEqual({ ok: false, reason: "schema" });
-    expect(checkGenerated(personaGenerator, output({ zitat: "Jetzt will ich endlich eine Offerte, die ich verstehe." }), input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(personaGenerator, output({ soSprichstDuSieAn: { ...output().soSprichstDuSieAn, vermeiden: ["innovativ", "Premium", "exklusiv"] } }), input)).toEqual({ ok: false, reason: "stimme" });
+    expect(checkGenerated(personaGenerator, output({ zitat: "Jetzt will ich endlich eine Offerte, die ich verstehe." }), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(personaGenerator, output({ soSprichstDuSieAn: { ...output().soSprichstDuSieAn, vermeiden: ["innovativ", "Premium", "exklusiv"] } }), input)).toMatchObject({ ok: false, reason: "stimme" });
   });
   it("hält Eingaben aus der Anweisung heraus und schickt Altersgruppe und Rolle als Text", () => {
     const system = systemPrompt(personaGenerator);

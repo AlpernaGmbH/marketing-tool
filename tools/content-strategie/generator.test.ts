@@ -327,9 +327,9 @@ describe("content-strategie: Generator mit checkGenerated", () => {
   it("verwirft kaputte Form über das Schema, verbotene Wörter über die Regeln und die Stimme", () => {
     expect(checkGenerated(strategieGenerator, { kernbotschaft: output().kernbotschaft }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(strategieGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
-    expect(checkGenerated(strategieGenerator, output({ niemals: ["Jetzt buchen, weil es sich lohnt.", output().niemals[1]] }), input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(strategieGenerator, output({ kernbotschaft: "Innovative Fassaden für Gossau, die zeigen, wie sauber die Malerei Keller arbeitet." }), input)).toEqual({ ok: false, reason: "stimme" });
-    expect(checkGenerated(strategieGenerator, output({ messung: ["Mehr dazu auf www.beispiel.ch ablesen und zählen, jeden Monat.", ...output().messung.slice(1)] }), input)).toEqual({ ok: false, reason: "link" });
+    expect(checkGenerated(strategieGenerator, output({ niemals: ["Jetzt buchen, weil es sich lohnt.", output().niemals[1]] }), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(strategieGenerator, output({ kernbotschaft: "Innovative Fassaden für Gossau, die zeigen, wie sauber die Malerei Keller arbeitet." }), input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(strategieGenerator, output({ messung: ["Mehr dazu auf www.beispiel.ch ablesen und zählen, jeden Monat.", ...output().messung.slice(1)] }), input)).toMatchObject({ ok: false, reason: "link" });
   });
   it("gibt der KI bei einem Fehler der eigenen Prüfung die Kennung zurück", () => {
     const hint = repairHint("check", "kanal");

@@ -174,8 +174,8 @@ describe("swot: Generator mit checkGenerated", () => {
     expect(checkGenerated(swotGenerator, output({ einSatz: "Malerei Keller hat 12 Mitarbeitende und lebt von Empfehlungen, online bleibt der Betrieb zurück." }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(swotGenerator, { einSatz: "Nur ein Satz", staerken: [] }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(swotGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
-    expect(checkGenerated(swotGenerator, output({ einSatz: "Jetzt gilt es, die Empfehlungen in sichtbare Anfragen zu verwandeln, bevor andere es tun." }), input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(swotGenerator, output({ folgerungen: [{ ...output().folgerungen[0], massnahme: "Eine ganzheitliche Strategie für das Google-Profil." }, ...output().folgerungen.slice(1)] }), input)).toEqual({ ok: false, reason: "stimme" });
+    expect(checkGenerated(swotGenerator, output({ einSatz: "Jetzt gilt es, die Empfehlungen in sichtbare Anfragen zu verwandeln, bevor andere es tun." }), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(swotGenerator, output({ folgerungen: [{ ...output().folgerungen[0], massnahme: "Eine ganzheitliche Strategie für das Google-Profil." }, ...output().folgerungen.slice(1)] }), input)).toMatchObject({ ok: false, reason: "stimme" });
   });
   it("hält Eingaben aus der Anweisung heraus und kennzeichnet sie in der Nutzernachricht als Daten", () => {
     const system = systemPrompt(swotGenerator);

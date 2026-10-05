@@ -266,8 +266,8 @@ describe("content-saeulen: Generator mit checkGenerated", () => {
     expect(checkGenerated(saeulenGenerator, output({ niemals: ["Rabatte von 20 %, weil die Arbeit ihren Preis hat.", "Preise ohne Besichtigung, weil jede Fassade anders ist."] }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(saeulenGenerator, { saeulen: saeulen().slice(0, 2) }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(saeulenGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
-    expect(checkGenerated(saeulenGenerator, output({ niemals: ["Jetzt buchen, weil es sich lohnt.", "Preise ohne Besichtigung, weil jede Fassade anders ist."] }), input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(saeulenGenerator, mitErster({ beschreibung: "Innovative Fassaden für Gossau, die zeigen, wie sauber wir arbeiten und was ein Haus braucht." }), input)).toEqual({ ok: false, reason: "stimme" });
+    expect(checkGenerated(saeulenGenerator, output({ niemals: ["Jetzt buchen, weil es sich lohnt.", "Preise ohne Besichtigung, weil jede Fassade anders ist."] }), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(saeulenGenerator, mitErster({ beschreibung: "Innovative Fassaden für Gossau, die zeigen, wie sauber wir arbeiten und was ein Haus braucht." }), input)).toMatchObject({ ok: false, reason: "stimme" });
   });
   it("hält Eingaben aus der Anweisung heraus und kennzeichnet sie in der Nutzernachricht als Daten", () => {
     const system = systemPrompt(saeulenGenerator);

@@ -335,10 +335,10 @@ describe("vereins-kommunikation: checkGenerated", () => {
     expect(checkGenerated(vereinGenerator, output({ kanalplan: [...output().kanalplan.slice(0, 3), { kanal: "TikTok", zweck: "Kurze Videos vom Training.", rhythmus: "wöchentlich", verantwortlich: "" }] }), input)).toMatchObject({ ok: false, reason: "check" });
   });
   it("verwirft Emojis, Ausrufezeichen, Wörter der Sperrliste und fremde Links", () => {
-    expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Der FC Trogen bringt das Dorf zusammen 😀 auf dem Sportplatz." }), input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Der FC Trogen bringt das ganze Dorf auf dem Sportplatz zusammen!" }), input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Der FC Trogen ist ein innovativer Verein mit ganzheitlichem Blick auf das Dorf." }), input)).toEqual({ ok: false, reason: "stimme" });
-    expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Der FC Trogen informiert das Dorf auf www.fc-trogen-beispiel.ch über alles." }), input)).toEqual({ ok: false, reason: "link" });
+    expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Der FC Trogen bringt das Dorf zusammen 😀 auf dem Sportplatz." }), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Der FC Trogen bringt das ganze Dorf auf dem Sportplatz zusammen!" }), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Der FC Trogen ist ein innovativer Verein mit ganzheitlichem Blick auf das Dorf." }), input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Der FC Trogen informiert das Dorf auf www.fc-trogen-beispiel.ch über alles." }), input)).toMatchObject({ ok: false, reason: "link" });
   });
   it("macht aus Anführungszeichen « » und aus ß ss, bevor geprüft wird", () => {
     const r = checkGenerated(vereinGenerator, output({ kernbotschaft: 'Der FC Trogen lädt zum "Dorffest" ein und grüßt das ganze Dorf.' }), input);

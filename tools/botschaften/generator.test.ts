@@ -163,8 +163,8 @@ describe("botschaften: Generator mit checkGenerated", () => {
   it("verwirft eine Antwort mit fremder Zahl, doppeltem «fuer», Ausrufezeichen, Sperrwort, in falscher Form oder ohne JSON", () => {
     expect(checkGenerated(botschaftenGenerator, output({ hauptbotschaft: "Über 300 Fassaden in der Region Gossau gestrichen, mit Termin." }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(botschaftenGenerator, output({ botschaften: [botschaft(), botschaft(), botschaft({ fuer: "Offerte" })] }), input)).toMatchObject({ ok: false, reason: "check" });
-    expect(checkGenerated(botschaftenGenerator, output({ telefonsatz: "Wir streichen Fassaden in Gossau, die halten!" }), input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(botschaftenGenerator, output({ nichtSagen: ["Dass wir führend in der Region sind", "Dass wir alles machen", "Ein Preis am Telefon"] }), input)).toEqual({ ok: false, reason: "stimme" });
+    expect(checkGenerated(botschaftenGenerator, output({ telefonsatz: "Wir streichen Fassaden in Gossau, die halten!" }), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(botschaftenGenerator, output({ nichtSagen: ["Dass wir führend in der Region sind", "Dass wir alles machen", "Ein Preis am Telefon"] }), input)).toMatchObject({ ok: false, reason: "stimme" });
     expect(checkGenerated(botschaftenGenerator, { hauptbotschaft: "nur ein Feld" }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(botschaftenGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
   });

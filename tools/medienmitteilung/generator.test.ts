@@ -240,15 +240,15 @@ describe("medienmitteilung: Generator mit checkGenerated", () => {
     expect(checkGenerated(medienGenerator, mitLaenge(140), input)).toMatchObject({ ok: false, reason: "check" });
   });
   it("verwirft Ausrufezeichen, Links aus dem Nichts, falsche Form und Text ohne JSON", () => {
-    expect(checkGenerated(medienGenerator, output({ titel: "Malerei Keller feiert 40 Jahre mit einem Fest!" }), input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(medienGenerator, output({ boilerplate: `${BEISPIEL_OUTPUT.boilerplate} Siehe www.beispiel.ch oder info@beispiel.ch.` }), input)).toEqual({ ok: false, reason: "link" });
+    expect(checkGenerated(medienGenerator, output({ titel: "Malerei Keller feiert 40 Jahre mit einem Fest!" }), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(medienGenerator, output({ boilerplate: `${BEISPIEL_OUTPUT.boilerplate} Siehe www.beispiel.ch oder info@beispiel.ch.` }), input)).toMatchObject({ ok: false, reason: "link" });
     expect(checkGenerated(medienGenerator, { titel: "nur ein Feld" }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(medienGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
   });
   it("verwirft Wörter der Sperrliste, die die Marke ausschliesst", () => {
     const text = [...BEISPIEL_OUTPUT.text];
     text[0] = `${text[0]} Der Betrieb ist führend in der Region.`;
-    expect(checkGenerated(medienGenerator, output({ text }), input)).toEqual({ ok: false, reason: "stimme" });
+    expect(checkGenerated(medienGenerator, output({ text }), input)).toMatchObject({ ok: false, reason: "stimme" });
   });
   it("hält Eingaben aus der Anweisung heraus und kennzeichnet sie in der Nutzernachricht als Daten", () => {
     const system = systemPrompt(medienGenerator);

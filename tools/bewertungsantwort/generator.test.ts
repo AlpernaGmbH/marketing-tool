@@ -221,10 +221,10 @@ describe("bewertungsantwort: Generator mit checkGenerated", () => {
     expect(checkGenerated(bewertungsantwortGenerator, output({}, { text: v2.text.replace("Rufen Sie uns", "Mit einem Gutschein rufen Sie uns") }), input)).toMatchObject({ ok: false, reason: "check" });
   });
   it("verwirft Ausrufezeichen, Sperrwörter, Gedankenstriche, fremde Links, falsche Form und Text ohne JSON", () => {
-    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Danke!") }), input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Wir arbeiten ganzheitlich, danke") }), input)).toEqual({ ok: false, reason: "stimme" });
-    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Danke — wirklich") }), input)).toEqual({ ok: false, reason: "stimme" });
-    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace(PLATZHALTER, "info@malerei-keller.example") }), input)).toEqual({ ok: false, reason: "link" });
+    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Danke!") }), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Wir arbeiten ganzheitlich, danke") }), input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Danke — wirklich") }), input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace(PLATZHALTER, "info@malerei-keller.example") }), input)).toMatchObject({ ok: false, reason: "link" });
     expect(checkGenerated(bewertungsantwortGenerator, { varianten: [v1] }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(bewertungsantwortGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
   });

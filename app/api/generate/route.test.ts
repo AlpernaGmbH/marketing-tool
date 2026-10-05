@@ -132,6 +132,18 @@ describe("POST /api/generate", () => {
     expect(logs.join("\n")).toContain("rejected:schema");
   });
 
+  it("nennt bei einer Regelverletzung die Bezeichnung der Regel, nie Text aus dem Entwurf", async () => {
+    gen.fn.mockImplementation(async (args: { accept: (v: unknown) => true | string }) => {
+      args.accept({ titel: "Fassaden in Gossau!", punkte: ["a"] });
+      throw Object.assign(new Error("Meldung"), { name: "AiBadJson" });
+    });
+    const res = await call();
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "ai_rejected", detail: "regel", rule: "Ausrufezeichen" });
+    expect(logs.join("\n")).toContain("rejected:regel:Ausrufezeichen");
+    expect(logs.join("\n")).not.toContain("Fassaden in Gossau");
+  });
+
   it("meldet 502 bei einem Ausfall der KI und loggt die Fehlerart, nie Eingaben", async () => {
     gen.fn.mockRejectedValue(Object.assign(new Error("Meldung mit Malerei Keller"), { name: "MistralHttpError", statusCode: 500 }));
     const res = await call();

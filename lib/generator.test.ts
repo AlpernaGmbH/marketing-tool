@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { checkGenerated, cleanStrings, collectStrings, dataPrompt, defineGenerator, linksIn, numbersIn, parseJsonObject, placeholdersIn, repairHint, systemPrompt, textIssue } from "@/lib/generator";
+import { checkGenerated, cleanStrings, collectStrings, dataPrompt, defineGenerator, linksIn, numbersIn, parseJsonObject, placeholdersIn, findIssue, repairHint, systemPrompt, textIssue } from "@/lib/generator";
 
 const def = defineGenerator({
   slug: "probe",
@@ -80,17 +80,17 @@ describe("checkGenerated", () => {
     expect(checkGenerated(def, "nur Text", input)).toEqual({ ok: false, reason: "json" });
     expect(checkGenerated(def, { titel: "zu" }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(def, { titel: "     ", punkte: [" "] }, input)).toEqual({ ok: false, reason: "schema" });
-    expect(checkGenerated(def, { titel: "Unsere Agentur hilft", punkte: ["a"] }, input)).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(def, { titel: "Mehrwert für alle", punkte: ["a"] }, input)).toEqual({ ok: false, reason: "stimme" });
-    expect(checkGenerated(def, { titel: "Fassaden in Gossau", punkte: ["www.fremd.ch"] }, input)).toEqual({ ok: false, reason: "link" });
+    expect(checkGenerated(def, { titel: "Unsere Agentur hilft", punkte: ["a"] }, input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(def, { titel: "Mehrwert für alle", punkte: ["a"] }, input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(def, { titel: "Fassaden in Gossau", punkte: ["www.fremd.ch"] }, input)).toMatchObject({ ok: false, reason: "link" });
     expect(checkGenerated(def, { titel: "Fassaden in Gossau", punkte: ["verboten"] }, input)).toEqual({ ok: false, reason: "check", detail: "verboten" });
   });
   it("erlaubt Emojis nur für ein Werkzeug mit allowEmoji und nur, wenn die Eingabe es erlaubt", () => {
     const withEmoji = defineGenerator({ ...def, input: z.object({ betrieb: z.string(), emojis: z.boolean() }), allowEmoji: (i) => i.emojis });
     const out = { titel: "Fassaden in Gossau 🎨", punkte: ["a"] };
     expect(checkGenerated(withEmoji, out, { betrieb: "Keller", emojis: true }).ok).toBe(true);
-    expect(checkGenerated(withEmoji, out, { betrieb: "Keller", emojis: false })).toEqual({ ok: false, reason: "regel" });
-    expect(checkGenerated(def, out, input)).toEqual({ ok: false, reason: "regel" });
+    expect(checkGenerated(withEmoji, out, { betrieb: "Keller", emojis: false })).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(def, out, input)).toMatchObject({ ok: false, reason: "regel" });
   });
   it("lässt Zahlen und Platzhalter zu und listet die Platzhalter", () => {
     const out = checkGenerated(def, { titel: "Seit 1998 in Gossau", punkte: ["Ruf an: [Telefonnummer]", "Ab [Datum]"] }, input);
@@ -121,9 +121,26 @@ describe("repairHint", () => {
     expect(repairHint("check", "anteil")).toContain("Kennung: anteil");
     expect(repairHint("check")).toContain("Kennung: unbekannt");
     expect(repairHint("regel")).toContain("Ausrufezeichen");
+    expect(repairHint("regel", "Eszett")).toContain("Gefunden wurde: Eszett.");
+    expect(repairHint("regel")).not.toContain("Gefunden wurde");
+    expect(repairHint("schema", "x")).not.toContain("Gefunden wurde");
   });
   it("checkGenerated gibt die Kennung der eigenen Prüfung weiter", () => {
     const out = checkGenerated(def, { titel: "Ein guter Titel", punkte: ["verboten"] }, input);
     expect(out).toEqual({ ok: false, reason: "check", detail: "verboten" });
+  });
+});
+
+describe("findIssue", () => {
+  it("nennt die verletzte Regel, nie den Text", () => {
+    expect(findIssue(["Super!"], "")).toEqual({ reason: "regel", what: "Ausrufezeichen" });
+    expect(findIssue(["Straße"], "")).toEqual({ reason: "regel", what: "Eszett" });
+    expect(findIssue(["Mehr auf https://fremd.example/x"], "")).toEqual({ reason: "link", what: "Link oder Adresse" });
+    expect(findIssue(["Ganzheitliche Lösungen."], "")?.reason).toBe("stimme");
+    expect(findIssue(["Wir streichen Fassaden in Gossau."], "")).toBeNull();
+  });
+  it("gibt checkGenerated die Regel als detail mit", () => {
+    expect(checkGenerated(def, { titel: "Fassaden in Gossau!", punkte: ["a"] }, input)).toEqual({ ok: false, reason: "regel", detail: "Ausrufezeichen" });
+    expect(checkGenerated(def, { titel: "Fassaden in Gossau", punkte: ["a"] }, input)).toMatchObject({ ok: true });
   });
 });

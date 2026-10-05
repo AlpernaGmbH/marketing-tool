@@ -138,17 +138,22 @@ export type GeneratorFail = "json" | "schema" | "leer" | "stimme" | "regel" | "l
  * Gibt den ersten Grund zurück oder null.
  */
 export function textIssue(strings: string[], allowed: string, opts: { emoji?: boolean } = {}): GeneratorFail | null {
+  return findIssue(strings, allowed, opts)?.reason ?? null;
+}
+
+/** Wie textIssue, nennt zusätzlich die verletzte Regel (feste Bezeichnung wie «Ausrufezeichen», nie Text aus dem Entwurf). */
+export function findIssue(strings: string[], allowed: string, opts: { emoji?: boolean } = {}): { reason: GeneratorFail; what: string } | null {
   const allowedLinks = new Set(linksIn(allowed));
   const banned = opts.emoji ? BANNED.filter((b) => b.what !== "Emoji") : BANNED;
   for (const t of strings) {
-    for (const rule of BRAND_RULES) if (rule.level === "hart" && rule.re.test(t)) return "stimme";
-    for (const { re } of banned) if (re.test(t)) return "regel";
-    for (const l of linksIn(t)) if (!allowedLinks.has(l)) return "link";
+    for (const rule of BRAND_RULES) if (rule.level === "hart" && rule.re.test(t)) return { reason: "stimme", what: rule.what };
+    for (const { re, what } of banned) if (re.test(t)) return { reason: "regel", what };
+    for (const l of linksIn(t)) if (!allowedLinks.has(l)) return { reason: "link", what: "Link oder Adresse" };
   }
   return null;
 }
 
-export type GeneratorOutcome<O> = { ok: true; output: O } | { ok: false; reason: GeneratorFail; /** Kennung der eigenen Prüfung des Werkzeugs (nur bei reason «check»). */ detail?: string };
+export type GeneratorOutcome<O> = { ok: true; output: O } | { ok: false; reason: GeneratorFail; /** Bei «check» die Kennung der eigenen Prüfung des Werkzeugs, bei «stimme», «regel» und «link» die Bezeichnung der verletzten Regel. */ detail?: string };
 
 /** Prüft die rohe Antwort der KI gegen Form, Stimme und Regeln und gibt die bereinigte Ausgabe zurück. */
 export function checkGenerated<I, O>(def: GeneratorDef<I, O>, raw: unknown, input: I): GeneratorOutcome<O> {
@@ -158,8 +163,8 @@ export function checkGenerated<I, O>(def: GeneratorDef<I, O>, raw: unknown, inpu
   if (!parsed.success) return { ok: false, reason: "schema" };
   const strings = collectStrings(parsed.data);
   if (strings.length === 0 || strings.every((s) => !s.trim())) return { ok: false, reason: "leer" };
-  const issue = textIssue(strings, JSON.stringify(input), { emoji: def.allowEmoji?.(input) === true });
-  if (issue) return { ok: false, reason: issue };
+  const issue = findIssue(strings, JSON.stringify(input), { emoji: def.allowEmoji?.(input) === true });
+  if (issue) return { ok: false, reason: issue.reason, detail: issue.what };
   const own = def.check?.(parsed.data, input);
   if (own) return { ok: false, reason: "check", detail: own };
   return { ok: true, output: parsed.data };
@@ -179,7 +184,8 @@ export function repairHint(reason: GeneratorFail, detail?: string): string {
     link: "Der Entwurf enthält einen Link oder eine E-Mail-Adresse, die nicht in den Angaben steht. Lass sie weg.",
     check: `Eine Regel der Anweisung ist verletzt (Kennung: ${detail ?? "unbekannt"}). Prüfe besonders: Ziffern nur, wenn sie wörtlich in den Angaben stehen (sonst als Wort schreiben oder weglassen); Zahl der Einträge, Summen und Längen genau wie verlangt.`,
   };
-  return `Dein Entwurf hat die Prüfung nicht bestanden. ${grund[reason]} Antworte nur mit dem vollständigen, korrigierten JSON-Objekt in der verlangten Form.`;
+  const konkret = detail && (reason === "regel" || reason === "stimme") ? ` Gefunden wurde: ${detail}.` : "";
+  return `Dein Entwurf hat die Prüfung nicht bestanden. ${grund[reason]}${konkret} Antworte nur mit dem vollständigen, korrigierten JSON-Objekt in der verlangten Form.`;
 }
 
 /** Platzhalter in eckigen Klammern, die der Besucher noch ausfüllen muss. */
