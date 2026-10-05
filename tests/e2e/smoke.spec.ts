@@ -1339,6 +1339,30 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     await expect(page.getByRole("region", { name: "Dein Marketing-Budget" })).toBeVisible();
   });
 
+  test("Content-Ideen: Filter, Idee merken, CSV hinter dem Fenster, Lead mit Branche und Titeln, Merkliste nach dem Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/content-ideen");
+    await expect(page.getByTestId("ci-count")).toContainText("Ideen");
+    await page.locator("#ci-branche").selectOption("handwerk");
+    await page.locator("#ci-monat").selectOption("10");
+    await expect(page.getByTestId("ci-card").first()).toBeVisible();
+    await page.getByTestId("ci-card").first().getByRole("button", { name: "Merken" }).click();
+    await expect(page.getByTestId("ci-merk-count")).toContainText("gemerkt");
+    await expect(page.getByTestId("ci-merk-count")).not.toContainText("Noch nichts");
+    const csv = page.waitForEvent("download");
+    await page.getByTestId("ci-csv").click();
+    const email = await giveEmail(page);
+    expect((await csv).suggestedFilename()).toMatch(/^content-ideen.*\.csv$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("content-ideen");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Branche: Handwerk");
+    expect(lead.eingabe).toContain("Export: CSV");
+    expect(lead.ausgabe).toContain("# Content-Ideen: Merkliste");
+    await page.reload();
+    await expect(page.getByTestId("ci-merk-count")).toContainText("gemerkt");
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+
   test("Feiertagsplaner: ohne Kanton eine Meldung, mit Kanton Liste, Kalender-Download, Lead mit Kanton und Tagen, Neuladen", async ({ page, request }) => {
     await page.goto("/tools/gbp-feiertage");
     await page.getByRole("button", { name: "Liste erstellen" }).click();
