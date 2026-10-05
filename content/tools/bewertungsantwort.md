@@ -1,7 +1,7 @@
 ---
 title: "Bewertung beantworten Schweiz: Antwort mit KI, kostenlos"
 description: "Füge eine Google-Bewertung ein. Eine KI schreibt zwei Antworten in deinem Ton: dankbar bei Lob, ruhig bei Kritik, ohne erfundene Details. Kostenlos."
-h1: "Bewertungsantwort für Schweizer KMU"
+h1: "Bewertung beantworten: Bewertungsantwort für Schweizer KMU"
 tagline: "Zwei Antworten auf eine Google-Bewertung in deinem Ton: dankbar bei Lob, ruhig und konkret bei Kritik."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:

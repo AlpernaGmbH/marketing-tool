@@ -1,7 +1,7 @@
 ---
 title: "Caption schreiben Schweiz: Hook, Text und Aufforderung"
 description: "Caption schreiben in drei Schritten: Hook, Hauptteil, Aufforderung. Fertig für Instagram, LinkedIn, Facebook und Google, mit Vorschau. Ohne Konto."
-h1: "Caption-Baukasten für Schweizer KMU"
+h1: "Caption schreiben mit dem Caption-Baukasten für Schweizer KMU"
 tagline: "Hook, Hauptteil und Aufforderung in drei Schritten, fertig für Instagram, LinkedIn, Facebook und Google."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:

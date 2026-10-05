@@ -1,7 +1,7 @@
 ---
 title: "Reifegrad-Check Schweiz: Marketing in 10 Fragen prüfen"
 description: "Zehn Fragen, fünf Minuten: Der Reifegrad-Check zeigt, wie weit dein Marketing ist, mit Reifegrad von 0 bis 100, fünf Dimensionen und nächsten Schritten."
-h1: "Reifegrad-Check für Schweizer KMU"
+h1: "Marketing-Reifegrad-Check für Schweizer KMU"
 tagline: "Zehn Fragen, ein Reifegrad von 0 bis 100 und je Dimension zwei nächste Schritte."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:

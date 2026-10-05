@@ -6,7 +6,7 @@ export default defineTool({
   category: "schweiz",
   audience: "beide",
   tagline: "Sonderöffnungszeiten für alle Feiertage deines Kantons: zum Abtippen, als Kalender mit Erinnerung und als CSV.",
-  keyword: "Feiertage Öffnungszeiten",
+  keyword: "Feiertagsplaner",
   related: ["bewertungs-kit", "qr-set", "digitaler-auftritt-check"],
   needsServer: false,
   usesProfile: ["firma", "kanton"],

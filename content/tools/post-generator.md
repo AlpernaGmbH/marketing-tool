@@ -1,7 +1,7 @@
 ---
 title: "Social-Media-Beitrag schreiben Schweiz: Post-Generator"
 description: "Aus einer Idee schreibt eine KI deinen Beitrag für Instagram, LinkedIn, Facebook oder Google, mit zwei Hooks. Ohne Konto, E-Mail vor dem Ergebnis."
-h1: "Post-Generator für Schweizer KMU"
+h1: "Social-Media-Beitrag schreiben mit dem Post-Generator für Schweizer KMU"
 tagline: "Aus einer Idee ein Beitrag für Instagram, LinkedIn, Facebook oder Google, in deinem Ton und mit zwei Hooks."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:

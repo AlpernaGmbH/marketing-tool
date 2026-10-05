@@ -30,7 +30,7 @@ Eine Persona macht aus «unsere Kundschaft» eine Person, an die du jeden Text r
 4. **Prüf deine Offerte.** Steht dort, was ihre Sorgen beruhigt, etwa Dauer und Ablauf?
 5. **Mach eine zweite Person.** Für Verwaltungen oder Vereine ändern sich Ton und Einwände; beide landen im Firmenprofil.
 
-=> Gleich unten: der Fehler, der aus einer Persona eine Karikatur macht.
+=> Gleich unten: der Fehler, der aus ihr eine Karikatur macht.
 
 ## Häufige Fehler
 - **Du beschreibst den Wunschkunden statt den echten.** Nimm die Situation und die Fragen, die du wirklich hörst, dann bleibt die Person nah am Alltag.
@@ -70,7 +70,7 @@ Betrieb, Branche und Ort aus deinem Firmenprofil sowie Zielgruppe, Angebot, Alte
 ### Brauche ich ein Konto?
 Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
-### Kann ich mehrere Personas machen?
+### Kann ich mehrere Kundenbilder machen?
 Ja. Nach der ersten änderst du oben die Angaben, etwa auf «Liegenschaftsverwaltungen im Kanton St. Gallen», und klickst erneut. Jede landet in deinem Firmenprofil unter «Personas», bis zu zehn; gleiche Namen werden ersetzt.
 
 ### Was ist der Unterschied zum ICP-Builder?

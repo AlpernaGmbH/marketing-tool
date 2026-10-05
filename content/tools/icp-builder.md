@@ -1,7 +1,7 @@
 ---
 title: "ICP-Builder Schweiz: Idealkundenprofil mit Punktekarte"
 description: "Eine KI schreibt aus fünf Angaben dein Idealkundenprofil mit Punktekarte zum Bewerten neuer Anfragen. Kostenlos, ohne Konto, Ergebnis gegen E-Mail-Adresse."
-h1: "ICP-Builder für Schweizer KMU"
+h1: "ICP-Builder: Idealkundenprofil für Schweizer KMU"
 tagline: "Dein Idealkunde aus fünf Angaben, mit Punktekarte zum Bewerten neuer Anfragen."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:

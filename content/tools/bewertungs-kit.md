@@ -1,7 +1,7 @@
 ---
 title: "Bewertungs-Kit Schweiz: QR-Code und Aufsteller für Google"
 description: "QR-Code, Tischaufsteller und Anfrage-Texte für mehr Google-Bewertungen aus deinem Bewertungslink. Kostenlos, ohne Konto, Ergebnis gegen E-Mail-Adresse."
-h1: "Bewertungs-Kit für Schweizer KMU"
+h1: "Google-Bewertungen sammeln mit dem Bewertungs-Kit für Schweizer KMU"
 tagline: "QR-Code, Tischaufsteller und drei Anfrage-Texte für mehr Google-Bewertungen, fertig zum Drucken."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:

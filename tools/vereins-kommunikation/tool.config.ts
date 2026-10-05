@@ -6,7 +6,7 @@ export default defineTool({
   category: "strategie",
   audience: "verein",
   tagline: "Ziele, Zielgruppen, Kernbotschaft, Kanalplan und Jahreskalender deines Vereins als Konzept für die GV.",
-  keyword: "Kommunikationskonzept Verein",
+  keyword: "Kommunikationskonzept",
   related: ["anspruchsgruppen", "sponsoring-dossier", "content-kalender"],
   needsServer: true,
   usesProfile: ["organisationstyp", "firma", "ort", "kanton", "kanaele"],

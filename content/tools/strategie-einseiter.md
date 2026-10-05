@@ -1,7 +1,7 @@
 ---
 title: "Strategie-Einseiter Schweiz: Marketingstrategie auf 1 Seite"
 description: "Positionierung, Zielgruppe, Marke, Botschaft, Kanäle, Budget, Lage und Massnahmen aus deinen Werkzeugen auf einer Seite. Ohne Konto, gegen E-Mail-Adresse."
-h1: "Strategie-Einseiter für Schweizer KMU"
+h1: "Strategie-Einseiter: Marketingstrategie für Schweizer KMU"
 tagline: "Alle Ergebnisse deiner Strategie-Werkzeuge auf einer Seite, mit Platzhaltern für das, was noch fehlt."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:

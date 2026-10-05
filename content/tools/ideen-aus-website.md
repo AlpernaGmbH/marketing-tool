@@ -1,7 +1,7 @@
 ---
 title: "Content-Ideen aus deiner Website für Schweizer KMU"
 description: "Eine KI liest deine Startseite und schreibt 8 bis 12 Ideen für Instagram, LinkedIn, Google-Beitrag, Newsletter und Website. Kostenlos, ohne Konto."
-h1: "Ideen aus deiner Website für Schweizer KMU"
+h1: "Content-Ideen aus deiner Website für Schweizer KMU"
 tagline: "Aus dem Text deiner Startseite werden 8 bis 12 Ideen für Beiträge, mit Kanal, Format und erstem Satz."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:
