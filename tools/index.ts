@@ -16,6 +16,7 @@ import swotConfig from "./swot/tool.config";
 import contentSaeulenConfig from "./content-saeulen/tool.config";
 import whatsappLinkConfig from "./whatsapp-link/tool.config";
 import qrSetConfig from "./qr-set/tool.config";
+import bewertungsKitConfig from "./bewertungs-kit/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -38,5 +39,6 @@ export const tools: ToolConfig[] = [
   contentSaeulenConfig,
   whatsappLinkConfig,
   qrSetConfig,
+  bewertungsKitConfig,
   // new-tool:configs
 ];
