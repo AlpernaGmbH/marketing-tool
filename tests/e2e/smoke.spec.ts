@@ -1872,6 +1872,34 @@ test.describe("Welle 8 im Browser (Rechner und Planer)", () => {
     await expect(page.getByRole("region", { name: "Deine Engagement-Rate" })).toBeVisible();
   });
 
+  test("Anlass-Rückwärtsplaner: Datum in der Vergangenheit wird abgelehnt, Zeitplan mit Abhaken, .ics, Lead, Neuladen mit Haken", async ({ page, request }) => {
+    const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+    await page.goto("/tools/anlass-planer");
+    await hydrated(page.getByRole("button", { name: "Zeitplan erstellen" }));
+    await page.locator("#ap-firma").fill("Malerei Keller");
+    await page.locator("#ap-name").fill("Tag der offenen Tür Malerei Keller");
+    await page.locator("#ap-datum").fill("2020-01-01");
+    await page.getByRole("button", { name: "Zeitplan erstellen" }).click();
+    await expect(page.locator("#ap-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#ap-datum").fill(inDays(120));
+    await page.getByRole("button", { name: "Zeitplan erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Zeitplan" })).toBeVisible();
+    expect(await page.getByTestId("ap-aufgabe").count()).toBeGreaterThan(10);
+    await expect(page.getByTestId("ap-fortschritt")).toContainText("0 von");
+    await page.getByRole("checkbox", { name: "Ziel und Budget klären" }).check();
+    await expect(page.getByTestId("ap-fortschritt")).toContainText("1 von");
+    const download = page.waitForEvent("download");
+    await page.getByTestId("ap-ics").click();
+    expect((await download).suggestedFilename()).toMatch(/\.ics$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("anlass-planer");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Art: Tag der offenen Tür");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Zeitplan" })).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: "Ziel und Budget klären" })).toBeChecked();
+  });
+
   // new-wave-8:tests
 });
 
