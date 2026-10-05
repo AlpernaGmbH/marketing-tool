@@ -47,7 +47,7 @@ export default async function ToolPage({ params }: { params: Promise<Params> }) 
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(block) }} />
       ))}
       <ToolPageLayout config={config} content={content}>
-        <ToolMount slug={slug} />
+        <ToolMount slug={slug} audience={config.audience} />
       </ToolPageLayout>
     </>
   );
