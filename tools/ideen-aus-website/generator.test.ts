@@ -103,9 +103,9 @@ describe("ideen-aus-website: Generator mit checkGenerated", () => {
   });
   it("verwirft eine Antwort mit fremdem Kanal oder fremder Zahl über die eigene Prüfung", () => {
     const falsch = output([...Array.from({ length: 7 }, () => idee()), idee({ kanal: "google", format: "text" })]);
-    expect(checkGenerated(ideenGenerator, falsch, input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(ideenGenerator, falsch, input)).toMatchObject({ ok: false, reason: "check" });
     const zahl = output([...Array.from({ length: 7 }, () => idee()), idee({ hook: "Über 500 Kunden vertrauen uns." })]);
-    expect(checkGenerated(ideenGenerator, zahl, input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(ideenGenerator, zahl, input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(ideenGenerator, { themen: ["a"], ideen: [] }, input)).toEqual({ ok: false, reason: "schema" });
   });
   it("hält Eingaben aus der Anweisung heraus und kennzeichnet sie in der Nutzernachricht als Daten", () => {

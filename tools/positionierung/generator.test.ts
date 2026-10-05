@@ -143,8 +143,8 @@ describe("positionierung: Generator mit checkGenerated", () => {
     }
   });
   it("verwirft eine Antwort mit fremder Zahl, doppeltem Stil, Ausrufezeichen, Sperrwort, falscher Form oder ohne JSON", () => {
-    expect(checkGenerated(positionierungGenerator, output({ kernsatz: "Über 300 Fassaden für Hausbesitzer in Gossau gestrichen." }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(positionierungGenerator, output({ varianten: [varianten[0], varianten[0], varianten[2]] }), input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(positionierungGenerator, output({ kernsatz: "Über 300 Fassaden für Hausbesitzer in Gossau gestrichen." }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(positionierungGenerator, output({ varianten: [varianten[0], varianten[0], varianten[2]] }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(positionierungGenerator, output({ kernsatz: "Fassaden für Hausbesitzer in Gossau, in zwei Wochen fertig!" }), input)).toEqual({ ok: false, reason: "regel" });
     expect(checkGenerated(positionierungGenerator, output({ wasAnders: "Die Malerei Keller arbeitet innovativ und ganzheitlich, anders als die anderen Betriebe." }), input)).toEqual({ ok: false, reason: "stimme" });
     expect(checkGenerated(positionierungGenerator, { kernsatz: "nur ein Feld" }, input)).toEqual({ ok: false, reason: "schema" });

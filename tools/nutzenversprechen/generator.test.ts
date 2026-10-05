@@ -116,7 +116,7 @@ describe("nutzenversprechen: Generator mit checkGenerated", () => {
     }
   });
   it("verwirft eine Antwort mit fremder Zahl, mit Ausrufezeichen oder in falscher Form", () => {
-    expect(checkGenerated(nutzenGenerator, output({ kurz: "Über 300 Fassaden in Gossau gestrichen." }), input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(nutzenGenerator, output({ kurz: "Über 300 Fassaden in Gossau gestrichen." }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(nutzenGenerator, output({ kurz: "Fassaden in Gossau, die halten!" }), input)).toEqual({ ok: false, reason: "regel" });
     expect(checkGenerated(nutzenGenerator, { kurz: "nur ein Feld" }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(nutzenGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });

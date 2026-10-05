@@ -171,7 +171,7 @@ describe("swot: Generator mit checkGenerated", () => {
     }
   });
   it("verwirft fremde Zahlen über die eigene Prüfung, kaputte Form über das Schema, verbotene Wörter über die Regeln", () => {
-    expect(checkGenerated(swotGenerator, output({ einSatz: "Malerei Keller hat 12 Mitarbeitende und lebt von Empfehlungen, online bleibt der Betrieb zurück." }), input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(swotGenerator, output({ einSatz: "Malerei Keller hat 12 Mitarbeitende und lebt von Empfehlungen, online bleibt der Betrieb zurück." }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(swotGenerator, { einSatz: "Nur ein Satz", staerken: [] }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(swotGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
     expect(checkGenerated(swotGenerator, output({ einSatz: "Jetzt gilt es, die Empfehlungen in sichtbare Anfragen zu verwandeln, bevor andere es tun." }), input)).toEqual({ ok: false, reason: "regel" });

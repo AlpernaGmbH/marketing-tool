@@ -214,11 +214,11 @@ describe("bewertungsantwort: Generator mit checkGenerated", () => {
     }
   });
   it("verwirft eine Antwort mit fremder Zahl, Du bei Sie, Wort aus «vermeiden», fehlender Unterschrift oder Rabatt", () => {
-    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Es freut uns", "Seit 1985 freut es uns") }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("mit Ihnen", "mit dir") }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Fassade gefällt", "Fassade perfekt ist") }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace(SIGN, "Gruss") }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(bewertungsantwortGenerator, output({}, { text: v2.text.replace("Rufen Sie uns", "Mit einem Gutschein rufen Sie uns") }), input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Es freut uns", "Seit 1985 freut es uns") }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("mit Ihnen", "mit dir") }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Fassade gefällt", "Fassade perfekt ist") }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace(SIGN, "Gruss") }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(bewertungsantwortGenerator, output({}, { text: v2.text.replace("Rufen Sie uns", "Mit einem Gutschein rufen Sie uns") }), input)).toMatchObject({ ok: false, reason: "check" });
   });
   it("verwirft Ausrufezeichen, Sperrwörter, Gedankenstriche, fremde Links, falsche Form und Text ohne JSON", () => {
     expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Danke!") }), input)).toEqual({ ok: false, reason: "regel" });

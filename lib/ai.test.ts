@@ -223,13 +223,37 @@ describe("OpenRouter", () => {
   });
 
   it("versucht das nächste Modell, wenn die Antwort nicht angenommen wird (kein lesbares JSON)", async () => {
-    const accept = (t: string) => t.startsWith("{");
-    const fetchImpl = vi.fn().mockResolvedValueOnce(ok("Hier dein Text ohne JSON.")).mockResolvedValueOnce(ok('{"a": 1}'));
-    expect(await openrouterChat({ ...ARGS, accept }, asFetch(fetchImpl), ENV)).toBe('{"a": 1}');
-    expect(bodyOf(fetchImpl, 1).model).toBe(DEFAULT_OPENROUTER_MODELS[1]);
+    const accept = (t: string) => (t.startsWith("{") ? (true as const) : "Nur JSON bitte.");
+    // Erst bekommt dasselbe Modell die Rückmeldung (zweiter Versuch mit abgelehnter Antwort und Hinweis), dann das nächste.
+    const same = vi.fn().mockResolvedValueOnce(ok("Hier dein Text ohne JSON.")).mockResolvedValueOnce(ok('{"a": 1}'));
+    expect(await openrouterChat({ ...ARGS, accept }, asFetch(same), ENV)).toBe('{"a": 1}');
+    expect(same).toHaveBeenCalledTimes(2);
+    expect(bodyOf(same, 1).model).toBe(DEFAULT_OPENROUTER_MODELS[0]);
+    expect(bodyOf(same, 1).messages.slice(2)).toEqual([
+      { role: "assistant", content: "Hier dein Text ohne JSON." },
+      { role: "user", content: "Nur JSON bitte." },
+    ]);
+    expect(bodyOf(same, 0).messages).toHaveLength(2);
+    // Zwei abgelehnte Antworten beim ersten Modell: das zweite Modell beginnt wieder ohne Rückmeldung.
+    const next = vi.fn().mockResolvedValueOnce(ok("kein json")).mockResolvedValueOnce(ok("wieder nicht")).mockResolvedValueOnce(ok('{"b": 2}'));
+    expect(await openrouterChat({ ...ARGS, accept }, asFetch(next), ENV)).toBe('{"b": 2}');
+    expect(bodyOf(next, 2).model).toBe(DEFAULT_OPENROUTER_MODELS[1]);
+    expect(bodyOf(next, 2).messages).toHaveLength(2);
+    // Nie annehmbar: zwei Versuche je Modell, dann der Fehler.
     const none = vi.fn(async () => ok("immer Text"));
     await expect(openrouterChat({ ...ARGS, accept }, asFetch(none), ENV)).rejects.toMatchObject({ name: "AiBadJson" });
-    expect(none).toHaveBeenCalledTimes(DEFAULT_OPENROUTER_MODELS.length);
+    expect(none).toHaveBeenCalledTimes(DEFAULT_OPENROUTER_MODELS.length * 2);
+    // Ein Fehler des Anbieters gibt dem Modell keinen zweiten Versuch.
+    const down = vi.fn().mockResolvedValueOnce(fail(503)).mockResolvedValueOnce(ok('{"c": 3}'));
+    expect(await openrouterChat({ ...ARGS, accept }, asFetch(down), ENV)).toBe('{"c": 3}');
+    expect(bodyOf(down, 1).model).toBe(DEFAULT_OPENROUTER_MODELS[1]);
+  });
+
+  it("hält die Gesamtzeit ein: bleibt weniger als 5 Sekunden, beginnt kein Versuch mehr", async () => {
+    const accept = () => "abgelehnt";
+    const fetchImpl = vi.fn(async () => ok("Text"));
+    await expect(openrouterChat({ ...ARGS, accept, budgetMs: 4_000 }, asFetch(fetchImpl), ENV)).rejects.toMatchObject({ name: "OpenRouterTimeout" });
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it("wirft ohne Schlüssel und bei Netzfehlern mit lesbarer Fehlerart", async () => {
@@ -255,13 +279,17 @@ describe("generateJson über OpenRouter", () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(ok('```json\n{"titel": "Zu kurz", "text": "Absatz eins.\n\nAbsatz zwei."}\n```'))
+      .mockResolvedValueOnce(ok('{"titel": "Auch kurz", "text": "x"}'))
       .mockResolvedValueOnce(ok('{"titel": "Lang genug für die Prüfung", "text": "Zwei\nZeilen"}'));
     vi.stubGlobal("fetch", fetchImpl);
-    const accept = (v: unknown) => String((v as { titel?: string }).titel).length > 10;
+    const accept = (v: unknown) => (String((v as { titel?: string }).titel).length > 10 ? (true as const) : "Der Titel ist zu kurz.");
     const out = await generateJson({ system: "s", prompt: "p", maxOutputTokens: 100, accept });
     expect(out).toEqual({ titel: "Lang genug für die Prüfung", text: "Zwei\nZeilen" });
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
-    expect(JSON.parse((fetchImpl.mock.calls[1] as unknown as [string, RequestInit])[1].body as string).model).toBe("b/zweites");
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    const body = (n: number) => JSON.parse((fetchImpl.mock.calls[n] as unknown as [string, RequestInit])[1].body as string);
+    expect(body(1).model).toBe("a/erstes"); // zweiter Versuch beim selben Modell, mit Rückmeldung
+    expect(body(1).messages[3]).toEqual({ role: "user", content: "Der Titel ist zu kurz." });
+    expect(body(2).model).toBe("b/zweites");
   });
 
   it("wirft AiBadJson, wenn kein Modell eine annehmbare Antwort liefert", async () => {

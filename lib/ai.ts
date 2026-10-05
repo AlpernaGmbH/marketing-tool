@@ -131,9 +131,21 @@ type ChatArgs = {
   temperature: number;
   json?: boolean;
   timeoutMs: number;
-  /** Prüft die Antwort; fällt sie durch, gilt das nächste Modell (zum Beispiel: enthält die Antwort ein lesbares JSON-Objekt). */
-  accept?: (text: string) => boolean;
+  /**
+   * Prüft die Antwort. `true`: angenommen. Ein Text: abgelehnt; er geht als Rückmeldung an dasselbe Modell (ein zweiter Versuch),
+   * und ist auch der zweite Versuch nicht brauchbar, gilt das nächste Modell.
+   */
+  accept?: (text: string) => true | string;
+  /** Gesamte Zeit für alle Versuche und Modelle in Millisekunden (Standard: unbegrenzt). Ein Versuch beginnt nur, wenn mehr als 5 Sekunden bleiben. */
+  budgetMs?: number;
 };
+
+/** Frühere Nachrichten eines zweiten Versuchs: die abgelehnte Antwort und die Rückmeldung. */
+type History = { role: "assistant" | "user"; content: string }[];
+
+/** Versuche je Modell, wenn die Antwort abgelehnt wird. */
+const ATTEMPTS_PER_MODEL = 2;
+const MIN_ATTEMPT_MS = 5_000;
 
 function contentText(content: unknown): string {
   if (typeof content === "string") return content;
@@ -153,7 +165,7 @@ type Endpoint = {
   fatal: (status: number) => boolean;
 };
 
-async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string, fetchImpl: typeof fetch): Promise<string> {
+async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string, fetchImpl: typeof fetch, history: History = [], timeoutMs: number = args.timeoutMs): Promise<string> {
   let res: Response;
   try {
     res = await fetchImpl(ep.url, {
@@ -164,13 +176,14 @@ async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string
         messages: [
           { role: "system", content: args.system },
           { role: "user", content: args.prompt },
+          ...history,
         ],
         temperature: args.temperature,
         max_tokens: args.maxTokens,
         ...(args.json && ep.jsonMode ? { response_format: { type: "json_object" } } : {}),
         ...ep.extra,
       }),
-      signal: AbortSignal.timeout(args.timeoutMs),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
     throw new MistralError((e as { name?: string })?.name === "TimeoutError" ? `${ep.label}Timeout` : `${ep.label}NetworkError`);
@@ -187,21 +200,33 @@ async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string
   return text;
 }
 
-/** Eine Anfrage mit Rückfall auf das nächste Modell der Liste, wenn das erste ausfiel, zu langsam, leer oder nicht brauchbar (`accept`) war (siehe `fatal`). */
+/**
+ * Eine Anfrage mit Rückfall auf das nächste Modell der Liste, wenn das erste ausfiel, zu langsam oder leer war (siehe `fatal`).
+ * Lehnt `accept` die Antwort ab, bekommt dasselbe Modell die Rückmeldung und einen zweiten Versuch; erst danach gilt das nächste Modell.
+ */
 async function chatWithFallback(ep: Endpoint, models: string[], args: ChatArgs, key: string, fetchImpl: typeof fetch): Promise<string> {
+  const deadline = Date.now() + (args.budgetMs ?? Number.POSITIVE_INFINITY);
   let last: unknown;
   for (const model of models) {
-    try {
-      const text = await chatOnce(ep, model, args, key, fetchImpl);
-      if (args.accept && !args.accept(text)) {
+    let history: History = [];
+    for (let attempt = 0; attempt < ATTEMPTS_PER_MODEL; attempt++) {
+      const left = deadline - Date.now();
+      if (left < MIN_ATTEMPT_MS) throw last ?? new MistralError(`${ep.label}Timeout`);
+      try {
+        const text = await chatOnce(ep, model, args, key, fetchImpl, history, Math.min(args.timeoutMs, left));
+        const verdict = args.accept ? args.accept(text) : true;
+        if (verdict === true) return text;
         last = new MistralError("AiBadJson");
-        continue;
+        history = [
+          { role: "assistant", content: text },
+          { role: "user", content: verdict },
+        ];
+      } catch (e) {
+        last = e;
+        const status = e instanceof MistralError ? e.statusCode : undefined;
+        if (status !== undefined && ep.fatal(status)) throw last;
+        break; // Fehler des Anbieters: das nächste Modell, kein zweiter Versuch
       }
-      return text;
-    } catch (e) {
-      last = e;
-      const status = e instanceof MistralError ? e.statusCode : undefined;
-      if (status !== undefined && ep.fatal(status)) break;
     }
   }
   throw last;
@@ -240,7 +265,7 @@ export const generateRaw: GenerateRaw = async (fakten) => {
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000, accept: (t) => parseJsonObject(t) !== null });
+    const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000, budgetMs: 50_000, accept: (t) => parseJsonObject(t) !== null || "Antworte ausschliesslich mit einem JSON-Objekt in genau der verlangten Form." });
     const value = parseJsonObject(text); // geprüft wird danach in pruefeEinordnung
     if (value === null) throw new MistralError("AiBadJson");
     return value;
@@ -275,8 +300,8 @@ export type GenerateJson = (args: {
   prompt: string;
   maxOutputTokens: number;
   temperature?: number;
-  /** Prüft das gelesene Objekt; fällt es durch, gilt (bei OpenRouter und Mistral) das nächste Modell. */
-  accept?: (value: unknown) => boolean;
+  /** Prüft das gelesene Objekt. `true`: angenommen; ein Text: abgelehnt, er geht als Rückmeldung an dasselbe Modell (zweiter Versuch), danach gilt das nächste Modell. Nur bei OpenRouter und Mistral. */
+  accept?: (value: unknown) => true | string;
 }) => Promise<unknown>;
 
 export const generateJson: GenerateJson = async ({ system, prompt, maxOutputTokens, temperature = 0.4, accept }) => {
@@ -284,7 +309,10 @@ export const generateJson: GenerateJson = async ({ system, prompt, maxOutputToke
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000, accept: (t) => { const v = parseJsonObject(t); return v !== null && (accept ? accept(v) : true); } });
+    text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000, budgetMs: 52_000, accept: (t) => {
+      const v = parseJsonObject(t);
+      return v === null ? "Antworte ausschliesslich mit einem JSON-Objekt in genau der verlangten Form." : accept ? accept(v) : true;
+    } });
   } else {
     const [model, ...fallbacks] = modelsFromEnv();
     const out = await generateText({

@@ -148,7 +148,7 @@ export function textIssue(strings: string[], allowed: string, opts: { emoji?: bo
   return null;
 }
 
-export type GeneratorOutcome<O> = { ok: true; output: O } | { ok: false; reason: GeneratorFail };
+export type GeneratorOutcome<O> = { ok: true; output: O } | { ok: false; reason: GeneratorFail; /** Kennung der eigenen Prüfung des Werkzeugs (nur bei reason «check»). */ detail?: string };
 
 /** Prüft die rohe Antwort der KI gegen Form, Stimme und Regeln und gibt die bereinigte Ausgabe zurück. */
 export function checkGenerated<I, O>(def: GeneratorDef<I, O>, raw: unknown, input: I): GeneratorOutcome<O> {
@@ -161,8 +161,25 @@ export function checkGenerated<I, O>(def: GeneratorDef<I, O>, raw: unknown, inpu
   const issue = textIssue(strings, JSON.stringify(input), { emoji: def.allowEmoji?.(input) === true });
   if (issue) return { ok: false, reason: issue };
   const own = def.check?.(parsed.data, input);
-  if (own) return { ok: false, reason: "check" };
+  if (own) return { ok: false, reason: "check", detail: own };
   return { ok: true, output: parsed.data };
+}
+
+/**
+ * Rückmeldung an die KI, wenn ihr Entwurf die Prüfung nicht bestanden hat (zweiter Versuch beim selben Modell, lib/ai.ts).
+ * Der Text ist fest und enthält nie Eingaben oder Teile des Entwurfs; nur die Art des Fehlers und bei der eigenen Prüfung des Werkzeugs deren Kennung.
+ */
+export function repairHint(reason: GeneratorFail, detail?: string): string {
+  const grund: Record<GeneratorFail, string> = {
+    json: "Die Antwort war kein lesbares JSON-Objekt.",
+    schema: "Form oder Längen stimmen nicht: Halte die Zahl der Einträge, die Feldnamen und die Zeichengrenzen der Anweisung genau ein.",
+    leer: "Alle Felder waren leer.",
+    stimme: "Der Entwurf enthält Wörter, die für diese Stimme verboten sind (Floskeln, Schlagwörter). Schreib ihn ohne sie neu.",
+    regel: "Der Entwurf enthält verbotene Zeichen oder Wörter: Ausrufezeichen, Anführungszeichen wie \", «jetzt», «nur noch», «garantiert», «Nr. 1», «Agentur», Emojis. Das gilt auch für Listen mit Wörtern, die der Betrieb vermeiden soll.",
+    link: "Der Entwurf enthält einen Link oder eine E-Mail-Adresse, die nicht in den Angaben steht. Lass sie weg.",
+    check: `Eine Regel der Anweisung ist verletzt (Kennung: ${detail ?? "unbekannt"}). Prüfe besonders: Ziffern nur, wenn sie wörtlich in den Angaben stehen (sonst als Wort schreiben oder weglassen); Zahl der Einträge, Summen und Längen genau wie verlangt.`,
+  };
+  return `Dein Entwurf hat die Prüfung nicht bestanden. ${grund[reason]} Antworte nur mit dem vollständigen, korrigierten JSON-Objekt in der verlangten Form.`;
 }
 
 /** Platzhalter in eckigen Klammern, die der Besucher noch ausfüllen muss. */

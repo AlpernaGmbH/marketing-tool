@@ -235,9 +235,9 @@ describe("medienmitteilung: Generator mit checkGenerated", () => {
     if (out.ok) expect(placeholdersIn(out.output)).toEqual(["[Zahl der Gäste]"]);
   });
   it("verwirft fremde Zahl, erfundenes Zitat, zu langen Lead und zu kurzen Text mit «check»", () => {
-    expect(checkGenerated(medienGenerator, output({ lead: BEISPIEL_OUTPUT.lead.replace("40-jähriges", "50-jähriges") }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(medienGenerator, BEISPIEL_OUTPUT, { ...input, zitat: "", zitatVon: "" })).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(medienGenerator, mitLaenge(140), input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(medienGenerator, output({ lead: BEISPIEL_OUTPUT.lead.replace("40-jähriges", "50-jähriges") }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(medienGenerator, BEISPIEL_OUTPUT, { ...input, zitat: "", zitatVon: "" })).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(medienGenerator, mitLaenge(140), input)).toMatchObject({ ok: false, reason: "check" });
   });
   it("verwirft Ausrufezeichen, Links aus dem Nichts, falsche Form und Text ohne JSON", () => {
     expect(checkGenerated(medienGenerator, output({ titel: "Malerei Keller feiert 40 Jahre mit einem Fest!" }), input)).toEqual({ ok: false, reason: "regel" });

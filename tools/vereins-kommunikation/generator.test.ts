@@ -329,10 +329,10 @@ describe("vereins-kommunikation: checkGenerated", () => {
     expect(checkGenerated(vereinGenerator, { ...output(), kanalplan: [] }, input)).toEqual({ ok: false, reason: "schema" });
   });
   it("verwirft eine Antwort mit fremder Zahl, zu vielen Stunden, fremdem Anlass oder fremdem Kanal als «check»", () => {
-    expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Seit 1999 ein Verein mit Herz für Trogen und das Dorf." }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(vereinGenerator, output({ rollen: [{ rolle: "Betreuung Website", aufgaben: "Hält die Termine aktuell.", stundenProMonat: 9 }] }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(vereinGenerator, output({ jahreskalender: [{ monat: 6, anlass: "Vereinsreise", kommunikation: "Einladung im Gemeindeblatt." }] }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(vereinGenerator, output({ kanalplan: [...output().kanalplan.slice(0, 3), { kanal: "TikTok", zweck: "Kurze Videos vom Training.", rhythmus: "wöchentlich", verantwortlich: "" }] }), input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Seit 1999 ein Verein mit Herz für Trogen und das Dorf." }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(vereinGenerator, output({ rollen: [{ rolle: "Betreuung Website", aufgaben: "Hält die Termine aktuell.", stundenProMonat: 9 }] }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(vereinGenerator, output({ jahreskalender: [{ monat: 6, anlass: "Vereinsreise", kommunikation: "Einladung im Gemeindeblatt." }] }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(vereinGenerator, output({ kanalplan: [...output().kanalplan.slice(0, 3), { kanal: "TikTok", zweck: "Kurze Videos vom Training.", rhythmus: "wöchentlich", verantwortlich: "" }] }), input)).toMatchObject({ ok: false, reason: "check" });
   });
   it("verwirft Emojis, Ausrufezeichen, Wörter der Sperrliste und fremde Links", () => {
     expect(checkGenerated(vereinGenerator, output({ kernbotschaft: "Der FC Trogen bringt das Dorf zusammen 😀 auf dem Sportplatz." }), input)).toEqual({ ok: false, reason: "regel" });

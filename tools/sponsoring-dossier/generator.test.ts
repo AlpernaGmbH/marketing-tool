@@ -106,8 +106,8 @@ describe("sponsoring-dossier: Generator mit checkGenerated", () => {
   });
 
   it("verwirft eine Antwort mit fremder Zahl, mit Du-Form, mit Ausrufezeichen, in falscher Form oder ohne JSON", () => {
-    expect(checkGenerated(sponsoringGenerator, output({ portraet: `${BEISPIEL_KI.portraet} Über 900 Zuschauer.` }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(sponsoringGenerator, output({ dank: "Wir danken dir für deine Unterstützung und freuen uns auf ein Gespräch mit dem Verein." }), input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(sponsoringGenerator, output({ portraet: `${BEISPIEL_KI.portraet} Über 900 Zuschauer.` }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(sponsoringGenerator, output({ dank: "Wir danken dir für deine Unterstützung und freuen uns auf ein Gespräch mit dem Verein." }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(sponsoringGenerator, output({ dank: `${BEISPIEL_KI.dank} Melden Sie sich!` }), input)).toEqual({ ok: false, reason: "regel" });
     expect(checkGenerated(sponsoringGenerator, { portraet: "nur ein Feld" }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(sponsoringGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });

@@ -113,14 +113,16 @@ describe("POST /api/generate", () => {
 
   it("übergibt der KI eine Prüfung, damit bei einem abgelehnten Entwurf das nächste Modell antwortet", async () => {
     await call();
-    const accept = (gen.fn.mock.calls[0][0] as { accept: (v: unknown) => boolean }).accept;
+    const accept = (gen.fn.mock.calls[0][0] as { accept: (v: unknown) => true | string }).accept;
     expect(accept({ titel: "Fassaden in Gossau", punkte: ["a"] })).toBe(true);
-    expect(accept({ titel: "Jetzt zugreifen bei unserer Agentur", punkte: ["a"] })).toBe(false);
-    expect(accept({ titel: "x" })).toBe(false);
+    const rejected = accept({ titel: "Jetzt zugreifen bei unserer Agentur", punkte: ["a"] });
+    expect(rejected).toEqual(expect.stringContaining("Dein Entwurf hat die Prüfung nicht bestanden."));
+    expect(rejected).not.toContain("Agentur zugreifen"); // die Rückmeldung enthält nie Teile des Entwurfs
+    expect(accept({ titel: "x" })).toEqual(expect.stringContaining("Form oder Längen"));
   });
 
   it("nennt den Grund der letzten Ablehnung, wenn kein Modell einen gültigen Entwurf lieferte", async () => {
-    gen.fn.mockImplementation(async (args: { accept: (v: unknown) => boolean }) => {
+    gen.fn.mockImplementation(async (args: { accept: (v: unknown) => true | string }) => {
       args.accept({ titel: "Fassaden in Gossau" }); // Form falsch
       throw Object.assign(new Error("Meldung"), { name: "AiBadJson" });
     });

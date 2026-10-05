@@ -152,8 +152,8 @@ describe("markenplattform: Generator mit checkGenerated", () => {
     }
   });
   it("verwirft fremde Zahlen und falsche Anrede über die eigene Prüfung, kaputte Form über das Schema, verbotene Wörter über Stimme und Regeln, und Text ohne JSON", () => {
-    expect(checkGenerated(markenGenerator, output({ geschichte: output().geschichte.replace("1985", "1972") }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(markenGenerator, output({ tonalitaet: { ...output().tonalitaet, beispielSatz: "Gern schauen wir uns deine Fassade an und sagen dir, was sie braucht." } }), input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(markenGenerator, output({ geschichte: output().geschichte.replace("1985", "1972") }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(markenGenerator, output({ tonalitaet: { ...output().tonalitaet, beispielSatz: "Gern schauen wir uns deine Fassade an und sagen dir, was sie braucht." } }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(markenGenerator, { versprechen: "x", werte: [] }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(markenGenerator, output({ woerter: { ...output().woerter, vermeiden: ["innovativ", "Premium", "exklusiv", "Lösung", "Aktion"] } }), input)).toEqual({ ok: false, reason: "stimme" });
     expect(checkGenerated(markenGenerator, output({ versprechen: "Wir streichen so, dass die Fassade hält und der Termin steht, versprochen!" }), input)).toEqual({ ok: false, reason: "regel" });

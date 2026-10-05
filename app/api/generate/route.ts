@@ -4,7 +4,7 @@ import { clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
 import { defaultAiStore, limitsFromEnv, notifyCapacity, releaseSlot, takeSlot } from "@/lib/ai-quota";
 import { describeAiError, generateJson } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
-import { checkGenerated, systemPrompt } from "@/lib/generator";
+import { checkGenerated, repairHint, systemPrompt } from "@/lib/generator";
 import { withinLimit } from "@/lib/ratelimit";
 import { getGenerator } from "@/tools/generators";
 
@@ -51,12 +51,13 @@ export async function POST(req: NextRequest) {
     return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity");
   }
 
-  // Besteht der Entwurf eines Modells die Prüfung nicht, antwortet das nächste Modell der Liste (lib/ai.ts); der Grund der letzten Ablehnung bleibt für die Fehlermeldung.
+  // Besteht der Entwurf die Prüfung nicht, bekommt dasselbe Modell die Rückmeldung und einen zweiten Versuch, danach antwortet das nächste Modell
+  // der Liste (lib/ai.ts); der Grund der letzten Ablehnung bleibt für die Fehlermeldung.
   let lastReason: string | null = null;
-  const accept = (value: unknown) => {
+  const accept = (value: unknown): true | string => {
     const outcome = checkGenerated(def, value, input.data);
     lastReason = outcome.ok ? null : outcome.reason;
-    return outcome.ok;
+    return outcome.ok ? true : repairHint(outcome.reason, outcome.detail);
   };
   let raw: unknown;
   try {

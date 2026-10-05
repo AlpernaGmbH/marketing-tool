@@ -261,9 +261,9 @@ describe("content-saeulen: Generator mit checkGenerated", () => {
     }
   });
   it("verwirft falsche Anteile, fremde Kanäle und fremde Zahlen über die eigene Prüfung, kaputte Form über das Schema, verbotene Wörter über die Regeln", () => {
-    expect(checkGenerated(saeulenGenerator, mitErster({ anteil: 20 }), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(saeulenGenerator, mitPlan([output().rhythmus.wochenplan[0], { tag: "Freitag", saeule: "Team und Lehre", kanal: "LinkedIn" }]), input)).toEqual({ ok: false, reason: "check" });
-    expect(checkGenerated(saeulenGenerator, output({ niemals: ["Rabatte von 20 %, weil die Arbeit ihren Preis hat.", "Preise ohne Besichtigung, weil jede Fassade anders ist."] }), input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(saeulenGenerator, mitErster({ anteil: 20 }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(saeulenGenerator, mitPlan([output().rhythmus.wochenplan[0], { tag: "Freitag", saeule: "Team und Lehre", kanal: "LinkedIn" }]), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(saeulenGenerator, output({ niemals: ["Rabatte von 20 %, weil die Arbeit ihren Preis hat.", "Preise ohne Besichtigung, weil jede Fassade anders ist."] }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(saeulenGenerator, { saeulen: saeulen().slice(0, 2) }, input)).toEqual({ ok: false, reason: "schema" });
     expect(checkGenerated(saeulenGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
     expect(checkGenerated(saeulenGenerator, output({ niemals: ["Jetzt buchen, weil es sich lohnt.", "Preise ohne Besichtigung, weil jede Fassade anders ist."] }), input)).toEqual({ ok: false, reason: "regel" });

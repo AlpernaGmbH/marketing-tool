@@ -297,7 +297,7 @@ describe("post-generator: checkGenerated und Prompt", () => {
       output({ hauptteil: x(901) }),
       output({ cta: "Wir sind günstig. Schreib uns in die Kommentare." }),
     ];
-    for (const f of fails) expect(checkGenerated(postGenerator, f, input)).toEqual({ ok: false, reason: "check" });
+    for (const f of fails) expect(checkGenerated(postGenerator, f, input)).toMatchObject({ ok: false, reason: "check" });
   });
 
   it("verwirft falsche Form, Ausrufezeichen, Sperrwörter und fremde Links", () => {

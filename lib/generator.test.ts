@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { checkGenerated, cleanStrings, collectStrings, dataPrompt, defineGenerator, linksIn, numbersIn, parseJsonObject, placeholdersIn, systemPrompt, textIssue } from "@/lib/generator";
+import { checkGenerated, cleanStrings, collectStrings, dataPrompt, defineGenerator, linksIn, numbersIn, parseJsonObject, placeholdersIn, repairHint, systemPrompt, textIssue } from "@/lib/generator";
 
 const def = defineGenerator({
   slug: "probe",
@@ -83,7 +83,7 @@ describe("checkGenerated", () => {
     expect(checkGenerated(def, { titel: "Unsere Agentur hilft", punkte: ["a"] }, input)).toEqual({ ok: false, reason: "regel" });
     expect(checkGenerated(def, { titel: "Mehrwert für alle", punkte: ["a"] }, input)).toEqual({ ok: false, reason: "stimme" });
     expect(checkGenerated(def, { titel: "Fassaden in Gossau", punkte: ["www.fremd.ch"] }, input)).toEqual({ ok: false, reason: "link" });
-    expect(checkGenerated(def, { titel: "Fassaden in Gossau", punkte: ["verboten"] }, input)).toEqual({ ok: false, reason: "check" });
+    expect(checkGenerated(def, { titel: "Fassaden in Gossau", punkte: ["verboten"] }, input)).toEqual({ ok: false, reason: "check", detail: "verboten" });
   });
   it("erlaubt Emojis nur für ein Werkzeug mit allowEmoji und nur, wenn die Eingabe es erlaubt", () => {
     const withEmoji = defineGenerator({ ...def, input: z.object({ betrieb: z.string(), emojis: z.boolean() }), allowEmoji: (i) => i.emojis });
@@ -108,5 +108,22 @@ describe("numbersIn", () => {
   it("ignoriert Listenmarken und liefert leer ohne Ziffern", () => {
     expect(numbersIn("1. Punkt eins\n2) Punkt zwei mit 7 Tagen")).toEqual(["7"]);
     expect(numbersIn("keine Zahl")).toEqual([]);
+  });
+});
+
+describe("repairHint", () => {
+  it("nennt je Grund eine feste Rückmeldung und nie Eingaben", () => {
+    for (const reason of ["json", "schema", "leer", "stimme", "regel", "link", "check"] as const) {
+      const hint = repairHint(reason, "zahl");
+      expect(hint).toContain("Dein Entwurf hat die Prüfung nicht bestanden.");
+      expect(hint).toContain("korrigierten JSON-Objekt");
+    }
+    expect(repairHint("check", "anteil")).toContain("Kennung: anteil");
+    expect(repairHint("check")).toContain("Kennung: unbekannt");
+    expect(repairHint("regel")).toContain("Ausrufezeichen");
+  });
+  it("checkGenerated gibt die Kennung der eigenen Prüfung weiter", () => {
+    const out = checkGenerated(def, { titel: "Ein guter Titel", punkte: ["verboten"] }, input);
+    expect(out).toEqual({ ok: false, reason: "check", detail: "verboten" });
   });
 });
