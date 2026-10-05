@@ -111,6 +111,25 @@ describe("POST /api/generate", () => {
     expect((await call()).status).toBe(200); // der Platz war nicht verbraucht
   });
 
+  it("übergibt der KI eine Prüfung, damit bei einem abgelehnten Entwurf das nächste Modell antwortet", async () => {
+    await call();
+    const accept = (gen.fn.mock.calls[0][0] as { accept: (v: unknown) => boolean }).accept;
+    expect(accept({ titel: "Fassaden in Gossau", punkte: ["a"] })).toBe(true);
+    expect(accept({ titel: "Jetzt zugreifen bei unserer Agentur", punkte: ["a"] })).toBe(false);
+    expect(accept({ titel: "x" })).toBe(false);
+  });
+
+  it("nennt den Grund der letzten Ablehnung, wenn kein Modell einen gültigen Entwurf lieferte", async () => {
+    gen.fn.mockImplementation(async (args: { accept: (v: unknown) => boolean }) => {
+      args.accept({ titel: "Fassaden in Gossau" }); // Form falsch
+      throw Object.assign(new Error("Meldung"), { name: "AiBadJson" });
+    });
+    const res = await call();
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "ai_rejected", detail: "schema" });
+    expect(logs.join("\n")).toContain("rejected:schema");
+  });
+
   it("meldet 502 bei einem Ausfall der KI und loggt die Fehlerart, nie Eingaben", async () => {
     gen.fn.mockRejectedValue(Object.assign(new Error("Meldung mit Malerei Keller"), { name: "MistralHttpError", statusCode: 500 }));
     const res = await call();

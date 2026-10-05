@@ -51,12 +51,21 @@ export async function POST(req: NextRequest) {
     return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity");
   }
 
+  // Besteht der Entwurf eines Modells die Prüfung nicht, antwortet das nächste Modell der Liste (lib/ai.ts); der Grund der letzten Ablehnung bleibt für die Fehlermeldung.
+  let lastReason: string | null = null;
+  const accept = (value: unknown) => {
+    const outcome = checkGenerated(def, value, input.data);
+    lastReason = outcome.ok ? null : outcome.reason;
+    return outcome.ok;
+  };
   let raw: unknown;
   try {
-    raw = await generateJson({ system: systemPrompt(def), prompt: def.prompt(input.data), maxOutputTokens: def.maxTokens, temperature: def.temperature });
+    raw = await generateJson({ system: systemPrompt(def), prompt: def.prompt(input.data), maxOutputTokens: def.maxTokens, temperature: def.temperature, accept });
   } catch (error) {
     await releaseSlot(store, null, new Date(), "text"); // ohne Entwurf kein verbrauchter Platz
-    return respond(ROUTE, 502, { error: "ai_failed", detail: describeAiError(error) }, "ai_failed", describeAiError(error));
+    const kind = describeAiError(error);
+    if (kind === "AiBadJson" && lastReason) return respond(ROUTE, 502, { error: "ai_rejected", detail: lastReason }, "ai_failed", `rejected:${lastReason}`);
+    return respond(ROUTE, 502, { error: "ai_failed", detail: kind }, "ai_failed", kind);
   }
   const checked = checkGenerated(def, raw, input.data);
   if (!checked.ok) {

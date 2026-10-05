@@ -270,14 +270,21 @@ export const generateRaw: GenerateRaw = async (fakten) => {
  * checkGenerated; hier wird nur das Objekt aus der Antwort gelesen. Wirft bei Fehlern des Anbieters oder bei Antworten
  * ohne JSON (Fehlerart «AiBadJson», nie der Text).
  */
-export type GenerateJson = (args: { system: string; prompt: string; maxOutputTokens: number; temperature?: number }) => Promise<unknown>;
+export type GenerateJson = (args: {
+  system: string;
+  prompt: string;
+  maxOutputTokens: number;
+  temperature?: number;
+  /** Prüft das gelesene Objekt; fällt es durch, gilt (bei OpenRouter und Mistral) das nächste Modell. */
+  accept?: (value: unknown) => boolean;
+}) => Promise<unknown>;
 
-export const generateJson: GenerateJson = async ({ system, prompt, maxOutputTokens, temperature = 0.4 }) => {
+export const generateJson: GenerateJson = async ({ system, prompt, maxOutputTokens, temperature = 0.4, accept }) => {
   let text: string;
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000, accept: (t) => parseJsonObject(t) !== null });
+    text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000, accept: (t) => { const v = parseJsonObject(t); return v !== null && (accept ? accept(v) : true); } });
   } else {
     const [model, ...fallbacks] = modelsFromEnv();
     const out = await generateText({

@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_AI_MODELS, DEFAULT_MISTRAL_MODELS, DEFAULT_OPENROUTER_MODELS, MistralError, aiProvider, describeAiError, mistralChat, mistralKey, mistralModelsFromEnv, openrouterChat, openrouterModelsFromEnv, usesMistral, usesOpenrouter } from "@/lib/ai";
-import { modelsFromEnv } from "@/lib/ai";
+import { generateJson, modelsFromEnv } from "@/lib/ai";
 
 describe("modelsFromEnv", () => {
   it("nimmt ohne Angabe den Standard (nur Mistral)", () => {
@@ -238,5 +238,37 @@ describe("OpenRouter", () => {
       throw new TypeError("fetch failed");
     });
     await expect(openrouterChat(ARGS, asFetch(net), ENV)).rejects.toMatchObject({ name: "OpenRouterNetworkError" });
+  });
+});
+
+describe("generateJson über OpenRouter", () => {
+  const ok = (content: string) => new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200, headers: { "content-type": "application/json" } });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("liest JSON mit rohen Zeilenumbrüchen, und bei einem abgelehnten Entwurf antwortet das nächste Modell", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "or-key");
+    vi.stubEnv("AI_PROVIDER", "");
+    vi.stubEnv("OPENROUTER_MODELS", "a/erstes,b/zweites");
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(ok('```json\n{"titel": "Zu kurz", "text": "Absatz eins.\n\nAbsatz zwei."}\n```'))
+      .mockResolvedValueOnce(ok('{"titel": "Lang genug für die Prüfung", "text": "Zwei\nZeilen"}'));
+    vi.stubGlobal("fetch", fetchImpl);
+    const accept = (v: unknown) => String((v as { titel?: string }).titel).length > 10;
+    const out = await generateJson({ system: "s", prompt: "p", maxOutputTokens: 100, accept });
+    expect(out).toEqual({ titel: "Lang genug für die Prüfung", text: "Zwei\nZeilen" });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(JSON.parse((fetchImpl.mock.calls[1] as unknown as [string, RequestInit])[1].body as string).model).toBe("b/zweites");
+  });
+
+  it("wirft AiBadJson, wenn kein Modell eine annehmbare Antwort liefert", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "or-key");
+    vi.stubEnv("AI_PROVIDER", "");
+    vi.stubEnv("OPENROUTER_MODELS", "a/erstes,b/zweites");
+    vi.stubGlobal("fetch", vi.fn(async () => ok("Nur Text, kein Objekt.")));
+    await expect(generateJson({ system: "s", prompt: "p", maxOutputTokens: 100 })).rejects.toMatchObject({ name: "AiBadJson" });
   });
 });
