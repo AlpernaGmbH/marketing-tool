@@ -2177,6 +2177,46 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
     await expect(page.getByTestId("vn-bilder-neu")).toBeVisible();
   });
 
+  test("Angebotsgrafik: Pflichtfelder werden gemeldet, Vorschau ohne Fenster, zwei Formate als PNG und ZIP, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/angebotsgrafik");
+    await hydrated(page.getByRole("button", { name: "Grafiken erstellen" }));
+    await page.getByRole("button", { name: "Grafiken erstellen" }).click();
+    await expect(page.locator("#ag-error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#ag-firma").fill("Malerei Keller");
+    await page.locator("#ag-titel").fill("Herbstaktion");
+    await page.locator("#ag-angebot").fill("Fassadenanstrich inklusive Gerüst");
+    await page.locator("#ag-preis").fill("4900");
+    await page.locator("#ag-frueher").fill("5600");
+    await page.locator("#ag-aufforderung").fill("Termin anfragen");
+    await page.locator("#ag-kontakt").fill("keller-malerei.ch");
+    await page.getByRole("radio", { name: "Handwerk", exact: true }).check();
+    // die Vorschau ist eine Bedienhilfe: sie öffnet weder das Fenster noch erzeugt sie eine Datei
+    await expect(page.getByTestId("ag-vorschau-canvas")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByRole("button", { name: "Grafiken erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Angebotsgrafik" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Grafiken" }).getByRole("listitem")).toHaveCount(2);
+    const pngDownload = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PNG herunterladen: Feed 1:1" }).click();
+    const png = await pngDownload;
+    expect(png.suggestedFilename()).toBe("herbstaktion-feed.png");
+    const bytes = readFileSync((await png.path())!);
+    expect(bytes.subarray(1, 4).toString("latin1")).toBe("PNG");
+    expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([1080, 1080]);
+    const zipDownload = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Alle als ZIP herunterladen" }).click();
+    expect((await zipDownload).suggestedFilename()).toBe("angebotsgrafik-herbstaktion.zip");
+    await expect.poll(async () => (await received(request)).filter((l) => l.email === email).length).toBe(1);
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.tool).toBe("angebotsgrafik");
+    expect(lead.eingabe).toContain("Titel: Herbstaktion");
+    await page.reload();
+    await hydrated(page.getByRole("button", { name: "Grafiken erstellen" }));
+    expect((await received(request)).filter((l) => l.email === email).length).toBe(1);
+  });
+
   // new-wave-10:tests
 });
 
