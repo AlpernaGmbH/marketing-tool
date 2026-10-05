@@ -124,3 +124,19 @@ describe("KANTONE", () => {
     expect(KANTONE.find(([c]) => c === "AR")?.[1]).toBe("Appenzell Ausserrhoden");
   });
 });
+
+describe("numberCH ohne Nachkommastellen", () => {
+  it("kürzt keine Nullen ganzer Zahlen", () => {
+    expect(numberCH(100, 0)).toBe("100");
+    expect(numberCH(10, 0)).toBe("10");
+    expect(numberCH(1000, 0)).toBe("1'000");
+    expect(numberCH(0, 0)).toBe("0");
+    expect(pctCH(100, 0)).toBe("100 %");
+  });
+  it("kürzt weiter Nachkomma-Nullen", () => {
+    expect(numberCH(100)).toBe("100");
+    expect(numberCH(8.10)).toBe("8,1");
+    expect(numberCH(2.5, 2)).toBe("2,5");
+    expect(pctCH(12.0)).toBe("12 %");
+  });
+});

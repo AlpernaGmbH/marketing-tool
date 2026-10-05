@@ -25,7 +25,9 @@ export function chf(amount: number): string {
 /** Zahl mit Apostroph als Tausendertrenner und Komma als Dezimalzeichen: 1234.5 → 1'234,5 */
 export function numberCH(value: number, maxDecimals = 1): string {
   if (!Number.isFinite(value)) return "–";
-  const fixed = Math.abs(value).toFixed(maxDecimals).replace(/\.?0+$/, "");
+  const raw = Math.abs(value).toFixed(maxDecimals);
+  // Nur Nachkomma-Nullen entfernen; bei ganzen Zahlen (maxDecimals 0) bleibt «100» eine 100.
+  const fixed = raw.includes(".") ? raw.replace(/\.?0+$/, "") : raw;
   const [int, dec] = fixed.split(".");
   const sign = value < 0 && Number(fixed) !== 0 ? "-" : "";
   return `${sign}${group(int)}${dec ? `,${dec}` : ""}`;
