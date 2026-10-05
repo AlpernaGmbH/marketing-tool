@@ -2151,9 +2151,9 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
         "base64",
       );
     await page.locator("#vn-firma").fill("Malerei Keller");
-    await page.getByLabel("Vorher-Bild").setInputFiles({ name: "fassade-alt.png", mimeType: "image/png", buffer: await bild("#8a8a80") });
+    await page.locator("#vn-vorher").setInputFiles({ name: "fassade-alt.png", mimeType: "image/png", buffer: await bild("#8a8a80") });
     await expect(page.getByTestId("vn-vorher-datei")).toContainText("fassade-alt.png");
-    await page.getByLabel("Nachher-Bild").setInputFiles({ name: "fassade-neu.png", mimeType: "image/png", buffer: await bild("#d8c9a3") });
+    await page.locator("#vn-nachher").setInputFiles({ name: "fassade-neu.png", mimeType: "image/png", buffer: await bild("#d8c9a3") });
     await expect(page.getByTestId("vn-nachher-datei")).toContainText("fassade-neu.png");
     await page.locator("#vn-format-portrait").check();
     await page.getByRole("button", { name: "Collage erstellen" }).click();
@@ -2213,7 +2213,8 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
     expect(lead.tool).toBe("angebotsgrafik");
     expect(lead.eingabe).toContain("Titel: Herbstaktion");
     await page.reload();
-    await hydrated(page.getByRole("button", { name: "Grafiken erstellen" }));
+    await expect(page.getByRole("region", { name: "Deine Angebotsgrafik" })).toBeVisible();
+    await hydrated(page.getByRole("button", { name: "Neu beginnen" }));
     expect((await received(request)).filter((l) => l.email === email).length).toBe(1);
   });
 
