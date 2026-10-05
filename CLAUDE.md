@@ -126,8 +126,8 @@ readGateCookie(), writeGateCookie(), AccessStore (recordResult, Lead-Warteschlan
 analyze.ts, seo.ts, social.ts, gbp.ts, detect.ts, massnahmen.ts, client.ts,
 sign.ts (Signatur des Ergebnisses), ai.ts (Fakten, Prompt, Prüfung der KI-Antwort),
 ai-client.ts (Browser)
-- lib/ai.ts, lib/ai-quota.ts – KI: direkt bei Mistral (MISTRAL_API_KEY, kostenloser Plan) oder über
-das Vercel AI Gateway (Modelle aus AI_MODELS), Tageslimits und Zwischenspeicher
+- lib/ai.ts, lib/ai-quota.ts – KI: über das Vercel AI Gateway (Standard, Modelle aus AI_MODELS, gekauftes
+Guthaben) oder mit AI_PROVIDER=mistral direkt bei Mistral (bezahlter Plan), Tageslimits und Zwischenspeicher
 - lib/generator.ts, lib/generate-client.ts – Generatoren: Regeln der Alperna-Stimme, Prüfung
 jeder KI-Antwort, Browser-Aufruf; lib/read.ts, lib/read-client.ts – Website lesen
 - docs/TOOL-BAUEN.md – Bauanleitung je Werkzeug (Dateien, Zugang v3, Generator, Daten,

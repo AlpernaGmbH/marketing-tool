@@ -3,13 +3,16 @@ import { SYSTEM_PROMPT, einordnungSchema, userPrompt, type Fakten } from "@/lib/
 import { parseJsonObject } from "@/lib/generator";
 
 // Aufruf der KI. Zwei Wege:
-//  1. MISTRAL_API_KEY gesetzt: direkt bei Mistral AI (Frankreich), im kostenlosen Plan «Experiment». Das ist der Standard,
-//     weil der kostenlose Plan des Vercel AI Gateway nur eine kleine Auswahl an Modellen enthält und Mistral nicht dazugehört
-//     (Stand 04.10.2026, vercel.com/ai-gateway/models?freeTier=true). Ohne bezahltes Guthaben scheitern die Anfragen dort.
-//  2. Ohne Schlüssel: Vercel AI Gateway (kein eigener Schlüssel, auf Vercel meldet sich die Funktion per OIDC an) mit den
-//     Modellen aus AI_MODELS. Das ist der Weg für bezahltes Guthaben oder für Modelle, die Alperna aus der Gratis-Liste wählt.
-// Die Antwort der KI wird in jedem Fall geprüft, bevor sie jemand sieht (lib/check/ai.ts, tools/text-umschreiber/logic.ts).
-export const DEFAULT_AI_MODELS = ["mistral/mistral-small", "mistral/mistral-nemo"];
+//  1. Vercel AI Gateway (Standard, seit 05.10.2026): Auf Vercel meldet sich die Funktion per OIDC an, es braucht keinen eigenen
+//     Schlüssel, aber gekauftes Guthaben («AI Gateway Credits»). Abgerechnet wird zum Listenpreis des Anbieters, ohne Aufschlag.
+//     Die Gratis-Stufe enthält nur wenige, für deutsche Marketingtexte ungeeignete Modelle (vercel.com/docs/ai-gateway/pricing).
+//     Modelle: AI_MODELS (Standard unten).
+//  2. Mistral direkt, nur mit AI_PROVIDER=mistral und MISTRAL_API_KEY: Mistral gibt im Plan «Free» keinen API-Zugriff mehr
+//     (Meldung der Konsole am 05.10.2026: «Upgrade, um deine API Keys zu nutzen»). Der Weg bleibt für einen bezahlten Plan.
+// Die Antwort der KI wird in jedem Fall geprüft, bevor sie jemand sieht (lib/check/ai.ts, lib/generator.ts, tools/text-umschreiber/logic.ts).
+// Claude Haiku 4.5 zuerst (Listenpreis 1 / 5 US-Dollar je Million Token Ein- und Ausgabe), bei Ausfall Mistral Large 3 (0,5 / 1,5).
+// Preise: ai-gateway.vercel.sh/v1/models, 05.10.2026. Für höhere Qualität AI_MODELS auf anthropic/claude-sonnet-5.5 stellen (2 / 10).
+export const DEFAULT_AI_MODELS = ["anthropic/claude-haiku-4.5", "mistral/mistral-large-3"];
 
 /** Modellliste aus AI_MODELS (kommagetrennt, `anbieter/modell`); ungültige Einträge fallen weg, leer gilt der Standard. */
 export function modelsFromEnv(raw: string | undefined = process.env.AI_MODELS): string[] {
@@ -58,9 +61,12 @@ export function mistralKey(env: Record<string, string | undefined> = process.env
   return env.MISTRAL_API_KEY || env.mistral_api_key || undefined;
 }
 
-/** Läuft die KI über Mistral direkt? */
+/**
+ * Läuft die KI über Mistral direkt? Nur auf ausdrücklichen Wunsch (AI_PROVIDER=mistral) und mit Schlüssel. Ein vergessener
+ * Schlüssel in der Umgebung soll nicht still den Weg über das Gateway ersetzen.
+ */
 export function usesMistral(env: Record<string, string | undefined> = process.env): boolean {
-  return Boolean(mistralKey(env));
+  return env.AI_PROVIDER?.trim().toLowerCase() === "mistral" && Boolean(mistralKey(env));
 }
 
 /** Fehler der Mistral-Schnittstelle. Trägt nur Name und Statuscode, nie Text des Anbieters (kann Eingaben enthalten). */

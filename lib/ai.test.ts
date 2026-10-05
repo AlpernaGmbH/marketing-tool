@@ -6,7 +6,7 @@ describe("modelsFromEnv", () => {
   it("nimmt ohne Angabe den Standard (nur Mistral)", () => {
     expect(modelsFromEnv(undefined)).toEqual(DEFAULT_AI_MODELS);
     expect(modelsFromEnv("")).toEqual(DEFAULT_AI_MODELS);
-    expect(DEFAULT_AI_MODELS.every((m) => m.startsWith("mistral/"))).toBe(true);
+    expect(DEFAULT_AI_MODELS).toEqual(["anthropic/claude-haiku-4.5", "mistral/mistral-large-3"]);
   });
 
   it("liest eine kommagetrennte Liste in der angegebenen Reihenfolge", () => {
@@ -61,19 +61,22 @@ describe("describeAiError", () => {
 
 describe("Mistral direkt", () => {
   const ARGS = { system: "Regeln", prompt: "Ausgangstext", maxTokens: 300, temperature: 0.4, timeoutMs: 5_000 };
-  const ENV = { MISTRAL_API_KEY: "test-key" };
+  const ENV = { AI_PROVIDER: "mistral", MISTRAL_API_KEY: "test-key" };
   const ok = (content: unknown) => new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200, headers: { "content-type": "application/json" } });
   const fail = (status: number) => new Response("{}", { status });
   const asFetch = (fn: ReturnType<typeof vi.fn>) => fn as unknown as typeof fetch;
 
   it("der Weg richtet sich nach dem Schlüssel", () => {
     expect(usesMistral({})).toBe(false);
-    expect(usesMistral({ MISTRAL_API_KEY: "" })).toBe(false);
+    expect(usesMistral({ AI_PROVIDER: "mistral", MISTRAL_API_KEY: "" })).toBe(false);
     expect(usesMistral(ENV)).toBe(true);
+    // Ein Schlüssel allein ändert den Weg nicht: Standard ist das Gateway.
+    expect(usesMistral({ MISTRAL_API_KEY: "test-key" })).toBe(false);
+    expect(usesMistral({ AI_PROVIDER: "gateway", MISTRAL_API_KEY: "test-key" })).toBe(false);
   });
 
   it("liest den Schlüssel auch klein geschrieben (mistral_api_key) und bevorzugt die grosse Schreibweise", async () => {
-    expect(usesMistral({ mistral_api_key: "klein" })).toBe(true);
+    expect(usesMistral({ AI_PROVIDER: " Mistral ", mistral_api_key: "klein" })).toBe(true);
     expect(mistralKey({ mistral_api_key: "klein" })).toBe("klein");
     expect(mistralKey({ MISTRAL_API_KEY: "gross", mistral_api_key: "klein" })).toBe("gross");
     expect(mistralKey({ MISTRAL_API_KEY: "", mistral_api_key: "" })).toBeUndefined();
