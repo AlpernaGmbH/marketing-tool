@@ -6,7 +6,7 @@ describe("modelsFromEnv", () => {
   it("nimmt ohne Angabe den Standard (nur Mistral)", () => {
     expect(modelsFromEnv(undefined)).toEqual(DEFAULT_AI_MODELS);
     expect(modelsFromEnv("")).toEqual(DEFAULT_AI_MODELS);
-    expect(DEFAULT_AI_MODELS).toEqual(["anthropic/claude-haiku-4.5", "mistral/mistral-large-3"]);
+    expect(DEFAULT_AI_MODELS).toEqual(["mistral/mistral-large-3", "anthropic/claude-haiku-4.5"]);
   });
 
   it("liest eine kommagetrennte Liste in der angegebenen Reihenfolge", () => {

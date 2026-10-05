@@ -10,9 +10,10 @@ import { parseJsonObject } from "@/lib/generator";
 //  2. Mistral direkt, nur mit AI_PROVIDER=mistral und MISTRAL_API_KEY: Mistral gibt im Plan «Free» keinen API-Zugriff mehr
 //     (Meldung der Konsole am 05.10.2026: «Upgrade, um deine API Keys zu nutzen»). Der Weg bleibt für einen bezahlten Plan.
 // Die Antwort der KI wird in jedem Fall geprüft, bevor sie jemand sieht (lib/check/ai.ts, lib/generator.ts, tools/text-umschreiber/logic.ts).
-// Claude Haiku 4.5 zuerst (Listenpreis 1 / 5 US-Dollar je Million Token Ein- und Ausgabe), bei Ausfall Mistral Large 3 (0,5 / 1,5).
-// Preise: ai-gateway.vercel.sh/v1/models, 05.10.2026. Für höhere Qualität AI_MODELS auf anthropic/claude-sonnet-5.5 stellen (2 / 10).
-export const DEFAULT_AI_MODELS = ["anthropic/claude-haiku-4.5", "mistral/mistral-large-3"];
+// Mistral Large 3 zuerst (Listenpreis 0,5 / 1,5 US-Dollar je Million Token Ein- und Ausgabe, rund 0,003 Dollar je Aufruf), bei Ausfall
+// Claude Haiku 4.5 (1 / 5). Gewählt, weil das Monatsbudget bei 5 Franken liegt (Entscheid 56). Preise: ai-gateway.vercel.sh/v1/models,
+// 05.10.2026. Für höhere Qualität AI_MODELS auf anthropic/claude-haiku-4.5 oder anthropic/claude-sonnet-5.5 (2 / 10) stellen.
+export const DEFAULT_AI_MODELS = ["mistral/mistral-large-3", "anthropic/claude-haiku-4.5"];
 
 /** Modellliste aus AI_MODELS (kommagetrennt, `anbieter/modell`); ungültige Einträge fallen weg, leer gilt der Standard. */
 export function modelsFromEnv(raw: string | undefined = process.env.AI_MODELS): string[] {
