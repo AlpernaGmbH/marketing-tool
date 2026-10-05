@@ -1239,6 +1239,42 @@ test.describe("Welle 2b im Browser (Strategie-Generatoren II)", () => {
   });
 });
 
+test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
+  test("WhatsApp-Link: falsche Nummer zeigt eine Meldung ohne Fenster", async ({ page }) => {
+    await page.goto("/tools/whatsapp-link");
+    await page.getByLabel("WhatsApp-Nummer").fill("+49 151 1234567");
+    await page.getByRole("button", { name: "Link erstellen" }).click();
+    await expect(page.locator("#wa-error")).toContainText("Schweizer Nummer");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("WhatsApp-Link: Nummer und Vorlage, Fenster, Link, QR, Download, Lead, nach dem Neuladen steht das Ergebnis", async ({ page, request }) => {
+    await page.goto("/tools/whatsapp-link");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("WhatsApp-Nummer").fill("079 123 45 67");
+    await page.getByLabel("Nachricht", { exact: true }).selectOption("offerte");
+    await expect(page.getByLabel("Vorausgefüllter Text")).toHaveValue(/Malerei Keller/);
+    await page.getByRole("button", { name: "Link erstellen" }).click();
+    const email = await giveEmail(page);
+    const region = page.getByRole("region", { name: "Dein WhatsApp-Link" });
+    await expect(region).toBeVisible();
+    await expect(page.getByTestId("wa-link")).toContainText("https://wa.me/41791234567?text=");
+    await expect(page.getByRole("img", { name: "QR-Code zu deinem WhatsApp-Link" })).toBeVisible();
+    await expect(page.getByTestId("wa-snippet")).toContainText("wa.me/41791234567");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "PNG herunterladen" }).click();
+    expect((await download).suggestedFilename()).toBe("whatsapp-qr-malerei-keller.png");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("whatsapp-link");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("WhatsApp-Nummer: 079 123 45 67");
+    expect(lead.ausgabe).toContain("https://wa.me/41791234567");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein WhatsApp-Link" })).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+});
+
 test.describe("Zugang v3 über die Routen", () => {
   /** Eigener Kontext ohne Cookies; mt_gate wird wie in einem Browser von Hand mitgeführt (der Cookie-Jar der Fixture schickt «Secure»-Cookies nicht über http). */
   async function client(playwright: PlaywrightWorkerArgs["playwright"]) {

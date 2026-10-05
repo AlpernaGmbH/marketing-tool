@@ -4,6 +4,12 @@ Stand: 04.10.2026. **Zugang v3 ist gebaut** (kein Konto, E-Mail-Adresse vor dem 
 
 ## Fertig
 
+**Welle 3 der Etappen 3 bis 6 (05.10.2026): Schweizer Praxis-Werkzeuge und Strategie-Abschluss**
+
+Gebaut nach `docs/TOOL-BAUEN.md` und einem gemeinsamen Auftrag je Welle (Leseliste, Vertrag Zugang v3, Daten nur mit geöffneter Quelle, Tests, Prüfungen); registriert, geprüft und committet je Werkzeug.
+
+- **WhatsApp-Link mit QR (`whatsapp-link`, Schweiz, Schritt 1, featured, Zielgruppe beide):** alles im Browser. Aus einer Schweizer Nummer (sechs Schreibweisen, nur Vorwahl 41 mit neun Ziffern) und einer Vorlage (Anfrage, Terminwunsch, Offerte, Rückruf, eigener Text, mit Firma aus dem Profil) entstehen nach dem Fenster wa.me-Link, QR-Code (PNG, SVG), HTML-Knopf für die Website und ein Aufkleber-PDF (A4 mit vier A7-Feldern und Schnittmarken); Downloads über `guardDownload`. Richtwert von Alperna: QR mindestens 2 cm. Die Hilfeseite von WhatsApp zu «Click to Chat» liess sich nicht lesen (nur der Titel); der Seitentext behauptet darum nichts über Funktionen von WhatsApp. 27 Tests, Seitentext 679 Wörter.
+
 **Welle 2b der Etappen 3 bis 6 (05.10.2026, Nacht): Positionierung, Kernbotschaften, Markenplattform**
 
 Die fünf am Nutzungslimit abgebrochenen Helfer wurden mit ihrem Auftrag und einer Zustandsbeschreibung neu gestartet; alle fünf sind registriert, geprüft und committet.

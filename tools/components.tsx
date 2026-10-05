@@ -20,5 +20,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "markenplattform": dynamic(() => import("./markenplattform/Tool")),
   "swot": dynamic(() => import("./swot/Tool")),
   "content-saeulen": dynamic(() => import("./content-saeulen/Tool")),
+  "whatsapp-link": dynamic(() => import("./whatsapp-link/Tool")),
   // new-tool:components
 };

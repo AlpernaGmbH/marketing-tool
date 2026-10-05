@@ -14,6 +14,7 @@ import botschaftenConfig from "./botschaften/tool.config";
 import markenplattformConfig from "./markenplattform/tool.config";
 import swotConfig from "./swot/tool.config";
 import contentSaeulenConfig from "./content-saeulen/tool.config";
+import whatsappLinkConfig from "./whatsapp-link/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.
@@ -34,5 +35,6 @@ export const tools: ToolConfig[] = [
   markenplattformConfig,
   swotConfig,
   contentSaeulenConfig,
+  whatsappLinkConfig,
   // new-tool:configs
 ];
