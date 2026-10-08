@@ -350,7 +350,7 @@ test.describe("Referenz-Werkzeug im Browser", () => {
 
     await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe(TOOL);
     const got = (await received(request)).find((l) => l.email === email)!;
-    expect(Object.keys(got).sort()).toEqual(["ausgabe", "eingabe", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"]);
+    expect(Object.keys(got).sort()).toEqual(["ausgabe", "eingabe", "einwilligung", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"]);
     expect(got).toMatchObject({ kategorie: "strategie", quelle: "tools.alperna.ch", firma: "Malerei Keller", name: "", telefon: "" });
     expect(got.eingabe).toContain("Website: malerei-keller.ch");
     expect(got.eingabe).toContain("Branche: Handwerk");
@@ -2482,7 +2482,7 @@ test.describe("Zugang v3 über die Routen", () => {
     expect(res.status()).toBe(200);
     const got = (await received(request)).find((l) => l.email === email);
     expect(got).toBeTruthy();
-    expect(Object.keys(got!).sort()).toEqual(["ausgabe", "eingabe", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"]);
+    expect(Object.keys(got!).sort()).toEqual(["ausgabe", "eingabe", "einwilligung", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"]);
     expect(got).toMatchObject({ tool: TOOL, kategorie: "strategie", quelle: "tools.alperna.ch", firma: "Malerei Keller", eingabe: "Website: keller.ch", ausgabe: "# Ergebnis\n\n38 von 100", name: "", telefon: "" });
     await c.dispose();
   });
