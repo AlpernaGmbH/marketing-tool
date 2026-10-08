@@ -6,7 +6,7 @@ Stand 04.10.2026 (Zugang v3: kein Konto, E-Mail-Adresse vor dem Ergebnis). Das i
 
 | Vorgang | Welche Daten | Wohin | Wann | Code |
 |---|---|---|---|---|
-| E-Mail-Adresse angeben (Fenster vor dem Ergebnis) | E-Mail-Adresse, Einwilligung («Alperna darf mich zu meinem Ergebnis kontaktieren»), Name des Werkzeugs. Kein Name, keine Firma, kein Telefon | Eigener Server (Vercel, Region `fra1`). Die Adresse wird **nur** signiert ins Cookie `mt_gate` geschrieben, nicht gespeichert und noch nicht weitergegeben | Beim Klick auf «Ergebnis anzeigen» im Fenster | `app/api/lead/route.ts`, `lib/lead-schema.ts`, `components/tool/LeadGate.tsx` |
+| E-Mail-Adresse angeben (Fenster vor dem Ergebnis) | E-Mail-Adresse, Einwilligung (freiwillig, «Alperna darf mich zu meinem Ergebnis kontaktieren»; ohne Häkchen gibt es das Ergebnis trotzdem und im CRM steht «Nein»), Name des Werkzeugs. Kein Name, keine Firma, kein Telefon | Eigener Server (Vercel, Region `fra1`). Die Adresse wird **nur** signiert ins Cookie `mt_gate` geschrieben, nicht gespeichert und noch nicht weitergegeben | Beim Klick auf «Ergebnis anzeigen» im Fenster | `app/api/lead/route.ts`, `lib/lead-schema.ts`, `components/tool/LeadGate.tsx` |
 | **Ergebnis ins CRM** (jedes Ergebnis jedes Werkzeugs) | E-Mail-Adresse (aus dem Cookie), Werkzeug, Kategorie, Zeitpunkt, Quelle, Firma aus dem Firmenprofil (falls vorhanden), **die Eingaben der Person** (zum Beispiel Website-Adresse, Betrieb, Ort, Branche, Social-Links; beim Textcheck und Text-Umschreiber der ganze Text; bei Fragebogen die Antworten) und **das Ergebnis** (als Text, zum Beispiel Punktzahl und Schritte, der Bericht, die KI-Fassung). Eingabe und Ausgabe werden auf je 1'900 Zeichen gekürzt. Name und Telefon sind leere Felder | Eigener Server, dann n8n (Alperna, CRM), dort Notion und eine Mail an kontakt@alperna.ch | Sobald ein Werkzeug sein Ergebnis zeigt (bei jedem Ergebnis, auch bei einem zweiten Durchlauf) | `app/api/result/route.ts`, `lib/lead.ts` (`buildPayload`, `clipText`), `components/tool/ToolShell.tsx` (`sendResult`) |
 | Marketing-Check | Adresse der Website, Firmenname, Ort, Branche, Social-Links und Häufigkeit (freiwillig) | Eigener Server, ruft die öffentliche Startseite, `robots.txt`, `sitemap.xml` ab. Der Server speichert und loggt nichts davon | Beim Klick auf «Website prüfen», nach dem Fenster | `app/api/check/route.ts`, `lib/check/net.ts` |
 | KI-Einordnung im Marketing-Check | Betrieb, Ort, Branche, Host der Website, Punktzahlen, offene Prüfpunkte mit Befund, die ersten acht Schritte. Kein Seiteninhalt, keine E-Mail, kein Name der Person | Eigener Server, dann der KI-Anbieter (siehe Abschnitt 5) | Automatisch nach dem Ergebnis, sobald eine Adresse bekannt ist | `lib/check/ai.ts` (`buildFakten`), `lib/ai.ts`, `app/api/ai/route.ts` |
@@ -18,7 +18,7 @@ Alle übrigen Eingaben bleiben im Browser (localStorage: Firmenprofil `mt:profil
 
 **Wichtig für die Erklärung:** Mit Zugang v3 gehen **Eingaben und Ergebnisse** der Werkzeuge an Alperna, nicht mehr nur Kontaktdaten. Das muss die Datenschutzerklärung und das Fenster klar sagen (im Fenster steht es: «Dein Ergebnis und deine Eingaben gehen mit der Adresse an Alperna»). Beim Textcheck und Text-Umschreiber ist das der ganze Text der Person.
 
-## 2. Was auf dem Server gespeichert wird (Redis, Upstash; Region noch offen)
+## 2. Was auf dem Server gespeichert wird (Redis, Upstash; Region London, Angabe von Alperna 08.10.2026)
 
 | Schlüssel | Inhalt | Dauer |
 |---|---|---|
@@ -50,12 +50,12 @@ Server-Routen loggen Route, Statuscode und ein Stichwort (`lib/log.ts`). Nie Inh
 | Stelle | Rolle | Standort | Quelle der Angabe |
 |---|---|---|---|
 | Vercel | Hosting, Funktionen `fra1`, Cron, AI Gateway (nur, wenn kein OpenRouter-Schlüssel gesetzt ist) | Funktionen Frankfurt; Gateway und Firma USA | `vercel.json`, Plan |
-| Upstash | Redis | Region noch festzulegen (Frankfurt vorgesehen) | STATUS.md |
-| n8n | CRM-Weiterleitung der Ergebnisse (Notion, Mail) | Adresse `n8n-ufvf.srv1747595.hstgr.cloud`, also bei Hostinger; Standort des Servers **offen** | Workflow «Tools-Lead» |
+| Upstash | Redis | London, Vereinigtes Königreich | Angabe von Alperna 08.10.2026 |
+| n8n | CRM-Weiterleitung der Ergebnisse (Notion, Mail) | Adresse `n8n-ufvf.srv1747595.hstgr.cloud`, also bei Hostinger; Server in Frankfurt, Deutschland (Angabe von Alperna 08.10.2026) | Workflow «Tools-Lead» |
 | Notion | CRM: jedes Ergebnis (E-Mail, Firma, Werkzeug, Eingabe, Ausgabe) wird dort als Eintrag angelegt | USA, Standort laut Vertrag zu prüfen | Workflow «Tools-Lead», Datenbank «Tools-Leads» |
 | Google (Gmail) | Benachrichtigungsmail an kontakt@alperna.ch mit den Angaben des Ergebnisses | USA | Workflow «Tools-Lead» |
 | OpenRouter und die Modellanbieter dahinter (Google, NVIDIA, Alibaba/Qwen) | Vermittler und Modelle der KI im Standardweg. Kostenlose Modelle: Training mit Eingaben möglich. Ersatzweg: Vercel AI Gateway mit Anthropic/Mistral; Mistral direkt nur mit `AI_PROVIDER=mistral` | USA (OpenRouter); Standort der Modellanbieter je Modell zu prüfen | `lib/ai.ts` |
-| Umami | Statistik: im Code nur als Ereignis-Markierungen, **kein Skript geladen** | offen | `components/tool/DocumentExport.tsx` |
+| Umami | Wird nicht eingesetzt (Angabe von Alperna 08.10.2026); im Code nur inerte Ereignis-Markierungen, **kein Skript geladen** | entfällt | `components/tool/DocumentExport.tsx` |
 | Fremde Websites | Der Check ruft die vom Besucher genannte Adresse ab (User-Agent `AlpernaCheck/1.0`) | beliebig | `lib/check/net.ts` |
 
 Entfallen seit Zugang v3: Clerk, Google/Microsoft/Apple als Anmeldewege.

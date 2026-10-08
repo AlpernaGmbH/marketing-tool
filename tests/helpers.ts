@@ -57,6 +57,6 @@ export function method(verb: string, path: string, body: unknown, init: { ip?: s
 }
 
 /** Cookie-Header mit einer gültig signierten Adresse (Zugang v3). */
-export function gateCookie(email = "anna@keller.ch", secret = SECRET, now = Date.now()): string {
-  return `mt_gate=${signGate({ email, iat: Math.floor(now / 1000) }, secret)}`;
+export function gateCookie(email = "anna@keller.ch", secret = SECRET, now = Date.now(), consent = true): string {
+  return `mt_gate=${signGate({ email, iat: Math.floor(now / 1000), consent }, secret)}`;
 }

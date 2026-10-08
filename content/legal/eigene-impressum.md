@@ -1,18 +1,18 @@
 ---
 titel: "Impressum für tools.alperna.ch"
-stand: 2026-10-05
-quelle: "Impressum der Alperna GmbH auf alperna.ch/impressum (Stand 11.08.2026, von Alperna verfasst; Angaben und Haftungsbausteine unverändert übernommen); UWG (SR 241) Art. 3 Abs. 1 lit. s; OR (SR 220) Art. 954a."
-status: entwurf
-geprueft: nein
-geprueft_von: ""
-geprueft_am: ""
+stand: 2026-10-08
+quelle: "Handelsregister des Kantons Appenzell Ausserrhoden über Zefix (Firma, Sitz, Adresse, UID, Geschäftsführung, abgerufen am 08.10.2026); Angaben von Alperna vom 08.10.2026 (Du-Form, kein Telefon); Impressum der Alperna GmbH auf alperna.ch/impressum (Stand 11.08.2026, von Alperna verfasst; Angaben und Haftungsbausteine unverändert übernommen); UWG (SR 241) Art. 3 Abs. 1 lit. s; OR (SR 220) Art. 954a."
+status: geprueft
+geprueft: ja
+geprueft_von: "Alperna GmbH, Freigabe laut Auftrag vom 08.10.2026 (die prüfende Person ist nicht namentlich genannt)"
+geprueft_am: 2026-10-08
 ---
 
 # Impressum für tools.alperna.ch
 
-**ENTWURF, NICHT GEPRÜFT.** Vorschlag von Claude Code zur Prüfung durch eine Fachperson. Die Seite `/impressum` bleibt ein Platzhalter (noindex), bis `geprueft: ja` im Kopf steht (CLAUDE.md, Harte Regel 8). Zeilen mit `PRÜFEN:` sind Fragen an die prüfende Person und werden vor der Freigabe gelöscht.
+**Freigegeben am 08.10.2026** (Auftrag von Alperna). Die Seite `/impressum` zeigt den Text im Block unten.
 
-Die Angaben (Adresse, UID, Geschäftsführer) und die drei Haftungsbausteine stammen wörtlich vom Impressum auf alperna.ch, das Alperna selbst verfasst hat. Neu ist nur der Abschnitt «Hinweis zu den Werkzeugen».
+Die Angaben (Adresse, UID, Geschäftsführung) stimmen mit dem Handelsregister überein (Zefix, abgerufen am 08.10.2026: Alperna GmbH, Sitz Speicher, Röhrenbrugg 7, 9042 Speicher, UID CHE-132.724.195, eingetragen im Kanton Appenzell Ausserrhoden; Andrej Good und Leander Züst in der Geschäftsführung). Die drei Haftungsbausteine stammen wörtlich vom Impressum auf alperna.ch, das Alperna selbst verfasst hat. Neu sind der Absatz zum Handelsregister und der Abschnitt «Hinweis zu den Werkzeugen» (von Alperna am 08.10.2026 so bestätigt). Entscheide von Alperna: Du-Form, keine Telefonnummer.
 
 ## Text der Seite
 
@@ -22,6 +22,10 @@ Letztes Update: {{datum}}
 ## Kontaktadresse
 
 Alperna GmbH, Röhrenbrugg 7, 9042 Speicher, Schweiz. E-Mail: kontakt@alperna.ch. Website: tools.alperna.ch und www.alperna.ch. UID: CHE-132.724.195
+
+## Handelsregister
+
+Die Alperna GmbH mit Sitz in Speicher ist im Handelsregister des Kantons Appenzell Ausserrhoden eingetragen.
 
 ## Vertretungsberechtigte Personen
 
@@ -45,13 +49,3 @@ Verweise und Links auf Webseiten Dritter liegen ausserhalb unseres Verantwortung
 
 Die Urheber- und alle anderen Rechte an Inhalten, Bildern, Fotos oder anderen Dateien auf der Website gehören ausschliesslich der Alperna GmbH oder den speziell genannten Rechtsinhabern. Für die Reproduktion jeglicher Elemente ist die schriftliche Zustimmung der Urheberrechtsträger im Voraus einzuholen.
 ```
-
-## Offene Punkte für die Prüfung
-
-PRÜFEN: Die Seite spricht in der Du-Form («deinen Angaben»), die Seite auf alperna.ch in der Sie-Form. Welche Form soll gelten? Die Werkzeuge duzen (CLAUDE.md, Harte Regel 2).
-
-PRÜFEN: Der Abschnitt «Hinweis zu den Werkzeugen» ist neu und stammt von mir. Ist er als Haftungsbegrenzung brauchbar, oder soll er auf eine reine Information beschränkt werden? Der Satz «Die Rechts-Werkzeuge … sind keine Rechtsberatung» ist eine Aussage über Alpernas Tätigkeit; bitte bestätigen.
-
-PRÜFEN: Das Handelsregister wird im Impressum auf alperna.ch nicht genannt. Ist die Alperna GmbH eingetragen, und soll die Firma wegen OR Art. 954a «vollständig und unverändert» wie im Handelsregister stehen (inklusive Zusatz, falls vorhanden)? Ich habe den Eintrag nicht abgerufen.
-
-PRÜFEN: Keine Telefonnummer. Ist das gewollt? Gesetzlich verlangt ist nach UWG Art. 3 Abs. 1 lit. s Ziff. 1 nur die Kontaktadresse einschliesslich E-Mail; die Werkzeuge bieten keinen Vertragsabschluss im elektronischen Geschäftsverkehr an, aber die Rechtslage ist damit nicht geklärt.

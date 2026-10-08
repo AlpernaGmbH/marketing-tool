@@ -27,13 +27,23 @@ describe("LeadGate (E-Mail vor dem Ergebnis)", () => {
     expect(screen.queryByLabelText("Firma")).toBeNull();
   });
 
-  it("sendet nichts ohne Adresse und Einwilligung", async () => {
+  it("sendet nichts ohne Adresse; die Einwilligung ist freiwillig und kein Fehler", async () => {
     const f = vi.fn();
     const { user } = setup(f as unknown as typeof fetch);
     await user.click(screen.getByRole("button", { name: "Ergebnis anzeigen" }));
     expect(await screen.findByText("Bitte gib eine gültige E-Mail-Adresse an.")).toBeInTheDocument();
-    expect(screen.getByText("Bitte stimm der Kontaktaufnahme zu.")).toBeInTheDocument();
+    expect(screen.queryByText("Bitte stimm der Kontaktaufnahme zu.")).toBeNull();
+    expect(screen.getByRole("checkbox", { name: /Alperna darf mich zu meinem Ergebnis kontaktieren \(freiwillig\)/ })).not.toBeChecked();
     expect(f).not.toHaveBeenCalled();
+  });
+
+  it("schickt ohne Häkchen consent:false und zeigt das Ergebnis trotzdem", async () => {
+    const f = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) });
+    const { user, onSuccess } = setup(f as unknown as typeof fetch);
+    await user.type(screen.getByLabelText("E-Mail"), "anna@keller.ch");
+    await user.click(screen.getByRole("button", { name: "Ergebnis anzeigen" }));
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledWith("anna@keller.ch"));
+    expect(JSON.parse(f.mock.calls[0][1].body)).toEqual({ email: "anna@keller.ch", consent: false, tool: "smoke-test", honeypot: "" });
   });
 
   it("schickt Adresse, Einwilligung und Werkzeug und ruft danach onSuccess mit der Adresse auf", async () => {

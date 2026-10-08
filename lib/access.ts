@@ -12,7 +12,8 @@ const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // Sekunden
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Zustand im signierten Cookie mt_gate: die Adresse, die der Besucher angegeben hat. */
-export type GateState = { email: string; iat: number };
+/** `consent`: Hat die Person eingewilligt, dass Alperna sie zum Ergebnis kontaktiert? Cookies aus der Zeit, als das Häkchen Pflicht war, tragen kein Feld und gelten als «ja». */
+export type GateState = { email: string; iat: number; consent: boolean };
 
 /**
  * Schmale Schnittstelle zu Redis. Jede Methode darf werfen; die Routen fangen das ab.
@@ -77,7 +78,7 @@ export function verifyGate(value: string | undefined, secret: string, now = Date
     const s = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Partial<GateState>;
     if (typeof s.email !== "string" || s.email.length > 254 || !EMAIL_RE.test(s.email) || typeof s.iat !== "number") return null;
     if (now / 1000 - s.iat > COOKIE_MAX_AGE) return null;
-    return { email: s.email, iat: s.iat };
+    return { email: s.email, iat: s.iat, consent: s.consent !== false };
   } catch {
     return null;
   }

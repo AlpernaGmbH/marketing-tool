@@ -1,10 +1,11 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { accountHash, clientIp, ipHash, signGate, verifyGate, type GateState } from "@/lib/access";
 import { SECRET } from "@/tests/helpers";
 
 const NOW = Date.UTC(2026, 9, 3, 12, 0, 0);
 const iat = Math.floor(NOW / 1000);
-const cookie = (over: Partial<GateState> = {}): GateState => ({ email: "anna@keller.ch", iat, ...over });
+const cookie = (over: Partial<GateState> = {}): GateState => ({ email: "anna@keller.ch", iat, consent: true, ...over });
 
 describe("ipHash", () => {
   it("liefert 16 Byte als 32 Hex-Zeichen und enthält die IP nicht im Klartext", () => {
@@ -57,8 +58,16 @@ describe("Cookie mt_gate (Zugang v3: die Adresse der Person)", () => {
       return `${payload}.${signGate(cookie(), SECRET).split(".")[1]}`;
     };
     expect(verifyGate(sign({ iat }), SECRET, NOW)).toBeNull();
-    expect(verifyGate(signGate({ email: "kein-mail", iat }, SECRET), SECRET, NOW)).toBeNull();
+    expect(verifyGate(signGate({ email: "kein-mail", iat, consent: true }, SECRET), SECRET, NOW)).toBeNull();
     expect(verifyGate(signGate(cookie(), SECRET), SECRET, NOW + 366 * 24 * 60 * 60 * 1000)).toBeNull();
+  });
+  it("trägt die Einwilligung mit; Cookies aus der Zeit des Pflicht-Häkchens ohne Feld gelten als «ja»", () => {
+    expect(verifyGate(signGate(cookie({ consent: false }), SECRET), SECRET, NOW)).toEqual({ email: "anna@keller.ch", iat, consent: false });
+    expect(verifyGate(signGate(cookie({ consent: true }), SECRET), SECRET, NOW)?.consent).toBe(true);
+    const legacy = Buffer.from(JSON.stringify({ email: "anna@keller.ch", iat })).toString("base64url");
+    // ein altes Cookie trägt seine eigene Signatur über den alten Inhalt
+    const legacySig = createHmac("sha256", SECRET).update(legacy).digest("base64url");
+    expect(verifyGate(`${legacy}.${legacySig}`, SECRET, NOW)).toEqual({ email: "anna@keller.ch", iat, consent: true });
   });
   it("verträgt leere, fremde und kaputte Werte", () => {
     for (const v of [undefined, "", "a.b.c", "nur-ein-teil", `${"x".repeat(10)}.${"y".repeat(10)}`]) {

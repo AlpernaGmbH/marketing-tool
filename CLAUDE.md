@@ -14,14 +14,14 @@ Vereinsvorstände, Selbständige.
 - Kein Konto, keine Anmeldung, kein freier Durchlauf mehr. Jedes Werkzeug
 läuft ohne Hürde bis zum Punkt, an dem das Ergebnis erscheinen würde. Dort
 (und vor jedem Download) fragt das E-Mail-Fenster (components/tool/LeadGate)
-nach der Adresse. Felder: E-Mail, Einwilligung («Alperna darf mich zu meinem
-Ergebnis kontaktieren»), Honeypot. Kein Name, keine Firma, kein Telefon.
+nach der Adresse. Felder: E-Mail (Pflicht), Einwilligung («Alperna darf mich zu meinem
+Ergebnis kontaktieren», freiwillig; ohne Häkchen gibt es das Ergebnis trotzdem), Honeypot. Kein Name, keine Firma, kein Telefon.
 Titel «Dein Ergebnis ist bereit.», Text «Gib deine E-Mail-Adresse an, dann
 zeigen wir es dir. Dein Ergebnis und deine Eingaben gehen mit der Adresse an
 Alperna, damit wir dir bei Fragen weiterhelfen können.» Knöpfe «Später» und
 «Ergebnis anzeigen». «Später» lässt Formular oder Zusammenfassung stehen.
 - Nach dem Absenden: POST /api/lead {email, consent, tool} setzt das
-signierte Cookie mt_gate {email, iat} (HMAC-SHA256 mit GATE_SECRET, HttpOnly,
+signierte Cookie mt_gate {email, iat, consent} (HMAC-SHA256 mit GATE_SECRET, HttpOnly,
 SameSite=Lax, 365 Tage). Der Browser merkt die Adresse zusätzlich unter
 mt:_lead (nur für die Anzeige «Ergebnisse gehen an … · ändern»). Danach gibt
 es ein Jahr lang kein Fenster mehr, auf keinem Werkzeug.
@@ -29,7 +29,8 @@ es ein Jahr lang kein Fenster mehr, auf keinem Werkzeug.
 ausgabe}) → POST /api/result {tool, eingabe, ausgabe, firma?}. Die Adresse
 nimmt der Server aus dem Cookie, nie aus dem Body. Der Lead an n8n hat genau
 die Felder name (leer), firma (aus dem Firmenprofil), email, telefon (leer),
-tool, kategorie, quelle, zeit, eingabe, ausgabe; Eingabe und Ausgabe auf
+tool, kategorie, quelle, zeit, eingabe, ausgabe, einwilligung («ja» oder «nein», aus dem
+Cookie; Alperna meldet sich nur bei «ja» von sich aus); Eingabe und Ausgabe auf
 1'900 Zeichen gekürzt (lib/lead.ts, clipText). Ein zweites Ergebnis derselben
 Person geht erneut ins CRM.
 - Ohne Cookie antworten /api/result, /api/check, /api/text und /api/ai mit

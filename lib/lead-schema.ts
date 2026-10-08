@@ -1,9 +1,10 @@
 import { z } from "zod";
 
-// Gemeinsam für das E-Mail-Fenster (Browser) und /api/lead (Server). Zugang v3: nur die Adresse und die Einwilligung.
+// Gemeinsam für das E-Mail-Fenster (Browser) und /api/lead (Server). Zugang v3: die Adresse (Pflicht) und die Einwilligung zur
+// Kontaktaufnahme (freiwillig, nDSG Art. 6 Abs. 6); ohne Häkchen gibt es das Ergebnis trotzdem, im CRM steht dann «Nein».
 export const leadSchema = z.object({
   email: z.string().trim().toLowerCase().max(254).email("Bitte gib eine gültige E-Mail-Adresse an."),
-  consent: z.literal(true, { message: "Bitte stimm der Kontaktaufnahme zu." }),
+  consent: z.boolean().default(false),
   tool: z.string().min(1).max(80),
   // Honeypot: für Menschen unsichtbar, muss leer bleiben.
   honeypot: z.string().max(0).optional(),

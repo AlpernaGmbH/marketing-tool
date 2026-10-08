@@ -22,13 +22,14 @@ async function received(request: APIRequestContext): Promise<Record<string, stri
   return (await (await request.get("http://127.0.0.1:3998/received")).json()) as Record<string, string>[];
 }
 
-/** Das E-Mail-Fenster (Zugang v3) ausfüllen: Adresse, Häkchen, «Ergebnis anzeigen». */
-async function giveEmail(page: Page, email = fresh()) {
+/** Das E-Mail-Fenster (Zugang v3) ausfüllen: Adresse, Häkchen (freiwillig), «Ergebnis anzeigen». */
+async function giveEmail(page: Page, email = fresh(), consent = true) {
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Dein Ergebnis ist bereit.")).toBeVisible();
   await expect(dialog.getByLabel("Name")).toHaveCount(0);
   await dialog.getByLabel("E-Mail").fill(email);
-  await dialog.getByRole("checkbox").check();
+  if (consent) await dialog.getByRole("checkbox").check();
+  else await expect(dialog.getByRole("checkbox")).not.toBeChecked();
   await dialog.getByRole("button", { name: "Ergebnis anzeigen" }).click();
   await expect(dialog).toHaveCount(0);
   return email;
@@ -74,6 +75,17 @@ test.describe("Seiten", () => {
     expect((await request.get("/sitemap.xml")).status()).toBe(200);
     await page.goto("/");
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  });
+
+  test("Impressum und Datenschutz zeigen den freigegebenen Text, ohne offene Fragen", async ({ page }) => {
+    await page.goto("/impressum");
+    await expect(page.getByRole("heading", { name: "Handelsregister" })).toBeVisible();
+    await expect(page.getByText("CHE-132.724.195").first()).toBeVisible();
+    await page.goto("/datenschutz");
+    await expect(page.getByRole("heading", { name: "1. Verantwortliche Stelle" })).toBeVisible();
+    await expect(page.getByText("London (Vereinigtes Königreich)")).toBeVisible();
+    const body = await page.locator("main").innerText();
+    expect(body).not.toMatch(/OFFEN|PRÜFEN|ENTWURF/);
   });
 
   test("Rechts-Platzhalter sind noindex", async ({ page }) => {
@@ -2400,6 +2412,27 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
     expect(generate).toBe(1);
   });
 
+  test("E-Mail-Fenster ohne Häkchen: Das Ergebnis erscheint trotzdem, im CRM steht die Einwilligung «nein»", async ({ page, request }) => {
+    await page.goto("/tools/whatsapp-link");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("WhatsApp-Nummer").fill("079 123 45 67");
+    await page.getByRole("button", { name: "Link erstellen" }).click();
+    const email = await giveEmail(page, fresh(), false);
+    await expect(page.getByRole("region", { name: "Dein WhatsApp-Link" })).toBeVisible();
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("whatsapp-link");
+    expect((await received(request)).find((l) => l.email === email)!.einwilligung).toBe("nein");
+  });
+
+  test("E-Mail-Fenster mit Häkchen: Im CRM steht die Einwilligung «ja»", async ({ page, request }) => {
+    await page.goto("/tools/whatsapp-link");
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("WhatsApp-Nummer").fill("079 123 45 67");
+    await page.getByRole("button", { name: "Link erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein WhatsApp-Link" })).toBeVisible();
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.einwilligung).toBe("ja");
+  });
+
   // new-wave-10:tests
 });
 
@@ -2475,7 +2508,7 @@ test.describe("Zugang v3 über die Routen", () => {
 
   test("ungültige Angaben liefern 400 und setzen kein Cookie", async ({ playwright }) => {
     const ctx = await playwright.request.newContext({ baseURL: BASE });
-    for (const bad of [lead({ consent: false }), lead({ email: "keller" }), lead({ honeypot: "https://spam.example" }), lead({ tool: "gibt-es-nicht" }), {}]) {
+    for (const bad of [lead({ consent: "ja" }), lead({ email: "keller" }), lead({ honeypot: "https://spam.example" }), lead({ tool: "gibt-es-nicht" }), {}]) {
       const res = await ctx.post("/api/lead", { data: bad });
       expect(res.status(), JSON.stringify(bad)).toBe(400);
       expect(res.headers()["set-cookie"]).toBeUndefined();

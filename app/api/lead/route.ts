@@ -30,6 +30,6 @@ export async function POST(req: NextRequest) {
   if (!(await withinLimit("lead", 10, "1 h", hash))) return respond(ROUTE, 429, { error: "rate_limited" }, "rate_limited");
 
   const res = respond(ROUTE, 200, { ok: true });
-  writeGateCookie(res, { email: parsed.data.email, iat: Math.floor(Date.now() / 1000) }, secret);
+  writeGateCookie(res, { email: parsed.data.email, iat: Math.floor(Date.now() / 1000), consent: parsed.data.consent }, secret);
   return res;
 }

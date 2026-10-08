@@ -4,16 +4,21 @@ import { CLIP_CHARS, buildPayload, clipText, drainLeads, forwardToN8n } from "@/
 import { leadSchema, resultSchema } from "@/lib/lead-schema";
 
 const valid = { email: "Anna@Keller.ch", consent: true, tool: "x" };
-const ergebnis = { email: "anna@keller.ch", firma: " Malerei Keller ", tool: "x", eingabe: "Website: keller.ch", ausgabe: "# Ergebnis" };
+const ergebnis = { email: "anna@keller.ch", consent: true, firma: " Malerei Keller ", tool: "x", eingabe: "Website: keller.ch", ausgabe: "# Ergebnis" };
 
-describe("leadSchema (Zugang v3: Adresse und Einwilligung)", () => {
+describe("leadSchema (Zugang v3: Adresse Pflicht, Einwilligung freiwillig)", () => {
   it("akzeptiert Adresse plus Einwilligung und normalisiert die E-Mail", () => {
     const r = leadSchema.safeParse({ ...valid, honeypot: "" });
     expect(r.success && r.data.email).toBe("anna@keller.ch");
   });
-  it("verlangt Einwilligung", () => {
-    expect(leadSchema.safeParse({ ...valid, consent: false }).success).toBe(false);
-    expect(leadSchema.safeParse({ ...valid, consent: undefined }).success).toBe(false);
+  it("macht die Einwilligung freiwillig: ohne Häkchen oder ohne Feld gilt «nein»", () => {
+    const aus = leadSchema.safeParse({ ...valid, consent: false });
+    expect(aus.success && aus.data.consent).toBe(false);
+    const fehlt = leadSchema.safeParse({ email: valid.email, tool: valid.tool });
+    expect(fehlt.success && fehlt.data.consent).toBe(false);
+    const an = leadSchema.safeParse(valid);
+    expect(an.success && an.data.consent).toBe(true);
+    expect(leadSchema.safeParse({ ...valid, consent: "ja" }).success).toBe(false);
   });
   it("lehnt ungültige oder überlange Adressen und fehlendes Werkzeug ab", () => {
     expect(leadSchema.safeParse({ ...valid, email: "keller" }).success).toBe(false);
@@ -58,8 +63,12 @@ describe("clipText", () => {
 describe("buildPayload", () => {
   it("enthält genau die erlaubten Felder, Name und Telefon leer", () => {
     const p = buildPayload(ergebnis, "strategie", new Date("2026-10-03T10:00:00Z"));
-    expect(Object.keys(p).sort()).toEqual(["ausgabe", "eingabe", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"].sort());
+    expect(Object.keys(p).sort()).toEqual(["ausgabe", "eingabe", "einwilligung", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"].sort());
     expect(p).toMatchObject({ name: "", telefon: "", firma: "Malerei Keller", email: "anna@keller.ch", tool: "x", kategorie: "strategie", quelle: "tools.alperna.ch", zeit: "2026-10-03T10:00:00.000Z" });
+  });
+  it("trägt die Einwilligung als «ja» oder «nein» ins CRM", () => {
+    expect(buildPayload(ergebnis, "strategie").einwilligung).toBe("ja");
+    expect(buildPayload({ ...ergebnis, consent: false }, "strategie").einwilligung).toBe("nein");
   });
   it("kürzt Eingabe und Ausgabe fürs CRM und verträgt eine fehlende Firma", () => {
     const p = buildPayload({ ...ergebnis, firma: undefined, ausgabe: "y".repeat(3000) }, "content");

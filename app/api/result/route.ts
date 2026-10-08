@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!(await withinLimit("result", 30, "1 h", hash))) return respond(ROUTE, 429, { error: "rate_limited" }, "rate_limited");
 
   const store = defaultStore();
-  const payload = buildPayload({ email: gate.email, firma: parsed.data.firma, tool: tool.slug, eingabe: parsed.data.eingabe, ausgabe: parsed.data.ausgabe }, tool.category);
+  const payload = buildPayload({ email: gate.email, consent: gate.consent, firma: parsed.data.firma, tool: tool.slug, eingabe: parsed.data.eingabe, ausgabe: parsed.data.ausgabe }, tool.category);
   const delivery = await deliverLead(store, payload);
   try {
     await store?.recordResult(tool.slug);

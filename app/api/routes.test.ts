@@ -52,8 +52,23 @@ describe("POST /api/lead (Adresse angeben)", () => {
     expect(fetch).not.toHaveBeenCalled();
     expect(store.leads).toHaveLength(0);
   });
-  it("antwortet 400 bei fehlender Einwilligung, ungültiger Adresse, Honeypot und unbekanntem Werkzeug", async () => {
-    for (const bad of [{ ...form, consent: false }, { ...form, email: "keller" }, { ...form, honeypot: "spam" }, { ...form, tool: "gibt-es-nicht" }, "kein json"]) {
+  it("setzt das Cookie auch ohne Häkchen und trägt die Einwilligung ins CRM: «nein» ohne, «ja» mit Einwilligung", async () => {
+    process.env.N8N_WEBHOOK_URL = "https://n8n.example/webhook/x";
+    const sent: Record<string, string>[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (_u: string, init: { body: string }) => {
+      sent.push(JSON.parse(init.body));
+      return { ok: true };
+    }));
+    for (const consent of [false, true]) {
+      const res = await lead(post("/api/lead", { ...form, consent }, { ip: IP }));
+      expect(res.status).toBe(200);
+      await result(post("/api/result", ergebnis, { ip: IP, cookie: cookieOf(res) }));
+    }
+    expect(sent.map((p) => p.einwilligung)).toEqual(["nein", "ja"]);
+    delete process.env.N8N_WEBHOOK_URL;
+  });
+  it("antwortet 400 bei ungültiger Adresse, Einwilligung falschen Typs, Honeypot und unbekanntem Werkzeug", async () => {
+    for (const bad of [{ ...form, consent: "ja" }, { ...form, email: "keller" }, { ...form, honeypot: "spam" }, { ...form, tool: "gibt-es-nicht" }, "kein json"]) {
       const res = await lead(post("/api/lead", bad, { ip: IP }));
       expect(res.status).toBe(400);
       expect(res.headers.get("set-cookie")).toBeNull();
@@ -88,8 +103,8 @@ describe("POST /api/result (Ergebnis ins CRM)", () => {
     const res = await result(post("/api/result", ergebnis, { ip: IP, cookie }));
     expect(res.status).toBe(200);
     const sent = JSON.parse(f.mock.calls[0][1].body);
-    expect(Object.keys(sent).sort()).toEqual(["ausgabe", "eingabe", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"].sort());
-    expect(sent).toMatchObject({ email: "anna@keller.ch", firma: "Malerei Keller", tool: TOOL, kategorie: "strategie", quelle: "tools.alperna.ch", eingabe: ergebnis.eingabe, ausgabe: ergebnis.ausgabe, name: "", telefon: "" });
+    expect(Object.keys(sent).sort()).toEqual(["ausgabe", "eingabe", "einwilligung", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"].sort());
+    expect(sent).toMatchObject({ email: "anna@keller.ch", firma: "Malerei Keller", tool: TOOL, kategorie: "strategie", quelle: "tools.alperna.ch", eingabe: ergebnis.eingabe, ausgabe: ergebnis.ausgabe, name: "", telefon: "", einwilligung: "ja" });
     expect(store.leads).toHaveLength(0); // n8n hat geantwortet: keine Queue
     expect(store.popular.get(TOOL)).toBe(1);
   });

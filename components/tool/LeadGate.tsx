@@ -35,7 +35,7 @@ const ERRORS = {
 
 /**
  * Das E-Mail-Fenster (Zugang v3): erscheint, bevor ein Werkzeug sein erstes Ergebnis zeigt, und vor Downloads.
- * Nur die Adresse und die Einwilligung. Danach gehen Ergebnisse mit Werkzeug, Eingabe und Ausgabe an Alperna.
+ * Die Adresse ist Pflicht, die Einwilligung zur Kontaktaufnahme freiwillig. Danach gehen Ergebnisse mit Werkzeug, Eingabe und Ausgabe an Alperna.
  */
 export function LeadGate({ open, onOpenChange, tool, email = null, onSuccess }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -47,13 +47,13 @@ export function LeadGate({ open, onOpenChange, tool, email = null, onSuccess }: 
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { email: email ?? "", honeypot: "" },
+    defaultValues: { email: email ?? "", consent: false, honeypot: "" },
   });
 
   // Das Fenster bleibt eingehängt; bei jedem Öffnen gilt die aktuell bekannte Adresse (leer, wenn der Server sie vergessen hat).
   useEffect(() => {
     if (open) {
-      reset({ email: email ?? "", honeypot: "" });
+      reset({ email: email ?? "", consent: false, honeypot: "" });
       setSubmitError(null);
     }
   }, [open, email, reset]);
@@ -112,26 +112,20 @@ export function LeadGate({ open, onOpenChange, tool, email = null, onSuccess }: 
                   <Checkbox
                     id="lead-consent"
                     checked={field.value === true}
-                    onCheckedChange={(v) => field.onChange(v === true ? true : undefined)}
-                    aria-invalid={!!errors.consent}
+                    onCheckedChange={(v) => field.onChange(v === true)}
                     aria-describedby="lead-consent-text"
                   />
                 )}
               />
               {/* Bewusst ein einfaches <label>: shadcn «Label» ist ein Flex-Container und würde Text und Link trennen. */}
               <label htmlFor="lead-consent" id="lead-consent-text" className="text-sm leading-snug">
-                Alperna darf mich zu meinem Ergebnis kontaktieren. Mehr dazu in der{" "}
+                Alperna darf mich zu meinem Ergebnis kontaktieren (freiwillig). Mehr dazu in der{" "}
                 <Link href="/datenschutz" className="underline underline-offset-2">
                   Datenschutzerklärung
                 </Link>
                 .
               </label>
             </div>
-            {errors.consent && (
-              <p role="alert" className="text-sm text-destructive">
-                Bitte stimm der Kontaktaufnahme zu.
-              </p>
-            )}
           </div>
 
           {submitError && (
