@@ -2339,10 +2339,10 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
     // Formate stehen oben als Karten, ein Klick wählt oder entfernt; die Vorschau wechselt mit einem Klick (Charge C10a)
     const formate = page.getByRole("group", { name: "Formate" });
     await expect(formate.getByRole("checkbox", { name: "Feed 1:1" })).toBeChecked();
-    await formate.getByText("Story 9:16").click();
+    await formate.getByRole("checkbox", { name: "Story 9:16" }).click();
     await page.getByRole("group", { name: "Vorschau" }).getByRole("button", { name: "Story 9:16" }).click();
     await expect(page.getByTestId("vn-vorschau-canvas")).toHaveAttribute("aria-label", /^Vorschau Story 9:16/);
-    await formate.getByText("Story 9:16").click();
+    await formate.getByRole("checkbox", { name: "Story 9:16" }).click();
     await expect(formate.getByRole("checkbox", { name: "Story 9:16" })).not.toBeChecked();
     await expect(page.getByRole("group", { name: "Vorschau" })).toHaveCount(0);
     await page.getByRole("button", { name: "Collage erstellen" }).click();
