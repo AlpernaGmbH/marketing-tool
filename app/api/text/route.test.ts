@@ -142,15 +142,6 @@ describe("POST /api/text", () => {
     expect([...ai.counters.keys()].every((k) => k.startsWith("ai:global:"))).toBe(true);
   });
 
-  it("nimmt den Stil des Textchecks an und gibt die Antwort unverändert zurück", async () => {
-    gen.fn.mockResolvedValue("Gesamteindruck: gut.\nFehler:\n- Straße → Strasse (Eszett)");
-    const res = await call(body({ style: "pruefen" }));
-    expect(res.status).toBe(200);
-    expect((await res.json()).text).toContain("Straße → Strasse");
-    const args = gen.fn.mock.calls[0][0] as { system: string };
-    expect(args.system).toContain("prüfst den Text");
-  });
-
   it("meldet 502, wenn die KI ausfällt, bucht den Platz zurück und loggt die Fehlerart ohne Text", async () => {
     gen.fn.mockRejectedValue(Object.assign(new Error(`Meldung mit ${TEXT}`), { name: "GatewayRateLimitError", statusCode: 429 }));
     process.env.AI_DAILY_CAP = "1";

@@ -99,8 +99,8 @@ verlangt das Cookie (403 gate)
 nur für von /api/check signierte Ergebnisse (lib/check/sign.ts),
 Tageslimit pro Adresse und global (lib/ai-quota.ts), 24 Stunden Zwischenspeicher,
 Antwort der KI wird geprüft (lib/check/ai.ts) und sonst verworfen
-- app/api/text/route.ts – Text-Umschreiber und Textcheck mit KI: schreibt den Text des Besuchers
-im gewählten Stil neu oder prüft ihn (Stil «pruefen»); verlangt das Cookie (403 gate);
+- app/api/text/route.ts – Text-Umschreiber: schreibt den Text des Besuchers
+im gewählten Stil neu (die KI-Prüfung des Textchecks läuft über /api/generate); verlangt das Cookie (403 gate);
 Schutz: 30 Anfragen pro Stunde und IP-Hash, globale Tagesgrenze
 (AI_DAILY_CAP); Antwort wird geprüft (tools/text-umschreiber/logic.ts), nichts wird
 gespeichert oder mit Inhalt geloggt

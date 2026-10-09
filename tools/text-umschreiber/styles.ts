@@ -8,7 +8,6 @@
 //  - instruction  Regeln für die KI, im Du, auf Deutsch, konkret. Keine Zahlen oder Fakten vorgeben.
 //  - maxOutputChars  harte Obergrenze für die Antwort; längere Antworten werden verworfen
 //  - maxTokens    Obergrenze für die Länge, die das Modell schreiben darf (grob Zeichen geteilt durch drei)
-//  - kind         «rewrite» (Standard): schreibt den Text neu. «check»: prüft den Text und antwortet mit Liste und korrigiertem Text
 
 export type TextStyle = {
   id: string;
@@ -17,7 +16,6 @@ export type TextStyle = {
   instruction: string;
   maxOutputChars: number;
   maxTokens: number;
-  kind?: "rewrite" | "check";
 };
 
 export const STYLES: TextStyle[] = [
@@ -95,37 +93,11 @@ export const STYLES: TextStyle[] = [
   },
 ];
 
-/**
- * Anweisung für den Textcheck (Knopf «Mit KI prüfen»). Steht nicht in der Auswahl des Text-Umschreibers, läuft aber über
- * dieselbe Route. Die Form der Antwort ist fest, damit die Seite sie in Abschnitte gliedern kann (`parseCheckReply`).
- */
-export const CHECK_STYLE: TextStyle = {
-  id: "pruefen",
-  label: "Prüfen",
-  hint: "Sucht Rechtschreib- und Grammatikfehler und schlägt Verbesserungen vor.",
-  kind: "check",
-  instruction:
-    "Prüfe den Ausgangstext wie eine Lektorin. Suche Rechtschreibfehler, Grammatikfehler, falsche Zeichensetzung, falsche oder unpassende Wörter und Stolperstellen. Ändere den Text nicht eigenmächtig. Antworte genau in dieser Form, ohne Einleitung:\n" +
-    "Gesamteindruck: ein Satz.\n" +
-    "Fehler:\n- falsch → richtig (Grund in wenigen Wörtern)\n(eine Zeile pro Fehler; gibt es keine, schreibe: - keine gefunden)\n" +
-    "Verbesserungen:\n- Stelle → Vorschlag\n(höchstens fünf Zeilen für Stil und Verständlichkeit; gibt es keine, schreibe: - keine)\n" +
-    "Korrigierter Text:\nder Ausgangstext, in dem nur die Fehler korrigiert sind.",
-  maxOutputChars: 7000,
-  maxTokens: 2600,
-};
-
-const ALL_STYLES = [...STYLES, CHECK_STYLE];
-
-/** Kennungen, die die Route annimmt: die Stile der Auswahl und der Textcheck. */
-export const STYLE_IDS = ALL_STYLES.map((s) => s.id) as [string, ...string[]];
+/** Kennungen, die die Route annimmt: die Stile der Auswahl. */
+export const STYLE_IDS = STYLES.map((s) => s.id) as [string, ...string[]];
 
 export function getStyle(id: string): TextStyle | undefined {
-  return ALL_STYLES.find((s) => s.id === id);
-}
-
-/** Ist es ein Stil der Auswahl im Text-Umschreiber? (Der Textcheck-Stil gehört nicht dazu.) */
-export function isPickerStyle(id: string): boolean {
-  return STYLES.some((s) => s.id === id);
+  return STYLES.find((s) => s.id === id);
 }
 
 export type Anrede = "du" | "sie" | "wie-im-text";

@@ -56,8 +56,8 @@ Verwandte Tools: textcheck, digitaler-auftritt-check; newsletter-check entsteht 
 ## Tests
 `tools/text-umschreiber/logic.test.ts` (Stilliste, Eingabe, Prompts, Prüfung der Antwort, Antwort lesen, Stand, Texte), `client.test.ts` (Aufruf und Statuscodes), `app/api/text/route.test.ts` (alle Zweige der Route inkl. Protokoll ohne Text), `lib/ai-quota.test.ts` (Kontingente), `lib/ai.test.ts` (Mistral direkt). Browser: Fälle in `tests/e2e/smoke.spec.ts` («Text-Umschreiber im Browser»).
 
-## Textcheck mit KI (Stil «pruefen»)
-Dieselbe Route, ein Stil, der nicht in der Auswahl des Umschreibers steht (`CHECK_STYLE`, `kind: "check"`). Eigener System-Prompt (Lektorin, Schweizer Schreibweise, keine erfundenen Fehler), feste Antwortform: Gesamteindruck, Fehler, Verbesserungen, Korrigierter Text. `parseCheckReply` gliedert die Antwort; hält die KI die Form nicht ein, zeigt die Seite den Text unverändert. Die Antwort wird nicht in Schweizer Schreibweise umgestellt (eine Rückmeldung «ß → ss» würde sich sonst selbst verschlucken).
+## Textcheck mit KI
+Bis 09.10.2026 lief die KI-Prüfung des Textchecks als Stil «pruefen» über diese Route. Seit Charge B3 läuft sie über `/api/generate` (Generator `tools/textcheck/generator.ts`, siehe `specs/textcheck.md`, Abschnitt «Mit KI prüfen»); der Stil, `parseCheckReply` und der Prüfzweig in `checkOutput` sind entfernt. Die Route nimmt nur noch die Stile der Auswahl an.
 
 ## Nicht Teil dieses Tools
 - Mehrere Fassungen auf einmal, Versionsverlauf, Vergleich der Fassungen.

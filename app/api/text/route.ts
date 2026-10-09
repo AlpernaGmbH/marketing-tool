@@ -8,7 +8,7 @@ import { withinLimit } from "@/lib/ratelimit";
 import { buildSystemPrompt, buildUserPrompt, checkOutput, inputProblem, MAX_INPUT_CHARS, outputHint } from "@/tools/text-umschreiber/logic";
 import { STYLE_IDS, getStyle } from "@/tools/text-umschreiber/styles";
 
-// Schreibt den Text des Besuchers im gewählten Stil neu (Text-Umschreiber) oder prüft ihn (Textcheck, Stil «pruefen»).
+// Schreibt den Text des Besuchers im gewählten Stil neu (Text-Umschreiber). Die KI-Prüfung des Textchecks läuft seit 09.10.2026 über /api/generate.
 // Zugang v3: Ergebnisse gibt es gegen eine E-Mail-Adresse (Cookie mt_gate). Als Schutz vor Missbrauch dienen die
 // Ratenbegrenzung pro IP-Hash und die globale Tagesgrenze, nicht ein Limit pro Person.
 // Geloggt werden nur Statuscode und Stichwort, nie der Text (Harte Regel 1). Die Antwort der KI wird nie ungeprüft

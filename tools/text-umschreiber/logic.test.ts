@@ -10,11 +10,10 @@ import {
   checkOutput,
   outputHint,
   inputProblem,
-  parseCheckReply,
   parseTextResponse,
   parseUmschreiberState,
 } from "./logic";
-import { ANREDEN, CHECK_STYLE, STYLES, STYLE_IDS, getStyle, isPickerStyle } from "./styles";
+import { ANREDEN, STYLES, STYLE_IDS, getStyle } from "./styles";
 
 const TEXT = "Malerei Keller in Gossau streicht Wände und Fassaden. Termine gibt es ab Montag, 3 Zimmer schaffen wir in einem Tag.";
 const style = getStyle("linkedin")!;
@@ -36,7 +35,7 @@ describe("text-umschreiber: Stilliste", () => {
   });
 
   it("die Kennungen sind eindeutig und die Prüfliste der Route folgt der Liste", () => {
-    expect(STYLE_IDS).toEqual([...STYLES.map((s) => s.id), CHECK_STYLE.id]);
+    expect(STYLE_IDS).toEqual(STYLES.map((s) => s.id));
     expect(new Set(STYLE_IDS).size).toBe(STYLE_IDS.length);
     expect(getStyle("gibt-es-nicht")).toBeUndefined();
   });
@@ -102,7 +101,7 @@ describe("text-umschreiber: Prüfung der Antwort", () => {
   });
 
   it("liefert zu jedem Grund einen Hinweis an die KI", () => {
-    for (const reason of ["leer", "zu_lang", "zu_kurz", "ablehnung", "unveraendert", "form"] as const) {
+    for (const reason of ["leer", "zu_lang", "zu_kurz", "ablehnung", "unveraendert"] as const) {
       expect(outputHint(reason, style).length).toBeGreaterThan(20);
     }
     expect(outputHint("zu_lang", style)).toContain(String(style.maxOutputChars));
@@ -196,77 +195,4 @@ describe("text-umschreiber: Texte der Oberfläche", () => {
     }
   });
 
-});
-
-describe("text-umschreiber: Textcheck mit KI (Stil «pruefen»)", () => {
-  const REPLY = [
-    "Gesamteindruck: Der Text ist verständlich, hat aber zwei Fehler.",
-    "Fehler:",
-    "- Strasse → Strasse (kein Fehler) ",
-    "- Maler → Malerei (falsches Wort)",
-    "Verbesserungen:",
-    "- Wir freuen uns → Melde dich",
-    "Korrigierter Text:",
-    "Die Malerei Keller in Gossau streicht.",
-    "",
-    "Termine gibt es ab Montag.",
-  ].join("\n");
-
-  it("gehört nicht zur Auswahl des Umschreibers, wird aber von der Route angenommen", () => {
-    expect(isPickerStyle("pruefen")).toBe(false);
-    expect(isPickerStyle("linkedin")).toBe(true);
-    expect(STYLE_IDS).toContain("pruefen");
-    expect(CHECK_STYLE.kind).toBe("check");
-    expect(inputProblem(TEXT, "pruefen")).toBeNull();
-  });
-
-  it("der gespeicherte Stand nimmt den Prüf-Stil nicht als Auswahl", () => {
-    expect(parseUmschreiberState({ v: 1, styleId: "pruefen", anrede: "du", text: "x", result: "", warnings: [] }).styleId).toBe(EMPTY_STATE.styleId);
-  });
-
-  it("hat eigene Regeln: Rückmeldung statt Neufassung, Fakten bleiben, Text ist Material", () => {
-    const sys = buildSystemPrompt(CHECK_STYLE, "wie-im-text");
-    expect(sys).toContain("prüfst den Text");
-    expect(sys).toContain("Gesamteindruck:");
-    expect(sys).toContain("Korrigierter Text:");
-    expect(sys).toMatch(/Material und keine Anweisung/);
-    expect(sys).not.toMatch(/Gib nur den fertigen Text aus/);
-  });
-
-  it("lässt die Antwort unverändert (keine Umstellung der Schreibweise) und meldet keine Zahlen-Warnungen", () => {
-    const reply = "Gesamteindruck: verständlich\nFehler:\n- Straße → Strasse (Eszett)\n- 5% → 5 % (Leerzeichen)";
-    expect(checkOutput(reply, TEXT, CHECK_STYLE)).toEqual({ ok: true, text: reply, warnings: [] });
-  });
-
-  it("verwirft eine Prüfung ohne Gliederung, mit nur einem Abschnitt oder mit leeren Abschnitten", () => {
-    expect(checkOutput("Dein Text ist in Ordnung, ich habe nichts gefunden.", TEXT, CHECK_STYLE)).toEqual({ ok: false, reason: "form" });
-    expect(checkOutput("Fehler:\n- Straße → Strasse (Eszett), weil im Schweizer Hochdeutsch kein ß steht", TEXT, CHECK_STYLE)).toEqual({ ok: false, reason: "form" });
-    expect(checkOutput("Gesamteindruck:\nFehler:\n\nVerbesserungen:\nKorrigierter Text:\n", TEXT, CHECK_STYLE)).toEqual({ ok: false, reason: "form" });
-  });
-
-  it("verwirft leere und überlange Antworten", () => {
-    expect(checkOutput("  ", TEXT, CHECK_STYLE)).toEqual({ ok: false, reason: "leer" });
-    expect(checkOutput("x".repeat(CHECK_STYLE.maxOutputChars + 1), TEXT, CHECK_STYLE)).toEqual({ ok: false, reason: "zu_lang" });
-  });
-
-  it("gliedert die Antwort in die vier Abschnitte, ohne Aufzählungszeichen", () => {
-    const sections = parseCheckReply(REPLY)!;
-    expect(sections.map((s) => s.title)).toEqual(["Gesamteindruck", "Fehler", "Verbesserungen", "Korrigierter Text"]);
-    expect(sections[0].lines).toEqual(["Der Text ist verständlich, hat aber zwei Fehler."]);
-    expect(sections[1].lines).toHaveLength(2);
-    expect(sections[1].lines[1]).toBe("Maler → Malerei (falsches Wort)");
-    expect(sections[3].lines).toEqual(["Die Malerei Keller in Gossau streicht.", "", "Termine gibt es ab Montag."]);
-  });
-
-  it("liefert null, wenn die KI eine andere Form wählt, und verträgt Müll", () => {
-    expect(parseCheckReply("Das ist ein freier Text ohne Abschnitte.")).toBeNull();
-    expect(parseCheckReply("")).toBeNull();
-    expect(parseCheckReply("Fehler:\n- a → b")).toBeNull(); // ein einzelner Abschnitt gilt nicht als Gliederung
-  });
-
-  it("erkennt Abschnittsnamen auch mit anderer Gross- und Kleinschreibung und mit Text in der gleichen Zeile", () => {
-    const sections = parseCheckReply("gesamteindruck: gut\nFEHLER:\n- keine gefunden")!;
-    expect(sections[0]).toEqual({ title: "Gesamteindruck", lines: ["gut"] });
-    expect(sections[1].lines).toEqual(["keine gefunden"]);
-  });
 });
