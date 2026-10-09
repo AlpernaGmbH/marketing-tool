@@ -538,16 +538,15 @@ test.describe("Textcheck im Browser", () => {
 });
 
 test.describe("Textcheck mit KI im Browser", () => {
-  const REPLY = [
-    "Gesamteindruck: Verständlich, mit zwei Fehlern.",
-    "Fehler:",
-    "- Mallerei → Malerei (Tippfehler)",
-    "- Gosau → Gossau (Ortsname)",
-    "Verbesserungen:",
-    "- Wir freuen uns → Melde dich",
-    "Korrigierter Text:",
-    "Die Malerei Keller in Gossau streicht Fassaden.",
-  ].join("\n");
+  // Die Originale stehen wörtlich im Beispieltext des Werkzeugs (SAMPLE_TEXT).
+  const ANTWORT = {
+    gesamt: "Verständlich, mit einem doppelten Wort und einem Eszett.",
+    aenderungen: [
+      { art: "fehler", original: "Straße", vorschlag: "Strasse", grund: "In der Schweiz schreibt man ss." },
+      { art: "fehler", original: "bei der der Wahl", vorschlag: "bei der Wahl", grund: "Das Wort steht doppelt." },
+      { art: "stil", original: "Wir freuen uns auf Ihre Anfrage.", vorschlag: "Melden Sie sich bei uns.", grund: "Direkter und kürzer." },
+    ],
+  };
 
   async function runSample(page: Page) {
     await knownEmail(page);
@@ -560,10 +559,10 @@ test.describe("Textcheck mit KI im Browser", () => {
   }
 
   test("ohne Klick geht nichts an die Route; mit Klick kommen Fehler, Verbesserungen und der korrigierte Text", async ({ page }) => {
-    const calls: Array<{ style: string; text: string }> = [];
-    await page.route("**/api/text", (r) => {
+    const calls: Array<{ tool: string; input: { text: string } }> = [];
+    await page.route("**/api/generate", (r) => {
       calls.push(JSON.parse(r.request().postData() ?? "{}"));
-      return r.fulfill(json({ ok: true, text: REPLY, warnings: [] }));
+      return r.fulfill(json({ ok: true, output: ANTWORT }));
     });
     await runSample(page);
     await page.waitForLoadState("networkidle");
@@ -571,31 +570,37 @@ test.describe("Textcheck mit KI im Browser", () => {
 
     await page.getByRole("button", { name: /^Mit KI prüfen/ }).click();
     const box = page.getByTestId("ki-ergebnis");
-    await expect(box).toContainText("Mallerei → Malerei");
+    await expect(box).toContainText("Von einer KI formuliert");
+    await expect(box.getByRole("heading", { name: "Gesamteindruck" })).toBeVisible();
     await expect(box.getByRole("heading", { name: "Fehler" })).toBeVisible();
     await expect(box.getByRole("heading", { name: "Verbesserungen" })).toBeVisible();
-    await expect(box.getByRole("heading", { name: "Korrigierter Text" })).toBeVisible();
-    await expect(box).toContainText("Von einer KI formuliert");
+    await expect(box.getByTestId("ki-aenderung")).toHaveCount(3);
+    await expect(box.getByTestId("ki-aenderung").first()).toContainText("Original: Straße");
+    await expect(box.getByTestId("ki-aenderung").first()).toContainText("Vorschlag: Strasse");
+    const korrigiert = box.getByRole("region", { name: "Korrigierter Text" });
+    await expect(korrigiert).toContainText("2 Stellen sind korrigiert");
+    await expect(korrigiert).toContainText("Die Strasse zum Atelier");
+    await expect(korrigiert).not.toContainText("bei der der Wahl");
     expect(calls).toHaveLength(1);
-    expect(calls[0].style).toBe("pruefen");
-    expect(calls[0].text).toContain("Malerei Keller");
+    expect(calls[0].tool).toBe("textcheck");
+    expect(calls[0].input.text).toContain("Malerei Keller");
   });
 
   test("kennt der Server die Adresse nicht mehr (403), kommt das Fenster, danach die Prüfung von selbst", async ({ page }) => {
     let n = 0;
-    await page.route("**/api/text", (r) => (++n === 1 ? r.fulfill(json({ error: "gate" }, 403)) : r.fulfill(json({ ok: true, text: REPLY, warnings: [] }))));
+    await page.route("**/api/generate", (r) => (++n === 1 ? r.fulfill(json({ error: "gate" }, 403)) : r.fulfill(json({ ok: true, output: ANTWORT }))));
     await runSample(page);
     await page.getByRole("button", { name: /^Mit KI prüfen/ }).click();
     await giveEmail(page);
-    await expect(page.getByTestId("ki-ergebnis")).toContainText("Mallerei → Malerei");
+    await expect(page.getByTestId("ki-ergebnis")).toContainText("Original: Straße");
     expect(n).toBe(2);
   });
 
   test("ein Ausfall der KI zeigt einen ruhigen Satz und lässt die festen Ergebnisse stehen", async ({ page }) => {
-    await page.route("**/api/text", (r) => r.fulfill(json({ error: "ai_failed" }, 502)));
+    await page.route("**/api/generate", (r) => r.fulfill(json({ error: "ai_failed" }, 502)));
     await runSample(page);
     await page.getByRole("button", { name: /^Mit KI prüfen/ }).click();
-    await expect(page.getByTestId("ki-pruefung").getByRole("alert")).toContainText("keine brauchbare Fassung");
+    await expect(page.getByTestId("ki-pruefung").getByRole("alert")).toContainText("keinen brauchbaren Entwurf");
     await expect(page.getByRole("heading", { name: "Das fällt auf" })).toBeVisible();
   });
 });

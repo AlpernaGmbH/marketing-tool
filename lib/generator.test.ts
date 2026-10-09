@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { checkGenerated, cleanStrings, collectStrings, dataPrompt, defineGenerator, linksIn, numbersIn, parseJsonObject, placeholdersIn, findIssue, repairHint, systemPrompt, textIssue } from "@/lib/generator";
+import { checkGenerated, cleanStrings, collectStrings, dataPrompt, defineGenerator, linksIn, numbersIn, parseJsonObject, placeholdersIn, findIssue, repairHint, systemPrompt, textIssue, withoutKeys } from "@/lib/generator";
 
 const def = defineGenerator({
   slug: "probe",
@@ -45,6 +45,30 @@ describe("cleanStrings und collectStrings", () => {
     const out = cleanStrings({ a: ' Die  Straße ist "schön" ', b: ["5% mehr", { c: "x\n\n\n\ny" }], n: 3 });
     expect(out).toEqual({ a: "Die Strasse ist «schön»", b: ["5 % mehr", { c: "x\n\ny" }], n: 3 });
     expect(collectStrings(out)).toEqual(["Die Strasse ist «schön»", "5 % mehr", "x\n\ny"]);
+  });
+});
+
+describe("verbatimKeys (wörtlich zitierte Felder)", () => {
+  it("lässt die genannten Schlüssel beim Bereinigen unverändert und entfernt sie für die Prüfung", () => {
+    const value = { original: "Die  Straße ist \"schön\"!", grund: "5% mehr", liste: [{ original: "x  y", vorschlag: "z" }] };
+    expect(cleanStrings(value, ["original"])).toEqual({ original: "Die  Straße ist \"schön\"!", grund: "5 % mehr", liste: [{ original: "x  y", vorschlag: "z" }] });
+    expect(withoutKeys(value, ["original"])).toEqual({ grund: "5% mehr", liste: [{ vorschlag: "z" }] });
+    expect(withoutKeys(value, [])).toEqual(value);
+  });
+  it("prüft ein Feld mit verbatimKeys nicht gegen Stimme und Regeln; die übrigen Felder weiter", () => {
+    const zitat = defineGenerator({
+      ...def,
+      output: z.object({ titel: z.string().min(5), original: z.string() }),
+      verbatimKeys: ["original"],
+      check: undefined,
+    });
+    const wortlaut = "Jetzt bestellen!  Die Straße ist \"schön\" bei der Agentur.";
+    const ok = checkGenerated(zitat, { titel: "Ein Hinweis", original: wortlaut }, input);
+    expect(ok).toEqual({ ok: true, output: { titel: "Ein Hinweis", original: wortlaut } });
+    expect(checkGenerated(zitat, { titel: "Jetzt bestellen", original: wortlaut }, input)).toMatchObject({ ok: false, reason: "regel" });
+    // ohne verbatimKeys wird dieselbe Antwort verworfen
+    const ohne = defineGenerator({ ...zitat, verbatimKeys: undefined });
+    expect(checkGenerated(ohne, { titel: "Ein Hinweis", original: wortlaut }, input).ok).toBe(false);
   });
 });
 

@@ -27,7 +27,7 @@ Der Textcheck zeigt dir, wo ein Text stolpert, bevor es deine Kundschaft merkt. 
 1. **Bereinigten Text kopieren.** Die sicheren Korrekturen sind schon drin: ss statt Eszett, Guillemets, saubere Leerzeichen.
 2. **Floskeln ersetzen.** Streiche sie oder setze eine konkrete Angabe ein: einen Termin, ein Material, eine Antwortzeit.
 3. **Lange Sätze teilen.** Meist genügt ein Punkt an der Stelle, an der ein «und» steht.
-4. **Mit KI prüfen.** Ein Klick zeigt Rechtschreib- und Grammatikfehler und einen korrigierten Text.
+4. **Mit KI prüfen.** Ein Klick zeigt Rechtschreib- und Grammatikfehler als Liste mit Stelle, Ersatz und Grund, dazu einen korrigierten Text.
 5. **Einmal laut lesen.** Was du nicht ohne Atemholen sprechen kannst, ist zu lang.
 
 => Gleich darunter: die Fehler, die fast alle beim Prüfen machen.
@@ -62,7 +62,7 @@ Ja. Mit dem Ergebnis geht der Text samt Bericht und deiner E-Mail-Adresse an Alp
 Doppelte Wörter, überzählige Leerzeichen, mehrfache Satzzeichen, das Eszett, falsche Anführungszeichen, Prozent ohne Leerzeichen, CHF hinter dem Betrag, Tausender mit Punkt, Floskeln aus einer Liste von Alperna und die Satzlänge. Wörterbuch und Grammatik kennt er nicht.
 
 ### Wie zuverlässig ist die KI-Prüfung?
-Sie findet viele, aber nicht alle Fehler, und sie kann Richtiges «korrigieren». Betrachte ihre Liste als zweite Meinung. Prüfe jeden Vorschlag, bevor du ihn übernimmst, besonders bei Namen, Zahlen und Fachwörtern.
+Sie findet viele, aber nicht alle Fehler, und sie kann Richtiges «korrigieren». Jede genannte Stelle steht nachweislich in deinem Text, und der korrigierte Text enthält nur die Fehler, nicht die Stilvorschläge. Betrachte die Liste als zweite Meinung und prüfe jeden Vorschlag, besonders bei Namen, Zahlen und Fachwörtern.
 
 ### Wie rechnet der Lesbarkeitsindex?
 Nach Toni Amstad: 180 minus die durchschnittliche Satzlänge in Wörtern minus 58,5 mal die durchschnittliche Silbenzahl pro Wort. Die Silben schätzt das Werkzeug aus den Selbstlauten. Über 60 liest sich ein Text mittel bis leicht (Quelle: Wikipedia, «Lesbarkeitsindex»). Eine Zahl gibt es ab 30 Wörtern.

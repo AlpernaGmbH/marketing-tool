@@ -10,7 +10,7 @@ Kategorie: content (erster Schritt im Pfad «Content»), Zielgruppe: kmu (die Se
 Liest aus Profil: nichts
 Schreibt ins Profil: nichts
 Verwandte Tools: digitaler-auftritt-check; newsletter-check und ideen-aus-website entstehen später (die Seite verlinkt nur, was es gibt)
-`needsServer: true` (seit 04.10.2026 abends): Der Text geht nur auf Klick auf «Mit KI prüfen» an `/api/text` (Stil «pruefen», siehe `specs/text-umschreiber.md`), nie von selbst.
+`needsServer: true` (seit 04.10.2026 abends): Der Text geht nur auf Klick auf «Mit KI prüfen» an den Server, nie von selbst. Seit 09.10.2026 (Feedback-Runde 2, Charge B3) läuft das über `/api/generate` mit dem Generator `tools/textcheck/generator.ts` (Klasse B) statt über `/api/text`; siehe «Mit KI prüfen» unten.
 
 ## Eingaben
 | Feld | Typ | Pflicht | Vorbefüllung | Validierung | Hilfetext |
@@ -31,7 +31,7 @@ Alle Regeln in `tools/textcheck/logic.ts`. Treffer werden je Regel gruppiert (An
 ## Ausgaben
 - Ergebnis (sofort, frei): Wörter, Sätze, Lesbarkeit mit Stufe, Zahl der Fundstellen; «Das fällt auf» nach Gruppen; bereinigter Text in einem lesbaren Feld.
 - Kopieren (frei): bereinigter Text; Bericht als Markdown (`reportMarkdown`).
-- Zugang v3 (Stand 04.10.2026): Vor dem ersten Ergebnis fragt `ToolShell.ensureEmail()` nach der E-Mail-Adresse. Mit dem Ergebnis geht `POST /api/result` ab: Eingabe ist der Text, Ausgabe der Bericht als Markdown (`reportMarkdown`). Die KI-Prüfung braucht dasselbe Cookie (`/api/text`, 403 `gate` → `renewEmail()` und einmal wiederholen); ihr Ergebnis geht nicht noch einmal ins CRM.
+- Zugang v3 (Stand 04.10.2026): Vor dem ersten Ergebnis fragt `ToolShell.ensureEmail()` nach der E-Mail-Adresse. Mit dem Ergebnis geht `POST /api/result` ab: Eingabe ist der Text, Ausgabe der Bericht als Markdown (`reportMarkdown`). Die KI-Prüfung braucht dasselbe Cookie (`/api/generate`, 403 `gate` → `renewEmail()` und einmal wiederholen); ihr Ergebnis geht seit 09.10.2026 als zweiter CRM-Eintrag hinaus (`useGenerator`: Eingabe der Text, Ausgabe `kiReport`), wie bei jedem Generator.
 - Stand: `mt:textcheck` (`phase`, `text`); der Text wird 500 ms nach der letzten Eingabe gespeichert. Nur im Browser.
 
 ## Edge Cases (getestet)
@@ -51,8 +51,17 @@ Alle Regeln in `tools/textcheck/logic.ts`. Treffer werden je Regel gruppiert (An
 ## Tests
 `tools/textcheck/logic.test.ts` (35 Fälle): Silben, Quellen-Beispiel Index 74, Stufen, Sätze mit Kürzeln und Datum, Fehlerregeln, Schweizer Schreibweise, Floskeln samt Datei-Prüfung, lange Sätze, Bereinigung (inkl. Wiederholbarkeit), Gesamtbericht, Eingabe und Stand, Randfälle und Laufzeit. Browser: sechs Fälle in `tests/e2e/smoke.spec.ts` («Textcheck im Browser»), darunter «keine Anfrage enthält den Text» und 375 px.
 
+## Mit KI prüfen (seit 09.10.2026, Charge B3)
+Ein KI-Aufruf über `/api/generate` (Generator `textcheck`, `maxTokens` 2'600, Temperatur 0,2). Eingabe `{ text }` (1 bis 3'000 Zeichen). Ausgabe `{ gesamt (10 bis 300 Zeichen), aenderungen[] }` mit höchstens 14 Einträgen `{ art: "fehler" | "stil", original (bis 200), vorschlag (bis 240), grund (5 bis 120) }`. Die KI schreibt den Text nicht neu: Sie nennt einzelne Stellen.
+- **Jedes Original muss im Text stehen.** `locate()` sucht die Stelle Buchstabe für Buchstabe; Leerraum passt auf jeden Leerraum, jedes Anführungszeichen auf jedes andere derselben Art (gerade, deutsch, französisch). Zwei Einträge dürfen sich nicht überdecken; gleiche Originale belegen nacheinander die nächste freie Stelle. Steht ein Original nicht im Text, fällt die ganze Antwort durch («nichtimtext») und die KI bekommt einmal eine feste Rückmeldung.
+- **Weitere Prüfungen** (`checkTextcheck`): Vorschlag gleich dem Original («gleich»); Vorschlag mit einer Ziffernfolge, die im Original fehlt («zahl»); Vorschlag mit Ausrufezeichen, Eszett, «jetzt», Emoji, Link oder einem Wort der harten Sperrliste, das das Original nicht auch hat («vorschlag»); mehr als fünf Einträge «stil» («stil»).
+- **Original und Vorschlag sind wörtliche Texte der Person** (`verbatimKeys` im Generator-Baustein): Sie werden nicht bereinigt (sonst stünde das Eszett des Originals nicht mehr im Text) und nicht gegen die Stimme geprüft. Gesamteindruck und Grund laufen durch die normale Prüfung.
+- **Korrigierter Text** setzt das Werkzeug selbst zusammen (`anwenden()`): nur die Einträge «fehler», an ihren Stellen, in Textreihenfolge; «stil» bleibt eine Empfehlung. Die Oberfläche zeigt Original (durchgestrichen), Vorschlag, Grund und «Vorschlag n kopieren» je Eintrag, dazu «Korrigierten Text kopieren» und «Alles kopieren» (`kiReport`).
+- **Ausfall der KI** (`failed`, `capacity`, `rate`, `network`) und `invalid`: ein ruhiger Satz in `role="alert"`; die festen Prüfungen oben bleiben stehen. Hat sich der Text nach der Prüfung geändert, steht ein Hinweis, dass die Stellen nicht mehr passen.
+- **Tests:** `tools/textcheck/generator.test.ts` (22 Fälle: Schemas, Stellen, korrigierte Fassung, jede Kennung positiv und negativ, gemeinsame Prüfung, Ausgabe, Anweisung), `AiPanel.test.tsx` (6 Fälle), `lib/generator.test.ts` (`verbatimKeys`), drei Browser-Tests in `tests/e2e/smoke.spec.ts`.
+
 ## Nicht Teil dieses Tools
-- Grammatik und Wörterbuch-Rechtschreibung in den festen Prüfungen: Das macht seit 04.10.2026 abends die KI auf Knopfdruck (`tools/textcheck/AiPanel.tsx`: Gesamteindruck, Fehler, Verbesserungen, korrigierter Text). Entscheid Alperna: «einfach KI mit eigener Anweisung, nicht verkomplizieren»; die festen Prüfungen bleiben, weil Zählen (Lesbarkeit, Satzlänge) und Schreibweise mit Regeln sicherer und sofort sind. Die KI-Prüfung gilt für Texte bis 3'000 Zeichen; längere prüft man abschnittsweise.
+- Grammatik und Wörterbuch-Rechtschreibung in den festen Prüfungen: Das macht die KI auf Knopfdruck (`tools/textcheck/AiPanel.tsx`, siehe unten). Entscheid Alperna: «einfach KI mit eigener Anweisung, nicht verkomplizieren»; die festen Prüfungen bleiben, weil Zählen (Lesbarkeit, Satzlänge) und Schreibweise mit Regeln sicherer und sofort sind. Die KI-Prüfung gilt für Texte bis 3'000 Zeichen; längere prüft man abschnittsweise.
 - URL statt Text (der Plan v2 nennt «Text oder URL»): kommt, wenn die Website-Import-Funktion aus `ideen-aus-website` steht; sie braucht den Server.
 - KI-Vorschläge für Umformulierungen: dafür gibt es den Text-Umschreiber.
 - Markieren der Stellen im Originaltext: die Liste zeigt Stellen mit Umgebung; ein markierter Text wäre ein eigener Ausbau.

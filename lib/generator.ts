@@ -38,6 +38,12 @@ export type GeneratorDef<I, O> = {
   check?: (output: O, input: I) => string | null;
   /** Emojis in der Antwort sind erlaubt, wenn die Person sie gewählt hat. Standard: nie. Die Aufgabe sagt der KI dann, wie viele. */
   allowEmoji?: (input: I) => boolean;
+  /**
+   * Schlüssel, deren Zeichenketten wörtlich aus dem Text der Person stammen (ein zitierter Satz, ein Vorschlag zu einer Stelle).
+   * Sie werden weder bereinigt noch gegen Stimme und Regeln geprüft, weil sie sonst nicht mehr im Text stünden. Das Werkzeug prüft sie
+   * selbst in `check`.
+   */
+  verbatimKeys?: readonly string[];
 };
 
 export function defineGenerator<I, O>(def: GeneratorDef<I, O>): GeneratorDef<I, O> {
@@ -104,11 +110,22 @@ export function collectStrings(value: unknown, out: string[] = []): string[] {
 const collapse = (s: string) => s.replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 
 /** Schweizer Schreibweise und saubere Leerzeichen in jeder Zeichenkette; die Struktur bleibt. */
-export function cleanStrings<T>(value: T): T {
+export function cleanStrings<T>(value: T, skipKeys: readonly string[] = []): T {
   if (typeof value === "string") return collapse(typoCH(value)) as T;
-  if (Array.isArray(value)) return value.map((v) => cleanStrings(v)) as T;
+  if (Array.isArray(value)) return value.map((v) => cleanStrings(v, skipKeys)) as T;
   if (typeof value === "object" && value !== null) {
-    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, cleanStrings(v)])) as T;
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, skipKeys.includes(k) ? v : cleanStrings(v, skipKeys)]),
+    ) as T;
+  }
+  return value;
+}
+
+/** Eine Kopie ohne die genannten Schlüssel (auf jeder Ebene). Für die Prüfung der Stimme, wenn Felder wörtlich aus dem Text der Person stammen. */
+export function withoutKeys(value: unknown, keys: readonly string[]): unknown {
+  if (Array.isArray(value)) return value.map((v) => withoutKeys(v, keys));
+  if (typeof value === "object" && value !== null) {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter(([k]) => !keys.includes(k)).map(([k, v]) => [k, withoutKeys(v, keys)]));
   }
   return value;
 }
@@ -160,9 +177,10 @@ export type GeneratorOutcome<O> = { ok: true; output: O } | { ok: false; reason:
 export function checkGenerated<I, O>(def: GeneratorDef<I, O>, raw: unknown, input: I): GeneratorOutcome<O> {
   const value = typeof raw === "string" ? parseJsonObject(raw) : raw;
   if (value === null || typeof value !== "object") return { ok: false, reason: "json" };
-  const parsed = def.output.safeParse(cleanStrings(value));
+  const verbatim = def.verbatimKeys ?? [];
+  const parsed = def.output.safeParse(cleanStrings(value, verbatim));
   if (!parsed.success) return { ok: false, reason: "schema" };
-  const strings = collectStrings(parsed.data);
+  const strings = collectStrings(verbatim.length > 0 ? withoutKeys(parsed.data, verbatim) : parsed.data);
   if (strings.length === 0 || strings.every((s) => !s.trim())) return { ok: false, reason: "leer" };
   const issue = findIssue(strings, JSON.stringify(input), { emoji: def.allowEmoji?.(input) === true });
   if (issue) return { ok: false, reason: issue.reason, detail: issue.what };
@@ -181,6 +199,10 @@ const CHECK_HINWEISE: Record<string, string> = {
   doppelt: "Zwei Headline-Vorschläge sind gleich oder ein Vorschlag gleicht der heutigen Headline. Schreib drei verschiedene Headlines mit unterschiedlichem Aufbau.",
   ichbin: "Der Anfang des Info-Texts beginnt mit «Ich bin» oder «Mein Name». Beginne mit dem Nutzen für die Kundschaft und stell die Person danach vor.",
   floskel: "Ein Vorschlag enthält eine Floskel (zum Beispiel «ganzheitlich», «Lösungen», «mit Leidenschaft», «Rundum-Service»). Ersetze sie durch eine Tatsache aus den Angaben oder streich sie.",
+  nichtimtext: "Mindestens ein «original» steht nicht Buchstabe für Buchstabe im Text der Person (oder zwei Einträge meinen dieselbe Stelle). Kopiere jede Stelle genau aus dem Text, mit Fehlern und Sonderzeichen, und nimm nur Stellen, die dort stehen.",
+  gleich: "Bei mindestens einem Eintrag ist der Vorschlag gleich dem Original. Lass solche Einträge weg.",
+  vorschlag: "Ein Vorschlag bringt ein verbotenes Zeichen, ein verbotenes Wort oder einen Link mit, den das Original nicht hat. Ändere nur, was nötig ist, und füg nichts Neues ein.",
+  stil: "Es sind mehr als fünf Einträge mit der art «stil». Behalte die fünf wichtigsten.",
   wertung: "Der Entwurf enthält ein wertendes Wort (zum Beispiel beliebt, traditionsreich, spannend), das nicht in den Angaben steht. Streich es und schreib nur Tatsachen aus den Angaben.",
 };
 
