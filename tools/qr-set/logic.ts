@@ -46,7 +46,7 @@ export const TARGET_KINDS: readonly TargetKindInfo[] = [
   { key: "instagram", label: "Instagram", suggestion: "Instagram", placeholder: "@malereikeller", help: "Dein Instagram-Handle oder die Adresse deines Profils." },
   { key: "linkedin", label: "LinkedIn", suggestion: "LinkedIn", placeholder: "linkedin.com/company/malerei-keller", help: "Die Adresse deiner LinkedIn-Seite oder deines Profils." },
   { key: "whatsapp", label: "WhatsApp", suggestion: "Schreib uns auf WhatsApp", placeholder: "079 123 45 67", help: "Deine Schweizer WhatsApp-Nummer oder ein wa.me-Link." },
-  { key: "google", label: "Google-Bewertung", suggestion: "Bewerte uns auf Google", placeholder: "g.page/r/…/review", help: "Der Link «Bewertung schreiben» aus deinem Google-Unternehmensprofil." },
+  { key: "google", label: "Google-Bewertung", suggestion: "Bewerte uns auf Google", placeholder: "g.page/r/…/review", help: "Der Link «Bewertung schreiben» aus deinem Google-Unternehmensprofil. Auf den Code kommt nur das Wort «Google», kein Logo. Frag ohne Gegenleistung, Google lässt keine Anreize für Bewertungen zu (Quelle: Google, Richtlinien für von Maps-Nutzern veröffentlichte Inhalte)." },
   { key: "pdf", label: "Speisekarte oder PDF", suggestion: "Speisekarte", placeholder: "malerei-keller.ch/preisliste.pdf", help: "Die Adresse der Datei auf deiner Website." },
   { key: "other", label: "Anderer Link", suggestion: "", placeholder: "https://…", help: "Jede Adresse, die mit http:// oder https:// beginnt." },
 ];

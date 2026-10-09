@@ -4,7 +4,7 @@ export default defineTool({
   slug: "whatsapp-link",
   name: "WhatsApp-Link mit QR",
   category: "praktisches",
-  audience: "beide",
+  audience: "kmu",
   tagline: "Aus deiner Nummer wird ein Link, ein QR-Code und ein Knopf für die Website, in einer Minute.",
   keyword: "WhatsApp-Link",
   related: ["qr-set", "bewertungs-kit", "digitaler-auftritt-check"],

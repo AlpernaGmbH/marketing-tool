@@ -37,7 +37,7 @@ Google-Bewertungen entscheiden mit, ob jemand aus Gossau oder Herisau bei dir an
 - **Um fünf Sterne bitten.** Eine ehrliche Bewertung reicht, und genau so steht es in den Vorlagen.
 - **Nur die zufriedenen Kunden fragen.** Wer aussortiert, verzerrt das Bild; frag nach jedem abgeschlossenen Auftrag.
 - **Einen Maps-Link statt des Bewertungslinks nehmen.** Der Link aus «Mehr Rezensionen erhalten» öffnet direkt das Formular; ein Maps-Link zeigt nur den Eintrag.
-- **Den QR-Code zu klein drucken.** Unter drei Zentimetern tun sich ältere Handys schwer (Richtwert von Alperna, keine Statistik); die Aufkleber des Kits haben 34 mm.
+- **Den QR-Code zu klein drucken.** Unter 2 cm Kantenlänge scannen viele Handys nicht mehr (Richtwert von Alperna, keine Statistik); die Aufkleber des Kits haben 34 mm.
 
 ## Beispiel
 Malerei Keller, Gossau, gibt den Bewertungslink aus dem Unternehmensprofil ein, wählt die Anrede «Du» und die Farbe #26324A. Die WhatsApp-Vorlage, so wie das Werkzeug sie ausgibt:
