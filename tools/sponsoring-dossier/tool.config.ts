@@ -12,7 +12,7 @@ export default defineTool({
   usesProfile: ["organisationstyp", "firma", "ort", "kanton", "website"],
   writesProfile: [],
   outputs: ["copy", "pdf", "docx"],
-  estimatedMinutes: 8,
+  estimatedMinutes: 20,
   pathStep: { path: "inhalte", order: 12 },
   featured: false,
 });

@@ -129,6 +129,28 @@ function NumberField({
   );
 }
 
+/**
+ * Freiwillige Angaben, zugeklappt, solange nichts darin steht: kürzt das Formular, ohne Angaben zu verlieren. Ist beim Laden schon etwas ausgefüllt
+ * (gespeicherter Stand), steht der Block offen.
+ */
+function Weitere({ titel, hilfe, filled, children }: { titel: string; hilfe?: string; filled: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(filled);
+  return (
+    <details open={open} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)} className="group rounded-xl border border-line" data-testid="weitere">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-xl px-4 py-3 font-heading font-semibold [&::-webkit-details-marker]:hidden">
+        <span>
+          {titel}
+          {hilfe && <span className="mt-0.5 block text-sm font-normal text-muted-foreground">{hilfe}</span>}
+        </span>
+        <span aria-hidden="true" className="font-mono text-sm transition-transform duration-300 group-open:rotate-180">
+          ⌄
+        </span>
+      </summary>
+      <div className="grid gap-4 border-t border-line p-4">{children}</div>
+    </details>
+  );
+}
+
 function PaketFields({ index, paket, disabled, onChange }: { index: number; paket: PaketForm; disabled: boolean; onChange: (next: PaketForm) => void }) {
   const n = index + 1;
   const id = (f: string) => `sd-p${n}-${f}`;
@@ -482,7 +504,7 @@ function SponsoringFlow() {
           Nur Zahlen, die der Verein selbst angibt. Sie erscheinen im Dossier als Angaben des Vereins. Nur die Mitglieder sind Pflicht; leer oder 0 lässt die
           Zeile im Dossier weg.
         </p>
-        {ZAHLEN.map((z) => (
+        {ZAHLEN.filter((z) => z.pflicht).map((z) => (
           <NumberField
             key={z.key}
             id={`sd-z-${z.key}`}
@@ -491,10 +513,19 @@ function SponsoringFlow() {
             onChange={(v) => setZahl(z.key, v)}
             min={z.min}
             max={z.max}
-            required={z.pflicht}
-            help={z.pflicht ? "Ganze Zahl, mindestens 1. Sie bestimmt den Faktor der Ampel." : undefined}
+            required
+            help="Ganze Zahl, mindestens 1. Sie bestimmt den Faktor der Ampel."
           />
         ))}
+        <div className="md:col-span-2">
+          <Weitere titel="Weitere Zahlen (freiwillig)" hilfe="Aktive, Zuschauer, Anlässe, Follower, Besuche, Medienberichte" filled={ZAHLEN.some((z) => !z.pflicht && form.zahlen[z.key].trim() !== "")}>
+            <div className="grid gap-4 md:grid-cols-2">
+              {ZAHLEN.filter((z) => !z.pflicht).map((z) => (
+                <NumberField key={z.key} id={`sd-z-${z.key}`} label={z.label} value={form.zahlen[z.key]} onChange={(v) => setZahl(z.key, v)} min={z.min} max={z.max} required={false} />
+              ))}
+            </div>
+          </Weitere>
+        </div>
       </fieldset>
 
       <fieldset className="grid gap-1.5" disabled={dis}>
@@ -523,28 +554,16 @@ function SponsoringFlow() {
           Bis zu drei Pakete. Ein Paket zählt, sobald es einen Preis oder eine Gegenleistung hat; mindestens eines braucht beides. Die Ampel im Ergebnis ist eine
           Einschätzung von Alperna, keine Marktdaten.
         </p>
-        {form.pakete.map((p, i) => (
-          <PaketFields key={i} index={i} paket={p} disabled={dis} onChange={(next) => setPaket(i, next)} />
-        ))}
-      </fieldset>
-
-      <fieldset className="grid gap-1.5" disabled={dis}>
-        <legend className="mb-1 font-heading font-semibold">Referenzen (freiwillig)</legend>
-        <Label htmlFor="sd-referenzen">Bisherige Sponsoren und Partner (nenne nur Betriebe, die einverstanden sind)</Label>
-        <Textarea
-          id="sd-referenzen"
-          rows={3}
-          maxLength={MAX.referenzen}
-          value={form.referenzen}
-          onChange={(e) => patch((f) => ({ ...f, referenzen: e.target.value }))}
-          aria-describedby="sd-referenzen-help sd-referenzen-count"
-          lang="de-CH"
-          spellCheck={false}
-        />
-        <p id="sd-referenzen-help" className="text-sm text-muted-foreground">
-          Je Zeile ein Betrieb. Die Namen erscheinen im Dossier, gehen aber nicht an die KI und nicht an Alperna.
-        </p>
-        <Counter id="sd-referenzen-count" value={form.referenzen} max={MAX.referenzen} />
+        <PaketFields index={0} paket={form.pakete[0]} disabled={dis} onChange={(next) => setPaket(0, next)} />
+        <Weitere
+          titel="Paket 2 und 3 (freiwillig)"
+          hilfe="Ein Vergleich aus drei Paketen wirkt stärker als eines allein."
+          filled={form.pakete.slice(1).some((p) => p.name.trim() !== "" || p.preis.trim() !== "" || p.haken.length > 0 || p.social.trim() !== "" || p.tickets.trim() !== "" || p.weitere.trim() !== "")}
+        >
+          {form.pakete.slice(1).map((p, i) => (
+            <PaketFields key={i + 1} index={i + 1} paket={p} disabled={dis} onChange={(next) => setPaket(i + 1, next)} />
+          ))}
+        </Weitere>
       </fieldset>
 
       <fieldset className="grid gap-4 rounded-xl border border-line p-4 md:grid-cols-2" disabled={dis}>
@@ -570,53 +589,79 @@ function SponsoringFlow() {
         </p>
       </fieldset>
 
-      <fieldset className="grid gap-1.5" disabled={dis}>
-        <legend className="mb-1 font-heading font-semibold">Aussehen</legend>
-        <Label htmlFor="sd-farbe">Vereinsfarbe</Label>
-        <div className="flex items-center gap-3">
-          <input
-            id="sd-farbe"
-            type="color"
-            value={normFarbe(form.farbe).toLowerCase()}
-            onChange={(e) => patch((f) => ({ ...f, farbe: e.target.value }))}
-            className="h-11 w-16 cursor-pointer rounded-lg border border-input bg-paper p-1"
-            aria-describedby="sd-farbe-help"
-            aria-invalid={farbHinweis ? "true" : undefined}
+      <Weitere
+        titel="Referenzen, Farbe und Stichworte (freiwillig)"
+        hilfe="Bisherige Sponsoren, Farbe für das PDF, Stichworte für die KI-Texte"
+        filled={form.referenzen.trim() !== "" || form.stichworte.trim() !== "" || form.farbe !== EMPTY_STATE.form.farbe}
+      >
+        <fieldset className="grid gap-1.5" disabled={dis}>
+          <legend className="mb-1 font-heading font-semibold">Referenzen (freiwillig)</legend>
+          <Label htmlFor="sd-referenzen">Bisherige Sponsoren und Partner (nenne nur Betriebe, die einverstanden sind)</Label>
+          <Textarea
+            id="sd-referenzen"
+            rows={3}
+            maxLength={MAX.referenzen}
+            value={form.referenzen}
+            onChange={(e) => patch((f) => ({ ...f, referenzen: e.target.value }))}
+            aria-describedby="sd-referenzen-help sd-referenzen-count"
+            lang="de-CH"
+            spellCheck={false}
           />
-          <span className="mono text-sm" data-testid="farbe-wert">
-            {normFarbe(form.farbe)}
-          </span>
-        </div>
-        <p id="sd-farbe-help" className="text-sm text-muted-foreground">
-          Für das Deckblatt, die Linie im Kopf und den Tabellenkopf im PDF. Die Schrift darauf ist Weiss oder Schwarz, je nach Farbe. Die Farbe braucht auf Papier
-          einen Kontrast von mindestens 3 zu 1{kontrast !== null ? `; deine hat ${numberCH(kontrast)} zu 1` : ""}.
-        </p>
-        {farbHinweis && (
-          <p className="text-sm text-destructive" data-testid="farbe-hinweis">
-            {farbHinweis}
+          <p id="sd-referenzen-help" className="text-sm text-muted-foreground">
+            Je Zeile ein Betrieb. Die Namen erscheinen im Dossier, gehen aber nicht an die KI und nicht an Alperna.
           </p>
-        )}
-      </fieldset>
+          <Counter id="sd-referenzen-count" value={form.referenzen} max={MAX.referenzen} />
+        </fieldset>
 
-      <fieldset className="grid gap-1.5" disabled={dis}>
-        <legend className="mb-1 font-heading font-semibold">Stichworte für die KI-Texte (freiwillig)</legend>
-        <Label htmlFor="sd-stichworte">Stichworte zum Verein</Label>
-        <Textarea
-          id="sd-stichworte"
-          rows={3}
-          maxLength={MAX.stichworte}
-          value={form.stichworte}
-          onChange={(e) => patch((f) => ({ ...f, stichworte: e.target.value }))}
-          aria-describedby="sd-stichworte-help sd-stichworte-count"
-          lang="de-CH"
-          spellCheck
-        />
-        <p id="sd-stichworte-help" className="text-sm text-muted-foreground">
-          Gründung, Teams, Anlagen, Anlässe, was den Verein ausmacht. Mit mindestens {MAX.stichworteMin} Zeichen kannst du im Ergebnis die KI drei Absätze schreiben
-          lassen. Die KI bekommt nur, was du hier und oben für sie freigibst; ohne Stichworte bleibt der Knopf aus.
-        </p>
-        <Counter id="sd-stichworte-count" value={form.stichworte} max={MAX.stichworte} />
-      </fieldset>
+        <fieldset className="grid gap-1.5" disabled={dis}>
+          <legend className="mb-1 font-heading font-semibold">Aussehen</legend>
+          <Label htmlFor="sd-farbe">Vereinsfarbe</Label>
+          <div className="flex items-center gap-3">
+            <input
+              id="sd-farbe"
+              type="color"
+              value={normFarbe(form.farbe).toLowerCase()}
+              onChange={(e) => patch((f) => ({ ...f, farbe: e.target.value }))}
+              className="h-11 w-16 cursor-pointer rounded-lg border border-input bg-paper p-1"
+              aria-describedby="sd-farbe-help"
+              aria-invalid={farbHinweis ? "true" : undefined}
+            />
+            <span className="mono text-sm" data-testid="farbe-wert">
+              {normFarbe(form.farbe)}
+            </span>
+          </div>
+          <p id="sd-farbe-help" className="text-sm text-muted-foreground">
+            Für das Deckblatt, die Linie im Kopf und den Tabellenkopf im PDF. Die Schrift darauf ist Weiss oder Schwarz, je nach Farbe. Die Farbe braucht auf Papier
+            einen Kontrast von mindestens 3 zu 1{kontrast !== null ? `; deine hat ${numberCH(kontrast)} zu 1` : ""}.
+          </p>
+          {farbHinweis && (
+            <p className="text-sm text-destructive" data-testid="farbe-hinweis">
+              {farbHinweis}
+            </p>
+          )}
+        </fieldset>
+
+        <fieldset className="grid gap-1.5" disabled={dis}>
+          <legend className="mb-1 font-heading font-semibold">Stichworte für die KI-Texte (freiwillig)</legend>
+          <Label htmlFor="sd-stichworte">Stichworte zum Verein</Label>
+          <Textarea
+            id="sd-stichworte"
+            rows={3}
+            maxLength={MAX.stichworte}
+            value={form.stichworte}
+            onChange={(e) => patch((f) => ({ ...f, stichworte: e.target.value }))}
+            aria-describedby="sd-stichworte-help sd-stichworte-count"
+            lang="de-CH"
+            spellCheck
+          />
+          <p id="sd-stichworte-help" className="text-sm text-muted-foreground">
+            Gründung, Teams, Anlagen, Anlässe, was den Verein ausmacht. Mit mindestens {MAX.stichworteMin} Zeichen kannst du im Ergebnis die KI drei Absätze schreiben
+            lassen. Die KI bekommt nur, was du hier und oben für sie freigibst; ohne Stichworte bleibt der Knopf aus.
+          </p>
+          <Counter id="sd-stichworte-count" value={form.stichworte} max={MAX.stichworte} />
+        </fieldset>
+
+      </Weitere>
 
       <p className="text-sm text-muted-foreground">
         Beim Erstellen gehen der Name des Vereins, der Ort, die Zahlen, die Zielgruppe und die Pakete mit deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen
@@ -631,7 +676,7 @@ function SponsoringFlow() {
         <Button type="submit" size="lg" disabled={!ready || !profileReady || busy}>
           Dossier erstellen
         </Button>
-        <span className="text-sm text-muted-foreground">Dauert rund acht Minuten.</span>
+        <span className="text-sm text-muted-foreground">Dauert rund 20 Minuten, mit allen freiwilligen Angaben etwas länger.</span>
       </div>
     </form>
   );

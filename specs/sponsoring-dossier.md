@@ -3,7 +3,10 @@
 Klasse C (Rechner und Dokument im Browser) mit freiwilligem KI-Teil, Stand 05.10.2026. Das Dossier entsteht ohne KI und ohne Server (`logic.ts`, `export.ts`). Die KI schreibt auf Wunsch drei Absätze dazu: `generator.ts` (Klasse B, `useGenerator`, Route `/api/generate`) nach dem Vorbild `tools/nutzenversprechen`. Muster für den Zugang: `tools/budget-planer` und `tools/gbp-feiertage` (Formular, Stand unter `mt:<slug>`, `ensureEmail` vor dem Ergebnis), `tools/medienmitteilung` (Kontaktdaten bleiben im Browser). Getestet sind `logic.ts`, `generator.ts`, `export.ts` und die Oberfläche (`Tool.test.tsx`).
 
 ## Nutzen in einem Satz
-Für Vereinsvorstände, die Betriebe um Sponsoring bitten wollen: in rund acht Minuten ein Sponsoring-Dossier mit Deckblatt, Verein in Zahlen, Zielgruppe, Paketen im Vergleich, Referenzen, nächsten Schritten und Kontakt, als PDF mit Vereinsfarbe oder Word, dazu eine Ampel, ob Gegenleistung und Preis zusammenpassen.
+Für Vereinsvorstände, die Betriebe um Sponsoring bitten wollen: in rund 20 Minuten (Angabe vom 09.10.2026, vorher acht; mit allen freiwilligen Angaben länger) ein Sponsoring-Dossier mit Deckblatt, Verein in Zahlen, Zielgruppe, Paketen im Vergleich, Referenzen, nächsten Schritten und Kontakt, als PDF mit Vereinsfarbe oder Word, dazu eine Ampel, ob Gegenleistung und Preis zusammenpassen.
+
+## Formular kürzer (09.10.2026)
+Sichtbar bleiben Verein (Profilfelder, Anlass), Mitglieder (einzige Pflichtzahl), Zielgruppe, Paket 1 und die Ansprechperson. Zugeklappt (`Weitere`, offen, sobald etwas darin steht): übrige Zahlen, Paket 2 und 3, Referenzen, Farbe und Stichworte für die KI. Das Werkzeug bleibt ein Werkzeug für Vereine (Mitglieder, Trikot, Bande); der Wortlaut für KMU ist offen und braucht einen Entscheid von Alperna.
 
 ## Kategorie und Verknüpfung
 Kategorie: content, Zielgruppe: verein, dritter Schritt im Pfad «Für Vereine» (`pathStep` `{ path: "vereine", order: 3 }`)
