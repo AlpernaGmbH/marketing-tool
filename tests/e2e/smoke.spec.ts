@@ -823,8 +823,13 @@ test.describe("Welle 1 im Browser", () => {
   test("Newsletter-Check: Beispiel prüfen, Fenster vor dem Ergebnis, Punktzahl und Funde, Lead mit Text und Bericht", async ({ page, request }) => {
     await page.goto("/tools/newsletter-check");
     await expect(page.getByRole("button", { name: "Newsletter prüfen" })).toBeEnabled();
+    // Standard ist «Nur den Text»; die Wahl «HTML-Quelltext» wechselt Beschriftung und Hilfetext.
+    await expect(page.getByRole("radio", { name: "Nur den Text" })).toBeChecked();
+    await page.getByRole("radio", { name: "HTML-Quelltext", includeHidden: true }).check({ force: true });
+    await expect(page.getByLabel("HTML deines Newsletters")).toBeVisible();
+    await page.getByRole("radio", { name: "Nur den Text", includeHidden: true }).check({ force: true });
     await page.getByRole("button", { name: "Beispiel einfügen" }).click();
-    await expect(page.getByLabel("Dein Newsletter")).toHaveValue(/Malerei Keller/);
+    await expect(page.getByLabel("Text deines Newsletters")).toHaveValue(/Malerei Keller/);
     await page.getByRole("button", { name: "Newsletter prüfen" }).click();
     const email = await giveEmail(page);
     await expect(page.getByRole("region", { name: "Dein Newsletter-Check" })).toBeVisible();
@@ -1480,7 +1485,7 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
 
-  test("Feiertagsplaner: ohne Kanton eine Meldung, mit Kanton Liste, Kalender-Download, Lead mit Kanton und Tagen, Neuladen", async ({ page, request }) => {
+  test("Öffnungszeiten an Feiertagen: ohne Kanton eine Meldung, mit Kanton Liste, Kalender-Download, Lead mit Kanton und Tagen, Neuladen", async ({ page, request }) => {
     await page.goto("/tools/gbp-feiertage");
     await page.getByRole("button", { name: "Liste erstellen" }).click();
     await expect(page.getByRole("alert").filter({ hasText: "Kanton" })).toBeVisible();
@@ -1861,6 +1866,8 @@ test.describe("Welle 4 im Browser (Inhalte, KI und Vereine)", () => {
     await page.locator("#sd-p1-preis").fill("500");
     await page.getByRole("checkbox", { name: "Paket 1: Logo auf Website" }).check();
     await page.locator("#sd-k-name").fill("Beat Keller");
+    // Freiwilliges steht zugeklappt: erst öffnen, dann ausfüllen.
+    await page.getByText("Referenzen, Farbe und Stichworte (freiwillig)").click();
     await page.locator("#sd-stichworte").fill("Gegründet 1948, Heimspiele auf dem Landhaus, grosse Juniorenabteilung");
     await page.getByRole("button", { name: "Dossier erstellen" }).click();
     const email = await giveEmail(page);
@@ -1952,7 +1959,7 @@ test.describe("Welle 8 im Browser (Rechner und Planer)", () => {
     await expect(page.getByRole("region", { name: "Deine Engagement-Rate" })).toBeVisible();
   });
 
-  test("Anlass-Rückwärtsplaner: Datum in der Vergangenheit wird abgelehnt, Zeitplan mit Abhaken, .ics, Lead, Neuladen mit Haken", async ({ page, request }) => {
+  test("Anlass-Zeitplan: Datum in der Vergangenheit wird abgelehnt, Zeitplan mit Abhaken, .ics, Lead, Neuladen mit Haken", async ({ page, request }) => {
     const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
     await page.goto("/tools/anlass-planer");
     await hydrated(page.getByRole("button", { name: "Zeitplan erstellen" }));
