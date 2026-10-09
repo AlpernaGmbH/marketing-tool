@@ -20,7 +20,7 @@ Für Vereinsvorstände und KMU-Inhaberinnen und -Inhaber, die wissen wollen, wen
 Kategorie: strategie (`pathStep` im Pfad «vereine», Schritt 1), Zielgruppe: beide (zuerst Vereine; das Profil bestimmt die Vorlage)
 Liest aus Profil: organisationstyp (wählt die Vorlage), firma (Kopf des Dokuments; Pflicht)
 Schreibt ins Profil: nichts
-Verwandte Tools: vereins-kommunikation, sponsoring-dossier, icp-builder
+Verwandte Tools: kommunikationskonzept, sponsoring-dossier, icp-builder
 `needsServer: false`: nichts verlässt den Browser ausser dem Ergebnis ins CRM (Zugang v3).
 
 ## Zugang (Zugang v3)

@@ -12,7 +12,7 @@ Sichtbar bleiben Verein (Profilfelder, Anlass), Mitglieder (einzige Pflichtzahl)
 Kategorie: content, Zielgruppe: verein, dritter Schritt im Pfad «Für Vereine» (`pathStep` `{ path: "vereine", order: 3 }`)
 Liest aus Profil: organisationstyp, firma, ort, kanton, website (Grunddaten über `ProfileFieldsForm`, nie erneut gefragt; sie gehen beim Erstellen als Kopie in den Stand)
 Schreibt ins Profil: nichts (`writesProfile: []`). Die Grunddaten-Felder schreiben beim Tippen in das Profil, wie beim Marketing-Check.
-Verwandte Tools: vereins-kommunikation, anspruchsgruppen, empfehlungsprogramm
+Verwandte Tools: kommunikationskonzept, anspruchsgruppen, empfehlungsprogramm
 `needsServer: true`: nur für den freiwilligen KI-Teil geht etwas an `/api/generate` (Ausnahme in Harte Regel 1).
 
 ## Zugang (Zugang v3)

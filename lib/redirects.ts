@@ -13,6 +13,7 @@ export const OLD_TOOL_SLUGS: Record<string, string> = {
   "content-saeulen": "inhalte-saeulen",
   "content-strategie": "inhalte-strategie",
   "content-kalender": "feiertagskalender",
+  "vereins-kommunikation": "kommunikationskonzept",
 };
 
 export type Redirect = { source: string; destination: string; statusCode: 301 };

@@ -279,6 +279,7 @@ test.describe("Kategorieseiten", () => {
       ["/tools/content-saeulen", "/tools/inhalte-saeulen"],
       ["/tools/content-strategie", "/tools/inhalte-strategie"],
       ["/tools/content-kalender", "/tools/feiertagskalender"],
+      ["/tools/vereins-kommunikation", "/tools/kommunikationskonzept"],
     ]) {
       const res = await request.get(from, { maxRedirects: 0 });
       expect(res.status(), from).toBe(301);
@@ -1944,9 +1945,10 @@ test.describe("Welle 4 im Browser (Inhalte, KI und Vereine)", () => {
       ]
   };
 
-  test("Vereins-Kommunikationskonzept: Angaben, Fenster, Konzept mit acht Kapiteln, PDF, Lead mit Verein und Zahlen, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+  test("Kommunikationskonzept (Verein): Angaben, Fenster, Konzept mit acht Kapiteln, PDF, Lead mit Verein und Zahlen, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
     const calls = await stubGenerate(page, KONZEPT);
-    await page.goto("/tools/vereins-kommunikation");
+    await page.goto("/tools/kommunikationskonzept");
+    await page.getByRole("radio", { name: "Verein" }).check();
     await page.getByRole("button", { name: "Konzept erstellen" }).click();
     await expect(page.locator("#vk-error")).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -1954,7 +1956,7 @@ test.describe("Welle 4 im Browser (Inhalte, KI und Vereine)", () => {
     await page.locator("#vk-ort").fill("Trogen");
     await page.locator("#vk-kanton").selectOption("AR");
     await page.locator("#vk-zweck").fill("Fussballclub mit Aktiven, Senioren und Juniorinnen und Junioren. Heimspiele auf dem Sportplatz in Trogen.");
-    await page.locator("#vk-mitglieder").fill("180");
+    await page.locator("#vk-anzahl").fill("180");
     await page.locator("#vk-entwicklung").selectOption("waechst");
     await page.getByRole("checkbox", { name: "Mitglieder gewinnen" }).check();
     await page.getByRole("checkbox", { name: "Nachwuchs", exact: true }).check();
@@ -1973,7 +1975,7 @@ test.describe("Welle 4 im Browser (Inhalte, KI und Vereine)", () => {
     const pdf = page.waitForEvent("download");
     await page.getByRole("button", { name: "PDF herunterladen" }).click();
     expect((await pdf).suggestedFilename()).toMatch(/\.pdf$/);
-    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("vereins-kommunikation");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("kommunikationskonzept");
     const lead = (await received(request)).find((l) => l.email === email)!;
     expect(lead.eingabe).toContain("Verein: FC Trogen, Trogen");
     expect(lead.eingabe).toContain("Mitglieder: 180");
@@ -1983,6 +1985,35 @@ test.describe("Welle 4 im Browser (Inhalte, KI und Vereine)", () => {
     expect(calls.generate).toBe(1);
     await page.setViewportSize({ width: 375, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+
+  test("Kommunikationskonzept (Betrieb): Wortlaut für KMU, Website-Scan sichtbar, Konzept, Lead mit Betrieb und Mitarbeitenden", async ({ page, request }) => {
+    const calls = await stubGenerate(page, KONZEPT);
+    await page.goto("/tools/kommunikationskonzept");
+    await expect(page.locator("#vk-zweck")).toBeVisible();
+    await expect(page.locator("label[for=vk-zweck]")).toContainText("Was dein Betrieb tut");
+    await expect(page.locator("label[for=vk-anzahl]")).toContainText("Mitarbeitende");
+    await expect(page.getByTestId("website-scan")).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: "Google Business Profil" })).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: "Aushang" })).toHaveCount(0);
+    await page.locator("#vk-firma").fill("Malerei Keller");
+    await page.locator("#vk-ort").fill("Gossau");
+    await page.locator("#vk-kanton").selectOption("SG");
+    await page.locator("#vk-zweck").fill("Malerei mit acht Mitarbeitenden, Fassaden und Innenräume für Privatkundschaft und Verwaltungen in Gossau.");
+    await page.locator("#vk-anzahl").fill("8");
+    await page.locator("#vk-entwicklung").selectOption("stabil");
+    await page.getByRole("checkbox", { name: "Neue Kundschaft gewinnen" }).check();
+    await page.getByRole("checkbox", { name: "Google Business Profil" }).check();
+    await page.locator("#vk-stunden").fill("8");
+    await page.getByRole("button", { name: "Konzept erstellen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Kommunikationskonzept" })).toBeVisible();
+    expect(calls.generate).toBe(1);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("kommunikationskonzept");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Betrieb: Malerei Keller, Gossau");
+    expect(lead.eingabe).toContain("Mitarbeitende: 8, Nachfrage stabil");
+    expect(lead.ausgabe).toContain("Konzept für die Jahresplanung");
   });
 
   const SPONSORING_TEXTE = {

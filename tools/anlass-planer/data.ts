@@ -141,7 +141,7 @@ export const NACH_TYP: Record<TypKey, Vorlage[]> = {
     v("df-bewilligung", "Bei der Gemeinde nachfragen, ob eine Bewilligung nötig ist", 10, INTERN),
     v("df-helfer", "Helferplan erstellen", 8, INTERN),
     v("df-sponsoren", "Sponsoren anfragen", 8, INTERN, { vereinsTyp: true, werkzeug: "sponsoring-dossier" }),
-    v("df-mitglieder", "Mitglieder über Termin und Einsatz informieren", 8, INTERN, { vereinsTyp: true, werkzeug: "vereins-kommunikation" }),
+    v("df-mitglieder", "Mitglieder über Termin und Einsatz informieren", 8, INTERN, { vereinsTyp: true, werkzeug: "kommunikationskonzept" }),
     v("df-verpflegung", "Festwirtschaft und Verpflegung planen", 7, INTERN),
     v("df-verkehr", "Verkehr und Parkplätze klären", 6, INTERN),
     v("df-presse", "Medienmitteilung zum Fest schreiben", 4, "presse", { nurWenn: "presse", werkzeug: "medienmitteilung" }),

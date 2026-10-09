@@ -27,7 +27,7 @@ import postGeneratorConfig from "./post-generator/tool.config";
 import medienmitteilungConfig from "./medienmitteilung/tool.config";
 import bewertungsantwortConfig from "./bewertungsantwort/tool.config";
 import anspruchsgruppenConfig from "./anspruchsgruppen/tool.config";
-import vereinsKommunikationConfig from "./vereins-kommunikation/tool.config";
+import kommunikationskonzeptConfig from "./kommunikationskonzept/tool.config";
 import sponsoringDossierConfig from "./sponsoring-dossier/tool.config";
 import empfehlungsprogrammConfig from "./empfehlungsprogramm/tool.config";
 import engagementRateConfig from "./engagement-rate/tool.config";
@@ -79,7 +79,7 @@ export const tools: ToolConfig[] = [
   medienmitteilungConfig,
   bewertungsantwortConfig,
   anspruchsgruppenConfig,
-  vereinsKommunikationConfig,
+  kommunikationskonzeptConfig,
   sponsoringDossierConfig,
   empfehlungsprogrammConfig,
   engagementRateConfig,

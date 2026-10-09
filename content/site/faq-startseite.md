@@ -17,7 +17,7 @@ Text-Umschreiber und Textcheck mit KI schicken deinen Text an unseren Server und
 Die Werkzeuge stammen von der Alperna GmbH aus Speicher im Kanton Appenzell Ausserrhoden. Wir sind Partner für den digitalen Auftritt von Ostschweizer KMU: Website, Google-Profil, Social Media, Online-Shop und Buchungstool. Mehr über uns findest du auf der Seite «Über diese Werkzeuge».
 
 ### Sind die Werkzeuge auch für Vereine geeignet?
-Ja. Wähle im Firmenprofil die Rechtsform «Verein», dann sprechen die Werkzeuge von Mitgliedern statt Kunden und vom Vorstand statt von der Geschäftsleitung. Das Sponsoring-Dossier und das Vereins-Kommunikationskonzept sind für Vereine gebaut.
+Ja. Wähle im Firmenprofil die Rechtsform «Verein», dann sprechen die Werkzeuge von Mitgliedern statt Kunden und vom Vorstand statt von der Geschäftsleitung. Das Sponsoring-Dossier ist für Vereine gebaut; das Kommunikationskonzept und die Anspruchsgruppen-Analyse passen zu Betrieben und Vereinen.
 
 ### Wie aktuell sind die Rechtstexte?
 Werkzeuge mit rechtlichem Bezug zeigen den Stand ihrer Quelle an. Die Texte stammen von Menschen und werden geprüft, nicht vom Werkzeug selbst formuliert. Sie ersetzen keine Rechtsberatung. Prüfe bei Unsicherheit im Einzelfall mit einer Fachperson.

@@ -7,7 +7,7 @@ export default defineTool({
   audience: "verein",
   tagline: "Verein in Zahlen, Zielgruppe und drei Pakete als Vergleich: ein Dossier, das du Sponsoren schicken kannst.",
   keyword: "Sponsoring-Dossier",
-  related: ["vereins-kommunikation", "anspruchsgruppen", "empfehlungsprogramm"],
+  related: ["kommunikationskonzept", "anspruchsgruppen", "empfehlungsprogramm"],
   needsServer: true,
   usesProfile: ["organisationstyp", "firma", "ort", "kanton", "website"],
   writesProfile: [],

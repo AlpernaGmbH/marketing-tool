@@ -12,7 +12,7 @@ import contentSaeulenGenerator from "./inhalte-saeulen/generator";
 import postGeneratorGenerator from "./post-generator/generator";
 import medienmitteilungGenerator from "./medienmitteilung/generator";
 import bewertungsantwortGenerator from "./bewertungsantwort/generator";
-import vereinsKommunikationGenerator from "./vereins-kommunikation/generator";
+import kommunikationskonzeptGenerator from "./kommunikationskonzept/generator";
 import sponsoringDossierGenerator from "./sponsoring-dossier/generator";
 import contentStrategieGenerator from "./inhalte-strategie/generator";
 import storyPostGenerator from "./story-post/generator";
@@ -40,7 +40,7 @@ export const generators: AnyGenerator[] = [
   postGeneratorGenerator,
   medienmitteilungGenerator,
   bewertungsantwortGenerator,
-  vereinsKommunikationGenerator,
+  kommunikationskonzeptGenerator,
   sponsoringDossierGenerator,
   contentStrategieGenerator,
   storyPostGenerator,

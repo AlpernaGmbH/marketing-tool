@@ -93,7 +93,7 @@ export const TOOL_ICONS: Record<string, LucideIcon> = {
   testimonial: Quote,
   "text-umschreiber": Pencil,
   textcheck: SpellCheck,
-  "vereins-kommunikation": MessagesSquare,
+  "kommunikationskonzept": MessagesSquare,
   verzeichnisse: MapPin,
   "vorher-nachher": Images,
   wettbewerbsvergleich: Binoculars,

@@ -6,28 +6,33 @@ import { DocView } from "@/components/tool/DocView";
 import { DocumentExport } from "@/components/tool/DocumentExport";
 import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { ResultCard } from "@/components/tool/ResultCard";
+import { ResultPitch } from "@/components/tool/ResultPitch";
 import { ToolShell } from "@/components/tool/ToolShell";
 import { useGenerator } from "@/components/tool/useGenerator";
+import { WebsiteScan } from "@/components/tool/WebsiteScan";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { dateCH } from "@/lib/ch";
 import { placeholdersIn } from "@/lib/generator";
 import { useLocalJson } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
-import { LIMITS, vereinGenerator, type KanalKey, type VereinInput, type ZielKey } from "./generator";
+import type { CheckResult } from "@/lib/check/types";
+import { parseCheckState } from "@/tools/digitaler-auftritt-check/logic";
+import { LIMITS, konzeptGenerator, type KanalKey, type KonzeptInput, type ZielKey } from "./generator";
 import {
   ANSPRUCHSGRUPPEN_SLUG,
   EMPTY_FORM,
   EMPTY_STATE,
   ENTWICKLUNGEN,
   FIELD_IDS,
-  KANAELE,
   KI_HINWEIS,
   MONAT_OPTIONEN,
+  SCAN_SLUG,
   SLUG,
-  ZIELE,
+  WORTE,
   addAnlass,
   anlassFieldId,
   charCount,
@@ -38,11 +43,13 @@ import {
   gruppenHinweis,
   inputProblem,
   isEntwicklung,
-  kanaeleAusProfil,
+  kanaeleAusScan,
+  kanaeleFuer,
   kanalFieldId,
   normalizeKanaele,
   normalizeZiele,
   parseState,
+  pitchFor,
   profilePatch,
   removeAnlass,
   reportMarkdown,
@@ -50,52 +57,46 @@ import {
   setAnlass,
   toDocument,
   toInput,
+  typOf,
+  vorbelegung,
+  vorbelegungText,
   zielFieldId,
-  type VereinForm,
+  zieleFuer,
+  type KonzeptForm,
 } from "./logic";
 import config from "./tool.config";
 
 const selectClass =
   "h-11 w-full rounded-lg border border-input bg-paper px-3 text-base focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
-function Intro() {
-  return (
-    <p>
-      Sag, wofür dein Verein da ist, wie viele Mitglieder er hat, was er erreichen will und wann die Anlässe sind. Eine KI schreibt daraus ein
-      Kommunikationskonzept: Ausgangslage, Ziele, Zielgruppen, Kernbotschaft, Kanalplan, Jahreskalender, Rollen und Erfolgsmessung. Du kannst es dem Vorstand
-      vorlegen und als Vorlage für die Generalversammlung nutzen.
-    </p>
-  );
+function Intro({ intro }: { intro: string }) {
+  return <p>{intro}</p>;
 }
 
 function KonzeptFlow() {
   const { profile, ready: profileReady, update } = useProfile();
   const { value: saved, ready, set } = useLocalJson(`mt:${SLUG}`, parseState);
-  // Die Gruppen aus der Anspruchsgruppen-Analyse liegen im Browser; gruppenAus() prüft den Stand selbst.
+  // Die Gruppen aus der Anspruchsgruppen-Analyse und der Scan der Website liegen im Browser; die Funktionen prüfen den Stand selbst.
   const { value: gruppen } = useLocalJson(`mt:${ANSPRUCHSGRUPPEN_SLUG}`, gruppenAus);
+  const { value: scan } = useLocalJson(`mt:${SCAN_SLUG}`, parseCheckState);
 
   // useGenerator hält seine Optionen fest; die Eingabe für das CRM-Dokument kommt darum über einen Ref.
-  const inputRef = useRef<VereinInput | null>(null);
-  const gen = useGenerator(vereinGenerator, {
+  const inputRef = useRef<KonzeptInput | null>(null);
+  const gen = useGenerator(konzeptGenerator, {
     eingabe: eingabeText,
     ausgabe: (o) => (inputRef.current ? reportMarkdown(o, inputRef.current) : ""),
   });
 
   // null: die Person hat noch nichts getippt. Dann gelten die gespeicherten Angaben (auch ohne Ergebnis), sonst das leere Formular.
-  const [typed, setTyped] = useState<VereinForm | null>(null);
+  const [typed, setTyped] = useState<KonzeptForm | null>(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const shouldFocus = useRef(false);
-  const typChecked = useRef(false);
 
-  // Dieses Werkzeug ist für Vereine: Ist im Profil noch kein Typ gewählt, steht dort ab dem ersten Laden «Verein».
-  useEffect(() => {
-    if (!profileReady || typChecked.current) return;
-    typChecked.current = true;
-    const patch = profilePatch(profile, []);
-    if (patch.organisationstyp) update(patch);
-  }, [profileReady, profile, update]);
+  // Verein oder Betrieb bestimmt die Rechtsform im Firmenprofil (Reihe oben im Formular); ohne Wahl gilt der Betrieb.
+  const typ = typOf(profile);
+  const w = WORTE[typ];
 
   // Fokus nur nach einer Aktion der Person, nicht beim Wiederherstellen aus dem Speicher; erst wenn die Karte da ist.
   useEffect(() => {
@@ -111,21 +112,35 @@ function KonzeptFlow() {
   const showForm = !output || editing;
   const form = typed ?? (savedInput ? formFromInput(savedInput) : EMPTY_FORM);
 
-  // Kanäle: die gewählten, sonst der Vorschlag aus dem Profil (Harte Regel 10).
-  const kanaele = effectiveKanaele(form, profile);
-  const kanaeleVomProfil = form.kanaele === null && kanaeleAusProfil(profile).length > 0;
+  // Kanäle: die gewählten, sonst der Vorschlag aus Profil und Website-Prüfung (Harte Regel 10).
+  const vorschlag = vorbelegung(profile, scan.result, typ);
+  const kanaele = effectiveKanaele(form, vorschlag.kanaele, typ);
+  const kanaeleVorbelegt = form.kanaele === null && vorschlag.kanaele.length > 0;
   const hinweis = gruppenHinweis(gruppen);
 
-  const patch = (p: Partial<VereinForm>) => {
+  // Das Ende eines Scans läuft Sekunden nach dem Klick; es braucht den aktuellen Stand des Formulars, nicht den vom Klick.
+  const latest = useRef({ form, kanaele, typ });
+  useEffect(() => {
+    latest.current = { form, kanaele, typ };
+  });
+  // Hat die Person die Kanäle schon angefasst, kommen die gefundenen dazu; nichts fällt weg. Sonst folgt die Vorbelegung dem neuen Ergebnis selbst.
+  const afterScan = (result: CheckResult) => {
+    const { form: f, kanaele: k, typ: t } = latest.current;
+    if (f.kanaele === null) return;
+    setError(null);
+    setTyped({ ...f, kanaele: normalizeKanaele([...k, ...kanaeleAusScan(result)], t) });
+  };
+
+  const patch = (p: Partial<KonzeptForm>) => {
     setError(null);
     setTyped({ ...form, ...p });
   };
 
-  const toggleZiel = (key: ZielKey, on: boolean) => patch({ ziele: normalizeZiele(on ? [...form.ziele, key] : form.ziele.filter((z) => z !== key)) });
-  const toggleKanal = (key: KanalKey, on: boolean) => patch({ kanaele: normalizeKanaele(on ? [...kanaele, key] : kanaele.filter((k) => k !== key)) });
+  const toggleZiel = (key: ZielKey, on: boolean) => patch({ ziele: normalizeZiele(on ? [...form.ziele, key] : form.ziele.filter((z) => z !== key), typ) });
+  const toggleKanal = (key: KanalKey, on: boolean) => patch({ kanaele: normalizeKanaele(on ? [...kanaele, key] : kanaele.filter((k) => k !== key), typ) });
 
   async function start() {
-    const problem = inputProblem({ firma: profile.firma }, form);
+    const problem = inputProblem(profile, form);
     if (problem) {
       setError(problem.message);
       document.getElementById(problem.fieldId)?.focus();
@@ -145,7 +160,7 @@ function KonzeptFlow() {
     set({ v: 1, input, output: result });
     // Ins Profil nur nach einem frisch erzeugten Entwurf und nur, was dort noch fehlt (TOOL-BAUEN.md, Abschnitt 2).
     const toProfile = profilePatch(profile, input.kanaele);
-    if (toProfile.organisationstyp || toProfile.kanaele) update(toProfile);
+    if (toProfile.kanaele) update(toProfile);
   }
 
   const edit = () => {
@@ -168,6 +183,8 @@ function KonzeptFlow() {
 
   const doc = output && savedInput ? toDocument(output, savedInput) : null;
   const placeholders = output ? placeholdersIn(output) : [];
+  // Die Wörter im Ergebnis folgen dem Typ, mit dem der Entwurf entstanden ist, nicht der Rechtsform, die jetzt im Profil steht.
+  const wErgebnis = WORTE[savedInput?.typ ?? typ];
 
   return (
     <form
@@ -180,22 +197,22 @@ function KonzeptFlow() {
       }}
     >
       <div className="content">
-        <Intro />
+        <Intro intro={w.intro} />
       </div>
 
       {showForm && (
         <>
           <fieldset className="grid gap-4 rounded-xl border border-line p-4 md:grid-cols-2" disabled={busy}>
-            <legend className="px-2 font-heading font-semibold">Dein Verein</legend>
+            <legend className="px-2 font-heading font-semibold">{w.legend}</legend>
             <ProfileFieldsForm idPrefix="vk" fields={["organisationstyp", "firma", "ort", "kanton"]} />
-            <p className="text-sm text-muted-foreground md:col-span-2">Name, Ort und Kanton speichern wir in deinem Firmenprofil, in deinem Browser.</p>
+            <p className="text-sm text-muted-foreground md:col-span-2">Rechtsform, Name, Ort und Kanton speichern wir in deinem Firmenprofil, in deinem Browser. Die Rechtsform bestimmt, ob das Konzept von Mitgliedern oder von Kundschaft spricht.</p>
           </fieldset>
 
           <fieldset className="grid gap-5" disabled={busy}>
-            <legend className="mb-1 font-heading font-semibold">Zweck und Mitglieder</legend>
+            <legend className="mb-1 font-heading font-semibold">{typ === "verein" ? "Zweck und Mitglieder" : "Betrieb und Nachfrage"}</legend>
 
             <div className="grid gap-1.5">
-              <Label htmlFor={FIELD_IDS.zweck}>Vereinszweck</Label>
+              <Label htmlFor={FIELD_IDS.zweck}>{w.zweckLabel}</Label>
               <Textarea
                 id={FIELD_IDS.zweck}
                 rows={3}
@@ -208,8 +225,7 @@ function KonzeptFlow() {
                 spellCheck
               />
               <p id="vk-zweck-help" className="text-sm text-muted-foreground">
-                Ein bis drei Sätze: Was tut der Verein, für wen, und was verbindet die Mitglieder? Zum Beispiel: «Fussballclub mit Aktiven, Senioren und Juniorinnen und
-                Junioren, Heimspiele auf dem Sportplatz».
+                {w.zweckHilfe}
               </p>
               <p id="vk-zweck-count" className="mono text-sm text-muted-foreground">
                 {charCount(form.zweck)} von {LIMITS.zweck} Zeichen, mindestens {LIMITS.zweckMin}
@@ -218,25 +234,25 @@ function KonzeptFlow() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-1.5">
-                <Label htmlFor={FIELD_IDS.mitglieder}>Mitgliederzahl</Label>
+                <Label htmlFor={FIELD_IDS.anzahl}>{w.anzahlLabel}</Label>
                 <Input
-                  id={FIELD_IDS.mitglieder}
+                  id={FIELD_IDS.anzahl}
                   type="number"
                   inputMode="numeric"
                   min={1}
-                  max={LIMITS.mitgliederMax}
+                  max={LIMITS.anzahlMax}
                   step={1}
-                  value={form.mitglieder}
-                  onChange={(e) => patch({ mitglieder: e.target.value })}
-                  aria-describedby="vk-mitglieder-help"
+                  value={form.anzahl}
+                  onChange={(e) => patch({ anzahl: e.target.value })}
+                  aria-describedby="vk-anzahl-help"
                   aria-required="true"
                 />
-                <p id="vk-mitglieder-help" className="text-sm text-muted-foreground">
-                  Aktive und Passive zusammen, ganze Zahl.
+                <p id="vk-anzahl-help" className="text-sm text-muted-foreground">
+                  {w.anzahlHilfe}
                 </p>
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor={FIELD_IDS.entwicklung}>Entwicklung der Mitgliederzahl</Label>
+                <Label htmlFor={FIELD_IDS.entwicklung}>{w.entwicklungLabel}</Label>
                 <select
                   id={FIELD_IDS.entwicklung}
                   className={selectClass}
@@ -257,13 +273,13 @@ function KonzeptFlow() {
             <fieldset className="grid gap-3">
               <legend className="mb-1 font-medium">Ziele (mindestens eines)</legend>
               <ul className="grid gap-2 sm:grid-cols-2" aria-label="Ziele">
-                {ZIELE.map((z) => (
+                {zieleFuer(typ).map((z) => (
                   <li key={z.key} className="flex min-h-11 items-center gap-3">
                     <Checkbox
                       id={zielFieldId(z.key)}
                       aria-label={z.label}
                       className="size-6"
-                      checked={ready && form.ziele.includes(z.key)}
+                      checked={ready && normalizeZiele(form.ziele, typ).includes(z.key)}
                       onCheckedChange={(v) => toggleZiel(z.key, v === true)}
                       disabled={!ready || busy}
                     />
@@ -278,9 +294,7 @@ function KonzeptFlow() {
 
           <fieldset className="grid gap-3" disabled={busy}>
             <legend className="mb-1 font-heading font-semibold">Anlässe im Jahr (freiwillig)</legend>
-            <p className="text-sm text-muted-foreground">
-              Bis zu {LIMITS.anlaesse} Anlässe mit Monat, zum Beispiel Generalversammlung, Dorffest, Turnier oder Vereinsreise. Sie bilden den Jahreskalender.
-            </p>
+            <p className="text-sm text-muted-foreground">{w.anlaesseHilfe}</p>
             <ul className="grid gap-3" aria-label="Anlässe im Jahr">
               {form.anlaesse.map((a, i) => (
                 <li key={a.id} className="grid gap-3 rounded-xl border border-line p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,12rem)_auto] sm:items-end">
@@ -335,11 +349,11 @@ function KonzeptFlow() {
           <fieldset className="grid gap-3" disabled={busy}>
             <legend className="mb-1 font-heading font-semibold">Kanäle heute</legend>
             <p className="text-sm text-muted-foreground">
-              {kanaeleVomProfil ? "Vorbelegt aus deinem Firmenprofil. " : ""}Wähle die Kanäle, auf denen dein Verein heute Neuigkeiten verbreitet. Der Kanalplan nutzt sie und
-              schlägt höchstens zwei neue vor.
+              {kanaeleVorbelegt ? vorbelegungText(vorschlag) : ""}
+              {w.kanaeleHilfe}
             </p>
             <ul className="grid gap-2 sm:grid-cols-2" aria-label="Kanäle heute">
-              {KANAELE.map((k) => (
+              {kanaeleFuer(typ).map((k) => (
                 <li key={k.key} className="flex min-h-11 items-center gap-3">
                   <Checkbox
                     id={kanalFieldId(k.key)}
@@ -357,6 +371,18 @@ function KonzeptFlow() {
             </ul>
           </fieldset>
 
+          <WebsiteScan
+            idPrefix="vk-scan"
+            fields={["website"]}
+            intro="Statt die Kanäle von Hand zu wählen, kannst du deine Website prüfen lassen. Das Werkzeug liest die Startseite und erkennt verlinkte Kanäle wie Instagram und Facebook, eine Newsletter-Anmeldung und, soweit die Website darauf verweist, ein Google Business Profil. Die gefundenen Kanäle sind vorgewählt; du ergänzt oder streichst. Die Adresse deiner Website geht an unseren Server, nicht deine E-Mail-Adresse."
+            stand={(saved) => {
+              if (!saved.result) return null;
+              const n = normalizeKanaele(kanaeleAusScan(saved.result), typ).length;
+              return `Gespeicherter Scan vom ${dateCH(saved.result.checkedAt)}: ${n} ${n === 1 ? "Kanal" : "Kanäle"} erkannt.`;
+            }}
+            onScanned={afterScan}
+          />
+
           <fieldset className="grid gap-4 md:grid-cols-3" disabled={busy}>
             <legend className="mb-1 font-heading font-semibold">Zeit und Budget</legend>
             <div className="grid gap-1.5">
@@ -370,7 +396,7 @@ function KonzeptFlow() {
                 lang="de-CH"
               />
               <p id="vk-wer-help" className="text-sm text-muted-foreground">
-                Zum Beispiel: zwei Vorstandsmitglieder.
+                {w.werHilfe}
               </p>
             </div>
             <div className="grid gap-1.5">
@@ -430,10 +456,10 @@ function KonzeptFlow() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Dafür gehen Name, Ort und Kanton des Vereins, Zweck, Mitgliederzahl und Entwicklung, Ziele, Anlässe, Kanäle, die Angabe, wer die Kommunikation macht, die Stunden
-            und das Budget{hinweis ? " und die Namen deiner Anspruchsgruppen mit Interesse und Einfluss" : ""} an unseren Server und von dort an unseren KI-Anbieter, nicht deine
+            Dafür gehen {w.serverAngaben}, Ziele, Anlässe, Kanäle, die Angabe, wer die Kommunikation macht, die Stunden und das Budget
+            {hinweis ? " und die Namen deiner Anspruchsgruppen mit Interesse und Einfluss" : ""} an unseren Server und von dort an unseren KI-Anbieter, nicht deine
             E-Mail-Adresse. Unser Server speichert die Angaben nicht. Deine Angaben und das Konzept gehen mit deiner E-Mail-Adresse an Alperna, damit wir dir bei
-            Fragen weiterhelfen können. Gib nichts Vertrauliches ein, zum Beispiel keine Namen von Mitgliedern.
+            Fragen weiterhelfen können. {w.vertraulich}
           </p>
 
           <p id="vk-error" role="alert" className="min-h-6 text-destructive">
@@ -485,8 +511,9 @@ function KonzeptFlow() {
           <div data-testid="konzept">
             <DocView blocks={screenBlocks(doc)} />
           </div>
+          <ResultPitch spec={pitchFor(output, savedInput)} />
           <p className="text-sm text-muted-foreground">
-            Das Konzept ist eine Vorlage. Der Vorstand prüft und ergänzt es, bevor es an die Generalversammlung geht.
+            {wErgebnis.ergebnisHinweis}
             {savedInput.kanaele.length > 0 ? " Deine Kanäle heute stehen im Firmenprofil, sofern dort noch keine standen. Andere Werkzeuge lesen sie dort." : ""}
           </p>
         </ResultCard>

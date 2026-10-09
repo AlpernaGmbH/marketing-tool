@@ -7,7 +7,7 @@ export default defineTool({
   audience: "beide",
   tagline: "Wer Einfluss und Interesse hat: Matrix, Strategie je Gruppe und Kommunikationsplan für Verein oder Betrieb.",
   keyword: "Anspruchsgruppen",
-  related: ["vereins-kommunikation", "sponsoring-dossier", "icp-builder"],
+  related: ["kommunikationskonzept", "sponsoring-dossier", "icp-builder"],
   needsServer: true,
   usesProfile: ["organisationstyp", "rechtsform", "firma", "ort", "branche"],
   writesProfile: [],
