@@ -11,11 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { GENERATE_FAIL_MESSAGES, requestGenerate } from "@/lib/generate-client";
 import { useLocalJson } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
+import { anspruchsgruppenGenerator } from "./generator";
 import {
   ADD_BUTTON_ID,
+  ANGABEN_LIMITS,
   BEZIEHUNGEN,
+  FINANZIERUNG,
   LIMITS,
   MATRIX,
   MAX_GRUPPEN,
@@ -32,11 +36,15 @@ import {
   emptyState,
   feldId,
   formProblem,
+  gruppenAusVorschlag,
+  istUnberuehrt,
+  kiInput,
   matrixLayout,
   neueGruppe,
   parseState,
   planFuer,
   setzePlanFeld,
+  quadrant,
   strategieSlug,
   toDocument,
   typWechselHinweis,
@@ -44,6 +52,7 @@ import {
   zusammenfassung,
   type AgState,
   type Analyse,
+  type Angaben,
   type Beziehung,
   type Gruppe,
   type GruppenFeld,
@@ -70,14 +79,15 @@ function Intro() {
   return (
     <>
       <p>
-        Trag ein, welche Gruppen für dich zählen, und bewerte jede nach Interesse und Einfluss. Daraus entstehen eine Matrix, eine Strategie je Quadrant und
-        ein Kommunikationsplan. Die Vorlage passt zu Verein oder Betrieb; streich, was nicht passt, und füge eigene Gruppen hinzu (bis zu {MAX_GRUPPEN}).
-        Trag Gruppen ein, keine einzelnen Personen mit Namen.
+        Wer hat Einfluss auf dich, und wer interessiert sich für dich? Gib ein paar Angaben zu deinem Umfeld an, und eine KI schlägt Gruppen mit Interesse und
+        Einfluss vor. Du prüfst und änderst alles und bekommst eine Matrix, eine Strategie je Quadrant und einen Kommunikationsplan. Du kannst die Gruppen auch
+        von Hand bewerten: Die Vorlage passt zu Verein oder Betrieb; streich, was nicht passt, und füge eigene Gruppen hinzu (bis zu {MAX_GRUPPEN}). Trag
+        Gruppen ein, keine einzelnen Personen mit Namen.
       </p>
       <p>
-        Alles rechnet in deinem Browser, ohne KI. Dein Ergebnis geht zusammen mit deinen Angaben und deiner E-Mail-Adresse an Alperna, damit wir dir bei
-        Fragen weiterhelfen können. Die Grenze zwischen «hoch» und «tiefer» (ab {SCHWELLE} von 5) und die Vorschläge für Kanal und Rhythmus sind ein{" "}
-        {RICHTWERT_NOTE}.
+        Matrix, Strategie und Plan rechnen in deinem Browser. Nur der Vorschlag der KI geht über unseren Server, und nur auf Klick. Dein Ergebnis geht
+        zusammen mit deinen Angaben und deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Die Grenze zwischen «hoch» und
+        «tiefer» (ab {SCHWELLE} von 5) und die Vorschläge für Kanal und Rhythmus sind ein {RICHTWERT_NOTE}.
       </p>
     </>
   );
@@ -424,6 +434,109 @@ function Ergebnis({
 
 // ---- Ablauf ------------------------------------------------------------------------------------
 
+// ---- Vorschlag der KI --------------------------------------------------------------------------
+
+/**
+ * «Gruppen vorschlagen»: Die KI schlägt aus Rechtsform, Branche, Ort und den Angaben sechs bis zehn Gruppen mit Interesse, Einfluss und
+ * Beziehung vor. Der Vorschlag erscheint in einer Vorschau; erst «Vorschlag übernehmen» ersetzt die Liste (eigene Eingaben werden nie still
+ * überschrieben). Fällt die KI aus, bleibt die Vorlage mit den acht Gruppen, und die Person bewertet von Hand.
+ */
+function Vorschlag({
+  typ,
+  angaben,
+  profil,
+  eigeneWerte,
+  disabled,
+  onApply,
+}: {
+  typ: Typ;
+  angaben: Angaben;
+  profil: { firma?: string; rechtsform?: string; branche?: string; ort?: string };
+  eigeneWerte: boolean;
+  disabled: boolean;
+  onApply: (gruppen: Gruppe[]) => void;
+}) {
+  const ctx = useToolContext();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [vorschlag, setVorschlag] = useState<Gruppe[] | null>(null);
+
+  async function run() {
+    setError(null);
+    setVorschlag(null);
+    const input = kiInput(profil, typ, angaben);
+    if (input.betrieb === "") return setError(typ === "verein" ? "Gib den Namen deines Vereins an." : "Gib den Namen deines Betriebs an.");
+    setBusy(true);
+    let stop = () => {};
+    try {
+      if (!(await ctx.ensureEmail())) return;
+      stop = ctx.startLoading(["Angaben lesen", "Gruppen vorschlagen", "Vorschlag kontrollieren"]);
+      let outcome = await requestGenerate(anspruchsgruppenGenerator, input);
+      // Der Server kennt keine Adresse (Cookie fehlt): erst das Fenster, dann einmal wiederholen.
+      if (!outcome.ok && outcome.reason === "gate" && (await ctx.renewEmail())) outcome = await requestGenerate(anspruchsgruppenGenerator, input);
+      if (!outcome.ok) return setError(`${GENERATE_FAIL_MESSAGES[outcome.reason]} Du kannst die Gruppen auch von Hand bewerten.`);
+      setVorschlag(gruppenAusVorschlag(outcome.output));
+    } finally {
+      stop();
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-3" data-testid="ag-vorschlag">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="outline" disabled={disabled || busy} onClick={() => void run()}>
+          {busy ? "Die KI schlägt vor …" : "Gruppen vorschlagen"}
+        </Button>
+        <span className="text-sm text-muted-foreground">
+          Dafür gehen Name, Rechtsform, Branche, Ort und diese Angaben an unseren Server und von dort an unseren KI-Anbieter, nicht deine E-Mail-Adresse. Unser Server speichert sie
+          nicht.
+        </span>
+      </div>
+      {error && (
+        <p role="alert" className="text-destructive" data-testid="ag-vorschlag-fehler">
+          {error}
+        </p>
+      )}
+      {vorschlag && (
+        <div className="grid gap-3 rounded-xl border border-line p-4" data-testid="ag-vorschau">
+          <h4 className="font-heading text-base font-semibold">Vorschlag der KI</h4>
+          <p className="text-sm text-muted-foreground">Von einer KI formuliert. Prüfe Interesse, Einfluss und Beziehung jeder Gruppe; du änderst alles nach dem Übernehmen.</p>
+          <ul aria-label="Vorgeschlagene Gruppen" className="grid gap-1 text-sm">
+            {vorschlag.map((g) => (
+              <li key={g.id} className="flex flex-wrap gap-x-3">
+                <span className="font-medium">{g.name}</span>
+                <span className="text-muted-foreground">
+                  Interesse {g.interesse}, Einfluss {g.einfluss}, {QUADRANT_INFO[quadrant(g.interesse, g.einfluss)].titel}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {eigeneWerte && (
+            <p role="note" className="rounded-lg bg-surface p-3 text-sm" data-testid="ag-vorschlag-ersetzt">
+              Du hast schon Gruppen bewertet. Der Vorschlag ersetzt die jetzige Liste.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              onClick={() => {
+                onApply(vorschlag);
+                setVorschlag(null);
+              }}
+            >
+              Vorschlag übernehmen
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setVorschlag(null)}>
+              Verwerfen
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AnspruchsgruppenFlow() {
   const ctx = useToolContext();
   const { profile, ready: profileReady } = useProfile();
@@ -440,6 +553,7 @@ function AnspruchsgruppenFlow() {
   const loaded = ready && profileReady;
   const state = useMemo(() => (loaded ? aufTyp(saved, profilTyp) : saved), [loaded, saved, profilTyp]);
   const gruppen = state.gruppen;
+  const angaben = state.angaben;
   const verein = profilTyp === "verein";
   const firma = (profile.firma ?? "").trim();
   const analyse = useMemo(() => (state.phase === "result" ? analysiere(state.gruppen) : null), [state.phase, state.gruppen]);
@@ -478,6 +592,16 @@ function AnspruchsgruppenFlow() {
     setNotice(`Gruppe «${name}» entfernt.`);
   }
 
+  const setAngaben = (patch: Partial<Angaben>) => save({ angaben: { ...angaben, ...patch } });
+  const toggleFinanzierung = (key: string) =>
+    setAngaben({ finanzierung: angaben.finanzierung.includes(key) ? angaben.finanzierung.filter((k) => k !== key) : [...angaben.finanzierung, key] });
+
+  const uebernehmen = (neu: Gruppe[]) => {
+    focusId.current = feldId(neu[0]?.id ?? "g1", "name");
+    save({ typ: profilTyp, gruppen: neu, plan: [] });
+    setNotice("Vorschlag der KI übernommen. Prüfe die Werte.");
+  };
+
   const loadTemplate = () => {
     focusId.current = gruppen.length > 0 ? feldId("g1", "name") : ADD_BUTTON_ID;
     save({ typ: profilTyp, gruppen: vorlage(profilTyp), plan: [] });
@@ -497,8 +621,9 @@ function AnspruchsgruppenFlow() {
       if (!(await ctx.ensureEmail())) return;
       const plan = planFuer(a.gruppen, state.plan);
       focusHeading.current = true;
-      set({ v: 1, phase: "result", typ: profilTyp, gruppen, plan });
-      void ctx.sendResult({ eingabe: eingabeText({ firma, typ: profilTyp }, gruppen), ausgabe: ausgabeText({ firma, typ: profilTyp }, a, plan) });
+      set({ v: 1, phase: "result", typ: profilTyp, gruppen, plan, angaben });
+      const kontext = { firma, typ: profilTyp, rechtsform: profile.rechtsform, ort: profile.ort, angaben };
+      void ctx.sendResult({ eingabe: eingabeText(kontext, gruppen), ausgabe: ausgabeText(kontext, a, plan) });
     } finally {
       setBusy(false);
     }
@@ -546,12 +671,69 @@ function AnspruchsgruppenFlow() {
       <fieldset className="grid gap-4 rounded-xl border border-line p-4 md:grid-cols-2" disabled={busy}>
         <legend className="px-2 font-heading font-semibold">{verein ? "Dein Verein" : "Dein Betrieb"}</legend>
         <div className="md:col-span-2">
-          <ProfileFieldsForm idPrefix="ag" fields={["organisationstyp"]} />
+          <ProfileFieldsForm idPrefix="ag" fields={["rechtsform"]} />
         </div>
-        <ProfileFieldsForm idPrefix="ag" fields={["firma"]} />
+        <ProfileFieldsForm idPrefix="ag" fields={["firma", "ort", "branche"]} />
         <p className="text-sm text-muted-foreground md:col-span-2">
-          {verein ? "Name des Vereins" : "Firma"} und Art speichern wir in deinem Firmenprofil, in deinem Browser. Die Vorlage der Gruppen richtet sich nach der Art.
+          {verein ? "Name des Vereins" : "Firma"}, Rechtsform, Ort und Branche speichern wir in deinem Firmenprofil, in deinem Browser. Die Vorlage der Gruppen richtet sich nach der Rechtsform.
         </p>
+      </fieldset>
+
+      <fieldset className="grid gap-4 rounded-xl border border-line p-4" disabled={busy}>
+        <legend className="px-2 font-heading font-semibold">Dein Umfeld (freiwillig)</legend>
+        <p className="text-sm text-muted-foreground">
+          Mit diesen drei Angaben schlägt die KI Gruppen vor. Ohne sie bewertest du die Vorlage mit den acht Gruppen von Hand.
+        </p>
+        <fieldset className="grid gap-2">
+          <legend className="mb-1 font-medium">Woher kommt das Geld?</legend>
+          <div className="flex flex-wrap gap-2">
+            {FINANZIERUNG[profilTyp].map((f) => (
+              <label
+                key={f.key}
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-input px-4 py-2 has-[:checked]:border-ink has-[:checked]:bg-surface has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
+              >
+                <input type="checkbox" className="size-5 accent-ink" checked={angaben.finanzierung.includes(f.key)} onChange={() => toggleFinanzierung(f.key)} />
+                {f.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div className="grid gap-1.5 md:max-w-xl">
+          <Label htmlFor="ag-vorhaben">Was steht in den nächsten zwölf Monaten an?</Label>
+          <Input
+            id="ag-vorhaben"
+            value={angaben.vorhaben}
+            maxLength={ANGABEN_LIMITS.vorhaben}
+            placeholder={verein ? "Zum Beispiel: neues Vereinshaus, Jubiläum, mehr Nachwuchs" : "Zum Beispiel: zweite Filiale, neue Dienstleistung, Nachfolge"}
+            onChange={(e) => setAngaben({ vorhaben: e.target.value })}
+            autoComplete="off"
+            lang="de-CH"
+          />
+        </div>
+        <div className="grid gap-1.5 md:max-w-xl">
+          <Label htmlFor="ag-bekannte">Welche Gruppen kennst du schon?</Label>
+          <Input
+            id="ag-bekannte"
+            value={angaben.bekannte}
+            maxLength={ANGABEN_LIMITS.bekannte}
+            placeholder={verein ? "Zum Beispiel: Sponsoren, Gemeinde, Eltern" : "Zum Beispiel: Stammkundschaft, Lieferanten, Gemeinde"}
+            onChange={(e) => setAngaben({ bekannte: e.target.value })}
+            aria-describedby="ag-bekannte-hilfe"
+            autoComplete="off"
+            lang="de-CH"
+          />
+          <p id="ag-bekannte-hilfe" className="text-sm text-muted-foreground">
+            Mit Komma getrennt. Diese Gruppen nimmt die KI in den Vorschlag auf.
+          </p>
+        </div>
+        <Vorschlag
+          typ={profilTyp}
+          angaben={angaben}
+          profil={profile}
+          eigeneWerte={!istUnberuehrt(gruppen, state.typ)}
+          disabled={!loaded || busy}
+          onApply={uebernehmen}
+        />
       </fieldset>
 
       <fieldset className="grid gap-4" disabled={busy}>

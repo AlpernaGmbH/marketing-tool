@@ -1799,6 +1799,50 @@ test.describe("Welle 4 im Browser (Inhalte, KI und Vereine)", () => {
     await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.ausgabe).toContain("Vorlage (ohne KI)");
   });
 
+  test("Anspruchsgruppen: Umfeld beschreiben, Gruppen von der KI vorschlagen lassen, Vorschau, Vorschlag übernehmen, Analyse, Lead mit Angaben", async ({ page, request }) => {
+    const vorschlag = {
+      gruppen: [
+        { name: "Mitglieder", interesse: 5, einfluss: 4, beziehung: "eng", erwartung: "Erwartet klare Termine und gutes Training.", bedarf: "Braucht ihre Mithilfe am Dorffest." },
+        { name: "Sponsoren", interesse: 3, einfluss: 5, beziehung: "lose", erwartung: "Erwartet Sichtbarkeit am Spielfeld.", bedarf: "Braucht ihre Beiträge für das Vereinshaus." },
+        { name: "Gemeinde und Behörden", interesse: 2, einfluss: 5, beziehung: "keine", erwartung: "Erwartet Berichte und saubere Abrechnungen.", bedarf: "Braucht Beiträge und einen Platz." },
+        { name: "Medien der Region", interesse: 2, einfluss: 2, beziehung: "lose", erwartung: "Erwartet Neuigkeiten zu Anlässen.", bedarf: "Braucht ihre Berichte vor dem Dorffest." },
+        { name: "Eltern des Nachwuchses", interesse: 5, einfluss: 2, beziehung: "gut", erwartung: "Erwartet Sicherheit für ihre Kinder.", bedarf: "Braucht ihre Hilfe bei Fahrten." },
+        { name: "Vorstand", interesse: 5, einfluss: 5, beziehung: "eng", erwartung: "Erwartet Einsatz und Verlässlichkeit.", bedarf: "Braucht Zeit für Sitzungen." },
+      ],
+    };
+    const calls: { tool: string; input: Record<string, unknown> }[] = [];
+    await page.route("**/api/generate", (route) => {
+      calls.push(JSON.parse(route.request().postData() ?? "{}"));
+      return route.fulfill(json({ ok: true, output: vorschlag }));
+    });
+    await page.goto("/tools/anspruchsgruppen");
+    await page.getByRole("radio", { name: "Verein" }).check();
+    await page.locator("#ag-firma").fill("FC Trogen");
+    await page.locator("#ag-ort").fill("Trogen");
+    await page.getByRole("checkbox", { name: "Sponsoren" }).check();
+    await page.getByLabel("Was steht in den nächsten zwölf Monaten an?").fill("Neues Vereinshaus");
+    await page.getByLabel("Welche Gruppen kennst du schon?").fill("Sponsoren, Gemeinde");
+    await page.getByRole("button", { name: "Gruppen vorschlagen" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByTestId("ag-vorschau")).toBeVisible();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].tool).toBe("anspruchsgruppen");
+    expect(calls[0].input).toMatchObject({ betrieb: "FC Trogen", typ: "verein", ort: "Trogen", finanzierung: ["Sponsoren"] });
+    await page.getByRole("button", { name: "Vorschlag übernehmen" }).click();
+    await expect(page.locator("#ag-g2-name")).toHaveValue("Sponsoren");
+    await expect(page.locator("#ag-g2-einfluss")).toHaveValue("5");
+    await page.getByRole("button", { name: "Analyse erstellen" }).click();
+    await expect(page.getByRole("region", { name: "Deine Anspruchsgruppen" })).toBeVisible();
+    await expect(page.getByTestId("ag-zusammenfassung")).toContainText("6 Gruppen bewertet");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("anspruchsgruppen");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Finanzierung: Sponsoren");
+    expect(lead.eingabe).toContain("Bekannte Gruppen: Sponsoren, Gemeinde");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Anspruchsgruppen" })).toBeVisible();
+    expect(calls).toHaveLength(1);
+  });
+
   test("Anspruchsgruppen: Verein wählen, zwei Gruppen bewerten, Fenster, Matrix und Plan, PDF, Lead mit Bewertung, Neuladen", async ({ page, request }) => {
     await page.goto("/tools/anspruchsgruppen");
     await page.getByRole("radio", { name: "Verein" }).check();

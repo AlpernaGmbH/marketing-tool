@@ -1,4 +1,5 @@
 import { safeFilename, type DocBlock, type DocumentModel } from "@/lib/export/model";
+import { LIMITS as KI_LIMITS, type AnspruchsgruppenInput, type AnspruchsgruppenOutput } from "./generator";
 
 // Anspruchsgruppen-Analyse: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
 // Alles rechnet im Browser (Klasse C). Die Grenze zwischen «hoch» und «tiefer», die Reihenfolge der Quadranten und die
@@ -361,7 +362,7 @@ export function matrixLayout(gruppen: readonly MatrixEingabe[]): MatrixLayout {
 
 // ---- Dokument und Texte ------------------------------------------------------------------------
 
-export type Kontext = { firma: string; typ: Typ };
+export type Kontext = { firma: string; typ: Typ; rechtsform?: string; ort?: string; angaben?: Angaben };
 
 const firmaText = (k: Kontext): string => oneLine(k.firma) || "keine Angabe";
 const beziehungText = (b: BeziehungWahl): string => (b === "" ? "nicht angegeben" : b);
@@ -456,6 +457,23 @@ export function toDocument(a: Analyse, plan: readonly PlanEintrag[], k: Kontext)
   };
 }
 
+/** Rechtsform, Ort und die Angaben für den Vorschlag der KI als Zeilen fürs CRM; nur, was die Person angegeben hat. */
+function angabenZeilen(k: Kontext): string[] {
+  const out: string[] = [];
+  const rechtsform = oneLine(k.rechtsform ?? "");
+  const ort = oneLine(k.ort ?? "");
+  if (rechtsform) out.push(`Rechtsform: ${rechtsform}`);
+  if (ort) out.push(`Ort: ${ort}`);
+  const a = k.angaben;
+  if (a) {
+    const labels = FINANZIERUNG[k.typ].filter((f) => a.finanzierung.includes(f.key)).map((f) => f.label);
+    if (labels.length > 0) out.push(`Finanzierung: ${labels.join(", ")}`);
+    if (oneLine(a.vorhaben)) out.push(`Vorhaben: ${oneLine(a.vorhaben)}`);
+    if (oneLine(a.bekannte)) out.push(`Bekannte Gruppen: ${oneLine(a.bekannte)}`);
+  }
+  return out;
+}
+
 /** Die Angaben fürs CRM, eine je Zeile; die Zahlen stehen vorn, die Texte hinten (der Server kürzt auf 1'900 Zeichen). */
 export function eingabeText(k: Kontext, gruppen: readonly Gruppe[]): string {
   const p = pruefeGruppen(gruppen);
@@ -464,6 +482,7 @@ export function eingabeText(k: Kontext, gruppen: readonly Gruppe[]): string {
   const lines = [`${typLabel(k.typ)}: ${firmaText(k)}`, `Gruppen (${bewertet.length} bewertet, Interesse und Einfluss von 1 bis 5):`];
   for (const g of bewertet) lines.push(`${g.name}: Interesse ${g.interesse}, Einfluss ${g.einfluss}, Beziehung ${beziehungText(g.beziehung)}`);
   if (nicht.length > 0) lines.push(`Nicht bewertet: ${nicht.join(", ")}`);
+  lines.push(...angabenZeilen(k));
   const texte = bewertet.filter((g) => g.erwartung !== "" || g.bedarf !== "");
   if (texte.length > 0) {
     lines.push("Erwartungen und Bedarf:");
@@ -491,11 +510,68 @@ export function ausgabeText(k: Kontext, a: Analyse, plan: readonly PlanEintrag[]
   return lines.join("\n");
 }
 
+// ---- Angaben für den Vorschlag der KI ------------------------------------------------------------
+
+/** Woher das Geld kommt, ein Kreuz oder mehrere (Richtwerte von Alperna als Auswahl, keine Statistik). */
+export const FINANZIERUNG: Record<Typ, readonly { key: string; label: string }[]> = {
+  kmu: [
+    { key: "kundschaft", label: "Verkauf an Privatkundschaft" },
+    { key: "firmen", label: "Aufträge von Firmen" },
+    { key: "oeffentlich", label: "Aufträge der öffentlichen Hand" },
+    { key: "beitraege", label: "Beiträge oder Zuschüsse" },
+    { key: "bank", label: "Kredit oder Investoren" },
+  ],
+  verein: [
+    { key: "mitglieder", label: "Mitgliederbeiträge" },
+    { key: "sponsoren", label: "Sponsoren" },
+    { key: "oeffentlich", label: "Beiträge von Gemeinde oder Kanton" },
+    { key: "spenden", label: "Spenden" },
+    { key: "anlaesse", label: "Anlässe und Verkauf" },
+  ],
+};
+
+export type Angaben = { finanzierung: string[]; vorhaben: string; bekannte: string };
+export const EMPTY_ANGABEN: Angaben = { finanzierung: [], vorhaben: "", bekannte: "" };
+export const ANGABEN_LIMITS = { vorhaben: KI_LIMITS.vorhaben, bekannte: KI_LIMITS.bekannte } as const;
+
+/** Hat die Person etwas zu den Angaben eingetragen? */
+export const hatAngaben = (a: Angaben): boolean => a.finanzierung.length > 0 || a.vorhaben.trim() !== "" || a.bekannte.trim() !== "";
+
+const clipLine = (s: string | undefined, max: number): string => (s ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+
+/** Die Eingabe für den KI-Aufruf aus dem Firmenprofil und den Angaben. Die Auswahl der Finanzierung geht als Worte, nicht als Schlüssel. */
+export function kiInput(profil: { firma?: string; rechtsform?: string; branche?: string; ort?: string }, typ: Typ, angaben: Angaben): AnspruchsgruppenInput {
+  const labels = FINANZIERUNG[typ].filter((f) => angaben.finanzierung.includes(f.key)).map((f) => f.label);
+  return {
+    betrieb: clipLine(profil.firma, KI_LIMITS.betrieb),
+    typ,
+    rechtsform: clipLine(profil.rechtsform, KI_LIMITS.rechtsform),
+    branche: clipLine(profil.branche, KI_LIMITS.branche),
+    ort: clipLine(profil.ort, KI_LIMITS.ort),
+    finanzierung: labels,
+    vorhaben: clipLine(angaben.vorhaben, KI_LIMITS.vorhaben),
+    bekannte: clipLine(angaben.bekannte, KI_LIMITS.bekannte),
+  };
+}
+
+/** Die vorgeschlagenen Gruppen als Gruppen der Liste (IDs g1, g2, …); mehr als zwölf kommen nicht vor. */
+export function gruppenAusVorschlag(output: AnspruchsgruppenOutput): Gruppe[] {
+  return output.gruppen.slice(0, MAX_GRUPPEN).map((g, i) => ({
+    id: `g${i + 1}`,
+    name: g.name.slice(0, LIMITS.name),
+    interesse: g.interesse,
+    einfluss: g.einfluss,
+    beziehung: g.beziehung,
+    erwartung: g.erwartung.slice(0, LIMITS.text),
+    bedarf: g.bedarf.slice(0, LIMITS.text),
+  }));
+}
+
 // ---- Gespeicherter Stand -----------------------------------------------------------------------
 
-export type AgState = { v: 1; phase: "edit" | "result"; typ: Typ; gruppen: Gruppe[]; plan: PlanEintrag[] };
+export type AgState = { v: 1; phase: "edit" | "result"; typ: Typ; gruppen: Gruppe[]; plan: PlanEintrag[]; angaben: Angaben };
 
-export const emptyState = (typ: Typ = "kmu"): AgState => ({ v: 1, phase: "edit", typ, gruppen: vorlage(typ), plan: [] });
+export const emptyState = (typ: Typ = "kmu"): AgState => ({ v: 1, phase: "edit", typ, gruppen: vorlage(typ), plan: [], angaben: EMPTY_ANGABEN });
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const text = (v: unknown, max: number): string => (typeof v === "string" ? v.slice(0, max) : "");
@@ -523,6 +599,15 @@ function parseGruppe(raw: unknown, used: Set<string>): Gruppe | null {
     erwartung: text(raw.erwartung, LIMITS.text),
     bedarf: text(raw.bedarf, LIMITS.text),
   };
+}
+
+function parseAngaben(raw: unknown): Angaben {
+  if (!isObj(raw)) return EMPTY_ANGABEN;
+  const erlaubt = new Set([...FINANZIERUNG.kmu, ...FINANZIERUNG.verein].map((f) => f.key));
+  const finanzierung = Array.isArray(raw.finanzierung)
+    ? [...new Set(raw.finanzierung.filter((k): k is string => typeof k === "string" && erlaubt.has(k)))].slice(0, KI_LIMITS.finanzierung)
+    : [];
+  return { finanzierung, vorhaben: singleLine(raw.vorhaben, ANGABEN_LIMITS.vorhaben), bekannte: singleLine(raw.bekannte, ANGABEN_LIMITS.bekannte) };
 }
 
 const isStrategie = (v: unknown): v is Strategie => (STRATEGIEN as readonly unknown[]).includes(v);
@@ -561,7 +646,7 @@ export function parseState(raw: unknown): AgState {
     : vorlage(typ);
   const plan = parsePlan(raw.plan, new Set(gruppen.map((g) => g.id)));
   const phase = raw.phase === "result" && pruefeGruppen(gruppen).ok ? "result" : "edit";
-  return { v: 1, phase, typ, gruppen, plan };
+  return { v: 1, phase, typ, gruppen, plan, angaben: parseAngaben(raw.angaben) };
 }
 
 /**

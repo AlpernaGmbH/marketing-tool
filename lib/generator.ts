@@ -202,6 +202,9 @@ const CHECK_HINWEISE: Record<string, string> = {
   nichtimtext: "Mindestens ein «original» steht nicht Buchstabe für Buchstabe im Text der Person (oder zwei Einträge meinen dieselbe Stelle). Kopiere jede Stelle genau aus dem Text, mit Fehlern und Sonderzeichen, und nimm nur Stellen, die dort stehen.",
   gleich: "Bei mindestens einem Eintrag ist der Vorschlag gleich dem Original. Lass solche Einträge weg.",
   vorschlag: "Ein Vorschlag bringt ein verbotenes Zeichen, ein verbotenes Wort oder einen Link mit, den das Original nicht hat. Ändere nur, was nötig ist, und füg nichts Neues ein.",
+  namedoppelt: "Zwei Gruppen heissen gleich. Gib jeder Gruppe einen eigenen Namen und lass doppelte weg.",
+  bekannt: "Mindestens eine Gruppe, die die Person unter «bekannte» genannt hat, fehlt in der Liste. Nimm jede genannte Gruppe mit einem passenden Namen auf.",
+  streuung: "Alle Gruppen liegen im selben Bereich von Interesse und Einfluss. Nutze die ganze Skala von 1 bis 5: Manche Gruppen haben hohen Einfluss und wenig Interesse, andere umgekehrt.",
   stil: "Es sind mehr als fünf Einträge mit der art «stil». Behalte die fünf wichtigsten.",
   wertung: "Der Entwurf enthält ein wertendes Wort (zum Beispiel beliebt, traditionsreich, spannend), das nicht in den Angaben steht. Streich es und schreib nur Tatsachen aus den Angaben.",
 };

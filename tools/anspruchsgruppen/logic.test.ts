@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { toMarkdown } from "@/lib/export/model";
 import {
   ADD_BUTTON_ID,
+  ANGABEN_LIMITS,
+  EMPTY_ANGABEN,
+  FINANZIERUNG,
   FIRMA_FIELD_ID,
   HINWEIS_BEZIEHUNG,
   LIMITS,
@@ -18,10 +21,13 @@ import {
   emptyState,
   feldId,
   formProblem,
+  gruppenAusVorschlag,
+  hatAngaben,
   hatWerte,
   hinweis,
   hinweise,
   istUnberuehrt,
+  kiInput,
   leereGruppe,
   matrixLayout,
   neueGruppe,
@@ -639,5 +645,109 @@ describe("anspruchsgruppen: Typwechsel", () => {
     const leer = { ...emptyState("kmu"), gruppen: [] };
     expect(typWechselHinweis(leer, "verein")).toBe(false);
     expect(aufTyp(leer, "verein")).toBe(leer);
+  });
+});
+
+describe("anspruchsgruppen: Angaben für den Vorschlag der KI", () => {
+  it("kennt je Typ fünf Möglichkeiten für die Finanzierung mit eindeutigen Schlüsseln", () => {
+    for (const typ of ["kmu", "verein"] as const) {
+      expect(FINANZIERUNG[typ]).toHaveLength(5);
+      expect(new Set(FINANZIERUNG[typ].map((f) => f.key)).size).toBe(5);
+    }
+    expect(FINANZIERUNG.verein.map((f) => f.label)).toContain("Mitgliederbeiträge");
+    expect(FINANZIERUNG.kmu.map((f) => f.label)).toContain("Aufträge von Firmen");
+  });
+
+  it("hat leere Angaben im leeren Stand und erkennt, ob die Person etwas eingetragen hat", () => {
+    expect(emptyState().angaben).toEqual(EMPTY_ANGABEN);
+    expect(hatAngaben(EMPTY_ANGABEN)).toBe(false);
+    expect(hatAngaben({ ...EMPTY_ANGABEN, vorhaben: "  " })).toBe(false);
+    expect(hatAngaben({ ...EMPTY_ANGABEN, finanzierung: ["spenden"] })).toBe(true);
+    expect(hatAngaben({ ...EMPTY_ANGABEN, bekannte: "Sponsoren" })).toBe(true);
+  });
+
+  it("macht die Eingabe für die KI aus Profil und Angaben: Finanzierung in Worten, Texte aufgeräumt und gekürzt", () => {
+    const i = kiInput(
+      { firma: "  FC   Trogen ", rechtsform: "Verein", branche: "Fussball", ort: "Trogen" },
+      "verein",
+      { finanzierung: ["sponsoren", "mitglieder", "unbekannt"], vorhaben: "Neues\n Vereinshaus", bekannte: "Sponsoren,  Gemeinde" },
+    );
+    expect(i).toEqual({
+      betrieb: "FC Trogen",
+      typ: "verein",
+      rechtsform: "Verein",
+      branche: "Fussball",
+      ort: "Trogen",
+      // in der Reihenfolge der Auswahl, nicht der Anklicks; unbekannte Schlüssel fallen weg
+      finanzierung: ["Mitgliederbeiträge", "Sponsoren"],
+      vorhaben: "Neues Vereinshaus",
+      bekannte: "Sponsoren, Gemeinde",
+    });
+    expect(kiInput({}, "kmu", EMPTY_ANGABEN)).toMatchObject({ betrieb: "", rechtsform: "", finanzierung: [], vorhaben: "", bekannte: "" });
+    expect(kiInput({ firma: "x".repeat(300) }, "kmu", { ...EMPTY_ANGABEN, vorhaben: "y".repeat(500) }).vorhaben).toHaveLength(ANGABEN_LIMITS.vorhaben);
+  });
+
+  it("macht aus dem Vorschlag Gruppen der Liste mit den IDs g1, g2, … und besteht damit die Prüfung der Analyse", () => {
+    const vorschlag = {
+      gruppen: [
+        { name: "Mitglieder", interesse: 5, einfluss: 4, beziehung: "eng" as const, erwartung: "Erwartet klare Termine.", bedarf: "Braucht ihre Mithilfe am Fest." },
+        { name: "Sponsoren", interesse: 3, einfluss: 5, beziehung: "lose" as const, erwartung: "Erwartet Sichtbarkeit.", bedarf: "Braucht ihre Beiträge im Jahr." },
+        { name: "Gemeinde", interesse: 2, einfluss: 5, beziehung: "keine" as const, erwartung: "Erwartet Berichte.", bedarf: "Braucht Beiträge und einen Platz." },
+        { name: "Medien", interesse: 2, einfluss: 2, beziehung: "lose" as const, erwartung: "Erwartet Neuigkeiten.", bedarf: "Braucht ihre Berichte vor Anlässen." },
+        { name: "Eltern", interesse: 5, einfluss: 2, beziehung: "gut" as const, erwartung: "Erwartet Sicherheit.", bedarf: "Braucht ihre Unterstützung beim Fahren." },
+        { name: "Vorstand", interesse: 5, einfluss: 5, beziehung: "eng" as const, erwartung: "Erwartet Einsatz.", bedarf: "Braucht Zeit für Sitzungen." },
+      ],
+    };
+    const gruppen = gruppenAusVorschlag(vorschlag);
+    expect(gruppen.map((g) => g.id)).toEqual(["g1", "g2", "g3", "g4", "g5", "g6"]);
+    expect(gruppen[1]).toEqual({ id: "g2", name: "Sponsoren", interesse: 3, einfluss: 5, beziehung: "lose", erwartung: "Erwartet Sichtbarkeit.", bedarf: "Braucht ihre Beiträge im Jahr." });
+    const p = pruefeGruppen(gruppen);
+    expect(p.ok && p.bewertet).toHaveLength(6);
+    expect(analysiere(gruppen)).not.toBeNull();
+    expect(istUnberuehrt(gruppen, "verein")).toBe(false);
+  });
+
+  it("nimmt höchstens zwölf Gruppen und kürzt Namen und Texte auf die Grenzen der Liste", () => {
+    const viele = { gruppen: Array.from({ length: 14 }, (_, i) => ({ name: `Gruppe ${i}`, interesse: 3, einfluss: 3, beziehung: "gut" as const, erwartung: "e".repeat(300), bedarf: "b".repeat(300) })) };
+    const gruppen = gruppenAusVorschlag(viele as never);
+    expect(gruppen).toHaveLength(MAX_GRUPPEN);
+    expect(gruppen[0].erwartung).toHaveLength(LIMITS.text);
+  });
+
+  it("liest die Angaben aus dem gespeicherten Stand, verwirft Unbekanntes und Doppeltes und kürzt", () => {
+    const s = parseState({
+      v: 1,
+      phase: "edit",
+      typ: "verein",
+      gruppen: [],
+      plan: [],
+      angaben: { finanzierung: ["spenden", "spenden", "erfunden", 7, "sponsoren"], vorhaben: `a\nb${"x".repeat(300)}`, bekannte: 3 },
+    });
+    expect(s.angaben.finanzierung).toEqual(["spenden", "sponsoren"]);
+    expect(s.angaben.vorhaben).toHaveLength(ANGABEN_LIMITS.vorhaben);
+    expect(s.angaben.vorhaben.startsWith("a b")).toBe(true);
+    expect(s.angaben.bekannte).toBe("");
+    // Stände ohne Angaben (frühere Fassung) und kaputte Angaben ergeben leere Angaben
+    expect(parseState({ v: 1, phase: "edit", typ: "kmu", gruppen: [], plan: [] }).angaben).toEqual(EMPTY_ANGABEN);
+    expect(parseState({ v: 1, phase: "edit", typ: "kmu", gruppen: [], plan: [], angaben: "x" }).angaben).toEqual(EMPTY_ANGABEN);
+  });
+
+  it("schreibt Rechtsform, Ort und Angaben ins CRM, hinter die Gruppen; ohne Angaben bleibt die Eingabe wie vorher", () => {
+    const ohne = eingabeText(KONTEXT, FC);
+    expect(ohne).not.toContain("Rechtsform:");
+    expect(ohne).not.toContain("Finanzierung:");
+    const mit = eingabeText(
+      { ...KONTEXT, rechtsform: "Verein", ort: "Trogen", angaben: { finanzierung: ["mitglieder", "sponsoren"], vorhaben: "Neues Vereinshaus", bekannte: "Sponsoren, Gemeinde" } },
+      FC,
+    );
+    const zeilen = mit.split("\n");
+    expect(zeilen[0]).toBe("Verein: FC Trogen");
+    expect(zeilen.indexOf("Rechtsform: Verein")).toBeGreaterThan(zeilen.findIndex((z) => z.startsWith("Mitglieder: Interesse")));
+    expect(mit).toContain("Ort: Trogen");
+    expect(mit).toContain("Finanzierung: Mitgliederbeiträge, Sponsoren");
+    expect(mit).toContain("Vorhaben: Neues Vereinshaus");
+    expect(mit).toContain("Bekannte Gruppen: Sponsoren, Gemeinde");
+    // Die Zahlen stehen vorn: Die Gruppen kommen vor den Angaben.
+    expect(mit.indexOf("Sponsoren: Interesse 4")).toBeLessThan(mit.indexOf("Finanzierung:"));
   });
 });

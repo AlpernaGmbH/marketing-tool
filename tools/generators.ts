@@ -18,6 +18,7 @@ import contentStrategieGenerator from "./inhalte-strategie/generator";
 import storyPostGenerator from "./story-post/generator";
 import linkedinProfilGenerator from "./linkedin-profil/generator";
 import textcheckGenerator from "./textcheck/generator";
+import anspruchsgruppenGenerator from "./anspruchsgruppen/generator";
 // new-tool:generator-imports
 
 // Explizite Liste aller Generatoren (kein Glob), wie tools/index.ts. Jeder Eintrag ist tools/<slug>/generator.ts.
@@ -45,6 +46,7 @@ export const generators: AnyGenerator[] = [
   storyPostGenerator,
   linkedinProfilGenerator,
   textcheckGenerator,
+  anspruchsgruppenGenerator,
   // Kein Werkzeug: liest die Website für das Firmenprofil (lib/profile-scan.ts).
   profilScanGenerator,
   // new-tool:generators

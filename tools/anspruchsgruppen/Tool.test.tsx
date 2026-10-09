@@ -416,3 +416,167 @@ describe("Anspruchsgruppen: Ergebnis", () => {
     expect(crmCalls()[0].body.eingabe.startsWith("Betrieb: Malerei Keller\n")).toBe(true);
   });
 });
+
+// ---- Vorschlag der KI ------------------------------------------------------------------------------
+
+describe("Anspruchsgruppen: Vorschlag der KI", () => {
+  const VORSCHLAG = {
+    gruppen: [
+      { name: "Mitglieder", interesse: 5, einfluss: 4, beziehung: "eng", erwartung: "Erwartet klare Termine und gutes Training.", bedarf: "Braucht ihre Mithilfe am Dorffest." },
+      { name: "Sponsoren", interesse: 3, einfluss: 5, beziehung: "lose", erwartung: "Erwartet Sichtbarkeit am Spielfeld.", bedarf: "Braucht ihre Beiträge für das Vereinshaus." },
+      { name: "Gemeinde und Behörden", interesse: 2, einfluss: 5, beziehung: "keine", erwartung: "Erwartet Berichte und saubere Abrechnungen.", bedarf: "Braucht Beiträge und einen Platz." },
+      { name: "Medien der Region", interesse: 2, einfluss: 2, beziehung: "lose", erwartung: "Erwartet Neuigkeiten zu Anlässen.", bedarf: "Braucht ihre Berichte vor dem Dorffest." },
+      { name: "Eltern des Nachwuchses", interesse: 5, einfluss: 2, beziehung: "gut", erwartung: "Erwartet Sicherheit für ihre Kinder.", bedarf: "Braucht ihre Hilfe bei Fahrten." },
+      { name: "Vorstand", interesse: 5, einfluss: 5, beziehung: "eng", erwartung: "Erwartet Einsatz und Verlässlichkeit.", bedarf: "Braucht Zeit für Sitzungen." },
+    ],
+  };
+  const PROFIL = { firma: "FC Trogen", organisationstyp: "verein", rechtsform: "Verein", ort: "Trogen", branche: "Fussball" };
+
+  /** /api/generate antwortet mit `reply`; alles andere wie im Rest dieser Datei. */
+  function stubGenerate(reply: { status: number; body: unknown }) {
+    sent.length = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: { body?: string }) => {
+        sent.push({ url: String(url), body: init?.body ? (JSON.parse(init.body) as Record<string, string>) : {} });
+        if (String(url) === "/api/generate") return new Response(JSON.stringify(reply.body), { status: reply.status });
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }),
+    );
+  }
+  const generateCalls = () => sent.filter((s) => s.url === "/api/generate");
+
+  beforeEach(() => writeLocal(LEAD_KEY, "anna@keller.ch"));
+
+  async function angabenAusfuellen(user: User) {
+    await user.click(await screen.findByRole("checkbox", { name: "Sponsoren" }));
+    await user.click(screen.getByRole("checkbox", { name: "Mitgliederbeiträge" }));
+    await user.type(screen.getByLabelText("Was steht in den nächsten zwölf Monaten an?"), "Neues Vereinshaus");
+    await user.type(screen.getByLabelText("Welche Gruppen kennst du schon?"), "Sponsoren, Gemeinde");
+  }
+
+  it("zeigt die Rechtsform als Auswahl und die drei Angaben zum Umfeld, mit Hinweis auf den Weg der Daten", async () => {
+    profile(PROFIL);
+    stubGenerate({ status: 200, body: { ok: true, output: VORSCHLAG } });
+    render(<Tool />);
+    expect(await screen.findByRole("radio", { name: "Verein" })).toBeChecked();
+    expect(screen.queryByRole("radio", { name: "Betrieb" })).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Woher kommt das Geld?" })).toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Woher kommt das Geld?" })).getAllByRole("checkbox").map((c) => (c as HTMLInputElement).labels?.[0]?.textContent)).toEqual([
+      "Mitgliederbeiträge",
+      "Sponsoren",
+      "Beiträge von Gemeinde oder Kanton",
+      "Spenden",
+      "Anlässe und Verkauf",
+    ]);
+    expect(screen.getByLabelText("Ort")).toHaveValue("Trogen");
+    expect(screen.getByLabelText("Tätigkeit des Vereins")).toHaveValue("Fussball");
+    expect(screen.getByText(/nicht deine E-Mail-Adresse/)).toBeInTheDocument();
+    expect(generateCalls()).toHaveLength(0);
+  });
+
+  it("schlägt Gruppen aus den Angaben vor, zeigt eine Vorschau und ersetzt die Liste erst nach «Vorschlag übernehmen»", async () => {
+    profile(PROFIL);
+    stubGenerate({ status: 200, body: { ok: true, output: VORSCHLAG } });
+    const user = userEvent.setup();
+    render(<Tool />);
+    await angabenAusfuellen(user);
+    await user.click(screen.getByRole("button", { name: "Gruppen vorschlagen" }));
+
+    const vorschau = await screen.findByTestId("ag-vorschau");
+    expect(generateCalls()).toHaveLength(1);
+    expect(generateCalls()[0].body).toEqual({
+      tool: "anspruchsgruppen",
+      input: {
+        betrieb: "FC Trogen",
+        typ: "verein",
+        rechtsform: "Verein",
+        branche: "Fussball",
+        ort: "Trogen",
+        finanzierung: ["Mitgliederbeiträge", "Sponsoren"],
+        vorhaben: "Neues Vereinshaus",
+        bekannte: "Sponsoren, Gemeinde",
+      },
+    });
+    expect(JSON.stringify(generateCalls()[0].body)).not.toContain("anna@keller.ch");
+    expect(within(vorschau).getAllByRole("listitem")).toHaveLength(6);
+    expect(vorschau).toHaveTextContent("Gemeinde und Behörden");
+    expect(vorschau).toHaveTextContent("Interesse 2, Einfluss 5, Zufriedenstellen");
+    expect(vorschau).toHaveTextContent("Von einer KI formuliert");
+    expect(within(vorschau).queryByTestId("ag-vorschlag-ersetzt")).not.toBeInTheDocument();
+    // Die Liste ist noch die Vorlage mit acht Karten
+    expect(within(screen.getByRole("list", { name: "Anspruchsgruppen" })).getAllByRole("listitem")).toHaveLength(8);
+
+    await user.click(within(vorschau).getByRole("button", { name: "Vorschlag übernehmen" }));
+    expect(screen.queryByTestId("ag-vorschau")).not.toBeInTheDocument();
+    const cards = within(screen.getByRole("list", { name: "Anspruchsgruppen" })).getAllByRole("listitem");
+    expect(cards).toHaveLength(6);
+    expect(screen.getByLabelText("Gruppe 2")).toHaveValue("Sponsoren");
+    expect(screen.getByLabelText("Interesse: Sponsoren")).toHaveValue("3");
+    expect(screen.getByLabelText("Einfluss: Sponsoren")).toHaveValue("5");
+    expect(screen.getByLabelText("Beziehung: Sponsoren")).toHaveValue("lose");
+    expect(screen.getByTestId("ag-status")).toHaveTextContent("Vorschlag der KI übernommen. Prüfe die Werte.");
+    // Der Vorschlag allein geht nicht ins CRM; das Ergebnis tut es mit den Angaben
+    expect(crmCalls()).toHaveLength(0);
+    await erstellen(user);
+    await screen.findByRole("region", { name: "Deine Anspruchsgruppen" });
+    await waitFor(() => expect(crmCalls()).toHaveLength(1));
+    const eingabe = String(crmCalls()[0].body.eingabe);
+    expect(eingabe).toContain("Finanzierung: Mitgliederbeiträge, Sponsoren");
+    expect(eingabe).toContain("Vorhaben: Neues Vereinshaus");
+    expect(eingabe).toContain("Bekannte Gruppen: Sponsoren, Gemeinde");
+    expect(eingabe).toContain("Rechtsform: Verein");
+  });
+
+  it("weist darauf hin, dass der Vorschlag bewertete Gruppen ersetzt, und lässt die Liste bei «Verwerfen» stehen", async () => {
+    profile(PROFIL);
+    stubGenerate({ status: 200, body: { ok: true, output: VORSCHLAG } });
+    const user = userEvent.setup();
+    render(<Tool />);
+    await bewerte(await (async () => user)(), "Mitglieder", 5, 4);
+    await user.click(screen.getByRole("button", { name: "Gruppen vorschlagen" }));
+    const vorschau = await screen.findByTestId("ag-vorschau");
+    expect(within(vorschau).getByTestId("ag-vorschlag-ersetzt")).toHaveTextContent("Der Vorschlag ersetzt die jetzige Liste.");
+    await user.click(within(vorschau).getByRole("button", { name: "Verwerfen" }));
+    expect(screen.queryByTestId("ag-vorschau")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("list", { name: "Anspruchsgruppen" })).getAllByRole("listitem")).toHaveLength(8);
+    expect(screen.getByLabelText("Interesse: Mitglieder")).toHaveValue("5");
+  });
+
+  it("zeigt bei einem Ausfall der KI einen ruhigen Satz, lässt die Vorlage stehen und schickt nichts ins CRM", async () => {
+    profile(PROFIL);
+    stubGenerate({ status: 502, body: { error: "ai_failed" } });
+    const user = userEvent.setup();
+    render(<Tool />);
+    await user.click(await screen.findByRole("button", { name: "Gruppen vorschlagen" }));
+    expect(await screen.findByTestId("ag-vorschlag-fehler")).toHaveTextContent("Die KI hat keinen brauchbaren Entwurf geliefert. Versuch es noch einmal. Du kannst die Gruppen auch von Hand bewerten.");
+    expect(screen.queryByTestId("ag-vorschau")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("list", { name: "Anspruchsgruppen" })).getAllByRole("listitem")).toHaveLength(8);
+    expect(crmCalls()).toHaveLength(0);
+  });
+
+  it("verlangt den Namen und ruft den Server ohne ihn nicht auf", async () => {
+    profile({ organisationstyp: "verein", rechtsform: "Verein" });
+    stubGenerate({ status: 200, body: { ok: true, output: VORSCHLAG } });
+    const user = userEvent.setup();
+    render(<Tool />);
+    await user.click(await screen.findByRole("button", { name: "Gruppen vorschlagen" }));
+    expect(await screen.findByTestId("ag-vorschlag-fehler")).toHaveTextContent("Gib den Namen deines Vereins an.");
+    expect(generateCalls()).toHaveLength(0);
+  });
+
+  it("behält die Angaben nach dem Neuladen", async () => {
+    profile(PROFIL);
+    stubGenerate({ status: 200, body: { ok: true, output: VORSCHLAG } });
+    const user = userEvent.setup();
+    const first = render(<Tool />);
+    await angabenAusfuellen(user);
+    await waitFor(() => expect(JSON.parse(readLocal("mt:anspruchsgruppen") ?? "{}").angaben?.vorhaben).toBe("Neues Vereinshaus"));
+    first.unmount();
+    render(<Tool />);
+    expect(await screen.findByLabelText("Was steht in den nächsten zwölf Monaten an?")).toHaveValue("Neues Vereinshaus");
+    expect(screen.getByLabelText("Welche Gruppen kennst du schon?")).toHaveValue("Sponsoren, Gemeinde");
+    expect(screen.getByRole("checkbox", { name: "Sponsoren" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Spenden" })).not.toBeChecked();
+  });
+});

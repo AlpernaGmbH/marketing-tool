@@ -6,10 +6,10 @@ tagline: "Wer Einfluss und Interesse hat: Matrix, Strategie je Gruppe und Kommun
 beispielFirma: "FC Trogen"
 kurz:
   - "Eine Matrix aus Einfluss und Interesse, eine Strategie je Quadrant und ein Kommunikationsplan als Tabelle."
-  - "Du bewertest acht vorbereitete Gruppen oder deine eigenen nach Interesse und Einfluss."
+  - "Du beschreibst dein Umfeld, eine KI schlägt Gruppen vor, und du prüfst Interesse und Einfluss, oder du bewertest die Vorlage selbst."
   - "Danach weisst du, wen du eng einbindest, wen du nur informierst und in welchem Rhythmus wer von dir hört."
 ablauf:
-  - "Gruppen bewerten"
+  - "Umfeld beschreiben, Gruppen prüfen"
   - "Analyse erstellen"
   - "Plan anpassen und herunterladen"
 ---
@@ -69,7 +69,10 @@ Einmal im Jahr, bei Vereinen vor der Generalversammlung (Richtwert von Alperna, 
 Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. PDF und Word kommen mit derselben Adresse.
 
 ### Was bekommt Alperna, was bleibt im Browser?
-Mit dem Ergebnis gehen deine Angaben, der Name des Vereins und das Ergebnis als Text mit deiner E-Mail-Adresse an Alperna. Profil und Zwischenstand bleiben im Browser. Keine KI rechnet mit.
+Mit dem Ergebnis gehen deine Angaben, der Name des Vereins und das Ergebnis als Text mit deiner E-Mail-Adresse an Alperna. Profil und Zwischenstand bleiben im Browser. Nur der Vorschlag der Gruppen geht auf Klick an unseren Server und an unseren KI-Anbieter, ohne deine E-Mail-Adresse.
+
+### Woher kommen die vorgeschlagenen Gruppen?
+Eine KI schlägt sie aus Rechtsform, Tätigkeit, Ort und deinen Angaben vor. Sie kann danebenliegen, darum erscheint der Vorschlag erst als Vorschau, und du änderst Interesse, Einfluss und Beziehung. Die Matrix rechnet danach nach festen Regeln.
 
 ### Woher kommen Kanal und Rhythmus im Plan?
 Von Alperna, je Quadrant ein Vorschlag, zum Beispiel ein monatliches Gespräch bei «eng einbinden» (Richtwert von Alperna, keine Statistik). Du kannst jedes Feld ändern.
