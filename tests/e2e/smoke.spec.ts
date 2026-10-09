@@ -898,7 +898,7 @@ test.describe("Welle 1 im Browser", () => {
     await page.route("**/api/read", (route) => {
       calls.read++;
       return route.fulfill(
-        json({ ok: true, page: { url: "https://malerei-keller.ch/", host: "malerei-keller.ch", title: "Malerei Keller Gossau", description: "Maler in Gossau", headings: ["Fassaden", "Innenräume"], text: "Wir streichen Fassaden und Innenräume in Gossau und Umgebung. Seit 1998.", truncated: false } }),
+        json({ ok: true, page: { url: "https://malerei-keller.ch/", host: "malerei-keller.ch", title: "Malerei Keller Gossau", description: "Maler in Gossau", headings: ["Fassaden", "Innenräume"], text: "Wir streichen Fassaden und Innenräume in Gossau und Umgebung. Seit 1998 begleiten wir Hausbesitzer, Verwaltungen und Baufirmen von der Beratung bis zur Abnahme. Unser Team von zwölf Leuten arbeitet sauber, pünktlich und mit Farben, die zum Haus passen. Rufen Sie an, wir kommen vorbei und machen Ihnen eine ehrliche Offerte, auch für kleine Aufträge im Treppenhaus oder an der Gartenmauer.", truncated: false } }),
       );
     });
     const idee = (n: number, kanal: string) => ({
@@ -922,12 +922,47 @@ test.describe("Welle 1 im Browser", () => {
     await expect(page.getByRole("region", { name: "Deine Ideen" })).toBeVisible();
     await expect(page.getByRole("list", { name: "Ideen für Beiträge" }).getByRole("listitem")).toHaveCount(8);
     await expect(page.getByTestId("ki-hinweis")).toContainText("Von einer KI formuliert");
+    // Kanal-Knopf: LinkedIn hat bei acht Ideen auf fünf Kanälen zwei Karten, «Alle Kanäle» holt sie zurück (Charge C8)
+    const kanalChips = page.getByRole("group", { name: "Nach Kanal eingrenzen" });
+    await kanalChips.getByRole("button", { name: /^LinkedIn \d+$/ }).click();
+    await expect(page.getByTestId("idee-karte")).toHaveCount(2);
+    await kanalChips.getByRole("button", { name: /^Alle Kanäle \d+$/ }).click();
+    await expect(page.getByTestId("idee-karte")).toHaveCount(8);
     expect(calls).toEqual({ read: 1, generate: 1 });
     await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("ideen-aus-website");
     expect((await received(request)).find((l) => l.email === email)!.ausgabe).toContain("Gossau");
     await page.reload();
     await expect(page.getByRole("region", { name: "Deine Ideen" })).toBeVisible();
     expect(calls).toEqual({ read: 1, generate: 1 });
+  });
+});
+
+test.describe("Ideen aus deiner Website: leere Seite", () => {
+  test("Startseite ohne Text: Hinweis statt Anfrage an die KI, kein Ergebnis, kein Lead", async ({ page, request }) => {
+    const calls = { read: 0, generate: 0 };
+    await page.route("**/api/read", (route) => {
+      calls.read++;
+      return route.fulfill(
+        json({ ok: true, page: { url: "https://leer.example.ch/", host: "leer.example.ch", title: "Leer", description: "", headings: [], text: "Willkommen.", truncated: false } }),
+      );
+    });
+    await page.route("**/api/generate", (route) => {
+      calls.generate++;
+      return route.fulfill(json({ ok: false }));
+    });
+    await page.goto("/tools/ideen-aus-website");
+    await expect(page.getByRole("button", { name: "Ideen finden" })).toBeEnabled();
+    await page.getByLabel("Website", { exact: true }).fill("leer.example.ch");
+    await page.getByRole("button", { name: "Ideen finden" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByTestId("leere-seite")).toContainText("Startseite von leer.example.ch");
+    await expect(page.getByTestId("leere-seite")).toContainText("leer.example.ch/leistungen");
+    await expect(page.getByRole("region", { name: "Deine Ideen" })).toHaveCount(0);
+    expect(calls).toEqual({ read: 1, generate: 0 });
+    expect((await received(request)).find((l) => l.email === email && l.tool === "ideen-aus-website")).toBeUndefined();
+    // Der Hinweis verschwindet, sobald die Person einen Kanal ändert.
+    await page.getByLabel("Newsletter").click();
+    await expect(page.getByTestId("leere-seite")).toHaveCount(0);
   });
 });
 

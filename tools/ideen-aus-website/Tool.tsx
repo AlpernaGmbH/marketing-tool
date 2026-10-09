@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CopyButton } from "@/components/tool/CopyButton";
 import { DocumentExport } from "@/components/tool/DocumentExport";
 import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { ResultCard } from "@/components/tool/ResultCard";
@@ -15,10 +16,35 @@ import { readWebsite } from "@/lib/read-client";
 import { useLocalJson } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
 import { ideenGenerator, type KanalKey } from "./generator";
-import { FORMAT_LABELS, KANAELE, KI_HINWEIS, SLUG, eingabeText, hostOf, inputProblem, kanalLabel, pageSummary, parseState, reportMarkdown, toDocument, toInput } from "./logic";
+import {
+  FORMAT_LABELS,
+  KANAELE,
+  KI_HINWEIS,
+  SLUG,
+  eingabeText,
+  hostOf,
+  ideeText,
+  ideenFuerKanal,
+  inputProblem,
+  isThinPage,
+  kanalCounts,
+  kanalLabel,
+  pageSummary,
+  parseState,
+  reportMarkdown,
+  thinPageMessage,
+  toDocument,
+  toInput,
+} from "./logic";
 import config from "./tool.config";
 
 type Step = "lesen" | "schreiben";
+/** Raster der Karten: so viele Spalten, wie mit mindestens 18 rem Breite Platz haben; auf dem Handy eine. */
+const GRID = "grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(100%,18rem),1fr))]";
+
+const CHIP =
+  "inline-flex min-h-11 items-center gap-2 rounded-full border border-input px-4 text-sm aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-paper focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+
 const STEPS: { id: Step; label: string }[] = [
   { id: "lesen", label: "Website lesen" },
   { id: "schreiben", label: "Ideen schreiben" },
@@ -45,6 +71,9 @@ function IdeenFlow() {
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState<Step | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Hinweis (kein Fehler): die Startseite hat zu wenig Text für Ideen.
+  const [hint, setHint] = useState<string | null>(null);
+  const [kanalFilter, setKanalFilter] = useState<KanalKey | "alle">("alle");
   const headingRef = useRef<HTMLHeadingElement>(null);
   const shouldFocus = useRef(false);
 
@@ -65,6 +94,7 @@ function IdeenFlow() {
 
   const toggleKanal = (key: KanalKey, on: boolean) => {
     setError(null);
+    setHint(null);
     set({ ...saved, kanaele: KANAELE.map((k) => k.key).filter((k) => (k === key ? on : saved.kanaele.includes(k))) });
   };
 
@@ -73,6 +103,7 @@ function IdeenFlow() {
     const problem = inputProblem(website, kanaele);
     if (problem) return setError(problem);
     setError(null);
+    setHint(null);
     gen.clearError();
     setBusy(true);
     let stopLoading = () => {};
@@ -91,6 +122,11 @@ function IdeenFlow() {
         setError(read.message);
         return;
       }
+      // Zu wenig Text: keine Anfrage an die KI, kein Ergebnis, kein CRM-Eintrag; die Person bekommt einen Weg, es besser zu machen.
+      if (isThinPage(read.page)) {
+        setHint(thinPageMessage(read.page.host || hostOf(website)));
+        return;
+      }
 
       setStep("schreiben");
       websiteRef.current = website;
@@ -99,6 +135,7 @@ function IdeenFlow() {
       const output = await gen.generate(input);
       if (!output) return;
       shouldFocus.current = true;
+      setKanalFilter("alle");
       set({ ...savedRef.current, v: 1, website, kanaele: input.kanaele, page: pageSummary(read.page), output });
     } finally {
       stopLoading();
@@ -109,6 +146,7 @@ function IdeenFlow() {
 
   const restart = () => {
     setError(null);
+    setHint(null);
     gen.clearError();
     set({ ...saved, page: null, output: null });
   };
@@ -116,6 +154,7 @@ function IdeenFlow() {
   const output = ready && !busy ? saved.output : null;
   const placeholders = output ? placeholdersIn(output) : [];
   const doc = output ? toDocument(output, saved.website) : null;
+  const counts = output ? kanalCounts(output) : [];
   const stepState = (id: Step): "wartet" | "läuft" | "fertig" => (step === null ? "wartet" : id === step ? "läuft" : STEPS.findIndex((s) => s.id === id) < STEPS.findIndex((s) => s.id === step) ? "fertig" : "wartet");
 
   return (
@@ -175,6 +214,13 @@ function IdeenFlow() {
         {shownError}
       </p>
 
+      {hint && (
+        <div role="status" data-testid="leere-seite" className="grid gap-1 rounded-xl border border-ink bg-surface px-4 py-3">
+          <p className="font-medium">Zu wenig Text auf der Seite</p>
+          <p>{hint}</p>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" size="lg" disabled={!ready || !profileReady || busy}>
           {busy ? "Bitte warten …" : "Ideen finden"}
@@ -227,21 +273,42 @@ function IdeenFlow() {
               Platzhalter ausfüllen: {placeholders.join(", ")}
             </p>
           )}
-          <ol className="grid gap-3" aria-label="Ideen für Beiträge">
-            {output.ideen.map((idee, i) => (
-              <li key={i} className="grid gap-2 rounded-xl border border-line p-4">
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <h4 className="font-heading font-medium">
-                    {i + 1}. {idee.titel}
+          {counts.length > 1 && (
+            <div role="group" aria-label="Nach Kanal eingrenzen" className="flex flex-wrap gap-2" data-testid="kanal-chips">
+              <button type="button" aria-pressed={kanalFilter === "alle"} className={CHIP} onClick={() => setKanalFilter("alle")}>
+                Alle Kanäle <span className="mono text-xs">{output.ideen.length}</span>
+              </button>
+              {counts.map((k) => (
+                <button key={k.key} type="button" aria-pressed={kanalFilter === k.key} className={CHIP} onClick={() => setKanalFilter(kanalFilter === k.key ? "alle" : k.key)}>
+                  {k.label} <span className="mono text-xs">{k.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <ol className={GRID} aria-label="Ideen für Beiträge">
+            {ideenFuerKanal(output.ideen, kanalFilter).map(({ idee, nr }) => (
+              <li key={nr} className="flex">
+                <article className="flex w-full flex-col rounded-xl border border-line bg-paper p-5" data-testid="idee-karte">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <span className="eyebrow">
+                      {kanalLabel(idee.kanal)} · {FORMAT_LABELS[idee.format]}
+                    </span>
+                    <span className="mono text-sm text-muted-foreground" aria-hidden="true">
+                      {nr}
+                    </span>
+                  </div>
+                  <h4 className="font-heading text-lg leading-snug font-medium">
+                    <span className="sr-only">{nr}. </span>
+                    {idee.titel}
                   </h4>
-                  <span className="mono text-xs uppercase tracking-wide text-muted-foreground">
-                    {kanalLabel(idee.kanal)} · {FORMAT_LABELS[idee.format]}
-                  </span>
-                </div>
-                <p>{idee.worum}</p>
-                <p className="text-sm">
-                  <span className="text-muted-foreground">Erster Satz:</span> «{idee.hook}»
-                </p>
+                  <p className="mt-2">{idee.worum}</p>
+                  <p className="mt-3 border-l-2 border-ink pl-3 text-sm">
+                    <span className="text-muted-foreground">Erster Satz:</span> <em>«{idee.hook}»</em>
+                  </p>
+                  <div className="mt-auto pt-4">
+                    <CopyButton text={() => ideeText(idee)} label="Idee kopieren" />
+                  </div>
+                </article>
               </li>
             ))}
           </ol>

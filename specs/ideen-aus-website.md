@@ -1,12 +1,12 @@
 # Ideen aus deiner Website (ideen-aus-website)
 
-Klasse A/B (liest die Website, dann KI; braucht den Server), Stand 04.10.2026. Erstes Werkzeug mit dem Generator-Baustein (`lib/generator.ts`, `components/tool/useGenerator.ts`, Route `/api/generate`). Die Website liest `/api/read` (`lib/read.ts`). `generator.ts` und `logic.ts` sind getestet.
+Klasse A/B (liest die Website, dann KI; braucht den Server), Stand 09.10.2026 (Charge C8: Karten, Kanal-Knöpfe, Hinweis bei leerer Seite). Erstes Werkzeug mit dem Generator-Baustein (`lib/generator.ts`, `components/tool/useGenerator.ts`, Route `/api/generate`). Die Website liest `/api/read` (`lib/read.ts`). `generator.ts` und `logic.ts` sind getestet.
 
 ## Nutzen in einem Satz
 Für Inhaberinnen und Inhaber von KMU, die nicht wissen, worüber sie posten sollen: in rund drei Minuten acht bis zwölf Ideen für Beiträge aus dem Text der eigenen Startseite, je mit Kanal, Format, Inhalt und erstem Satz, dazu drei Themen, die die Website hergibt.
 
 ## Kategorie und Verknüpfung
-Kategorie: content (dritter Schritt im Pfad «Content», nach Textcheck und Text-Umschreiber), Zielgruppe: kmu
+Kategorie: inhalte (dritter Schritt im Pfad, `pathStep.order: 3`), Zielgruppe: kmu
 Liest aus Profil: firma, website, ort, branche (Grunddaten über `ProfileFieldsForm`; Branche als Textfeld auf `profile.branche`)
 Schreibt ins Profil: nichts über `writesProfile`. Die Grunddaten-Felder (Firma, Website, Ort, Branche) schreiben beim Tippen in das Profil, wie beim Marketing-Check.
 Verwandte Tools: text-umschreiber (erster Satz in einen Stil bringen), textcheck, digitaler-auftritt-check
@@ -34,6 +34,7 @@ Vor dem Knopf steht, was an die KI geht: Betrieb, Branche, Ort und der Text der 
 1. **Eingabe prüfen** (`inputProblem`): Website leer → Meldung; Website sieht nicht nach einer Adresse aus → Meldung; kein Kanal → Meldung. Meldung in `role="alert"`, kein Aufruf des Servers.
 2. **Adresse sicherstellen:** `ctx.ensureEmail()`; bei «Später» passiert nichts weiter.
 3. **Schritt 1 «Website lesen»** (`readWebsite(website)` aus `lib/read-client.ts`): `/api/read` liefert `PageRead` (url, host, title, description, headings bis 20, text bis 8'000 Zeichen, truncated). Bei `reason === "gate"`: `renewEmail()` und einmal wiederholen. Jeder andere Fehler zeigt die Meldung aus dem Ergebnis (`message`), zum Beispiel «Die Website konnte nicht geladen werden. Stimmt die Adresse?».
+3a. **Leere Seite** (`isThinPage`, `MIN_TEXT_CHARS` 300): Hat der gelesene Text (Leerraum zusammengefasst, `textChars`) weniger als 300 Zeichen, läuft Schritt 2 nicht. Statt einer Fehlermeldung erscheint ein Hinweis (`role="status"`, `data-testid="leere-seite"`, Titel «Zu wenig Text auf der Seite», Text aus `thinPageMessage`): kaum Text oder Texte, die erst im Browser nachgeladen werden; Weg 1: eine Unterseite mit Text angeben (zum Beispiel `<host>/leistungen`), Weg 2: ein paar Sätze zum Angebot auf die Startseite schreiben. Es gibt keine Anfrage an die KI, kein Ergebnis, keinen CRM-Eintrag und keinen Zähler. Der Hinweis verschwindet beim nächsten Start, bei «Neu beginnen» und beim Ändern der Kanäle.
 4. **Eingabe für die KI** (`toInput`): betrieb = Firma aus dem Profil, sonst der Host; branche, ort; kanaele in fester Reihenfolge ohne Doppel; host, title (≤ 200), description (≤ 400), headings (≤ 20 à 200), text (≤ 8'000). Whitespace bereinigt. Schema `ideenInput` (zod) im Browser und in der Route.
 5. **Schritt 2 «Ideen schreiben»** (`useGenerator(ideenGenerator).generate(input)`): System-Prompt = `GENERATOR_RULES` (Alperna-Stimme, nichts erfinden, Platzhalter, nur JSON) plus die `instruction` des Generators (Aufgabe: Ideen für Beiträge eines Schweizer KMU aus dem Text seiner Website, nur die gewählten Kanäle, jede Idee aus einem konkreten Inhalt der Website, kein Fachchinesisch, Schweizer Bezug, lokale Anlässe als Platzhalter; dann die JSON-Form). Nutzernachricht = `dataPrompt("Angaben und Text der Website", input)`. `maxTokens` 1'600, `temperature` 0.5.
 6. **Prüfung der Antwort** (`checkGenerated` in der Route und Schema im Browser): JSON, Schema `ideenOutput` (themen: genau 3 Strings 5 bis 80 Zeichen; ideen: 8 bis 12 mit titel 5..80, kanal aus den fünf Schlüsseln, format aus foto, reel, text, story, karussell, kurzvideo, worum 40..300, hook 10..160), Sperrliste, Regeln, Links nur aus den Angaben. Eigene Prüfung `checkIdeen`: jede Zahl in titel, worum, hook und themen muss in den Angaben stehen (Betrieb, Branche, Ort, Host, Titel, Beschreibung, Überschriften, Text; `numbersIn` wie beim Text-Umschreiber: Listenmarken fallen weg, Trennzeichen in Zahlen auch) → sonst «zahl»; jede Idee nur für gewählte Kanäle → sonst «kanal». Verworfene Antworten geben 502 und die Meldung «Die KI hat keinen brauchbaren Entwurf geliefert. Versuch es noch einmal.»
@@ -42,7 +43,7 @@ Vor dem Knopf steht, was an die KI geht: Betrieb, Branche, Ort und der Text der 
 8. **CRM:** macht `useGenerator` nach dem Entwurf (`eingabeText`, `reportMarkdown`).
 
 ## Ausgaben
-- Ergebnis: `ResultCard` «Deine Ideen» mit dem Satz «Von einer KI formuliert. Prüfe Namen, Zahlen und Aussagen, bevor du den Text verwendest.», der Quelle («Aus der Startseite von malerei-keller.ch»), der Liste der Platzhalter (`placeholdersIn`), den Ideen als Karten (Nummer, Titel, Kanal und Format, worum es geht, erster Satz) und dem Block «Themen auf deiner Website».
+- Ergebnis: `ResultCard` «Deine Ideen» mit dem Satz «Von einer KI formuliert. Prüfe Namen, Zahlen und Aussagen, bevor du den Text verwendest.», der Quelle («Aus der Startseite von malerei-keller.ch»), der Liste der Platzhalter (`placeholdersIn`), Kanal-Knöpfen (`role="group"`, Name «Nach Kanal eingrenzen», nur bei mindestens zwei benutzten Kanälen, je Knopf die Zahl der Ideen, `aria-pressed`, ein zweiter Klick hebt auf; `kanalCounts`, `ideenFuerKanal`), den Ideen als Kartenraster (`ol` mit Name «Ideen für Beiträge», Spalten ab 18 rem; je Karte Kanal und Format als Kopfzeile, Nummer der ganzen Liste, Titel, worum es geht, erster Satz mit Strich links und «Idee kopieren» für den Text aus `ideeText`) und dem Block «Themen auf deiner Website». PDF, Word und Markdown behalten die Überschriften je Idee aus `toDocument`.
 - Dokument (`toDocument`): Titel «Ideen aus deiner Website», Untertitel mit Host, Facts Website und Kanäle, KI-Hinweis, «Themen auf deiner Website» als Liste, «n Ideen für Beiträge» mit je einer Überschrift «n. Titel (Kanal, Format)», einem Absatz «worum» und einem Absatz «Erster Satz: «hook»». Dateiname `ideen-<host>`.
 - Knöpfe: `DocumentExport` (Text kopieren als Markdown aus `toDocument`, PDF, Word) und «Neu beginnen» (löscht Ergebnis und Seitenauszug, behält Website und Kanäle).
 - Fortschritt mit `role="status"`: zwei Schritte «Website lesen», «Ideen schreiben» mit Zustand.
@@ -52,7 +53,7 @@ Vor dem Knopf steht, was an die KI geht: Betrieb, Branche, Ort und der Text der 
 - Website leer, ohne Punkt, mit Leerzeichen, mit anderem Schema (ftp): Meldung im Werkzeug, kein Aufruf. Der Server lehnt IP-Adressen, interne Netze und Zugangsdaten ab (400, Meldung aus der Antwort).
 - Kein Kanal gewählt: Meldung. Alle fünf gewählt: erlaubt, die KI verteilt.
 - Firma leer: der Host gilt als Betrieb. Profil ganz leer: Website muss getippt werden; Branche und Ort bleiben leer und gehen leer an die KI.
-- Startseite ohne Text (nur Bilder): die KI bekommt Titel und Host; das Ergebnis ist dünn oder wird verworfen (zu wenig Inhalt für zwölf Ideen). Die Seite empfiehlt Text auf der Startseite.
+- Startseite ohne Text (nur Bilder, ein Satz, Texte erst im Browser nachgeladen): unter 300 Zeichen Hinweis statt KI-Anfrage (siehe 3a), im Seitentext steht der Rat, Leistungen, Ort und Leute als Text auf die Startseite zu schreiben.
 - Text länger als 8'000 Zeichen: der Server kürzt, `toInput` kürzt noch einmal (Schema).
 - Antwort mit Zahl, die nicht auf der Website steht, oder mit nicht gewähltem Kanal: verworfen, Meldung, kein CRM-Eintrag.
 - Platzhalter «[Anlass in deiner Gemeinde]»: erlaubt, Liste über den Karten.

@@ -1,6 +1,6 @@
 import { safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
 import type { PageRead } from "@/lib/read";
-import { KANAL_KEYS, MAX_HEADINGS, MAX_TEXT_CHARS, ideenOutput, type FormatKey, type IdeenInput, type IdeenOutput, type KanalKey } from "./generator";
+import { KANAL_KEYS, MAX_HEADINGS, MAX_TEXT_CHARS, ideenOutput, type FormatKey, type Idee, type IdeenInput, type IdeenOutput, type KanalKey } from "./generator";
 
 // Ideen aus deiner Website: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
 // Die Website liest /api/read (lib/read-client.ts), den Entwurf macht /api/generate über generator.ts.
@@ -107,6 +107,47 @@ export function eingabeText(input: IdeenInput): string {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+// ---- Leere Seite -------------------------------------------------------------------------------
+
+/** Unter dieser Textlänge (Leerraum zusammengefasst) gibt die Startseite zu wenig her, als dass daraus Ideen entstehen könnten. */
+export const MIN_TEXT_CHARS = 300;
+
+/** Zeichen des Seitentexts, mehrfacher Leerraum als eines gezählt. */
+export function textChars(page: Pick<PageLike, "text">): number {
+  return page.text.replace(/\s+/g, " ").trim().length;
+}
+
+/** Hat die Startseite zu wenig Text für Ideen (nur Bilder, ein Satz, oder Texte, die erst im Browser nachgeladen werden)? */
+export function isThinPage(page: Pick<PageLike, "text">): boolean {
+  return textChars(page) < MIN_TEXT_CHARS;
+}
+
+/** Der Hinweis, wenn die Seite zu wenig Text hat: was los ist und was die Person tun kann. */
+export function thinPageMessage(host: string): string {
+  const h = host.trim() || "deiner Website";
+  return `Auf der Startseite von ${h} steht kaum Text, oder die Seite lädt ihre Texte erst im Browser nach. Daraus lässt sich keine brauchbare Idee ableiten. Gib eine Unterseite mit Text an, zum Beispiel ${host.trim() ? `${h}/leistungen` : "deine-website.ch/leistungen"}, oder schreib zuerst ein paar Sätze zu deinem Angebot auf die Startseite.`;
+}
+
+// ---- Kanäle im Ergebnis ------------------------------------------------------------------------
+
+/** Zahl der Ideen je Kanal, nur Kanäle mit mindestens einer Idee, in fester Reihenfolge. */
+export function kanalCounts(output: Pick<IdeenOutput, "ideen">): { key: KanalKey; label: string; count: number }[] {
+  return normalizeKanaele(output.ideen.map((i) => i.kanal)).map((key) => ({ key, label: kanalLabel(key), count: output.ideen.filter((i) => i.kanal === key).length }));
+}
+
+/** Die Ideen eines Kanals; «alle» oder ein Kanal ohne Idee gibt die ganze Liste. Die Nummer bleibt die der ganzen Liste. */
+export function ideenFuerKanal<T extends { kanal: KanalKey }>(ideen: readonly T[], kanal: KanalKey | "alle"): { idee: T; nr: number }[] {
+  const numbered = ideen.map((idee, i) => ({ idee, nr: i + 1 }));
+  if (kanal === "alle") return numbered;
+  const only = numbered.filter((x) => x.idee.kanal === kanal);
+  return only.length > 0 ? only : numbered;
+}
+
+/** Eine Idee als Text zum Kopieren: Titel, Kanal und Format, worum es geht, erster Satz. */
+export function ideeText(idee: Idee): string {
+  return `${idee.titel} (${kanalLabel(idee.kanal)}, ${FORMAT_LABELS[idee.format]})\n${idee.worum}\nErster Satz: «${idee.hook}»`;
 }
 
 // ---- Dokument ----------------------------------------------------------------------------------

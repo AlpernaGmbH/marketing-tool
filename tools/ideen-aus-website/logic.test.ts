@@ -4,16 +4,23 @@ import {
   ALL_KANAELE,
   EMPTY_STATE,
   KANAELE,
+  MIN_TEXT_CHARS,
   eingabeText,
   hostOf,
+  ideeText,
+  ideenFuerKanal,
   inputProblem,
   isKanalKey,
+  isThinPage,
+  kanalCounts,
   kanalLabel,
   looksLikeWebsite,
   normalizeKanaele,
   pageSummary,
   parseState,
   reportMarkdown,
+  textChars,
+  thinPageMessage,
   toDocument,
   toInput,
   usedKanaele,
@@ -189,5 +196,53 @@ describe("ideen-aus-website: gespeicherter Stand", () => {
     const state = { v: 1 as const, website: "malerei-keller.ch", kanaele: ["instagram" as const], page: pageSummary(page), output };
     expect(parseState(JSON.parse(JSON.stringify(state)))).toEqual(state);
     expect(pageSummary(page)).toEqual({ host: "malerei-keller.ch", title: "Malerei Keller Gossau", headings: ["Fassaden", "Innenräume", "Lehre"] });
+  });
+});
+
+describe("ideen-aus-website: leere Seite", () => {
+  it("zählt den Text ohne mehrfachen Leerraum und stuft unter 300 Zeichen als zu dünn ein", () => {
+    expect(MIN_TEXT_CHARS).toBe(300);
+    expect(textChars({ text: "  Wir   streichen \n\n Fassaden.  " })).toBe("Wir streichen Fassaden.".length);
+    expect(isThinPage({ text: "" })).toBe(true);
+    expect(isThinPage({ text: "x".repeat(299) })).toBe(true);
+    expect(isThinPage({ text: "x".repeat(300) })).toBe(false);
+    expect(isThinPage({ text: `${" ".repeat(400)}kurz` })).toBe(true);
+  });
+
+  it("der Hinweis nennt den Host, den Grund und zwei Wege, und kommt ohne Host aus", () => {
+    const m = thinPageMessage("malerei-keller.ch");
+    expect(m).toContain("Startseite von malerei-keller.ch");
+    expect(m).toContain("malerei-keller.ch/leistungen");
+    expect(m).toContain("im Browser nach");
+    expect(m).not.toMatch(/[!—]|\bjetzt\b/);
+    expect(thinPageMessage("  ")).toContain("deine-website.ch/leistungen");
+  });
+});
+
+describe("ideen-aus-website: Kanäle im Ergebnis", () => {
+  const ideen = [idee({ kanal: "linkedin" }), idee({ kanal: "instagram" }), idee({ kanal: "linkedin", titel: "Noch eine Idee für LinkedIn" }), idee({ kanal: "newsletter" })];
+
+  it("kanalCounts zählt je Kanal in fester Reihenfolge und lässt unbenutzte weg", () => {
+    expect(kanalCounts({ ideen }).map((k) => [k.key, k.label, k.count])).toEqual([
+      ["instagram", "Instagram", 1],
+      ["linkedin", "LinkedIn", 2],
+      ["newsletter", "Newsletter", 1],
+    ]);
+    expect(kanalCounts({ ideen: [] })).toEqual([]);
+  });
+
+  it("ideenFuerKanal behält die Nummer der ganzen Liste, und ein Kanal ohne Idee zeigt alles", () => {
+    expect(ideenFuerKanal(ideen, "alle").map((x) => x.nr)).toEqual([1, 2, 3, 4]);
+    expect(ideenFuerKanal(ideen, "linkedin").map((x) => x.nr)).toEqual([1, 3]);
+    expect(ideenFuerKanal(ideen, "google").map((x) => x.nr)).toEqual([1, 2, 3, 4]);
+  });
+
+  it("ideeText hat Titel mit Kanal und Format, den Inhalt und den ersten Satz", () => {
+    const t = ideeText(idee());
+    expect(t.split("\n")).toEqual([
+      "Vorher und nachher an der Fassade (Instagram, Karussell)",
+      "Eine Fassade in Gossau in drei Bildern: vor dem Gerüst, mit dem Gerüst und nach dem Abbau, mit dem Team.",
+      "Erster Satz: «Diese Fassade in Gossau hat drei Wochen gebraucht.»",
+    ]);
   });
 });

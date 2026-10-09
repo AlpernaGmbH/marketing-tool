@@ -33,7 +33,7 @@ Beitragsideen stecken schon auf deiner Website; sie müssen nur zu Beiträgen we
 => Gleich darunter: der Fehler, der die meisten Ideen unbrauchbar macht.
 
 ## Häufige Fehler
-- **Eine Startseite ohne Text.** Die KI verwendet nur, was sie liest, also schreib Leistungen, Ort und Leute als Text auf die Startseite, nicht nur ins Bild.
+- **Eine Startseite ohne Text.** Unter 300 Zeichen Text stoppt das Werkzeug mit einem Hinweis, also schreib Leistungen, Ort und Leute als Text auf die Startseite, nicht nur ins Bild.
 - **Alle Kanäle anklicken, ohne sie zu betreiben.** Zwölf Ideen für fünf Kanäle verzetteln dich, also wähle die zwei, auf denen du wirklich veröffentlichst.
 - **Ideen ungeprüft veröffentlichen.** Eine KI formuliert flüssig, auch wenn sie daneben liegt, also lies jede Idee gegen deine Website.
 - **Eine fremde oder vertrauliche Website angeben.** Der Text geht an einen KI-Anbieter und an Alperna, also nimm nur deine eigene, öffentliche Startseite.
