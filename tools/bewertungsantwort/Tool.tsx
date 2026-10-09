@@ -56,6 +56,9 @@ const chipClass =
   "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-input px-4 py-2 has-[:checked]:border-ink has-[:checked]:bg-surface has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50";
 
 /** Wenn die KI nicht antwortet, erscheint statt des Entwurfs die feste Vorlage. Bei «invalid» und «gate» nicht. */
+/** Schritte der Ladeansicht: Das Werkzeug liest die Bewertung, schreibt zwei Antworten und prüft sie (Anrede, Zahlen, Versprechen). */
+const LOADING_STEPS = ["Bewertung lesen", "Antworten schreiben", "Antworten kontrollieren"];
+
 const FALLBACK_REASONS: GenerateFailReason[] = ["failed", "capacity", "rate", "network"];
 
 /** Die Meldung des Hooks zurück auf ihren Grund (der Hook gibt nur den Satz heraus). */
@@ -104,6 +107,7 @@ function AntwortFlow() {
   const gen = useGenerator(bewertungsantwortGenerator, {
     eingabe: eingabeText,
     ausgabe: (o) => (inputRef.current ? reportMarkdown(o, inputRef.current) : ""),
+    loadingSteps: LOADING_STEPS,
   });
 
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);

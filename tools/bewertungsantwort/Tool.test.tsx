@@ -140,6 +140,32 @@ describe("Bewertungsantwort im Browser", () => {
     expectCalmText("Formular");
   });
 
+  it("zeigt beim Schreiben die Ladeansicht mit den Schritten dieses Werkzeugs und danach die Antwort", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify(PROFIL));
+    let release: (r: Response) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (path: string) => {
+        if (path === "/api/generate") return new Promise<Response>((resolve) => (release = resolve));
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }),
+    );
+    const u = userEvent.setup();
+    render(<Tool />);
+    await screen.findByLabelText("Firma");
+    await fill(u);
+    await u.click(screen.getByRole("button", { name: "Antwort schreiben" }));
+    const loading = await screen.findByTestId("tool-loading");
+    expect(loading).toHaveTextContent("Bewertung lesen");
+    for (const step of ["Bewertung lesen", "Antworten schreiben", "Antworten kontrollieren"]) expect(loading).toHaveTextContent(step);
+    expect(loading).toHaveTextContent("Deine Eingaben bleiben erhalten.");
+    // Das Formular ist nur ausgeblendet, nicht entfernt: Die Bewertung steht noch darin.
+    expect(screen.getByLabelText("Text der Bewertung", { selector: "textarea" })).toHaveValue(BEWERTUNG);
+    release(new Response(JSON.stringify({ ok: true, output: KI }), { status: 200 }));
+    await card();
+    expect(screen.queryByTestId("tool-loading")).not.toBeInTheDocument();
+  });
+
   it("meldet fehlende Angaben der Reihe nach in role=alert und ruft den Server nicht auf", async () => {
     const m = mockApi([ok(KI)]);
     const u = userEvent.setup();

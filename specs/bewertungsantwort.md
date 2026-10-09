@@ -1,12 +1,12 @@
 # Bewertungsantwort mit KI (bewertungsantwort)
 
-Klasse B (Generator mit KI, braucht den Server), Stand 05.10.2026. Nutzt den Generator-Baustein (`lib/generator.ts`, `components/tool/useGenerator.ts`, Route `/api/generate`) nach dem Vorbild `tools/botschaften` und `tools/nutzenversprechen`. `generator.ts`, `logic.ts` und `Tool.tsx` sind getestet.
+Klasse B (Generator mit KI, braucht den Server), Stand 09.10.2026 (Charge C9: Kategorie Inhalte, eigene Ladeansicht). Nutzt den Generator-Baustein (`lib/generator.ts`, `components/tool/useGenerator.ts`, Route `/api/generate`) nach dem Vorbild `tools/botschaften` und `tools/nutzenversprechen`. `generator.ts`, `logic.ts` und `Tool.tsx` sind getestet.
 
 ## Nutzen in einem Satz
 Für Inhaberinnen und Inhaber von KMU, die auf eine Google-Bewertung antworten wollen und nicht wissen, wie: in rund zwei Minuten zwei Antwort-Entwürfe in ihrem Ton, mit Dank, der auf den Text der Bewertung eingeht, und bei Kritik mit ruhigem Bedauern und einem Gesprächsangebot.
 
 ## Kategorie und Verknüpfung
-Kategorie: ki (dritter Schritt im Pfad «KI», `pathStep.order` 3), Zielgruppe: kmu, `featured: true`
+Kategorie: inhalte (`pathStep.path: inhalte`, `order` 10), Zielgruppe: kmu, `featured: true`
 Liest aus Profil: `firma` (Grunddaten über `ProfileFieldsForm`, nie erneut gefragt) und aus `marke`: `werte`, `woerter.vermeiden`, `bewertungsregeln` und die Anrede aus `tonalitaet` (`anredeFromProfile` aus `tools/bewertungs-kit/logic.ts`)
 Schreibt ins Profil: `marke.bewertungsregeln` (`writesProfile: ["marke"]`), die Regeln der Person, immer beim Erstellen; andere Schlüssel in `marke` bleiben.
 Verwandte Tools: bewertungs-kit, markenplattform, text-umschreiber
@@ -51,6 +51,7 @@ Vor dem Knopf steht, was an die KI geht: Text der Bewertung, Sterne, Name des Be
 - Ergebnis: `ResultCard` «Deine Antwort» mit dem Satz «Von einer KI formuliert. Prüfe die Antwort, bevor du sie veröffentlichst.» (`data-testid="ki-hinweis"`), der Platzhalter-Zeile (`data-testid="platzhalter"`, «Platzhalter ausfüllen: [Telefon oder E-Mail]. Setze die Nummer oder Adresse ein, unter der du erreichbar sein willst.», nur wenn ein Platzhalter vorkommt, `placeholdersIn`) und der Liste `aria-label="Varianten"` mit zwei Einträgen (`data-testid="variante-1"`, `variante-2`): Überschrift «Variante n: <ton>», Text mit Zeilenumbrüchen (`variante-n-text`) und `CopyButton` «Variante n kopieren».
 - Knöpfe unter den Varianten: «Neu formulieren» (ruft `generate` mit derselben Eingabe noch einmal auf), «Angaben ändern» (zeigt das Formular mit den gespeicherten Angaben, Fokus auf den Text der Bewertung; «Abbrechen» schliesst es wieder), «Neu beginnen» (löscht Bewertung und Ergebnis). Kein PDF, kein Word.
 - Fehler beim Erneuern stehen in `role="alert"` (`id="bw-ergebnis-error"`) unter den Varianten, Fehler im Formular in `id="bw-error"`.
+- Ladeansicht (seit 09.10.2026): Während der Anfrage zeigt die ToolShell statt des Formulars `ToolLoading` (`data-testid="tool-loading"`) mit den Schritten «Bewertung lesen», «Antworten schreiben», «Antworten kontrollieren» (`loadingSteps` im `useGenerator`); die Eingaben bleiben erhalten, weil das Formular nur ausgeblendet wird. Die Zeile «Die KI schreibt …» am Knopf bleibt für den Fall, dass die Ansicht nicht erscheint.
 - Nach dem Entwurf verschwindet das Formular. Fokus auf die Ergebnis-Überschrift nach einer Aktion, nicht beim Wiederherstellen. `role="status"` mit «Die KI schreibt deine Antwort.» während der Anfrage.
 - Dokument (`toDocument`): Titel «Antwort auf eine Bewertung», Untertitel «Für <Betrieb>», Facts Sterne und Anrede, je Variante die Überschrift «Variante n: <ton>» und ein Absatz. Es dient nur dem CRM-Text (Markdown).
 - Zählung: `popular:<slug>` über `/api/result` bei jedem Ergebnis.
