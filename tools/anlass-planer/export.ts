@@ -1,4 +1,4 @@
-// Dateien des Anlass-Rückwärtsplaners für den Browser: Kalenderdatei (.ics) und Druck-PDF.
+// Dateien des Anlass-Zeitplans für den Browser: Kalenderdatei (.ics) und Druck-PDF.
 // Die Funktionen liefern nur Bytes, Dateiname und Typ; den Download löst Tool.tsx über guardDownload und downloadBytes aus.
 // logic.ts importiert diese Datei nicht.
 

@@ -3,7 +3,7 @@ import type { Profile } from "@/lib/profile";
 import { WEEKDAYS, addDays, foldLine, formatIso, isIsoDate, parseIso, weekdayIndex } from "@/tools/feiertagskalender/logic";
 import { KANAL_KEYS, TYP_KEYS, vorlagenFor, type KanalKey, type TypKey, type Vorlage, type VorlagenKanal } from "./data";
 
-// Anlass-Rückwärtsplaner: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
+// Anlass-Zeitplan: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
 // Aus Art, Name, Datum und Kanälen des Anlasses entsteht ein Zeitplan, der rückwärts vom Anlass läuft: Aufgaben von zehn
 // Wochen davor bis eine Woche danach. Datum immer als JJJJ-MM-TT, gerechnet mit UTC-Teilen (Funktionen des Feiertagskalenders),
 // das heutige Datum kommt als Parameter. Die Vorlagen (data.ts) sind ein Richtwert von Alperna, keine Statistik und keine Vorschrift.
@@ -386,6 +386,9 @@ function icsStamp(d: Date): string {
  * Kalenderdatei: ein ganztägiges Ereignis je Aufgabe und eines für den Anlass. UTF-8, Zeilen auf höchstens 75 Oktette gefaltet,
  * Zeilenende CRLF. `now` als Zeitstempel (DTSTAMP).
  */
+/** Erinnerung um 09:00 Uhr am Tag der Aufgabe (Dauer nach dem Beginn des ganztägigen Eintrags). */
+export const ICS_ALARM_TRIGGER = "PT9H";
+
 export function buildIcs(plan: Plan, input: PlanInput, opts: { now: Date; baseUrl?: string }): string {
   const base = (opts.baseUrl ?? ICS_BASE_URL).replace(/\/$/, "");
   const stamp = icsStamp(opts.now);
@@ -401,7 +404,8 @@ export function buildIcs(plan: Plan, input: PlanInput, opts: { now: Date; baseUr
   const event = (uid: string, datum: string, summary: string, description: string) => {
     lines.push("BEGIN:VEVENT", `UID:${uid}@tools.alperna.ch`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${icsDate(datum)}`, `DTEND;VALUE=DATE:${icsDate(addDays(datum, 1))}`, `SUMMARY:${icsEscape(summary)}`);
     if (description) lines.push(`DESCRIPTION:${icsEscape(description)}`);
-    lines.push("TRANSP:TRANSPARENT", "END:VEVENT");
+    // Erinnerung am Morgen des Tages (neun Stunden nach Mitternacht): Kalender, die Erinnerungen aus einer Datei übernehmen, melden sich dann.
+    lines.push("TRANSP:TRANSPARENT", "BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsEscape(summary)}`, `TRIGGER:${ICS_ALARM_TRIGGER}`, "END:VALARM", "END:VEVENT");
   };
   event(`${uidBase}-anlass`, input.datum, input.name, `Art: ${typLabel(input.typ)}\nKanäle: ${kanaeleText(input.kanaele)}`);
   for (const a of plan.aufgaben) {
@@ -412,6 +416,16 @@ export function buildIcs(plan: Plan, input: PlanInput, opts: { now: Date; baseUr
   }
   lines.push("END:VCALENDAR");
   return lines.map(foldLine).join("\r\n") + "\r\n";
+}
+
+/**
+ * Die Aufgaben als einfache Liste zum Einfügen in Erinnerungen, Notizen oder eine Mail: eine Zeile je Aufgabe mit Datum, Kästchen und Kanal.
+ * Ohne Markdown, damit nichts Fremdes in der Notiz steht; abgehakte Aufgaben fehlen.
+ */
+export function listText(plan: Plan, input: Pick<PlanInput, "name">, erledigt: readonly string[] = []): string {
+  const done = new Set(erledigt);
+  const rows = plan.aufgaben.filter((a) => !done.has(a.id)).map((a) => `${formatIso(a.datum)}  ${a.titel} (${kanalLabel(a.kanal)})`);
+  return [`${input.name}`, ...rows].join("\n");
 }
 
 export const icsFilename = (input: Pick<PlanInput, "name">): string => `zeitplan-${safeFilename(input.name)}.ics`;

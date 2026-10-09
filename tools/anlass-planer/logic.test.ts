@@ -11,6 +11,8 @@ import {
   aufgabenDatum,
   ausgabeText,
   buildIcs,
+  ICS_ALARM_TRIGGER,
+  listText,
   buildPlan,
   cleanErledigt,
   datumKurz,
@@ -452,6 +454,19 @@ describe("anlass-planer: Kalenderdatei", () => {
     expect(uids).toHaveLength(p.aufgaben.length + 1);
   });
 
+  it("trägt in jedes Ereignis eine Erinnerung um 9 Uhr ein, innerhalb des Ereignisses und mit Beschreibung", () => {
+    expect(ICS_ALARM_TRIGGER).toBe("PT9H");
+    expect(ics.match(/BEGIN:VALARM/g)).toHaveLength(p.aufgaben.length + 1);
+    expect(ics.match(/END:VALARM/g)).toHaveLength(p.aufgaben.length + 1);
+    expect(ics.match(/TRIGGER:PT9H/g)).toHaveLength(p.aufgaben.length + 1);
+    const events = ics.split("BEGIN:VEVENT").slice(1);
+    for (const ev of events) {
+      const body = unfold(ev.split("END:VEVENT")[0]);
+      expect(body.indexOf("BEGIN:VALARM"), "Erinnerung nach TRANSP").toBeGreaterThan(body.indexOf("TRANSP:"));
+      expect(body).toMatch(/BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:[^\r\n]+\r\nTRIGGER:PT9H\r\nEND:VALARM/);
+    }
+  });
+
   it("nennt das Werkzeug mit Adresse in der Beschreibung", () => {
     expect(unfold(ics)).toContain("Werkzeug: https://tools.alperna.ch/tools/post-generator");
     expect(unfold(ics)).toContain("Kanal: Instagram");
@@ -474,6 +489,25 @@ describe("anlass-planer: Kalenderdatei", () => {
     expect(unfold(ics2)).toContain("SUMMARY:Fest\\, mit Musik\\; Tanz");
     expect(unfold(ics2)).toContain("X-WR-CALNAME:Zeitplan: Fest\\, mit Musik\\; Tanz");
     expect(unfold(ics2)).not.toContain("SUMMARY:Fest, mit");
+  });
+
+  it("gibt die offenen Aufgaben als einfache Liste: Name, dann eine Zeile mit Datum, Titel und Kanal", () => {
+    const text = listText(p, base);
+    const lines = text.split("\n");
+    expect(lines[0]).toBe(base.name);
+    expect(lines).toHaveLength(p.aufgaben.length + 1);
+    const first = p.aufgaben[0];
+    expect(lines[1]).toMatch(/^\d{2}\.\d{2}\.\d{4} {2}.+ \(.+\)$/);
+    expect(lines[1]).toContain(first.titel);
+    // Markdown-Zeichen stehen nicht in der Liste
+    expect(text).not.toMatch(/\[ \]|\*\*|^#/m);
+  });
+
+  it("lässt abgehakte Aufgaben in der Liste weg und kommt mit einer leeren Aufgabenliste zurecht", () => {
+    const ohne = listText(p, base, [p.aufgaben[0].id, p.aufgaben[1].id]);
+    expect(ohne.split("\n")).toHaveLength(p.aufgaben.length - 1);
+    expect(ohne).not.toContain(p.aufgaben[0].titel + " (");
+    expect(listText({ ...p, aufgaben: [] }, base)).toBe(base.name);
   });
 
   it("benennt die Dateien nach dem Anlass", () => {

@@ -3,6 +3,7 @@
 import { cn } from "cn";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CopyButton } from "@/components/tool/CopyButton";
 import { DocumentExport } from "@/components/tool/DocumentExport";
 import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { ResultCard } from "@/components/tool/ResultCard";
@@ -31,6 +32,7 @@ import {
   faelligMeldung,
   formFrom,
   groupByWeek,
+  listText,
   isTyp,
   kanaeleAusProfil,
   kanaeleVorschlag,
@@ -205,13 +207,15 @@ function ResultView({
       <section aria-label="Dateien" className="grid gap-3">
         <h4 className="font-heading font-medium">Dateien</h4>
         <p className="text-sm text-muted-foreground">
-          Die Kalenderdatei (.ics) öffnest du in Google Kalender, Outlook oder Apple Kalender: ein ganztägiger Eintrag je Aufgabe und einer für den Anlass. Das PDF ist
-          zum Ausdrucken, mit Kästchen zum Abhaken. Den Text kannst du immer kopieren.
+          Die Kalenderdatei (.ics) öffnest du in Google Kalender, Outlook oder Apple Kalender: ein ganztägiger Eintrag je Aufgabe und einer für den Anlass, je mit einer
+          Erinnerung um 9 Uhr, soweit dein Kalender sie aus der Datei übernimmt. «Als Liste kopieren» gibt dir eine Zeile je offene Aufgabe zum Einfügen in
+          Erinnerungen oder Notizen. Das PDF ist zum Ausdrucken, mit Kästchen zum Abhaken.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" variant="outline" disabled={busy !== null} onClick={() => download("ics")} data-testid="ap-ics" data-umami-event="export_ics" data-umami-event-tool={SLUG}>
             {busy === "ics" ? "Kalender wird erstellt …" : "Kalender (.ics) herunterladen"}
           </Button>
+          <CopyButton text={() => listText(plan, input, erledigt)} label="Als Liste kopieren" />
           <Button type="button" variant="outline" disabled={busy !== null} onClick={() => download("pdf")} data-testid="ap-pdf" data-umami-event="export_pdf" data-umami-event-tool={SLUG}>
             {busy === "pdf" ? "PDF wird erstellt …" : "Zeitplan (PDF) herunterladen"}
           </Button>

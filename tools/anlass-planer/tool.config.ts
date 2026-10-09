@@ -2,10 +2,10 @@ import { defineTool } from "@/lib/define-tool";
 
 export default defineTool({
   slug: "anlass-planer",
-  name: "Anlass-Rückwärtsplaner",
+  name: "Anlass-Zeitplan",
   category: "praktisches",
   audience: "beide",
-  tagline: "Vom Datum rückwärts planen: Zeitplan mit Aufgaben, Kanälen und Werkzeugen, als Kalender, Checkliste und PDF.",
+  tagline: "Vom Datum rückwärts planen: Zeitplan mit Aufgaben, Kanälen und Werkzeugen, als Kalender, Liste und PDF.",
   keyword: "Anlass planen",
   related: ["medienmitteilung", "post-generator", "feiertagskalender"],
   needsServer: false,

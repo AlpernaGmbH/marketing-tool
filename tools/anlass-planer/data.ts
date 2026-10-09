@@ -1,4 +1,4 @@
-// Aufgabenvorlagen des Anlass-Rückwärtsplaners. Reine Daten, kein React, kein DOM.
+// Aufgabenvorlagen des Anlass-Zeitplans. Reine Daten, kein React, kein DOM.
 // Die Vorlagen und ihre Vorlaufzeiten sind ein Richtwert von Alperna, keine Statistik und keine Vorschrift.
 // Regeln für Texte: keine Rechtsaussagen, keine genannten Fristen, keine Ziffern in Titeln und Hinweisen.
 // Bewilligungen heissen «bei der Gemeinde nachfragen», Fristen «Frist beim Anzeiger erfragen» oder «Frist laut Statuten prüfen».

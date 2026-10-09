@@ -1,13 +1,13 @@
 ---
 title: "Anlass planen Schweiz: Zeitplan rückwärts vom Datum"
-description: "Anlass planen für Schweizer KMU und Vereine: Zeitplan rückwärts vom Datum mit Aufgaben, Kanälen, Kalenderdatei und PDF. Kostenlos, ohne Konto."
-h1: "Anlass planen mit dem Rückwärtsplaner für Schweizer KMU"
-tagline: "Vom Datum rückwärts planen: Zeitplan mit Aufgaben, Kanälen und Werkzeugen, als Kalender, Checkliste und PDF."
+description: "Anlass planen für Schweizer KMU: Zeitplan rückwärts vom Datum mit Aufgaben, Kanälen, Kalender mit Erinnerung, Liste und PDF. Kostenlos, ohne Konto."
+h1: "Anlass planen mit dem Anlass-Zeitplan für Schweizer KMU"
+tagline: "Vom Datum rückwärts planen: Zeitplan mit Aufgaben, Kanälen und Werkzeugen, als Kalender, Liste und PDF."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:
   - "Ein Zeitplan, der rückwärts vom Datum läuft: Aufgaben von zehn Wochen davor bis eine Woche danach, mit Kanal und passendem Werkzeug."
   - "Du wählst Art, Name, Datum und Kanäle deines Anlasses, in fünf Minuten."
-  - "Danach weisst du, was diese Woche dran ist, und hast Checkliste, Kalenderdatei und PDF."
+  - "Danach weisst du, was diese Woche dran ist, und hast Liste, Kalenderdatei und PDF."
 ablauf:
   - "Anlass und Datum eintragen"
   - "Zeitplan lesen und abhaken"
@@ -28,8 +28,8 @@ Einen Anlass planen bringt nur etwas, wenn du den Zeitplan abhakst und teilst.
 
 1. **Fälliges zuerst.** Was schon fällig ist, bleibt im Plan; sprich es heute noch im Team ab.
 2. **Verantwortliche eintragen.** Verteil die Aufgaben; der Plan nennt Datum und Kanal.
-3. **Kalenderdatei importieren.** Jede Aufgabe wird ein ganztägiger Eintrag in Google Kalender, Outlook oder Apple Kalender.
-4. **PDF aufhängen.** Das PDF mit Kästchen hängt im Büro oder im Vereinslokal.
+3. **Kalenderdatei importieren.** Jede Aufgabe wird ein ganztägiger Eintrag in Google Kalender, Outlook oder Apple Kalender, mit Erinnerung um 9 Uhr, wo dein Kalender sie übernimmt.
+4. **Als Liste oder PDF.** «Als Liste kopieren» gibt dir eine Zeile je Aufgabe für Erinnerungen oder Notizen; das PDF mit Kästchen hängt im Büro.
 5. **Werkzeuge nutzen.** Wo ein Link dabeisteht, hilft ein Werkzeug: Medienmitteilung, Post-Generator, QR-Set.
 
 => Gleich darunter: drei Fehler, die einen Plan wertlos machen.
