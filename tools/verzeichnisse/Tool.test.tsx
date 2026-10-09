@@ -26,6 +26,8 @@ beforeEach(() => {
     vi.fn(async (url: string, init?: { body?: string }) => {
       // Schriften für das PDF kommen aus public/fonts, alles andere gilt als CRM-Aufruf.
       if (String(url).startsWith("/fonts/")) return new Response(fs.readFileSync(path.join(process.cwd(), "public", String(url))), { status: 200 });
+      // Die Frage an den Server nach der gemerkten Adresse (ToolShell) ist kein Aufruf ins CRM.
+      if (String(url) === "/api/gate") return new Response(JSON.stringify({ email: null }), { status: 200 });
       sent.push({ url: String(url), body: init?.body ? (JSON.parse(init.body) as Record<string, string>) : {} });
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }),

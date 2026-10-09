@@ -1,3 +1,4 @@
+import { brancheOf } from "@/lib/branchen";
 import { INDUSTRY_KEYS, type IndustryKey } from "@/lib/check/types";
 
 // Ob ein Online-Shop oder eine Online-Buchung für eine Branche sinnvoll ist (aus dem Agentur-Tool übernommen).
@@ -85,25 +86,9 @@ export const INDUSTRIES: Record<IndustryKey, IndustryInfo> = {
   },
 };
 
-const RULES: [IndustryKey, RegExp][] = [
-  ["gastro", /gastro|restaurant|caf[eé]|bar\b|beiz|pizzeria|imbiss|bäcker|baecker|konditor|metzg/i],
-  ["hotel", /hotel|ferienwohnung|b&b|pension|gasthaus|herberge/i],
-  ["beauty", /coiffeur|coiffure|friseur|kosmetik|beauty|nagel|barber|massage/i],
-  ["health", /gesundheit|praxis|therapie|physio|zahn|arzt|ärzt|aerzt|apotheke|pflege|osteo|chiro/i],
-  ["fitness", /fitness|sport|yoga|pilates|kurs|tanz|training|crossfit/i],
-  ["retail", /detailhandel|laden|shop|boutique|handel|velo|fahrrad|mode|blumen|buch/i],
-  ["producer", /produktion|manufaktur|hofladen|brauerei|lebensmittel|landwirt|käserei|kaeserei|winzer/i],
-  ["craft", /handwerk|bau\b|garten|schreiner|elektro|sanitär|sanitaer|maler|dach|zimmerei|installation|metall|schlosser/i],
-  ["b2b", /beratung|dienstleistung|agentur|it\b|software|consulting|treuhand|anwalt|recht|versicherung|bildung|fahrschule|schule/i],
-  ["realestate", /immobilien|liegenschaft|verwaltung|makler/i],
-  ["auto", /garage|auto|mobilität|mobilitaet|carrosserie|reifen|motorrad/i],
-];
-
-/** Ordnet eine freie Branchenbezeichnung einer Branche des Checks zu (zum Vorbefüllen aus dem Firmenprofil). */
+/** Ordnet eine freie Branchenbezeichnung einer Branche des Checks zu (zum Vorbefüllen aus dem Firmenprofil), über die gemeinsame Liste (lib/branchen.ts). */
 export function guessIndustry(text: string | null | undefined): IndustryKey {
-  if (!text) return "other";
-  for (const [key, re] of RULES) if (re.test(text)) return key;
-  return "other";
+  return brancheOf(text)?.check ?? "other";
 }
 
 export function isIndustryKey(value: unknown): value is IndustryKey {

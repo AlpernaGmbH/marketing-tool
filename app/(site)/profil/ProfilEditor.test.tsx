@@ -2,7 +2,7 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PROFILE_KEY } from "@/lib/profile";
+import { PROFILE_AT_KEY, PROFILE_EXPIRED_KEY, PROFILE_KEY } from "@/lib/profile";
 import { clearAllLocal, readLocal, writeLocal } from "@/lib/storage";
 import { ProfilEditor, summaryRows } from "./ProfilEditor";
 
@@ -35,8 +35,9 @@ describe("ProfilEditor", () => {
     await u.type(screen.getByLabelText("Firma"), "Malerei Keller");
     await u.type(screen.getByLabelText("Ort"), "Gossau");
     await u.selectOptions(screen.getByLabelText("Kanton"), "SG");
-    await u.selectOptions(screen.getByLabelText("Rechtsform"), "GmbH");
-    expect(stored()).toMatchObject({ firma: "Malerei Keller", ort: "Gossau", kanton: "SG", rechtsform: "GmbH" });
+    await u.click(screen.getByText(/Mehr Angaben/));
+    await u.click(screen.getByRole("radio", { name: "GmbH" }));
+    expect(stored()).toMatchObject({ firma: "Malerei Keller", ort: "Gossau", kanton: "SG", rechtsform: "GmbH", organisationstyp: "kmu" });
 
     await u.clear(screen.getByLabelText("Ort"));
     expect(stored().ort).toBeUndefined();
@@ -48,11 +49,84 @@ describe("ProfilEditor", () => {
     const u = userEvent.setup();
     render(<ProfilEditor />);
     expect(await screen.findByLabelText("Firma")).toBeInTheDocument();
+    await u.click(screen.getByText(/Mehr Angaben/));
     await u.click(screen.getByRole("radio", { name: "Verein" }));
     expect(screen.getByLabelText("Name des Vereins")).toHaveValue("FC Trogen");
     expect(stored().organisationstyp).toBe("verein");
+    expect(stored().rechtsform).toBe("Verein");
     expect(stored().groesse).toBeUndefined();
     expect(within(screen.getByLabelText("Grösse")).getByRole("option", { name: "bis 50 Mitglieder" })).toBeInTheDocument();
+  });
+
+  it("zeigt in der Auswahl Verein und Stiftung getrennt, mit «KMU oder Selbständige» als Standard", async () => {
+    const u = userEvent.setup();
+    render(<ProfilEditor />);
+    await u.click(screen.getByText(/Mehr Angaben/));
+    expect(screen.getByRole("radio", { name: "KMU oder Selbständige" })).toBeChecked();
+    await u.click(screen.getByRole("radio", { name: "Stiftung" }));
+    expect(stored()).toMatchObject({ rechtsform: "Stiftung", organisationstyp: "verein" });
+    expect(screen.getByRole("radio", { name: "Verein" })).not.toBeChecked();
+    await u.click(screen.getByRole("radio", { name: "KMU oder Selbständige" }));
+    expect(stored().rechtsform).toBeUndefined();
+    expect(stored().organisationstyp).toBe("kmu");
+  });
+
+  it("zeigt die Branche mit Hinweis, zu welcher der gemeinsamen Liste sie gehört, und setzt sie per Knopf", async () => {
+    const u = userEvent.setup();
+    render(<ProfilEditor />);
+    await u.type(screen.getByLabelText("Branche"), "Malerei");
+    expect(screen.getByTestId("branche-hinweis")).toHaveTextContent("Gehört in den Werkzeugen zu: Handwerk");
+    await u.click(screen.getByRole("button", { name: "Fitness und Sport" }));
+    expect(stored().branche).toBe("Fitness und Sport");
+    expect(screen.getByRole("button", { name: "Fitness und Sport" })).toHaveAttribute("aria-pressed", "true");
+    await u.clear(screen.getByLabelText("Branche"));
+    await u.type(screen.getByLabelText("Branche"), "Raumfahrt");
+    expect(screen.getByTestId("branche-hinweis")).toHaveTextContent("Passt zu keiner Branche der Liste");
+  });
+
+  it("zählt die Angaben im Fortschritt und nennt, bis wann das Profil gilt", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Malerei Keller", ort: "Gossau", branche: "Malerei" }));
+    writeLocal(PROFILE_AT_KEY, String(Date.now()));
+    render(<ProfilEditor />);
+    expect(await screen.findByTestId("profil-fortschritt")).toHaveTextContent("3 von 5 Angaben");
+    expect(screen.getByRole("meter", { name: "Angaben im Profil" })).toHaveAttribute("aria-valuenow", "3");
+    expect(screen.getByText(/Das Profil gilt bis \d{2}\.\d{2}\.\d{4} und verlängert sich mit jeder Nutzung/)).toBeInTheDocument();
+  });
+
+  it("löscht ein Profil, das länger als zwölf Monate ungenutzt blieb, und sagt es einmal", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Alt GmbH" }));
+    writeLocal(PROFILE_AT_KEY, String(Date.now() - 366 * 24 * 60 * 60 * 1000));
+    const u = userEvent.setup();
+    render(<ProfilEditor />);
+    expect(await screen.findByRole("status")).toHaveTextContent("länger als zwölf Monate ungenutzt");
+    expect(readLocal(PROFILE_KEY)).toBeNull();
+    expect(screen.getByLabelText("Firma")).toHaveValue("");
+    await u.click(screen.getByRole("button", { name: "Verstanden" }));
+    expect(readLocal(PROFILE_EXPIRED_KEY)).toBeNull();
+  });
+
+  it("behält ein Profil innerhalb der zwölf Monate und ergänzt den Zeitpunkt bei älteren Profilen ohne", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Keller AG" }));
+    render(<ProfilEditor />);
+    expect(await screen.findByLabelText("Firma")).toHaveValue("Keller AG");
+    await waitFor(() => expect(readLocal(PROFILE_AT_KEY)).toMatch(/^\d{13}$/));
+  });
+
+  it("warnt, wenn der Browser nichts dauerhaft speichert", async () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("gesperrt");
+    });
+    render(<ProfilEditor />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("speichert nichts dauerhaft");
+  });
+
+  it("verlinkt leere Angaben mit dem Werkzeug, das sie füllt, und zeigt gefüllte als Haken", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify({ zielgruppen: [{ name: "Hausbesitzer" }] }));
+    render(<ProfilEditor />);
+    expect(await screen.findByText("Hausbesitzer")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Personas/ })).toHaveAttribute("href", "/tools/persona");
+    expect(screen.getByRole("link", { name: /Marketingbudget pro Jahr/ })).toHaveAttribute("href", "/tools/budget-planer");
+    expect(screen.queryByRole("link", { name: /Zielgruppen/ })).not.toBeInTheDocument();
   });
 
   it("exportiert das Profil als JSON-Datei mit Datum im Namen", async () => {
@@ -140,6 +214,7 @@ describe("summaryRows", () => {
     expect(get("Marketingbudget pro Jahr")).toBe("CHF 12'500.-");
     expect(get("Kanäle")).toBe("1 Kanäle");
     expect(get("Markenwerte")).toBe("Handwerk, Verlässlichkeit");
+    expect(rows.find((r) => r.label === "Personas")?.slug).toBe("persona");
     expect(get("Personas")).toBe("noch leer");
   });
 });

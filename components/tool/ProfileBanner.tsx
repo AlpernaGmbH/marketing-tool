@@ -24,7 +24,7 @@ export function ProfileBanner() {
         <>
           Dein Firmenprofil ist noch leer.{" "}
           <Link href="/profil" className="underline underline-offset-4">
-            Ausfüllen
+            Aus deiner Website ausfüllen
           </Link>{" "}
           spart dir Eingaben in allen Werkzeugen.
         </>

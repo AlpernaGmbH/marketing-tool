@@ -21,6 +21,8 @@ function mockApi() {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (path: string, init?: RequestInit) => {
+      // Die Frage an den Server nach der gemerkten Adresse (ToolShell) ist kein Aufruf ins CRM.
+      if (path === "/api/gate") return new Response(JSON.stringify({ email: null }), { status: 200 });
       calls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : {} });
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     }),

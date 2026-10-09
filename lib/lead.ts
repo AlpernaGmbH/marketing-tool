@@ -14,6 +14,11 @@ export type LeadPayload = {
   ausgabe: string;
   /** Hat die Person eingewilligt, dass Alperna sie zum Ergebnis kontaktiert? Ohne «ja» meldet sich Alperna nicht von sich aus. */
   einwilligung: "ja" | "nein";
+  /**
+   * «ja»: Für diese Adresse hat Alperna schon eine Mail «neuer Lead» bekommen; n8n legt den Eintrag in Notion an, schickt aber keine Mail.
+   * «nein»: erste Meldung dieser Adresse, n8n schickt die Mail. Fällt die Prüfung aus, steht «nein» (lieber doppelt als verloren).
+   */
+  bekannt: "ja" | "nein";
 };
 
 /** Mehr passt nicht in ein Textfeld bei Notion (2'000 Zeichen); der Rest wird abgeschnitten und markiert. */
@@ -24,7 +29,7 @@ export function clipText(text: string, max = CLIP_CHARS): string {
   return t.length <= max ? t : `${t.slice(0, max - 2).trimEnd()} …`;
 }
 
-export type ResultLead = { email: string; consent: boolean; firma?: string; tool: string; eingabe: string; ausgabe: string };
+export type ResultLead = { email: string; consent: boolean; /** Adresse schon bekannt (siehe LeadPayload.bekannt); Standard: nein. */ known?: boolean; firma?: string; tool: string; eingabe: string; ausgabe: string };
 
 export function buildPayload(input: ResultLead, kategorie: string, now = new Date()): LeadPayload {
   return {
@@ -39,6 +44,7 @@ export function buildPayload(input: ResultLead, kategorie: string, now = new Dat
     eingabe: clipText(input.eingabe),
     ausgabe: clipText(input.ausgabe),
     einwilligung: input.consent ? "ja" : "nein",
+    bekannt: input.known ? "ja" : "nein",
   };
 }
 

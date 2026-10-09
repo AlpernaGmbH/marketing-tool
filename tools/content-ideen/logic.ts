@@ -1,5 +1,6 @@
 import { z } from "zod";
 import ideenData from "@/data/branchen-ideen.json";
+import { brancheOf } from "@/lib/branchen";
 import { safeFilename } from "@/lib/export/model";
 
 // Content-Ideen nach Branche: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
@@ -171,36 +172,19 @@ export function foldText(s: string): string {
     .replace(/ae|oe|ue/g, (m) => m[0]);
 }
 
-/** Füllwörter, die zwischen Berufen stehen («Bau und Garten») und nie über die Branche entscheiden. */
-const STOPWORDS = new Set(["und", "oder", "der", "die", "das", "fur", "mit", "von", "zur", "zum", "im", "am", "in", "an", "bei", "ag", "gmbh", "sa", "sarl"]);
-
-const words = (s: string): string[] => foldText(s).split(/[^a-z0-9]+/).filter((w) => w.length >= 2 && !STOPWORDS.has(w));
-
 /**
- * Welche Branche der Bibliothek passt zum Eintrag «Branche» im Firmenprofil? Wortvergleich gegen Bezeichnung und Beispiele der Branchen:
- * gleiches Wort zählt am meisten, ein gemeinsamer Wortanfang (ab fünf Buchstaben, «Maler» und «Malerei») etwas weniger.
- * Jedes Wort des Eintrags zählt mit seinem besten Treffer; bei Gleichstand gewinnt die Branche, die in den Daten zuerst steht.
+ * Welche Branche der Bibliothek passt zum Eintrag «Branche» im Firmenprofil? Die Zuordnung macht die gemeinsame Branchenliste
+ * (lib/branchen.ts: Wortvergleich gegen Bezeichnung und Beispiele); hier wird ihr Ergebnis in eine Branche dieser Bibliothek übersetzt.
  * Ohne Treffer: «verein», wenn die Organisation ein Verein ist, sonst «alle».
  */
 export function branchenKeyFor(branche: string | undefined, branchen: readonly Branche[] = BRANCHEN, organisationstyp?: string): string {
-  const fallback = organisationstyp === "verein" && branchen.some((b) => b.key === "verein") ? "verein" : ALLE;
-  const tokens = words(branche ?? "");
-  if (tokens.length === 0) return fallback;
-  let best = { key: fallback, score: 0 };
-  for (const b of branchen) {
-    const terms = new Set(words([b.label, ...b.beispiele].join(" ")));
-    let score = 0;
-    for (const t of tokens) {
-      let tokenScore = 0;
-      for (const term of terms) {
-        if (t === term) tokenScore = Math.max(tokenScore, 3);
-        else if (term.length >= 5 && t.length >= 5 && (t.startsWith(term) || term.startsWith(t))) tokenScore = Math.max(tokenScore, 2);
-      }
-      score += tokenScore;
-    }
-    if (score > best.score) best = { key: b.key, score };
-  }
-  return best.key;
+  const hasVerein = branchen.some((b) => b.key === "verein");
+  const fallback = organisationstyp === "verein" && hasVerein ? "verein" : ALLE;
+  // Vereine stehen nicht in der gemeinsamen Liste (Rechtsform, nicht Branche); «Sportverein» soll nicht bei «Sport» landen.
+  if (hasVerein && /verein/i.test(branche ?? "")) return "verein";
+  // Die Zuordnung steht in der gemeinsamen Branchenliste (lib/branchen.ts); hier nur die Übersetzung in die Branchen dieser Bibliothek.
+  const key = brancheOf(branche)?.ideen;
+  return key && key !== ALLE && branchen.some((b) => b.key === key) ? key : fallback;
 }
 
 // ---- Filter und Suche ---------------------------------------------------------------------------

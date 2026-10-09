@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { brancheOf } from "@/lib/branchen";
 import { KANTONE } from "@/lib/ch";
 import { safeFilename, type DocBlock, type DocumentModel } from "@/lib/export/model";
 import type { Profile } from "@/lib/profile";
@@ -87,21 +88,15 @@ export function kanaeleVorschlag(profile: Pick<Profile, "kanaele">): KanalKey[] 
   return aus.length > 0 ? aus : [...DEFAULT_KANAELE];
 }
 
-const BRANCHE_RE: [Branche, RegExp][] = [
-  ["handwerk", /maler|gipser|schreiner|zimmerei|zimmermann|sanitär|heizung|elektr|dachdeck|\bbau|bau\b|gärtner|gartenbau|landschaftsbau|schlosser|handwerk|plattenleger|bodenleger|spengler|küchenbau|steinmetz|installat/i],
-  ["gastronomie", /gastro|restaurant|café|cafe|\bbar\b|beiz|bäcker|metzger|konditor|catering|hotel|pizzeria|imbiss|gasthaus|gaststätte|wirtshaus/i],
-  ["detailhandel", /detailhandel|laden|shop|boutique|geschäft|blumen|floristik|buchhandlung|drogerie|apotheke|kiosk|optik|hofladen|handel/i],
-  ["dienstleistung", /dienstleist|treuhand|beratung|coach|praxis|therap|massage|physio|coiffeur|friseur|kosmetik|versicher|architekt|ingenieur|immobilien|bank|anwalt|fotograf|reinigung|transport|unterricht|nachhilfe/i],
-];
-
 /** Vorbelegung der Branche für die Vorschläge: Verein, sonst Wortvergleich mit dem Branchen-Freitext, sonst «Andere». */
 export function brancheAusProfil(profile: Pick<Profile, "organisationstyp" | "branche">): Branche {
   if (profile.organisationstyp === "verein") return "verein";
   const text = profile.branche?.trim() ?? "";
   if (text === "") return "andere";
   if (/verein/i.test(text)) return "verein";
-  for (const [key, re] of BRANCHE_RE) if (re.test(text)) return key;
-  return "andere";
+  // Die Zuordnung steht in der gemeinsamen Branchenliste (lib/branchen.ts).
+  const key = brancheOf(text)?.kalender;
+  return BRANCHE_KEYS.includes(key as Branche) ? (key as Branche) : "andere";
 }
 
 // ---- Kantone -----------------------------------------------------------------------------------

@@ -1,9 +1,11 @@
 "use client";
 
+import { BranchePicker } from "@/components/tool/BranchePicker";
+import { MITGLIEDER_FORMEN, RechtsformSlider } from "@/components/tool/RechtsformSlider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KANTONE } from "@/lib/ch";
-import { GROESSEN, RECHTSFORMEN, type ProfileKey } from "@/lib/profile";
+import { GROESSEN, type ProfileKey } from "@/lib/profile";
 import { useProfile } from "@/lib/use-profile";
 
 export type BasicField = "organisationstyp" | "firma" | "branche" | "rechtsform" | "ort" | "website" | "kanton" | "groesse";
@@ -16,47 +18,37 @@ type Props = {
   fields: BasicField[];
   /** Präfix für die Feld-IDs, damit mehrere Formulare auf einer Seite sich nicht stören. */
   idPrefix?: string;
+  /** Branche zusätzlich als Knöpfe zeigen (Profilseite). */
+  brancheChips?: boolean;
 };
 
 /**
  * Grunddaten des Firmenprofils (CLAUDE.md, Firmenprofil). Schreibt jede Änderung sofort in den Browser.
  * Wird von /profil und von Werkzeugen genutzt, die diese Felder schreiben.
  */
-export function ProfileFieldsForm({ fields, idPrefix = "p" }: Props) {
+export function ProfileFieldsForm({ fields, idPrefix = "p", brancheChips = false }: Props) {
   const { profile, ready, update } = useProfile();
   const type = profile.organisationstyp ?? "kmu";
   const set = (key: ProfileKey, value: string) => update({ [key]: value.trim() === "" ? undefined : value });
   const id = (f: string) => `${idPrefix}-${f}`;
+  // Die Rechtsform bestimmt, ob die Werkzeuge mit Kundschaft (KMU) oder mit Mitgliedern (Verein, Stiftung) schreiben. Ohne Wahl: KMU.
+  // Profile aus der Zeit mit dem Schalter «KMU / Verein» tragen nur den Organisationstyp; sie zeigen «Verein».
+  const rechtsform = profile.rechtsform && profile.rechtsform.trim() ? profile.rechtsform : type === "verein" ? "Verein" : "";
+  const slider = (
+    <RechtsformSlider
+      key="rechtsform"
+      idPrefix={idPrefix}
+      value={rechtsform}
+      ready={ready}
+      onChange={(value) => {
+        const nextType = MITGLIEDER_FORMEN.includes(value) ? "verein" : "kmu";
+        update({ rechtsform: value === "" ? undefined : value, organisationstyp: nextType, ...(nextType !== type ? { groesse: undefined } : {}) });
+      }}
+    />
+  );
 
   const render: Record<BasicField, React.ReactNode> = {
-    organisationstyp: (
-      <fieldset key="organisationstyp" className="grid gap-2">
-        <legend className="mb-1 font-medium">Ich bin</legend>
-        <div className="flex flex-wrap gap-3">
-          {(
-            [
-              ["kmu", "KMU oder Selbständige"],
-              ["verein", "Verein"],
-            ] as const
-          ).map(([value, label]) => (
-            <label
-              key={value}
-              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-input px-4 py-2 has-[:checked]:border-ink has-[:checked]:bg-surface"
-            >
-              <input
-                type="radio"
-                name={`${idPrefix}-organisationstyp`}
-                value={value}
-                checked={ready && type === value}
-                onChange={() => update({ organisationstyp: value, groesse: undefined })}
-                className="size-5 accent-ink"
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-    ),
+    organisationstyp: slider,
     firma: (
       <div key="firma" className="grid gap-1.5">
         <Label htmlFor={id("firma")}>{type === "verein" ? "Name des Vereins" : "Firma"}</Label>
@@ -64,24 +56,9 @@ export function ProfileFieldsForm({ fields, idPrefix = "p" }: Props) {
       </div>
     ),
     branche: (
-      <div key="branche" className="grid gap-1.5">
-        <Label htmlFor={id("branche")}>{type === "verein" ? "Tätigkeit des Vereins" : "Branche"}</Label>
-        <Input id={id("branche")} value={profile.branche ?? ""} onChange={(e) => set("branche", e.target.value)} />
-      </div>
+      <BranchePicker key="branche" id={id("branche")} label={type === "verein" ? "Tätigkeit des Vereins" : "Branche"} value={profile.branche ?? ""} onChange={(v) => set("branche", v)} chips={brancheChips} />
     ),
-    rechtsform: (
-      <div key="rechtsform" className="grid gap-1.5">
-        <Label htmlFor={id("rechtsform")}>Rechtsform</Label>
-        <select id={id("rechtsform")} className={selectClass} value={profile.rechtsform ?? ""} onChange={(e) => set("rechtsform", e.target.value)}>
-          <option value="">Bitte wählen</option>
-          {RECHTSFORMEN.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
-    ),
+    rechtsform: slider,
     ort: (
       <div key="ort" className="grid gap-1.5">
         <Label htmlFor={id("ort")}>Ort</Label>

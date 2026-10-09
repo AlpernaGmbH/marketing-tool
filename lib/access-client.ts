@@ -50,3 +50,29 @@ export async function sendResult(body: ResultBody, fetchImpl: typeof fetch = fet
   if (res.ok) return "ok";
   return res.status === 403 ? "gate" : "failed";
 }
+
+/** Welche Adresse kennt der Server (Cookie)? null: keine, oder der Server war nicht erreichbar. Wirft nie. */
+export async function fetchGateEmail(fetchImpl: typeof fetch = fetch): Promise<string | null> {
+  try {
+    const res = await fetchImpl("/api/gate", { credentials: "same-origin", cache: "no-store" });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { email?: unknown };
+    return typeof data.email === "string" && data.email.includes("@") ? data.email : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Vergisst die Adresse auch beim Server (Cookie entfernen). Wirft nie. */
+export async function forgetGateEmail(fetchImpl: typeof fetch = fetch): Promise<void> {
+  await postLike("DELETE", fetchImpl);
+}
+
+async function postLike(method: "DELETE", fetchImpl: typeof fetch): Promise<void> {
+  try {
+    const res = await fetchImpl("/api/gate", { method, credentials: "same-origin" });
+    await res.text().catch(() => "");
+  } catch {
+    /* ohne Verbindung bleibt das Cookie bis zum Ablauf; der lokale Merker ist trotzdem weg */
+  }
+}

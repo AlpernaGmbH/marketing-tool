@@ -7,6 +7,7 @@ export const SECRET = "test-secret-0123456789abcdef0123456789abcdef";
 export class MemoryStore implements AccessStore {
   popular = new Map<string, number>();
   leads: string[] = [];
+  known = new Set<string>();
   failing = false;
 
   private guard() {
@@ -15,6 +16,12 @@ export class MemoryStore implements AccessStore {
   async recordResult(slug: string) {
     this.guard();
     this.popular.set(slug, (this.popular.get(slug) ?? 0) + 1);
+  }
+  async markKnown(acchash: string) {
+    this.guard();
+    if (this.known.has(acchash)) return false;
+    this.known.add(acchash);
+    return true;
   }
   async pushLead(json: string) {
     this.guard();

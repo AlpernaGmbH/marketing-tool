@@ -22,6 +22,11 @@ function notify() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+/** Kann der Browser dauerhaft speichern? false im privaten Fenster oder bei blockiertem Speicher: dann gilt nur der Arbeitsspeicher bis zum Neuladen. */
+export function canPersist(): boolean {
+  return ls() !== null;
+}
+
 export function readLocal(key: string): string | null {
   // Ein Wert im Arbeitsspeicher ist neuer als der im Speicher des Browsers: Er steht nur dort, weil das Schreiben scheiterte.
   if (memory.has(key)) return memory.get(key) ?? null;

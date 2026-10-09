@@ -9,6 +9,8 @@ import { getTool } from "@/lib/registry";
 // mt_gate; ins CRM geht sie erst zusammen mit einem Ergebnis (/api/result). Geloggt wird nur der Statuscode.
 
 const ROUTE = "/api/lead";
+/** Ausser den Werkzeugen darf die Profilseite die Adresse erfragen (Website ausfüllen lassen). */
+const EXTRA_SOURCES = new Set(["profil"]);
 
 export async function POST(req: NextRequest) {
   const parsed = leadSchema.safeParse(await readJson(req));
@@ -21,7 +23,7 @@ export async function POST(req: NextRequest) {
       honeypotHit ? "honeypot" : "invalid_body",
     );
   }
-  if (!getTool(parsed.data.tool)) return respond(ROUTE, 400, { error: "invalid_tool" }, "invalid_tool");
+  if (!getTool(parsed.data.tool) && !EXTRA_SOURCES.has(parsed.data.tool)) return respond(ROUTE, 400, { error: "invalid_tool" }, "invalid_tool");
 
   const secret = gateSecret();
   if (!secret) return respond(ROUTE, 503, { error: "gate_unconfigured" }, "gate_unconfigured");

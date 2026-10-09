@@ -30,6 +30,7 @@ beforeEach(() => {
   delete process.env.N8N_WEBHOOK_URL;
   store.popular.clear();
   store.leads.length = 0;
+  store.known.clear();
   store.failing = false;
   limit.allow = true;
   logs = [];
@@ -103,10 +104,43 @@ describe("POST /api/result (Ergebnis ins CRM)", () => {
     const res = await result(post("/api/result", ergebnis, { ip: IP, cookie }));
     expect(res.status).toBe(200);
     const sent = JSON.parse(f.mock.calls[0][1].body);
-    expect(Object.keys(sent).sort()).toEqual(["ausgabe", "eingabe", "einwilligung", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"].sort());
+    expect(Object.keys(sent).sort()).toEqual(["ausgabe", "bekannt", "eingabe", "einwilligung", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"].sort());
     expect(sent).toMatchObject({ email: "anna@keller.ch", firma: "Malerei Keller", tool: TOOL, kategorie: "strategie", quelle: "tools.alperna.ch", eingabe: ergebnis.eingabe, ausgabe: ergebnis.ausgabe, name: "", telefon: "", einwilligung: "ja" });
     expect(store.leads).toHaveLength(0); // n8n hat geantwortet: keine Queue
     expect(store.popular.get(TOOL)).toBe(1);
+  });
+
+  it("löst die Mail «neuer Lead» nur bei der ersten Meldung einer Adresse aus: jedes Ergebnis geht an n8n, aber «bekannt» ist erst ab dem zweiten «ja»", async () => {
+    process.env.N8N_WEBHOOK_URL = "https://n8n.example/webhook/tools-lead";
+    const sent: Record<string, string>[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (_u: string, init: { body: string }) => {
+      sent.push(JSON.parse(init.body));
+      return { ok: true };
+    }));
+    const call = (email: string) => result(post("/api/result", ergebnis, { ip: IP, cookie: gateCookie(email) }));
+    await call("anna@keller.ch");
+    await call("anna@keller.ch");
+    await call("ANNA@Keller.ch"); // gleiche Adresse, andere Schreibweise
+    await call("bea@muster.ch");
+    await call("bea@muster.ch");
+    expect(sent.map((p) => `${p.email}:${p.bekannt}`)).toEqual(["anna@keller.ch:nein", "anna@keller.ch:ja", "ANNA@Keller.ch:ja", "bea@muster.ch:nein", "bea@muster.ch:ja"]);
+    expect(store.known.size).toBe(2);
+    expect([...store.known].every((h) => /^[0-9a-f]{32}$/.test(h))).toBe(true); // nie die Adresse selbst
+    delete process.env.N8N_WEBHOOK_URL;
+  });
+
+  it("gilt bei einem Ausfall von Redis als neu (lieber eine Mail zu viel) und antwortet trotzdem 200", async () => {
+    process.env.N8N_WEBHOOK_URL = "https://n8n.example/webhook/tools-lead";
+    const sent: Record<string, string>[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (_u: string, init: { body: string }) => {
+      sent.push(JSON.parse(init.body));
+      return { ok: true };
+    }));
+    store.failing = true;
+    const res = await result(post("/api/result", ergebnis, { ip: IP, cookie: gateCookie("anna@keller.ch") }));
+    expect(res.status).toBe(200);
+    expect(sent[0].bekannt).toBe("nein");
+    delete process.env.N8N_WEBHOOK_URL;
   });
 
   it("nimmt die Adresse nur aus dem Cookie, nie aus dem Body", async () => {

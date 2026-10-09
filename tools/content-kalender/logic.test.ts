@@ -647,7 +647,7 @@ describe("content-kalender: Auswahl aus dem Profil", () => {
     expect(brancheAusProfil({ branche: "Restaurant und Catering" })).toBe("gastronomie");
     expect(brancheAusProfil({ branche: "Treuhand" })).toBe("dienstleistung");
     expect(brancheAusProfil({ branche: "Blumenladen" })).toBe("detailhandel");
-    expect(brancheAusProfil({ branche: "Landwirtschaft" })).toBe("andere");
+    expect(brancheAusProfil({ branche: "Landwirtschaft" })).toBe("detailhandel"); // gemeinsame Liste: Produktion und Hofladen
     expect(brancheAusProfil({ branche: "Biergarten" })).not.toBe("handwerk");
     expect(brancheAusProfil({ branche: "  " })).toBe("andere");
     expect(brancheAusProfil({})).toBe("andere");

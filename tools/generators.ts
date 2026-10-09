@@ -1,4 +1,5 @@
 import type { GeneratorDef } from "@/lib/generator";
+import { profilScanGenerator } from "@/lib/profile-scan";
 import ideenAusWebsiteGenerator from "./ideen-aus-website/generator";
 import icpBuilderGenerator from "./icp-builder/generator";
 import nutzenversprechenGenerator from "./nutzenversprechen/generator";
@@ -38,6 +39,8 @@ export const generators: AnyGenerator[] = [
   vereinsKommunikationGenerator,
   sponsoringDossierGenerator,
   contentStrategieGenerator,
+  // Kein Werkzeug: liest die Website für das Firmenprofil (lib/profile-scan.ts).
+  profilScanGenerator,
   // new-tool:generators
 ];
 

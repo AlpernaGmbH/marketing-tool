@@ -7,6 +7,8 @@ export const TTL = {
   daily: 2 * DAY,
   /** Wartende Leads (E-Mail, Eingabe, Ausgabe im Klartext) verfallen, falls n8n sie nie abholt. */
   leadQueue: 30 * DAY,
+  /** Merker «diese Adresse hat schon eine Mail «neuer Lead» ausgelöst» (nur HMAC der Adresse). */
+  known: 365 * DAY,
 } as const;
 
 /** Höchstens so viele Leads warten in lead_queue; ältere fallen weg (Schutz vor Überlauf). */
@@ -27,6 +29,8 @@ export const keys = {
   aiAlert: (day: string, kind = "limit") => `ai:alert:${kind}:${day}`,
   /** Zwischenspeicher der KI-Einordnung je Ergebnis (Hash der Signatur), 24 Stunden. */
   aiCache: (hash: string) => `aicache:${hash}`,
+  /** Eine Adresse (HMAC, nie die Adresse selbst), für die Alperna schon eine Mail «neuer Lead» bekommen hat. */
+  known: (acchash: string) => `known:${acchash}`,
   leadQueue: "lead_queue",
 } as const;
 

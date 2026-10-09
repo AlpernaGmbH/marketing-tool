@@ -1,0 +1,278 @@
+{
+  "meta": {
+    "source": "Redaktion Alperna",
+    "url": "https://tools.alperna.ch",
+    "asOf": "2026-10-09",
+    "note": "Eine Branchenliste für alle Werkzeuge. check, ideen und kalender übersetzen jeden Eintrag in die Schlüssel des Marketing-Checks (lib/check/types.ts), der Ideen-Bibliothek (data/branchen-ideen.json) und des Content-Kalenders. Redaktionelle Einteilung ohne Zahlen."
+  },
+  "branchen": [
+    {
+      "key": "handwerk",
+      "label": "Handwerk",
+      "check": "craft",
+      "ideen": "handwerk",
+      "kalender": "handwerk",
+      "beispiele": [
+        "Malerei",
+        "Schreinerei",
+        "Elektro",
+        "Sanitär",
+        "Heizung",
+        "Gipser",
+        "Spengler",
+        "Plattenleger",
+        "Maler",
+        "Schreiner",
+        "Elektriker",
+        "Schlosserei",
+        "Metallbau",
+        "Installation",
+        "Bodenleger",
+        "Küchenbau",
+        "Steinmetz"
+      ]
+    },
+    {
+      "key": "bau-garten",
+      "label": "Bau und Garten",
+      "check": "craft",
+      "ideen": "bau-garten",
+      "kalender": "handwerk",
+      "beispiele": [
+        "Baugeschäft",
+        "Zimmerei",
+        "Gartenbau",
+        "Landschaftsbau",
+        "Dachdecker",
+        "Tiefbau",
+        "Bau",
+        "Bauunternehmen",
+        "Garten",
+        "Gärtnerei",
+        "Zimmermann",
+        "Maurer",
+        "Strassenbau"
+      ]
+    },
+    {
+      "key": "gastronomie",
+      "label": "Gastronomie",
+      "check": "gastro",
+      "ideen": "gastronomie",
+      "kalender": "gastronomie",
+      "beispiele": [
+        "Restaurant",
+        "Café",
+        "Bäckerei",
+        "Metzgerei",
+        "Catering",
+        "Bar",
+        "Beiz",
+        "Bistro",
+        "Pizzeria",
+        "Imbiss"
+      ]
+    },
+    {
+      "key": "hotel",
+      "label": "Hotel und Unterkunft",
+      "check": "hotel",
+      "ideen": "gastronomie",
+      "kalender": "gastronomie",
+      "beispiele": [
+        "Hotel",
+        "Ferienwohnung",
+        "Bed and Breakfast",
+        "Gasthaus",
+        "Pension",
+        "Herberge",
+        "Gasthof",
+        "Unterkunft",
+        "Camping",
+        "Hostel"
+      ]
+    },
+    {
+      "key": "coiffeur-kosmetik",
+      "label": "Coiffeur und Kosmetik",
+      "check": "beauty",
+      "ideen": "coiffeur-kosmetik",
+      "kalender": "dienstleistung",
+      "beispiele": [
+        "Coiffeur",
+        "Barber",
+        "Kosmetikstudio",
+        "Nagelstudio",
+        "Coiffure",
+        "Friseur",
+        "Kosmetik",
+        "Beauty"
+      ]
+    },
+    {
+      "key": "gesundheit",
+      "label": "Gesundheit und Therapie",
+      "check": "health",
+      "ideen": "gesundheit",
+      "kalender": "dienstleistung",
+      "beispiele": [
+        "Physiotherapie",
+        "Arztpraxis",
+        "Zahnarzt",
+        "Massage",
+        "Osteopathie",
+        "Gesundheit",
+        "Physio",
+        "Praxis",
+        "Therapie",
+        "Ergotherapie",
+        "Chiropraktik",
+        "Apotheke",
+        "Pflege",
+        "Spitex"
+      ]
+    },
+    {
+      "key": "fitness-sport",
+      "label": "Fitness und Sport",
+      "check": "fitness",
+      "ideen": "fitness-sport",
+      "kalender": "dienstleistung",
+      "beispiele": [
+        "Fitnessstudio",
+        "Yoga",
+        "Tanzschule",
+        "Personal Training",
+        "Fitness",
+        "Sport",
+        "Pilates",
+        "Kampfsport",
+        "Crossfit",
+        "Klettern"
+      ]
+    },
+    {
+      "key": "detailhandel",
+      "label": "Detailhandel",
+      "check": "retail",
+      "ideen": "detailhandel",
+      "kalender": "detailhandel",
+      "beispiele": [
+        "Laden",
+        "Boutique",
+        "Blumenladen",
+        "Buchhandlung",
+        "Optiker",
+        "Papeterie",
+        "Spielwaren",
+        "Drogerie",
+        "Weinhandlung",
+        "Fachgeschäft",
+        "Velo",
+        "Fahrrad",
+        "Mode",
+        "Kiosk"
+      ]
+    },
+    {
+      "key": "produktion",
+      "label": "Produktion und Hofladen",
+      "check": "producer",
+      "ideen": "detailhandel",
+      "kalender": "detailhandel",
+      "beispiele": [
+        "Manufaktur",
+        "Hofladen",
+        "Brauerei",
+        "Käserei",
+        "Winzer",
+        "Produktion",
+        "Lebensmittel",
+        "Landwirtschaft"
+      ]
+    },
+    {
+      "key": "treuhand-beratung",
+      "label": "Treuhand und Beratung",
+      "check": "b2b",
+      "ideen": "treuhand-beratung",
+      "kalender": "dienstleistung",
+      "beispiele": [
+        "Treuhand",
+        "Steuerberatung",
+        "Unternehmensberatung",
+        "Coaching",
+        "Versicherung",
+        "Buchhaltung",
+        "Beratung",
+        "Vorsorge",
+        "Anwalt",
+        "Consulting",
+        "Dienstleistung",
+        "Fahrschule"
+      ]
+    },
+    {
+      "key": "immobilien",
+      "label": "Immobilien und Architektur",
+      "check": "realestate",
+      "ideen": "immobilien",
+      "kalender": "dienstleistung",
+      "beispiele": [
+        "Immobilien",
+        "Liegenschaftsverwaltung",
+        "Makler",
+        "Architektur",
+        "Liegenschaft",
+        "Verwaltung",
+        "Architekt",
+        "Bauherrenberatung"
+      ]
+    },
+    {
+      "key": "garage-auto",
+      "label": "Garage und Auto",
+      "check": "auto",
+      "ideen": "garage-auto",
+      "kalender": "dienstleistung",
+      "beispiele": [
+        "Autogarage",
+        "Carrosserie",
+        "Reifenservice",
+        "Motorrad",
+        "Garage",
+        "Auto",
+        "Werkstatt",
+        "Autohandel",
+        "Mobilität"
+      ]
+    },
+    {
+      "key": "it-digital",
+      "label": "IT und Digital",
+      "check": "b2b",
+      "ideen": "it-digital",
+      "kalender": "dienstleistung",
+      "beispiele": [
+        "Informatik",
+        "Software",
+        "Webdesign",
+        "IT-Support",
+        "IT",
+        "Digital",
+        "Webagentur",
+        "Support",
+        "Cloud",
+        "Entwicklung"
+      ]
+    },
+    {
+      "key": "andere",
+      "label": "Andere Branche",
+      "check": "other",
+      "ideen": "alle",
+      "kalender": "andere",
+      "beispiele": []
+    }
+  ]
+}

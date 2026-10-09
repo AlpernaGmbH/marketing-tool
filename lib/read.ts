@@ -26,7 +26,12 @@ export type PageRead = {
   text: string;
   /** true, wenn der Text auf READ_MAX_CHARS gekürzt wurde. */
   truncated: boolean;
+  /** Das Ende des Seitentexts, wenn er gekürzt wurde (Fusszeile mit Adresse und Telefon); sonst leer. */
+  tail?: string;
 };
+
+/** So viel vom Ende des Seitentexts bleibt erhalten, wenn der Text gekürzt wird. */
+export const READ_TAIL_CHARS = 1_200;
 
 const collapse = (s: string) => s.replace(/\s+/g, " ").trim();
 
@@ -68,5 +73,6 @@ export async function readPage(rawUrl: string, fetcher: Fetcher = safeFetch): Pr
     headings,
     text: full.slice(0, READ_MAX_CHARS),
     truncated: full.length > READ_MAX_CHARS,
+    tail: full.length > READ_MAX_CHARS ? full.slice(-READ_TAIL_CHARS) : "",
   };
 }

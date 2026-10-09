@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { LeadGate } from "@/components/tool/LeadGate";
 import { ProfileBanner } from "@/components/tool/ProfileBanner";
 import { DEFAULT_LOADING_STEPS, ToolLoading } from "@/components/tool/ToolLoading";
-import { LEAD_KEY, sendResult as sendResultApi } from "@/lib/access-client";
+import { LEAD_KEY, fetchGateEmail, sendResult as sendResultApi } from "@/lib/access-client";
 import { removeLocal, writeLocal } from "@/lib/storage";
 import { useLocalRaw } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
@@ -46,16 +46,23 @@ export function useToolContext(): ToolContextValue {
   return ctx;
 }
 
+/** Wie useToolContext, aber null ausserhalb einer ToolShell (Bausteine, die auch ohne E-Mail-Fenster eine Seite tragen). */
+export function useOptionalToolContext(): ToolContextValue | null {
+  return useContext(ToolContext);
+}
+
 type Props = {
   slug: string;
   name: string;
   /** true bei Tools, die das Firmenprofil lesen (zeigt das ProfileBanner). */
   usesProfile?: boolean;
+  /** Ohne Rahmen und Kopf: nur der Kontext (E-Mail-Fenster, Ladeanzeige) für eine Seite wie das Firmenprofil. */
+  bare?: boolean;
   children: React.ReactNode;
 };
 
 /** Rahmen jedes Tools: Kopf mit der Adresse, Profil-Hinweis, Inhalt und das E-Mail-Fenster. */
-export function ToolShell({ slug, name, usesProfile = false, children }: Props) {
+export function ToolShell({ slug, name, usesProfile = false, bare = false, children }: Props) {
   const raw = useLocalRaw(LEAD_KEY);
   const email = raw && raw.includes("@") ? raw : null;
   // Die bekannte Adresse zusätzlich als Ref: Ein Handler, der vor dem Fenster erzeugt wurde (alte Closure), fragt sonst
@@ -64,6 +71,18 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
   useEffect(() => {
     known.current = email;
   }, [email]);
+  // Der lokale Merker kann fehlen, obwohl das Cookie noch gilt (Safari räumt Speicher ab, «Alles löschen» im Profil, anderer Browserbereich):
+  // Dann fragt der Browser den Server, welche Adresse er kennt, statt das Fenster erneut zu zeigen.
+  useEffect(() => {
+    if (raw !== null) return; // noch nicht hydriert (undefined) oder schon eine Adresse da
+    let cancelled = false;
+    void fetchGateEmail().then((address) => {
+      if (!cancelled && address && !known.current) writeLocal(LEAD_KEY, address);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [raw]);
   const { profile } = useProfile();
   const [gateOpen, setGateOpen] = useState(false);
   const waiting = useRef<((ok: boolean) => void) | null>(null);
@@ -132,9 +151,13 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
     [slug, email, ensureEmail, renewEmail, sendResult, guardDownload, changeEmail, startLoading],
   );
 
-  return (
-    <ToolContext.Provider value={value}>
-      <section aria-label={name} className="overflow-hidden rounded-xl border border-line bg-paper">
+  const content = bare ? (
+    <>
+      {loading && <ToolLoading steps={loading} />}
+      <div hidden={loading !== null}>{children}</div>
+    </>
+  ) : (
+    <section aria-label={name} className="overflow-hidden rounded-xl border border-line bg-paper">
         <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3 text-sm">
           <span className="font-medium">{name}</span>
           <span aria-live="polite" data-testid="access-status" className="text-right text-muted-foreground">
@@ -157,7 +180,12 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
           {/* Beim Laden nur ausgeblendet, nicht entfernt: Eingaben und Zwischenstand bleiben erhalten. */}
           <div hidden={loading !== null}>{children}</div>
         </div>
-      </section>
+    </section>
+  );
+
+  return (
+    <ToolContext.Provider value={value}>
+      {content}
       <LeadGate
         open={gateOpen}
         tool={slug}

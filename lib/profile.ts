@@ -8,6 +8,31 @@ import { dateCH } from "@/lib/ch";
 
 export const PROFILE_KEY = "mt:profile";
 export const PROFILE_VERSION = 1;
+/** Zeitpunkt der letzten Nutzung (Millisekunden seit 1970) als eigener Schlüssel; das Profil selbst bleibt ein nacktes JSON. */
+export const PROFILE_AT_KEY = "mt:_profile-at";
+/** Hinweis «Profil ist abgelaufen», einmal auf der Profilseite gezeigt. */
+export const PROFILE_EXPIRED_KEY = "mt:_profile-expired";
+/** Ein Profil lebt zwölf Monate ab der letzten Nutzung (Beschluss vom 09.10.2026). */
+export const PROFILE_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+/** Die Nutzung wird höchstens einmal am Tag neu vermerkt. */
+export const PROFILE_TOUCH_MS = 24 * 60 * 60 * 1000;
+
+/** Liest den Zeitpunkt aus dem lokalen Speicher; null bei fehlenden oder unsinnigen Werten. */
+export function parseSavedAt(raw: string | null | undefined): number | null {
+  if (!raw || !/^\d{10,15}$/.test(raw)) return null;
+  const n = Number(raw);
+  return Number.isSafeInteger(n) ? n : null;
+}
+
+/** Abgelaufen, wenn die letzte Nutzung länger als zwölf Monate her ist. Ohne Zeitpunkt (älteres Profil) gilt es als gültig. */
+export function profileExpired(savedAt: number | null, now = Date.now()): boolean {
+  return savedAt !== null && now - savedAt > PROFILE_TTL_MS;
+}
+
+/** Bis wann das Profil gilt, wenn man es nicht mehr benutzt. */
+export function profileValidUntil(savedAt: number): Date {
+  return new Date(savedAt + PROFILE_TTL_MS);
+}
 /** Obergrenze für importierte Dateien. */
 export const MAX_IMPORT_BYTES = 256 * 1024;
 
@@ -49,6 +74,8 @@ export const profileFields = {
   rechtsform: shortText,
   ort: shortText,
   website: shortText,
+  /** Ein bis zwei Sätze, was der Betrieb anbietet (aus der Website erkannt oder selbst geschrieben). */
+  beschreibung: z.string().max(500),
   kanton: z.string().regex(/^[A-Z]{2}$/),
   groesse: shortText,
   zielgruppen: z.array(looseObject.extend({ name: shortText })).max(10),

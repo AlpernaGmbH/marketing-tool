@@ -31,8 +31,16 @@ nimmt der Server aus dem Cookie, nie aus dem Body. Der Lead an n8n hat genau
 die Felder name (leer), firma (aus dem Firmenprofil), email, telefon (leer),
 tool, kategorie, quelle, zeit, eingabe, ausgabe, einwilligung («ja» oder «nein», aus dem
 Cookie; Alperna meldet sich nur bei «ja» von sich aus); Eingabe und Ausgabe auf
-1'900 Zeichen gekürzt (lib/lead.ts, clipText). Ein zweites Ergebnis derselben
-Person geht erneut ins CRM.
+1'900 Zeichen gekürzt (lib/lead.ts, clipText), dazu bekannt («ja» oder «nein»).
+Ein zweites Ergebnis derselben Person geht erneut ins CRM (Notion), löst aber
+keine zweite Mail «neuer Lead» aus: Die Route markiert die Adresse atomar in
+Redis (known:<acchash>, SET NX, 365 Tage; AccessStore.markKnown); n8n schickt
+die Mail nur bei bekannt = «nein». Fällt Redis aus, gilt die Adresse als neu
+(lieber eine Mail zu viel).
+- GET /api/gate nennt dem Browser die Adresse, die der Server aus dem Cookie
+kennt (der lokale Merker mt:_lead kann fehlen, das Cookie nicht); die ToolShell
+stellt den Merker damit wieder her, statt das Fenster erneut zu zeigen. DELETE
+/api/gate entfernt das Cookie («Alles löschen» im Profil).
 - Ohne Cookie antworten /api/result, /api/check, /api/text und /api/ai mit
 403 {error: "gate"}. Der Browser ruft dann ToolShell.renewEmail() (vergisst
 mt:_lead, zeigt das Fenster) und wiederholt die Anfrage einmal.
@@ -48,6 +56,10 @@ Stunde, /api/text 30 pro Stunde, /api/check 8 pro Stunde). accountHash(email)
 ist der HMAC der Adresse für das Tageslimit der KI-Einordnung. Redis-Keys:
 popular:<slug> (Zähler je gesendetem Ergebnis), ai:<acchash>:<YYYY-MM-DD>
 (Einordnungen pro Adresse) und ai:global:<YYYY-MM-DD> (TTL 2 Tage),
+aicost:<acchash>:<YYYY-MM-DD> und aicost:global:<YYYY-MM-DD> (KI-Ausgaben in
+Millionstel Dollar aus usage.cost, TTL 2 Tage; ab 30 Rappen je Adresse und
+Tag oder CHF 5.- global antworten nur noch kostenlose Modelle, lib/ai-quota.ts),
+known:<acchash> (Mail «neuer Lead» schon ausgelöst, TTL 365 Tage),
 aicache:<hash der Signatur> (fertige Einordnung, TTL 24 Stunden), rl:<name>
 (Ratenbegrenzung), lead_queue (Liste). Keine Zähler pro Besucher, keine
 Freischaltung, keine Daten beim Server.
@@ -73,10 +85,11 @@ Analytics Umami. Paketmanager npm. Node 20+.
 analyse, schweiz, ki, vereine
 - app/(site)/tools/[slug]/page.tsx – Tool-Seite, statisch über
 generateStaticParams, Tool als Client-Komponente
-- app/(site)/profil/page.tsx – Firmenprofil ansehen, bearbeiten, als JSON
-exportieren/importieren, alles löschen
+- app/(site)/profil/page.tsx – Firmenprofil ansehen, bearbeiten, aus der Website
+ausfüllen, als JSON sichern (Laden eingeklappt), alles löschen
 - app/api/lead/route.ts – E-Mail-Adresse entgegennehmen, Cookie mt_gate setzen
-(schickt noch nichts ins CRM); app/api/result/route.ts – Ergebnis mit Eingabe und
+(schickt noch nichts ins CRM); app/api/gate/route.ts – Adresse aus dem Cookie
+nennen (GET), Cookie entfernen (DELETE); app/api/result/route.ts – Ergebnis mit Eingabe und
 Ausgabe an n8n (Adresse aus dem Cookie), zählt popular:<slug>
 - app/api/check/route.ts – Marketing-Check: ruft die Website des Besuchers ab
 (SSRF-Schutz in lib/check/net.ts), streamt Schritte und Ergebnis als NDJSON;
@@ -149,11 +162,20 @@ sie freigibt (`lib/legal-rules.ts`, `content/legal/README.md`)
 - PLAN.md, STATUS.md, IDEAS.md – Arbeitsdateien
 
 ## Firmenprofil (lib/profile.ts, nur im Browser)
-Felder: organisationstyp kmu|verein, firma, branche, rechtsform, ort, website, kanton,
-groesse, zielgruppen[], primaersegment, personas[], positionierung, marke
+Felder: organisationstyp kmu|verein (folgt der Rechtsform: Verein und Stiftung
+= verein, sonst kmu), firma, branche (Freitext; eine gemeinsame Branchenliste in
+data/branchen.json und lib/branchen.ts ordnet jede Bezeichnung dem Check, den
+Ideen und dem Kalender zu), rechtsform (Auswahl in einer Reihe, Standard «KMU
+oder Selbständige»), ort, website, beschreibung, kanton, groesse, zielgruppen[], primaersegment, personas[], positionierung, marke
 {werte, persoenlichkeit, tonalitaet, woerter, bewertungsregeln}, kanaele[],
 budgetJahr, contentSaeulen[]. Tool-Zwischenstände unter mt:<slug>. Merkliste
 unter mt:merkliste. Merker der angegebenen E-Mail-Adresse unter mt:_lead.
+Das Profil lebt zwölf Monate ab der letzten Nutzung (mt:_profile-at, höchstens
+einmal am Tag erneuert); ein älteres Profil wird gelöscht und einmal gemeldet
+(lib/use-profile.ts). «Aus Website ausfüllen» (app/(site)/profil/ProfilScan.tsx):
+/api/read plus der Generator profil-scan (lib/profile-scan.ts) schlagen Firma,
+Branche, Ort, Kanton und Kurzbeschreibung vor; der Besucher bestätigt in einer
+Vorschau, vorhandene Einträge werden nie still überschrieben.
 Der Server speichert davon nichts; nur die Firma geht mit jedem Ergebnis ins CRM
 (Feld firma in /api/result).
 Kopfzeile: Link «Mein Profil». Kein Anmelden, kein Konto.

@@ -31,8 +31,9 @@ function mockApi(resultStatus: number[] = [200]) {
   let results = 0;
   const fetchMock = vi.fn(async (path: string, init?: RequestInit) => {
     const body = init?.body ? JSON.parse(String(init.body)) : {};
-    calls.push({ path, body });
     const json = (data: unknown, status = 200) => ({ ok: status < 300, status, json: async () => data });
+    if (path === "/api/gate") return json({ email: null }); // die Frage der ToolShell nach der gemerkten Adresse ist kein Aufruf ins CRM
+    calls.push({ path, body });
     if (path === "/api/lead") return json({ ok: true });
     if (path === "/api/result") {
       const status = resultStatus[Math.min(results++, resultStatus.length - 1)];

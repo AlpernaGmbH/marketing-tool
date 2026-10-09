@@ -7,8 +7,7 @@ import {
   isProfileEmpty,
   mergeProfile,
   profileLabel,
-  sanitizeProfile,
-} from "@/lib/profile";
+  sanitizeProfile, PROFILE_TTL_MS, parseSavedAt, profileExpired, profileValidUntil } from "@/lib/profile";
 
 describe("sanitizeProfile", () => {
   it("behält gültige Felder", () => {
@@ -96,5 +95,22 @@ describe("profileLabel", () => {
     expect(profileLabel({ firma: "Malerei Keller" })).toBe("Malerei Keller");
     expect(profileLabel({ ort: "Gossau" })).toBeNull();
     expect(profileLabel({})).toBeNull();
+  });
+});
+
+describe("Ablauf des Profils (zwölf Monate ab der letzten Nutzung)", () => {
+  const NOW = Date.UTC(2026, 9, 9, 12, 0, 0);
+  it("liest den Zeitpunkt nur aus einer plausiblen Zahl", () => {
+    expect(parseSavedAt(String(NOW))).toBe(NOW);
+    for (const bad of [null, undefined, "", "abc", "12", "1e12", "-1791000000000", "99999999999999999999"]) expect(parseSavedAt(bad as string | null | undefined)).toBeNull();
+  });
+  it("läuft nach 365 Tagen ab, nicht davor; ohne Zeitpunkt (älteres Profil) nie", () => {
+    expect(profileExpired(null, NOW)).toBe(false);
+    expect(profileExpired(NOW - PROFILE_TTL_MS, NOW)).toBe(false);
+    expect(profileExpired(NOW - PROFILE_TTL_MS - 1, NOW)).toBe(true);
+    expect(profileExpired(NOW - 30 * 24 * 60 * 60 * 1000, NOW)).toBe(false);
+  });
+  it("nennt das Ablaufdatum", () => {
+    expect(profileValidUntil(NOW).toISOString().slice(0, 10)).toBe("2027-10-09");
   });
 });

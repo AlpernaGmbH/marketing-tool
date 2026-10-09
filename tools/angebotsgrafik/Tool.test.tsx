@@ -67,6 +67,7 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/gate") return new Response(JSON.stringify({ email: null }), { status: 200 }); // Frage der ToolShell nach der gemerkten Adresse, kein CRM-Aufruf
       posts.push({ url, body: JSON.parse(String(init?.body ?? "{}")) });
       return new Response("{}", { status: 200 });
     }),

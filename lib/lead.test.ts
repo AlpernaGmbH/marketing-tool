@@ -63,12 +63,17 @@ describe("clipText", () => {
 describe("buildPayload", () => {
   it("enthält genau die erlaubten Felder, Name und Telefon leer", () => {
     const p = buildPayload(ergebnis, "strategie", new Date("2026-10-03T10:00:00Z"));
-    expect(Object.keys(p).sort()).toEqual(["ausgabe", "eingabe", "einwilligung", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"].sort());
+    expect(Object.keys(p).sort()).toEqual(["ausgabe", "bekannt", "eingabe", "einwilligung", "email", "firma", "kategorie", "name", "quelle", "telefon", "tool", "zeit"].sort());
     expect(p).toMatchObject({ name: "", telefon: "", firma: "Malerei Keller", email: "anna@keller.ch", tool: "x", kategorie: "strategie", quelle: "tools.alperna.ch", zeit: "2026-10-03T10:00:00.000Z" });
   });
   it("trägt die Einwilligung als «ja» oder «nein» ins CRM", () => {
     expect(buildPayload(ergebnis, "strategie").einwilligung).toBe("ja");
     expect(buildPayload({ ...ergebnis, consent: false }, "strategie").einwilligung).toBe("nein");
+  });
+  it("kennzeichnet mit «bekannt», ob für die Adresse schon eine Mail «neuer Lead» ausgelöst wurde (Standard: nein)", () => {
+    expect(buildPayload(ergebnis, "strategie").bekannt).toBe("nein");
+    expect(buildPayload({ ...ergebnis, known: true }, "strategie").bekannt).toBe("ja");
+    expect(buildPayload({ ...ergebnis, known: false }, "strategie").bekannt).toBe("nein");
   });
   it("kürzt Eingabe und Ausgabe fürs CRM und verträgt eine fehlende Firma", () => {
     const p = buildPayload({ ...ergebnis, firma: undefined, ausgabe: "y".repeat(3000) }, "content");

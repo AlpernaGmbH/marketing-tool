@@ -27,6 +27,11 @@ export interface AccessStore {
   peekLeads(max: number): Promise<string[]>;
   /** Entfernt die ältesten `count` Leads aus lead_queue (nach erfolgreichem Versand). */
   dropLeads(count: number): Promise<void>;
+  /**
+   * Merkt sich, dass für diese Adresse (HMAC, `accountHash`) die Mail «neuer Lead» ausgelöst wurde. true: erste Meldung dieser
+   * Adresse in den letzten 365 Tagen; false: war schon bekannt. Atomar (SET NX), damit zwei Werkzeuge gleichzeitig nur eine Mail auslösen.
+   */
+  markKnown(acchash: string): Promise<boolean>;
 }
 
 export function gateSecret(): string | null {
@@ -98,6 +103,11 @@ export function writeGateCookie(res: NextResponse, state: GateState, secret: str
   });
 }
 
+/** Entfernt das Cookie (Profil, «Alles löschen»). */
+export function clearGateCookie(res: NextResponse): void {
+  res.cookies.set(GATE_COOKIE, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
+}
+
 /** AccessStore auf Upstash Redis. */
 export function redisStore(redis: Redis): AccessStore {
   return {
@@ -111,6 +121,10 @@ export function redisStore(redis: Redis): AccessStore {
     },
     async dropLeads(count) {
       if (count > 0) await withTimeout(redis.ltrim(keys.leadQueue, count, -1));
+    },
+    async markKnown(acchash) {
+      const res = await withTimeout(redis.set(keys.known(acchash), "1", { nx: true, ex: TTL.known }));
+      return res === "OK";
     },
     async pushLead(json) {
       // Personendaten im Klartext: Ablauf und Obergrenze, damit nichts unbegrenzt in Redis liegt, wenn n8n ausfällt.

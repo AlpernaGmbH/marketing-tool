@@ -68,4 +68,36 @@ describe("ToolShell: ensureEmail", () => {
     await user.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Später" }));
     await waitFor(() => expect(log).toEqual(["erstes:false", "zweites:false"]));
   });
+
+  it("stellt den Merker der Adresse vom Server wieder her, wenn er lokal fehlt, und zeigt dann kein Fenster", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (path: string) => new Response(JSON.stringify(path === "/api/gate" ? { email: "anna@keller.ch" } : { ok: true }), { status: 200 })),
+    );
+    const log: string[] = [];
+    render(
+      <ToolShell slug="probe" name="Probe">
+        <Probe log={log} />
+      </ToolShell>,
+    );
+    await waitFor(() => expect(screen.getByTestId("access-status")).toHaveTextContent("Ergebnisse gehen an anna@keller.ch"));
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Los" }));
+    await waitFor(() => expect(log).toEqual(["erstes:true", "zweites:true"]));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("fragt weiter nach der Adresse, wenn auch der Server keine kennt", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ email: null }), { status: 200 })));
+    const log: string[] = [];
+    render(
+      <ToolShell slug="probe" name="Probe">
+        <Probe log={log} />
+      </ToolShell>,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Los" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByTestId("access-status")).toHaveTextContent("Ergebnis gegen E-Mail-Adresse");
+  });
 });

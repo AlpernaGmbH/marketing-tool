@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { clientIp, defaultStore, gateSecret, ipHash, readGateCookie } from "@/lib/access";
+import { accountHash, clientIp, defaultStore, gateSecret, ipHash, readGateCookie } from "@/lib/access";
 import { readJson, respond } from "@/lib/api";
 import { buildPayload, deliverLead } from "@/lib/lead";
 import { resultSchema } from "@/lib/lead-schema";
@@ -26,7 +26,15 @@ export async function POST(req: NextRequest) {
   if (!(await withinLimit("result", 30, "1 h", hash))) return respond(ROUTE, 429, { error: "rate_limited" }, "rate_limited");
 
   const store = defaultStore();
-  const payload = buildPayload({ email: gate.email, consent: gate.consent, firma: parsed.data.firma, tool: tool.slug, eingabe: parsed.data.eingabe, ausgabe: parsed.data.ausgabe }, tool.category);
+  // Eine Mail «neuer Lead» je Adresse: Jedes Ergebnis geht in Notion, aber nur die erste Meldung einer Adresse löst die Mail aus.
+  // Fällt Redis aus, gilt die Adresse als neu (lieber eine Mail zu viel als eine verpasste).
+  let known = false;
+  try {
+    known = store ? !(await store.markKnown(accountHash(gate.email, secret))) : false;
+  } catch {
+    known = false;
+  }
+  const payload = buildPayload({ email: gate.email, consent: gate.consent, known, firma: parsed.data.firma, tool: tool.slug, eingabe: parsed.data.eingabe, ausgabe: parsed.data.ausgabe }, tool.category);
   const delivery = await deliverLead(store, payload);
   try {
     await store?.recordResult(tool.slug);
