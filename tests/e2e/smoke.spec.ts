@@ -2321,41 +2321,49 @@ test.describe("Welle 9 im Browser (Planer und Bausteine)", () => {
 });
 
 test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
-  test("LinkedIn-Profil-Score: acht Fragen werden verlangt, Punktwert mit Meter, drei Headline-Vorschläge, PDF-Download, Lead, Neuladen", async ({ page, request }) => {
+  test("LinkedIn-Profil-Score: leere Texte werden gemeldet, Beispiel einfügen, Punktwert aus festen Regeln, drei Vorschläge der KI, PDF-Download, Lead, Neuladen", async ({ page, request }) => {
+    const output = {
+      headlines: [
+        { text: "Ich helfe Familien in Gossau beim Streichen ihrer Fassade", grund: "Nennt, wem du wobei hilfst." },
+        { text: "Fassaden und Innenräume für Familien in Gossau und Flawil", grund: "Nennt die Orte, die du bedienst." },
+        { text: "Malermeister in dritter Generation für Familien in Gossau", grund: "Die dritte Generation ist ein Beleg." },
+      ],
+      infoAnfang: "Familien in Gossau, Flawil und Herisau bekommen von uns Fassaden und Innenräume, die halten. Wir beraten bei der Farbwahl und streichen sauber.",
+    };
+    let generate = 0;
+    await page.route("**/api/generate", (route) => {
+      generate++;
+      return route.fulfill(json({ ok: true, output }));
+    });
     await page.goto("/tools/linkedin-profil");
-    await hydrated(page.getByRole("button", { name: "Profil auswerten" }));
-    await page.getByRole("button", { name: "Profil auswerten" }).click();
+    await hydrated(page.getByRole("button", { name: "Profil prüfen" }));
+    await page.getByRole("button", { name: "Profil prüfen" }).click();
     await expect(page.locator("#lp-error")).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(generate).toBe(0);
     await page.locator("#lp-firma").fill("Malerei Keller");
     await page.locator("#lp-branche").fill("Malerei");
-    const antworten = [
-      "Nur Jobtitel und Firma",
-      "Gut erkennbares Gesicht oder Logo, ruhiger Hintergrund",
-      "Das Standardbild",
-      "Mit meinem Lebenslauf",
-      "Nichts verlinkt",
-      "Nur Titel und Daten",
-      "Eine oder zwei Empfehlungen",
-      "Gar nicht",
-    ];
-    for (const a of antworten) await page.getByRole("radio", { name: a, exact: true }).check();
-    await expect(page.getByTestId("lp-fortschritt")).toContainText("8 von 8");
-    await page.locator("#lp-zielgruppe").fill("Hausbesitzer in Gossau");
-    await page.locator("#lp-ergebnis").fill("Fassaden, die zehn Jahre halten");
-    await page.getByRole("button", { name: "Profil auswerten" }).click();
+    await page.getByRole("button", { name: "Beispiel einfügen" }).click();
+    await expect(page.locator("#lp-headline")).toHaveValue("Malermeister bei Malerei Keller");
+    await page.getByRole("button", { name: "Profil prüfen" }).click();
     const email = await giveEmail(page);
-    await expect(page.getByRole("region", { name: "Dein LinkedIn-Profil-Score" })).toBeVisible();
-    await expect(page.getByRole("meter", { name: "LinkedIn-Profil-Score" })).toHaveAttribute("aria-valuenow", "42");
-    await expect(page.getByTestId("lp-score")).toContainText("Solide Basis");
+    const region = page.getByRole("region", { name: "Dein LinkedIn-Profil-Score" });
+    await expect(region).toBeVisible();
+    await expect(region).toContainText("34");
+    await expect(region).toContainText("Ausbaufähig");
     await expect(page.getByRole("list", { name: "Headline-Vorschläge" }).getByRole("listitem")).toHaveCount(3);
+    await expect(page.getByTestId("lp-info")).toContainText("Familien in Gossau, Flawil und Herisau");
+    expect(generate).toBe(1);
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: "PDF herunterladen" }).click();
     expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
     await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("linkedin-profil");
-    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Betrieb: Malerei Keller");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Betrieb: Malerei Keller");
+    expect(lead.eingabe).toContain("Eingefügte Headline: Malermeister bei Malerei Keller");
     await page.reload();
     await expect(page.getByRole("region", { name: "Dein LinkedIn-Profil-Score" })).toBeVisible();
+    expect(generate).toBe(1);
   });
 
   test("Vorher-Nachher-Collage: ohne Bilder eine Meldung, zwei echte Fotos ergeben PNG in 1080 Pixel und ZIP, Lead, Neuladen", async ({ page, request }) => {

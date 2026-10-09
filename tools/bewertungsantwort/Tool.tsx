@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { GENERATE_FAIL_MESSAGES, type GenerateFailReason } from "@/lib/generate-client";
+import { isKiDown } from "@/lib/generate-client";
 import { placeholdersIn } from "@/lib/generator";
 import { useLocalJson } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
@@ -55,17 +55,8 @@ const selectClass =
 const chipClass =
   "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-input px-4 py-2 has-[:checked]:border-ink has-[:checked]:bg-surface has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50";
 
-/** Wenn die KI nicht antwortet, erscheint statt des Entwurfs die feste Vorlage. Bei «invalid» und «gate» nicht. */
 /** Schritte der Ladeansicht: Das Werkzeug liest die Bewertung, schreibt zwei Antworten und prüft sie (Anrede, Zahlen, Versprechen). */
 const LOADING_STEPS = ["Bewertung lesen", "Antworten schreiben", "Antworten kontrollieren"];
-
-const FALLBACK_REASONS: GenerateFailReason[] = ["failed", "capacity", "rate", "network"];
-
-/** Die Meldung des Hooks zurück auf ihren Grund (der Hook gibt nur den Satz heraus). */
-function reasonOf(message: string | null): GenerateFailReason | null {
-  if (!message) return null;
-  return (Object.keys(GENERATE_FAIL_MESSAGES) as GenerateFailReason[]).find((k) => GENERATE_FAIL_MESSAGES[k] === message) ?? null;
-}
 
 const sameInput = (a: BewertungInput | null, b: BewertungInput | null) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -138,8 +129,8 @@ function AntwortFlow() {
 
   // Ist die KI nicht erreichbar, erscheint die feste Vorlage: gespeichert wird nur das Kennzeichen (die Vorlage folgt aus
   // der Eingabe), und ein CRM-Eintrag «Vorlage (ohne KI)» geht einmal hinaus. Ein vorhandener Entwurf bleibt (`keep`).
-  const failReason = reasonOf(gen.error);
-  const kiDown = failReason !== null && FALLBACK_REASONS.includes(failReason);
+  // Wenn die KI nicht antwortet, erscheint statt des Entwurfs die feste Vorlage. Bei «invalid» und «gate» nicht.
+  const kiDown = isKiDown(gen.error);
   useEffect(() => {
     if (busy || !attempt || attempt.keep || !kiDown || handled.current === attempt) return;
     handled.current = attempt;

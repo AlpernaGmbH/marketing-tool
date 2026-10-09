@@ -178,6 +178,9 @@ export function checkGenerated<I, O>(def: GeneratorDef<I, O>, raw: unknown, inpu
 const CHECK_HINWEISE: Record<string, string> = {
   meta: "Ein Satz redet über die Mitteilung selbst, die Redaktion, Rückfragen oder die Berichterstattung. Streich ihn: Schreib nur, was passiert ist; Kontakt und Bildangebot setzt das Dokument selbst ein.",
   fuell: "Der Entwurf enthält einen Füllsatz oder Werbesprache (behauptete Nachfrage, «für jeden etwas dabei», «Highlight», «bietet Raum für»). Streich ihn oder ersetze ihn durch eine Tatsache aus den Angaben; fehlt der Stoff, setz einen Platzhalter in eckigen Klammern.",
+  doppelt: "Zwei Headline-Vorschläge sind gleich oder ein Vorschlag gleicht der heutigen Headline. Schreib drei verschiedene Headlines mit unterschiedlichem Aufbau.",
+  ichbin: "Der Anfang des Info-Texts beginnt mit «Ich bin» oder «Mein Name». Beginne mit dem Nutzen für die Kundschaft und stell die Person danach vor.",
+  floskel: "Ein Vorschlag enthält eine Floskel (zum Beispiel «ganzheitlich», «Lösungen», «mit Leidenschaft», «Rundum-Service»). Ersetze sie durch eine Tatsache aus den Angaben oder streich sie.",
   wertung: "Der Entwurf enthält ein wertendes Wort (zum Beispiel beliebt, traditionsreich, spannend), das nicht in den Angaben steht. Streich es und schreib nur Tatsachen aus den Angaben.",
 };
 

@@ -4,34 +4,64 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LEAD_KEY } from "@/lib/access-client";
 import { brandHits } from "@/lib/brand-rules";
-import { styleIssues } from "@/lib/content-rules";
 import { PROFILE_KEY } from "@/lib/profile";
-import { isToolDone } from "@/lib/progress";
 import { clearAllLocal, readLocal, writeLocal } from "@/lib/storage";
-import { FRAGEN, SAMPLE, type FrageId } from "./logic";
 import Tool from "./Tool";
+import type { LinkedinOutput } from "./generator";
+import { KI_AUSFALL, SAMPLE } from "./logic";
 
-// Durchlauf im Browser (jsdom): Formular, Vorbefüllung aus dem Profil, Prüfung, Ergebnis nach dem E-Mail-Fenster, Ergebnis ins CRM.
+// Durchlauf im Browser (jsdom): Einfügen, Beispiel, Ladeansicht, Vorschläge der KI, Ausfall der KI mit Ergebnis aus den Regeln,
+// Neu schreiben, Angaben ändern, Neu beginnen, Wiederherstellen. /api/generate wird durch eine Antwortliste ersetzt.
 
-const PROFIL = {
-  firma: "Malerei Keller",
-  branche: "Malerei",
-  ort: "Gossau",
-  primaersegment: "Eigentümer älterer Einfamilienhäuser in Gossau",
-  positionierung: "Wir streichen Fassaden für Familien in Gossau.",
+const KI: LinkedinOutput = {
+  headlines: [
+    { text: "Ich helfe Familien in Gossau beim Streichen ihrer Fassade", grund: "Nennt, wem du wobei hilfst." },
+    { text: "Fassaden und Innenräume für Familien in Gossau und Flawil", grund: "Nennt die Orte, die du bedienst." },
+    { text: "Malermeister in dritter Generation für Familien in Gossau", grund: "Die dritte Generation ist ein Beleg." },
+  ],
+  infoAnfang: "Familien in Gossau, Flawil und Herisau bekommen von uns Fassaden und Innenräume, die halten. Wir beraten bei der Farbwahl und streichen sauber.",
 };
 
-function mockApi() {
-  const calls: { path: string; body: Record<string, unknown> }[] = [];
+const KI_ZWEI: LinkedinOutput = {
+  headlines: [
+    { text: "Wir streichen Fassaden für Familien in Gossau und Herisau", grund: "Nennt die Leistung und die Kundschaft." },
+    { text: "Farbberatung und Anstrich für Familien in Gossau", grund: "Zeigt zwei Leistungen auf einen Blick." },
+    { text: "Malerei Keller: Fassaden für Familien in Flawil", grund: "Der Betrieb steht am Anfang." },
+  ],
+  infoAnfang: "Familien in Gossau bekommen eine Fassade, die lange hält. Wir streichen in Gossau, Flawil und Herisau und beraten bei der Farbwahl.",
+};
+
+type Call = { path: string; body: Record<string, unknown> };
+type Reply = { status: number; body: unknown };
+
+const ok = (output: LinkedinOutput): Reply => ({ status: 200, body: { ok: true, output } });
+const ausfall: Reply = { status: 502, body: { error: "ai_failed" } };
+
+/** /api/lead und /api/result ok; /api/generate antwortet der Reihe nach, die letzte Antwort gilt weiter. */
+function mockApi(replies: Reply[]) {
+  const calls: Call[] = [];
+  let n = 0;
   vi.stubGlobal(
     "fetch",
     vi.fn(async (path: string, init?: RequestInit) => {
       calls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : {} });
-      return { ok: true, status: 200, text: async () => "", json: async () => ({ ok: true }) };
+      const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status });
+      if (path === "/api/lead" || path === "/api/result") return json({ ok: true });
+      if (path === "/api/generate") {
+        const r = replies[Math.min(n++, replies.length - 1)];
+        return json(r.body, r.status);
+      }
+      return json({}, 404);
     }),
   );
-  return calls;
+  return {
+    calls,
+    count: (p: string) => calls.filter((c) => c.path === p).length,
+    last: (p: string) => calls.filter((c) => c.path === p).at(-1),
+  };
 }
+
+const PROFIL = { firma: "Malerei Keller", branche: "Malerei", primaersegment: "Familien in Gossau" };
 
 beforeEach(() => {
   clearAllLocal();
@@ -44,285 +74,278 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** Beschriftung der Antwort mit den Punkten `p` auf die Frage `id`. */
-const label = (id: FrageId, p: 0 | 1 | 2) => FRAGEN.find((f) => f.id === id)!.antworten[p].label;
+type User = ReturnType<typeof userEvent.setup>;
 
-async function beantworte(u: ReturnType<typeof userEvent.setup>, antworten: Partial<Record<FrageId, 0 | 1 | 2>>) {
-  for (const [id, p] of Object.entries(antworten) as [FrageId, 0 | 1 | 2][]) await u.click(screen.getByLabelText(label(id, p)));
+/** Alle sichtbaren Texte, Platzhalter und Namen (aria-label) der Seite, ein Eintrag je Element. */
+function pageTexts(): string[] {
+  const out: string[] = [];
+  for (const el of document.body.querySelectorAll("*")) {
+    if (el.children.length === 0 && el.textContent?.trim()) out.push(el.textContent.trim());
+    for (const attr of ["placeholder", "aria-label"]) {
+      const v = el.getAttribute(attr);
+      if (v) out.push(v);
+    }
+  }
+  return out;
 }
 
-async function fuellBeispiel(u: ReturnType<typeof userEvent.setup>) {
-  await u.click(await screen.findByRole("button", { name: "Beispiel einfügen" }));
+function expectCalmText(where: string) {
+  for (const t of pageTexts()) {
+    expect(brandHits(t), `${where}: ${t}`).toEqual([]);
+    expect(t, `${where}: ${t}`).not.toMatch(/!|\bjetzt\b|—|ß|\bTool\b/i);
+  }
 }
 
-describe("LinkedIn-Profil-Score im Browser", () => {
-  it("zeigt acht Fragen als Gruppen, Firma und Branche aus dem Profil und die Zielgruppe aus dem Segment", async () => {
-    mockApi();
+const start = () => screen.findByRole("button", { name: "Profil prüfen" });
+const card = () => screen.findByRole("region", { name: "Dein LinkedIn-Profil-Score" });
+const state = () => JSON.parse(readLocal("mt:linkedin-profil") ?? "null");
+
+async function beispiel(u: User) {
+  await screen.findByLabelText("Firma");
+  await u.click(screen.getByRole("button", { name: "Beispiel einfügen" }));
+}
+
+describe("LinkedIn-Profil im Browser", () => {
+  it("zeigt das Formular mit Firma, Branche und Zielgruppe aus dem Profil, leeren Texten und dem Datenhinweis", async () => {
+    mockApi([ok(KI)]);
     render(<Tool />);
-
     expect(await screen.findByLabelText("Firma")).toHaveValue("Malerei Keller");
     expect(screen.getByLabelText("Branche")).toHaveValue("Malerei");
-    expect(screen.getByLabelText("Für wen arbeitest du?")).toHaveValue("Eigentümer älterer Einfamilienhäuser in Gossau");
+    expect(screen.getByLabelText("Für wen arbeitest du? (freiwillig)")).toHaveValue("Familien in Gossau");
     expect(screen.getByText(/Aus deinem Firmenprofil übernommen/)).toBeInTheDocument();
-    expect(screen.getByTestId("lp-positionierung")).toHaveTextContent("Wir streichen Fassaden für Familien in Gossau.");
-    expect(screen.getByLabelText("Deine Headline (freiwillig)")).toHaveValue("");
-    expect(screen.getByLabelText("Anfang deines Info-Texts (freiwillig)")).toHaveValue("");
-    expect(screen.getByLabelText("Was erreichen deine Kundinnen und Kunden?")).toBeInTheDocument();
-    expect(screen.getByLabelText("Was belegt es? (Zahl, Ort, Referenz; freiwillig)")).toBeInTheDocument();
-    expect(screen.getByLabelText(/Die Adresse meines Profils trägt meinen Namen/)).not.toBeChecked();
-
-    for (const f of FRAGEN) {
-      const gruppe = screen.getByRole("group", { name: new RegExp(f.text.replace(/[«»?]/g, ".")) });
-      expect(within(gruppe).getAllByRole("radio")).toHaveLength(3);
-    }
-    // beste Antwort zuerst, wie in der Spec
-    const headline = screen.getByRole("group", { name: /Was steht in deiner Headline/ });
-    expect(within(headline).getAllByRole("radio").map((r) => r.closest("label")?.textContent)).toEqual([
-      "Sie nennt, wem du wobei hilfst",
-      "Nur Jobtitel und Firma",
-      "Nur der Standardtext, den ich nie angepasst habe",
-    ]);
-    expect(screen.getByTestId("lp-fortschritt")).toHaveTextContent("0 von 8 Fragen beantwortet.");
-    expect(screen.getByRole("button", { name: "Profil auswerten" })).toBeEnabled();
-    // Der Text sagt offen, dass das Profil nicht gelesen wird
+    expect(screen.getByLabelText("Deine Headline")).toHaveValue("");
+    expect(screen.getByLabelText("Dein Info-Text")).toHaveValue("");
+    expect(screen.getByText("0 Zeichen, Richtwert 220")).toBeInTheDocument();
     expect(screen.getByText(/Das Werkzeug liest dein Profil nicht/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Richtwert von Alperna, keine Statistik und keine Vorgabe von LinkedIn/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Dafür gehen die beiden Texte, der Name deines Betriebs/)).toHaveTextContent("nicht deine E-Mail-Adresse");
+    expect(screen.getByRole("button", { name: "Profil prüfen" })).toBeEnabled();
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expectCalmText("Formular");
   });
 
-  it("meldet unbeantwortete Fragen in einem role=alert, zeigt kein Ergebnis und schickt nichts", async () => {
-    const calls = mockApi();
+  it("meldet leere Texte in einem role=alert und ruft den Server nicht auf", async () => {
+    const m = mockApi([ok(KI)]);
     const u = userEvent.setup();
     render(<Tool />);
-
-    await u.click(await screen.findByRole("button", { name: "Profil auswerten" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Beantworte die acht Fragen zu deinem Profil.");
-
-    await beantworte(u, { headline: 1, profilbild: 2, info: 0 });
-    expect(screen.getByTestId("lp-fortschritt")).toHaveTextContent("3 von 8 Fragen beantwortet.");
-    await u.click(screen.getByRole("button", { name: "Profil auswerten" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Es fehlt noch: Banner, Im Fokus, Erfahrung, Empfehlungen, Aktivität.");
-    expect(screen.queryByRole("region", { name: "Dein LinkedIn-Profil-Score" })).not.toBeInTheDocument();
-    expect(calls.filter((c) => c.path === "/api/result")).toHaveLength(0);
+    await u.click(await start());
+    expect(screen.getByRole("alert")).toHaveTextContent("Füge die Headline oder den Info-Text deines Profils ein.");
+    expect(m.count("/api/generate")).toBe(0);
+    expect(m.count("/api/result")).toBe(0);
   });
 
-  it("wertet das Beispiel aus: Punktwert, Verbesserungen, Funde, drei Vorschläge mit Kopieren-Knöpfen und Ergebnis ins CRM", async () => {
-    const calls = mockApi();
+  it("füllt das Beispiel ein, zeigt beim Warten die Ladeansicht und danach das Ergebnis", async () => {
+    let release: (r: Response) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (path: string) => {
+        if (path === "/api/generate") return new Promise<Response>((resolve) => (release = resolve));
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }),
+    );
     const u = userEvent.setup();
     render(<Tool />);
-    await fuellBeispiel(u);
+    await beispiel(u);
+    expect(screen.getByLabelText("Deine Headline")).toHaveValue(SAMPLE.headline);
+    expect(screen.getByLabelText("Dein Info-Text")).toHaveValue(SAMPLE.about);
+    await u.click(screen.getByRole("button", { name: "Profil prüfen" }));
+    const loading = await screen.findByTestId("tool-loading");
+    for (const step of ["Texte lesen", "Vorschläge schreiben", "Vorschläge kontrollieren"]) expect(loading).toHaveTextContent(step);
+    // Das Formular ist nur ausgeblendet, nicht entfernt: Die Texte stehen noch darin.
+    expect(screen.getByLabelText("Deine Headline")).toHaveValue(SAMPLE.headline);
+    release(new Response(JSON.stringify({ ok: true, output: KI }), { status: 200 }));
+    await card();
+    expect(screen.queryByTestId("tool-loading")).not.toBeInTheDocument();
+  });
 
-    expect(screen.getByLabelText(label("headline", 1))).toBeChecked();
-    expect(screen.getByLabelText("Deine Headline (freiwillig)")).toHaveValue("Malermeister bei Malerei Keller");
-    expect(screen.getByLabelText("Für wen arbeitest du?")).toHaveValue("Familien in Gossau");
-    expect(screen.getByTestId("lp-fortschritt")).toHaveTextContent("8 von 8 Fragen beantwortet.");
-    await u.click(screen.getByRole("button", { name: "Profil auswerten" }));
+  it("wertet das Beispiel aus: Punktwert 34, Verbesserungen, drei Headlines und neuer Anfang mit Kopieren-Knöpfen, Ergebnis ins CRM", async () => {
+    const m = mockApi([ok(KI)]);
+    const u = userEvent.setup();
+    render(<Tool />);
+    await beispiel(u);
+    await u.click(screen.getByRole("button", { name: "Profil prüfen" }));
 
-    const card = await screen.findByRole("region", { name: "Dein LinkedIn-Profil-Score" });
-    expect(screen.getByRole("heading", { name: "Dein LinkedIn-Profil-Score" })).toHaveFocus();
-    const meter = within(card).getByRole("meter", { name: "LinkedIn-Profil-Score" });
-    expect(meter).toHaveAttribute("aria-valuenow", "42");
-    expect(meter).toHaveAttribute("aria-valuetext", "42 von 100, Stufe Solide Basis");
-    expect(within(card).getByTestId("lp-score")).toHaveTextContent("42von 100Solide Basis");
-    expect(within(card).getByText(/Das Werkzeug hat dein LinkedIn-Profil nicht gelesen/)).toBeInTheDocument();
+    const region = await card();
+    expect(within(region).getByRole("heading", { name: "Dein LinkedIn-Profil-Score" })).toHaveFocus();
+    expect(region).toHaveTextContent("34");
+    expect(region).toHaveTextContent("Ausbaufähig");
+    expect(within(region).getByText(/Das Werkzeug hat dein LinkedIn-Profil nicht gelesen/)).toBeInTheDocument();
+    expect(within(region).getByRole("heading", { name: "Verbesserungen" })).toBeInTheDocument();
+    expect(within(region).getByText(/^Sagt, wem du wobei hilfst \(Headline, 18 Punkte offen\)/)).toBeInTheDocument();
+    expect(within(region).getByText(/^Beginnt mit dem Nutzen \(Info-Text, 16 Punkte offen\)/)).toBeInTheDocument();
 
-    const table = within(card).getByRole("table");
-    expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Frage", "Antwort", "Punkte", "Gewicht"]);
-    expect(within(table).getAllByRole("row")).toHaveLength(9);
-    expect(within(table).getByRole("row", { name: /Aktivität Gar nicht 0 von 2 14/ })).toBeInTheDocument();
-
-    expect(within(card).getByText(/^Aktivität \(14 Punkte offen\)\. Was fehlt:/)).toBeInTheDocument();
-    expect(within(card).getByText(/^Headline \(10 Punkte offen\)\./)).toBeInTheDocument();
-    expect(within(card).getByText(/^Headline: Nur ein Titel\./)).toBeInTheDocument();
-    expect(within(card).getByText(/^Info-Text: Beginnt mit «Ich bin»\./)).toBeInTheDocument();
-    expect(within(card).getByText(/^Profil-Adresse\./)).toBeInTheDocument();
-    expect(within(card).getByText(/Geprüft wurde: Headline und Info-Text\. 3 Funde\./)).toBeInTheDocument();
-
-    const vorschlaege = within(card).getByRole("list", { name: "Headline-Vorschläge" });
-    const items = within(vorschlaege).getAllByRole("listitem");
+    const ki = within(region).getByTestId("ki-hinweis");
+    expect(ki).toHaveTextContent("Von einer KI formuliert.");
+    const liste = within(region).getByRole("list", { name: "Headline-Vorschläge" });
+    const items = within(liste).getAllByRole("listitem");
     expect(items).toHaveLength(3);
-    expect(items[0]).toHaveTextContent("Ich helfe Familien in Gossau bei Fassadenanstrich und Farbberatung – Referenzen in Gossau, Flawil und Herisau");
-    expect(items[1]).toHaveTextContent("Fassadenanstrich und Farbberatung für Familien in Gossau: Malerei Keller");
-    for (const [i, name] of ["Vorschlag 1 kopieren", "Vorschlag 2 kopieren", "Vorschlag 3 kopieren"].entries()) {
-      expect(within(items[i]).getByRole("button", { name })).toBeInTheDocument();
-    }
-    await u.click(within(items[1]).getByRole("button", { name: "Vorschlag 2 kopieren" }));
-    expect(await navigator.clipboard.readText()).toBe("Fassadenanstrich und Farbberatung für Familien in Gossau: Malerei Keller");
-    expect(await within(items[1]).findByRole("button", { name: "Kopiert" })).toBeInTheDocument();
+    expect(items[0]).toHaveTextContent(KI.headlines[0].text);
+    expect(items[0]).toHaveTextContent(KI.headlines[0].grund);
+    for (const [i, item] of items.entries()) expect(within(item).getByRole("button", { name: `Vorschlag ${i + 1} kopieren` })).toBeInTheDocument();
+    expect(within(region).getByTestId("lp-info")).toHaveTextContent(KI.infoAnfang);
+    expect(within(region).getByRole("button", { name: "Neuen Anfang kopieren" })).toBeInTheDocument();
+    for (const name of ["Vorschläge neu schreiben", "Angaben ändern", "Neu beginnen"]) expect(within(region).getByRole("button", { name })).toBeEnabled();
+    expect(screen.queryByLabelText("Deine Headline")).not.toBeInTheDocument();
+    expect(within(region).getByText("Der Rest deines Profils")).toBeInTheDocument();
 
-    expect(within(card).getByRole("button", { name: "Text kopieren" })).toBeInTheDocument();
-    expect(within(card).getByRole("button", { name: "PDF herunterladen" })).toBeInTheDocument();
-    expect(within(card).getByRole("button", { name: "Word herunterladen" })).toBeInTheDocument();
-    expect(within(card).getByRole("button", { name: "Angaben ändern" })).toBeInTheDocument();
-    expect(within(card).getByText("Hinweise")).toBeInTheDocument();
-
-    await waitFor(() => expect(calls.filter((c) => c.path === "/api/result")).toHaveLength(1));
-    const body = calls.find((c) => c.path === "/api/result")!.body;
+    // Anfrage: nur die Angaben des Werkzeugs, nie die Adresse
+    expect(m.count("/api/generate")).toBe(1);
+    const body = m.last("/api/generate")?.body as { tool: string; input: Record<string, unknown> };
     expect(body.tool).toBe("linkedin-profil");
-    expect(body.firma).toBe("Malerei Keller");
-    expect(String(body.eingabe).split("\n").slice(0, 3)).toEqual(["Betrieb: Malerei Keller", "Branche: Malerei", "Headline: Nur Jobtitel und Firma (1 von 2)"]);
-    expect(String(body.eingabe)).toContain("Eingefügte Headline: Malermeister bei Malerei Keller");
-    expect(String(body.eingabe)).not.toMatch(/[{}]/);
-    expect(String(body.ausgabe)).toMatch(/^# LinkedIn-Profil-Score\n\n_Punktwert 42 von 100, Stufe «Solide Basis»_/);
-    expect(String(body.ausgabe)).toContain("| Aktivität | Gar nicht | 0 von 2 | 14 |");
-    expect(String(body.ausgabe)).toContain("1. Ich helfe Familien in Gossau bei Fassadenanstrich und Farbberatung");
-    expect(String(body.eingabe)).not.toContain("positionierung");
-    expect(String(body.ausgabe)).not.toContain("Wir streichen Fassaden für Familien in Gossau");
+    expect(body.input).toMatchObject({
+      betrieb: "Malerei Keller",
+      branche: "Malerei",
+      zielgruppe: "Familien in Gossau",
+      headline: SAMPLE.headline,
+      about: SAMPLE.about,
+    });
+    expect((body.input.hinweise as string[]).length).toBeGreaterThan(0);
+    expect(JSON.stringify(body)).not.toContain("anna@keller.ch");
+
+    // CRM: ein Eintrag mit lesbarer Eingabe und Ausgabe als Markdown
+    await waitFor(() => expect(m.count("/api/result")).toBe(1));
+    const crm = m.last("/api/result")?.body as { tool: string; eingabe: string; ausgabe: string };
+    expect(crm.tool).toBe("linkedin-profil");
+    expect(crm.eingabe.split("\n").slice(0, 3)).toEqual(["Betrieb: Malerei Keller", "Branche: Malerei", "Zielgruppe: Familien in Gossau"]);
+    expect(crm.eingabe).toContain(`Eingefügte Headline: ${SAMPLE.headline}`);
+    expect(crm.ausgabe).toContain("34");
+    expect(crm.ausgabe).toContain(KI.headlines[0].text);
+    expect(crm.ausgabe).toContain(KI.infoAnfang);
+
+    // Stand: Texte, Vorschläge und Punktwert, damit der Pfad das Werkzeug als erledigt zählt
+    const s = state();
+    expect(s.v).toBe(2);
+    expect(s.phase).toBe("result");
+    expect(s.ki).toEqual(KI);
+    expect(s.kiAusfall).toBe(false);
+    expect(s.output).toEqual({ score: 34, stufe: "Ausbaufähig" });
+    expectCalmText("Ergebnis");
   });
 
-  it("speichert das Ergebnis unter mt:linkedin-profil, zeigt es nach dem Neuladen wieder und schickt es nicht ein zweites Mal", async () => {
-    const calls = mockApi();
+  it("zeigt nach dem Neuladen dasselbe Ergebnis ohne neue Anfrage und ohne zweiten CRM-Eintrag", async () => {
+    const m = mockApi([ok(KI)]);
     const u = userEvent.setup();
     const first = render(<Tool />);
-    await fuellBeispiel(u);
-    await u.click(screen.getByRole("button", { name: "Profil auswerten" }));
-    await screen.findByRole("region", { name: "Dein LinkedIn-Profil-Score" });
-
-    const stored = JSON.parse(readLocal("mt:linkedin-profil") ?? "null");
-    expect(stored.v).toBe(1);
-    expect(stored.phase).toBe("result");
-    expect(stored.antworten).toEqual(SAMPLE.antworten);
-    expect(stored.firma).toBe("Malerei Keller");
-    expect(stored.output).toEqual({ score: 42, stufe: "Solide Basis" });
-    expect(isToolDone(readLocal("mt:linkedin-profil"))).toBe(true);
-
+    await beispiel(u);
+    await u.click(screen.getByRole("button", { name: "Profil prüfen" }));
+    await card();
+    await waitFor(() => expect(m.count("/api/result")).toBe(1));
     first.unmount();
-    render(<Tool />);
-    const card = await screen.findByRole("region", { name: "Dein LinkedIn-Profil-Score" });
-    expect(within(card).getByRole("meter")).toHaveAttribute("aria-valuenow", "42");
-    expect(calls.filter((c) => c.path === "/api/result")).toHaveLength(1);
 
-    // Angaben ändern: zurück ins Formular mit den gespeicherten Werten; das Ergebnis zählt dann nicht mehr als erledigt
-    await u.click(within(card).getByRole("button", { name: "Angaben ändern" }));
-    expect(await screen.findByLabelText("Deine Headline (freiwillig)")).toHaveValue("Malermeister bei Malerei Keller");
-    expect(screen.getByLabelText(label("aktivitaet", 0))).toBeChecked();
-    expect(screen.getByLabelText("Für wen arbeitest du?")).toHaveValue("Familien in Gossau");
-    expect(JSON.parse(readLocal("mt:linkedin-profil") ?? "null").phase).toBe("edit");
-    expect(isToolDone(readLocal("mt:linkedin-profil"))).toBe(false);
+    render(<Tool />);
+    const region = await card();
+    expect(within(region).getAllByRole("listitem").length).toBeGreaterThanOrEqual(3);
+    expect(within(region).getByRole("heading", { name: "Dein LinkedIn-Profil-Score" })).not.toHaveFocus();
+    expect(m.count("/api/generate")).toBe(1);
+    expect(m.count("/api/result")).toBe(1);
   });
 
-  it("zeigt ohne Zielgruppe und Ergebnis einen Hinweis statt Vorschlägen", async () => {
-    const calls = mockApi();
+  it("zeigt bei Ausfall der KI trotzdem Punktwert und Verbesserungen und meldet das Ergebnis einmal ans CRM", async () => {
+    const m = mockApi([ausfall]);
     const u = userEvent.setup();
-    writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Malerei Keller" }));
     render(<Tool />);
-    expect(await screen.findByLabelText("Für wen arbeitest du?")).toHaveValue("");
-    await beantworte(u, { headline: 2, profilbild: 2, banner: 2, info: 2, fokus: 2, erfahrung: 2, empfehlungen: 2, aktivitaet: 2 });
-    await u.click(screen.getByLabelText(/Die Adresse meines Profils trägt meinen Namen/));
-    await u.click(screen.getByRole("button", { name: "Profil auswerten" }));
+    await beispiel(u);
+    await u.click(screen.getByRole("button", { name: "Profil prüfen" }));
 
-    const card = await screen.findByRole("region", { name: "Dein LinkedIn-Profil-Score" });
-    expect(within(card).getByRole("meter")).toHaveAttribute("aria-valuenow", "100");
-    expect(within(card).getByText("Stark")).toBeInTheDocument();
-    expect(within(card).queryByRole("list", { name: "Headline-Vorschläge" })).not.toBeInTheDocument();
-    expect(within(card).getByText(/Für Headline-Vorschläge fehlen Zielgruppe und Ergebnis\. Wähle «Angaben ändern»/)).toBeInTheDocument();
-    expect(within(card).getByText(/Du hast bei allen acht Fragen die volle Punktzahl/)).toBeInTheDocument();
-    expect(within(card).queryByText(/^Profil-Adresse\./)).not.toBeInTheDocument();
-    await waitFor(() => expect(calls.filter((c) => c.path === "/api/result")).toHaveLength(1));
-    expect(String(calls.find((c) => c.path === "/api/result")!.body.eingabe)).toContain("Profil-Adresse mit Namen: ja");
+    const region = await card();
+    expect(region).toHaveTextContent("34");
+    expect(within(region).getByTestId("ki-ausfall")).toHaveTextContent(KI_AUSFALL);
+    expect(within(region).queryByTestId("ki-hinweis")).not.toBeInTheDocument();
+    expect(within(region).queryByRole("list", { name: "Headline-Vorschläge" })).not.toBeInTheDocument();
+    expect(within(region).getByText(/^Sagt, wem du wobei hilfst/)).toBeInTheDocument();
+    expect(within(region).getByRole("alert")).toBeEmptyDOMElement();
+
+    await waitFor(() => expect(m.count("/api/result")).toBe(1));
+    const crm = m.last("/api/result")?.body as { tool: string; ausgabe: string };
+    expect(crm.tool).toBe("linkedin-profil");
+    expect(crm.ausgabe).toContain("nicht erreichbar");
+    expect(crm.ausgabe).toContain("34");
+    expect(m.count("/api/generate")).toBe(1);
+
+    const s = state();
+    expect(s.phase).toBe("result");
+    expect(s.ki).toBeNull();
+    expect(s.kiAusfall).toBe(true);
+    expect(s.output.score).toBe(34);
+    expectCalmText("Ausfall");
   });
 
-  it("fragt vor dem ersten Ergebnis nach der E-Mail-Adresse und lässt das Formular stehen, wenn das Fenster geschlossen wird", async () => {
-    clearAllLocal();
-    writeLocal(PROFILE_KEY, JSON.stringify(PROFIL));
-    const calls = mockApi();
+  it("holt die Vorschläge bei «Vorschläge neu schreiben» nach und schickt sie erneut ins CRM", async () => {
+    const m = mockApi([ausfall, ok(KI_ZWEI)]);
     const u = userEvent.setup();
     render(<Tool />);
-    await fuellBeispiel(u);
-    await u.click(screen.getByRole("button", { name: "Profil auswerten" }));
+    await beispiel(u);
+    await u.click(screen.getByRole("button", { name: "Profil prüfen" }));
+    const region = await card();
+    await waitFor(() => expect(m.count("/api/result")).toBe(1));
+    await u.click(within(region).getByRole("button", { name: "Vorschläge neu schreiben" }));
 
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("Dein Ergebnis ist bereit.")).toBeInTheDocument();
-    await u.click(within(dialog).getByRole("button", { name: "Später" }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId("lp-info")).toHaveTextContent(KI_ZWEI.infoAnfang));
+    expect(screen.queryByTestId("ki-ausfall")).not.toBeInTheDocument();
+    expect(screen.getByTestId("lp-headline-1")).toHaveTextContent(KI_ZWEI.headlines[0].text);
+    await waitFor(() => expect(m.count("/api/result")).toBe(2));
+    expect((m.last("/api/result")?.body as { ausgabe: string }).ausgabe).toContain(KI_ZWEI.headlines[0].text);
+    expect(state().kiAusfall).toBe(false);
+  });
+
+  it("lässt ein vorhandenes Ergebnis stehen, wenn das Neuschreiben scheitert, und meldet es unter dem Ergebnis", async () => {
+    const m = mockApi([ok(KI), ausfall]);
+    const u = userEvent.setup();
+    render(<Tool />);
+    await beispiel(u);
+    await u.click(screen.getByRole("button", { name: "Profil prüfen" }));
+    const region = await card();
+    await waitFor(() => expect(m.count("/api/result")).toBe(1));
+    await u.click(within(region).getByRole("button", { name: "Vorschläge neu schreiben" }));
+
+    await waitFor(() => expect(within(region).getByRole("alert")).toHaveTextContent("Die KI hat keinen brauchbaren Entwurf geliefert."));
+    expect(screen.getByTestId("lp-info")).toHaveTextContent(KI.infoAnfang);
+    expect(screen.queryByTestId("ki-ausfall")).not.toBeInTheDocument();
+    expect(m.count("/api/generate")).toBe(2);
+    expect(m.count("/api/result")).toBe(1);
+    expect(state().ki).toEqual(KI);
+  });
+
+  it("ändert die Angaben mit den bisherigen Werten und prüft nach dem Ändern neu", async () => {
+    const m = mockApi([ok(KI), ok(KI_ZWEI)]);
+    const u = userEvent.setup();
+    render(<Tool />);
+    await beispiel(u);
+    await u.click(screen.getByRole("button", { name: "Profil prüfen" }));
+    const region = await card();
+    await u.click(within(region).getByRole("button", { name: "Angaben ändern" }));
+
+    const headline = await screen.findByLabelText("Deine Headline");
+    expect(headline).toHaveValue(SAMPLE.headline);
+    expect(screen.getByLabelText("Dein Info-Text")).toHaveValue(SAMPLE.about);
+    await u.clear(headline);
+    await u.type(headline, "Ich helfe Familien in Gossau seit 1987 beim Streichen");
+    await u.click(screen.getByRole("button", { name: "Profil prüfen" }));
+    await waitFor(() => expect(screen.getByTestId("lp-info")).toHaveTextContent(KI_ZWEI.infoAnfang));
+    expect(m.count("/api/generate")).toBe(2);
+    expect((m.last("/api/generate")?.body as { input: { headline: string } }).input.headline).toBe("Ich helfe Familien in Gossau seit 1987 beim Streichen");
+    await waitFor(() => expect(m.count("/api/result")).toBe(2));
+    expect(state().output.score).toBeGreaterThan(34);
+  });
+
+  it("beginnt bei «Neu beginnen» mit leeren Texten; die Zielgruppe kommt wieder aus dem Profil", async () => {
+    mockApi([ok(KI)]);
+    const u = userEvent.setup();
+    render(<Tool />);
+    await beispiel(u);
+    await u.click(screen.getByRole("button", { name: "Profil prüfen" }));
+    const region = await card();
+    await u.click(within(region).getByRole("button", { name: "Neu beginnen" }));
+    expect(await screen.findByLabelText("Deine Headline")).toHaveValue("");
+    expect(screen.getByLabelText("Dein Info-Text")).toHaveValue("");
+    expect(screen.getByLabelText("Für wen arbeitest du? (freiwillig)")).toHaveValue("Familien in Gossau");
+    expect(state().phase).toBe("edit");
+  });
+
+  it("meldet einen Stand einer früheren Fassung nicht als Ergebnis, sondern zeigt das leere Formular", async () => {
+    writeLocal("mt:linkedin-profil", JSON.stringify({ v: 1, phase: "result", antworten: { headline: 2 }, headline: "Maler" }));
+    mockApi([ok(KI)]);
+    render(<Tool />);
+    expect(await screen.findByLabelText("Deine Headline")).toHaveValue("");
     expect(screen.queryByRole("region", { name: "Dein LinkedIn-Profil-Score" })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Deine Headline (freiwillig)")).toHaveValue("Malermeister bei Malerei Keller");
-    expect(screen.getByLabelText(label("fokus", 0))).toBeChecked();
-    expect(calls.filter((c) => c.path === "/api/result")).toHaveLength(0);
-  });
-
-  it("hält Antworten und Texte als Zwischenstand fest, bevor ausgewertet wird", async () => {
-    mockApi();
-    const u = userEvent.setup();
-    const first = render(<Tool />);
-    await beantworte(u, { headline: 2, aktivitaet: 1 });
-    await u.type(await screen.findByLabelText("Deine Headline (freiwillig)"), "Ich helfe KMU");
-    await waitFor(() => expect(JSON.parse(readLocal("mt:linkedin-profil") ?? "null")?.headline).toBe("Ich helfe KMU"), { timeout: 3000 });
-    const stand = JSON.parse(readLocal("mt:linkedin-profil") ?? "null");
-    expect(stand.phase).toBe("edit");
-    expect(stand.antworten).toEqual({ headline: 2, aktivitaet: 1 });
-    first.unmount();
-
-    render(<Tool />);
-    expect(await screen.findByLabelText("Deine Headline (freiwillig)")).toHaveValue("Ich helfe KMU");
-    expect(screen.getByLabelText(label("headline", 2))).toBeChecked();
-    expect(screen.getByLabelText(label("aktivitaet", 1))).toBeChecked();
-    expect(screen.getByTestId("lp-fortschritt")).toHaveTextContent("2 von 8 Fragen beantwortet.");
-  });
-
-  it("«Neu beginnen» löscht den Stand und setzt die Zielgruppe wieder aus dem Profil ein", async () => {
-    mockApi();
-    const u = userEvent.setup();
-    render(<Tool />);
-    await fuellBeispiel(u);
-    await u.click(screen.getByRole("button", { name: "Profil auswerten" }));
-    await u.click(await screen.findByRole("button", { name: "Neu beginnen" }));
-
-    expect(await screen.findByLabelText("Für wen arbeitest du?")).toHaveValue("Eigentümer älterer Einfamilienhäuser in Gossau");
-    expect(screen.getByTestId("lp-fortschritt")).toHaveTextContent("0 von 8 Fragen beantwortet.");
-    expect(screen.getByLabelText("Deine Headline (freiwillig)")).toHaveValue("");
-    expect(isToolDone(readLocal("mt:linkedin-profil"))).toBe(false);
-  });
-
-  it("zählt Zeichen der Headline mit dem Richtwert und meldet eine zu lange Headline im Ergebnis", async () => {
-    const calls = mockApi();
-    const u = userEvent.setup();
-    render(<Tool />);
-    await fuellBeispiel(u);
-    const feld = screen.getByLabelText("Deine Headline (freiwillig)");
-    await u.clear(feld);
-    await u.click(feld);
-    const lang = `Ich helfe KMU bei Anfragen ${"x".repeat(220)}`;
-    expect(lang).toHaveLength(247);
-    await u.paste(lang);
-    expect(screen.getByText(/247 Zeichen, Richtwert 220/)).toBeInTheDocument();
-    await u.click(screen.getByRole("button", { name: "Profil auswerten" }));
-    const card = await screen.findByRole("region", { name: "Dein LinkedIn-Profil-Score" });
-    expect(within(card).getByText(/^Headline: Zu lang\. Was fehlt: Die Headline hat 247 Zeichen\. Der Richtwert liegt bei 220\./)).toBeInTheDocument();
-    await waitFor(() => expect(calls.filter((c) => c.path === "/api/result")).toHaveLength(1));
-  });
-
-  it("passt Beschriftung und Beispiele für einen Verein an und lässt die Zielgruppe leer, wenn das Profil keine hat", async () => {
-    clearAllLocal();
-    writeLocal(LEAD_KEY, "anna@keller.ch");
-    writeLocal(PROFILE_KEY, JSON.stringify({ organisationstyp: "verein", firma: "FC Trogen" }));
-    mockApi();
-    const { container } = render(<Tool />);
-    expect(await screen.findByLabelText("Name des Vereins")).toHaveValue("FC Trogen");
-    expect(screen.getByLabelText("Tätigkeit des Vereins")).toHaveValue("");
-    const zielgruppe = screen.getByLabelText("Für wen arbeitest du?");
-    expect(zielgruppe).toHaveValue("");
-    expect(zielgruppe).toHaveAttribute("placeholder", "Familien in Trogen");
-    expect(screen.queryByTestId("lp-positionierung")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Was erreichen deine Kundinnen und Kunden?")).toHaveAttribute("placeholder", "Einstieg in den Fussball");
-    for (const text of [container.textContent ?? "", "Familien in Trogen", "Einstieg in den Fussball", "Training für alle Altersstufen"]) {
-      expect(brandHits(text.replace(/([a-zäöü.])([A-ZÄÖÜ])/g, "$1 $2"))).toEqual([]);
-      expect(styleIssues(text)).toEqual([]);
-    }
-  });
-
-  it("Formular und Ergebnis halten die Sperrliste und die Stilregeln ein", async () => {
-    mockApi();
-    const u = userEvent.setup();
-    const { container } = render(<Tool />);
-    await fuellBeispiel(u);
-    const form = container.textContent ?? "";
-    await u.click(screen.getByRole("button", { name: "Profil auswerten" }));
-    await screen.findByRole("region", { name: "Dein LinkedIn-Profil-Score" });
-    const result = container.textContent ?? "";
-    for (const text of [form, result]) {
-      expect(brandHits(text.replace(/([a-zäöü.])([A-ZÄÖÜ])/g, "$1 $2"))).toEqual([]);
-      expect(styleIssues(text)).toEqual([]);
-      expect(text).not.toMatch(/\bTools?\b/);
-    }
   });
 });

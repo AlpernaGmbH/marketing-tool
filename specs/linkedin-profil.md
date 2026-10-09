@@ -1,93 +1,83 @@
 # LinkedIn-Profil-Score (linkedin-profil)
 
 ## Nutzen in einem Satz
-Für KMU, Selbständige und Vereine, die auf LinkedIn auffindbar sein wollen: acht Fragen zum eigenen Profil, danach ein Punktwert von 0 bis 100, die wichtigsten Verbesserungen in der Reihenfolge ihres Gewichts und drei Headline-Vorschläge zum Kopieren, in etwa fünf Minuten.
+Für KMU und Selbständige, die auf LinkedIn auffindbar sein wollen: Headline und Info-Text aus dem eigenen Profil einfügen, danach ein Punktwert von 0 bis 100 nach festen Regeln, die wichtigsten Verbesserungen und von einer KI drei Headline-Vorschläge samt neuem Anfang für den Info-Text, in etwa drei Minuten.
 
-Das Werkzeug liest das Profil nicht. LinkedIn lässt sich nicht auslesen, und es gibt keinen Server, keine KI und keinen Zugriff auf LinkedIn. Der Punktwert ist eine Selbsteinschätzung. Gewichte, Stufen und Grenzen sind ein Richtwert von Alperna, keine Statistik und keine Vorgabe von LinkedIn. Das sagen Einleitung, Ergebnis, Dokument und Seitentext offen.
+Das Werkzeug liest das Profil nicht. LinkedIn lässt sich nicht auslesen. Die Person fügt zwei Texte ein. Der Punktwert kommt aus zehn festen Regeln (nur Form und Wortwahl der eingefügten Texte), nie von der KI. Gewichte, Stufen und Grenzen sind ein Richtwert von Alperna, keine Statistik und keine Vorgabe von LinkedIn. Das sagen Einleitung, Ergebnis, Dokument und Seitentext offen. Bild, Banner, «Im Fokus», Erfahrung, Empfehlungen, Aktivität und Adresse des Profils lassen sich nicht einfügen: Sie stehen als Liste ohne Punkte unter dem Ergebnis.
+
+Änderung gegenüber der Fassung vom 05.10.2026 (Feedback-Runde 2, Charge B2): Die acht Fragen mit Selbsteinschätzung entfallen. Stattdessen Einfügen von Headline und Info-Text, Punktwert aus den Texten und ein KI-Aufruf für die Vorschläge.
 
 ## Kategorie und Verknüpfung
-Kategorie: analyse (Pfad «analyse», Schritt 5). Zielgruppe: beide (KMU und Vereine; bei Vereinen steht Kundschaft für Mitglieder, Publikum und Sponsoren). Klasse C: alles im Browser, regelbasiert.
-Liest aus Profil: firma, branche (beide über ProfileFieldsForm sichtbar und änderbar), primaersegment (Vorbefüllung der Zielgruppe), positionierung (nur Anzeige im Formular), organisationstyp (Wortlaut der Feldbeschriftungen und Beispiele).
-Schreibt ins Profil: nichts (`profilePatch` entfällt).
-Verwandte Tools: positionierung, nutzenversprechen, textcheck.
+Kategorie: analyse (Pfad «analyse», Schritt 5). Zielgruppe: beide. Klasse B: ein KI-Aufruf über /api/generate (Generator `tools/linkedin-profil/generator.ts`), `needsServer: true`.
+Liest aus Profil: firma, branche (beide über ProfileFieldsForm sichtbar und änderbar), primaersegment (Vorbefüllung der Zielgruppe).
+Schreibt ins Profil: nichts.
+Verwandte Werkzeuge: positionierung, nutzenversprechen, textcheck.
 
 ## Eingaben
 | Feld | Typ | Pflicht | Vorbefüllung aus Profil | Validierung | Hilfetext |
 |---|---|---|---|---|---|
-| Firma | text (ProfileFieldsForm) | nein | firma | höchstens 200 Zeichen (Profil) | Wird im Firmenprofil gespeichert |
-| Branche | text (ProfileFieldsForm) | nein | branche | höchstens 200 Zeichen (Profil) | Wird im Firmenprofil gespeichert |
-| Acht Fragen | single, je drei Antworten (2, 1, 0 Punkte), beste Antwort zuerst | ja, alle acht | nein | jede Frage genau eine Antwort | Antworte so, wie das Profil heute aussieht |
-| Profil-Adresse mit Namen | Checkbox | nein (Standard: nein) | nein | Wahrheitswert | Zusatzfrage ohne Gewicht |
-| Deine Headline (freiwillig) | text | nein | nein | bis 300 Zeichen eingebbar; Richtwert 220 | Zeichenzähler zeigt «n Zeichen, Richtwert 220» |
-| Anfang deines Info-Texts (freiwillig) | textarea | nein | nein | bis 600 Zeichen | Die ersten Sätze genügen |
-| Für wen arbeitest du? | text | nein | primaersegment, auf 80 Zeichen am letzten Leerzeichen gekürzt | bis 80 Zeichen | Ein Ausdruck, der nach «Ich helfe» und «für» passt |
-| Was erreichen deine Kundinnen und Kunden? | text | nein | nein | bis 80 Zeichen | Kurzer Ausdruck ohne Artikel, der nach «bei» passt |
-| Was belegt es? (Zahl, Ort, Referenz; freiwillig) | text | nein | nein | bis 80 Zeichen | Nur, was die Person belegen kann |
+| Firma | text (ProfileFieldsForm) | nein | firma | höchstens 120 Zeichen an die KI | Wird im Firmenprofil gespeichert |
+| Branche | text (ProfileFieldsForm) | nein | branche | höchstens 120 Zeichen an die KI | Wird im Firmenprofil gespeichert |
+| Deine Headline | text | eines von beiden | nein | bis 300 Zeichen; Richtwert 220 | Zähler «n Zeichen, Richtwert 220» |
+| Dein Info-Text | textarea | eines von beiden | nein | bis 2'600 Zeichen | Zähler «n von 2'600 Zeichen» |
+| Für wen arbeitest du? (freiwillig) | text | nein | primaersegment, auf 80 Zeichen am letzten Leerzeichen gekürzt | bis 80 Zeichen | Die KI nutzt sie für die Vorschläge |
 
-Die Positionierung aus dem Profil erscheint als Hinweis im Formular («Die Headline darf sie aufgreifen»). Sie geht weder in den gespeicherten Stand noch ins Dokument noch ins CRM.
-
-### Die acht Fragen, Gewichte (Richtwert von Alperna, Summe 100)
-| Nr. | Kurzname | Gewicht | 2 Punkte | 1 Punkt | 0 Punkte |
-|---|---|---|---|---|---|
-| 1 | Headline | 20 | nennt, wem du wobei hilfst | nur Jobtitel und Firma | nur der Standardtext |
-| 2 | Profilbild | 8 | gut erkennbares Gesicht oder Logo, ruhiger Hintergrund | vorhanden, aber unklar | keines |
-| 3 | Banner | 8 | eigenes Banner mit Aussage | Standardbild | keines |
-| 4 | Info-Text | 18 | beginnt mit dem Nutzen für die Kundschaft | beginnt mit dem Lebenslauf | leer |
-| 5 | Im Fokus | 10 | mehrere Verlinkungen (Beispiele, Angebote, Referenzen) | eine Verlinkung | nichts verlinkt |
-| 6 | Erfahrung | 14 | Stationen mit Ergebnissen | nur Titel und Daten | unvollständig oder leer |
-| 7 | Empfehlungen | 8 | drei oder mehr | eine oder zwei | keine |
-| 8 | Aktivität | 14 | regelmässig Beiträge oder Kommentare | selten | gar nicht |
-
-Bereichsnamen von LinkedIn: Nur «Im Fokus» ist in der Frage genannt (Quelle: Hilfeseite «Bereich Im Fokus Ihres Profils» auf linkedin.com/help, abgerufen am 05.10.2026). Alle anderen Fragen beschreiben die Sache allgemein.
+Mindestens Headline oder Info-Text; beides ist besser. «Beispiel einfügen» füllt die Texte von Malerei Keller. Eine getippte Zielgruppe wird nie überschrieben.
 
 ## Logik
-Annahme: Gewichte, Stufen, Richtwert für die Headline-Länge (220), die ersten 210 Zeichen des Info-Texts und die Satzlänge (25 Wörter, wie im Textcheck) sind ein Richtwert von Alperna, ohne Quelle, im UI als Richtwert gekennzeichnet.
+Annahme: Gewichte, Stufen, Richtwert für die Headline-Länge (220), die ersten 210 Zeichen des Info-Texts, Umfang (100 und 300 Zeichen) und Satzlänge (25 Wörter, wie im Textcheck) sind ein Richtwert von Alperna, ohne Quelle, im UI als Richtwert gekennzeichnet.
 
-1. **Punktwert** = Summe über alle Fragen von Gewicht × (Punkte / 2), auf ganze Zahlen gerundet. Alle Gewichte sind gerade, darum ist jede Summe schon ganzzahlig. Alles 0 ergibt 0, alles 2 ergibt 100, alles 1 ergibt 50. Unbeantwortete Fragen zählen 0 (die Oberfläche verlangt alle acht).
-2. **Stufe** (Richtwert): 0 bis 39 «Ausbaufähig», 40 bis 69 «Solide Basis», 70 bis 100 «Stark». Gerundet wird vorher; NaN und negative Werte gelten als 0, Werte über 100 als «Stark». ScoreBadge wird nicht verwendet, weil seine Stufenwörter und Schwellen (stark ab 75, ausbaufähig ab 40) anders sind als diese; das Ergebnis zeigt eine eigene Anzeige mit `role="meter"`.
-3. **Verbesserungen.** Je Frage ist der offene Anteil Gewicht × (2 − Punkte) / 2. Die Fragen mit offenen Punkten werden absteigend sortiert, bei Gleichstand gilt die Reihenfolge der Fragen; die ersten fünf kommen in die Liste, je mit den Texten «Was fehlt» und «So geht es» für die gewählte Stufe (0 oder 1 Punkt). Danach folgen die Funde aus den eingefügten Texten, zuletzt der Hinweis auf die Profil-Adresse, wenn die Checkbox nicht gesetzt ist. Die Texte nennen keine Zahlen von aussen.
-4. **Funde** (nur wenn Text da ist; ändern den Punktwert nie; jeder Fund nennt die Stelle, was auffällt und einen Satz Vorschlag):
-   - Headline über 220 Zeichen (Richtwert; die Plattform ändert die Grenze).
-   - Headline ohne Verb aus einer Liste (helfe, unterstütze, schaffe, bringe, mache, begleite, baue und weitere Formen, nur als ganzes Wort) und ohne Ziffer: «nennt vermutlich nur einen Titel».
-   - Floskeln aus data/floskeln.json (Regelsatz des Textchecks, `findingsOf`) in der Headline und im Info-Text.
-   - Info-Text beginnt mit «Ich bin» oder «Mein Name»: Der Nutzen gehört nach vorn.
-   - Die ersten 210 Zeichen des Info-Texts enthalten keines der Wörter du, dich, dir, dein-, Sie (gross), Kundschaft, Kunde, Kundin, Kunden, Kundinnen, Betriebe, KMU, Vereine, Mitglieder, Publikum, Sponsoren. Heuristik, kein Urteil über den Inhalt.
-   - Sätze über 25 Wörter im Info-Text (`LONG_SENTENCE_WORDS` aus dem Textcheck).
-5. **Headline-Vorschläge** nur aus den Wörtern der Person, wenn Zielgruppe und Ergebnis da sind; sonst steht ein Hinweis, welches Feld fehlt (kein Fehler):
-   1. «Ich helfe {Zielgruppe} bei {Ergebnis} – {Beweis}»
-   2. «{Ergebnis} für {Zielgruppe}: {Firma, sonst Branche}»
-   3. «{Zielgruppe}: {Ergebnis}. {Beweis}»
-   Ohne Beweis entfällt der Beweisteil mit seinem Trenner; ohne Firma und Branche entfällt der Doppelpunkt-Teil in Muster 2. Jeder Teil geht durch `typoCH`, wird von Satzzeichen am Rand befreit und beim Zusammensetzen von doppelten Satzzeichen, doppelten Leerzeichen und doppeltem Gedankenstrich bereinigt. Muster 2 und 3 beginnen gross, im dritten Muster auch der Beweis. Mehr als 220 Zeichen werden am letzten Leerzeichen gekürzt und als «gekürzt» gemeldet. Das Werkzeug beugt kein Wort; ein Hinweis fordert die Person auf, Fall und Grammatik zu prüfen.
-6. **Stand** unter `mt:linkedin-profil`: `{ v: 1, phase: "edit" | "result", antworten, urlAngepasst, headline, about, zielgruppe, ergebnis, beweis, firma, branche, output? }`. `firma` und `branche` sind eine Momentaufnahme aus dem Profil beim Auswerten, damit das Ergebnis stabil bleibt. `output` ist `{ score, stufe }` und wird beim Lesen neu berechnet. Ein Ergebnis gibt es nur bei acht gültigen Antworten; sonst gilt `phase: "edit"`. `phase: "result"` genügt lib/progress.ts.
+1. **Zehn Kriterien** mit je 0, 1 oder 2 Punkten; Gewicht × Punkte ÷ 2 ergibt die erreichten Punkte. Gewichte (Summe 100, alle gerade, darum ganzzahlig):
+
+| Kriterium | Stelle | Gewicht | 2 Punkte | 1 Punkt | 0 Punkte |
+|---|---|---|---|---|---|
+| h-laenge | Headline | 6 | 25 bis 220 Zeichen | unter 25 Zeichen | leer oder über 220 |
+| h-aussage | Headline | 18 | Verb (helfe, unterstütze, …) und Bezug (für, bei, Kundschaft) | eines von beiden (Verb, «für» oder Kundschaftswort) | weder noch |
+| h-beleg | Headline | 6 | enthält eine Ziffer | nennt einen Ort («in Gossau») | weder noch |
+| h-floskel | Headline | 8 | keine Floskel aus dem Textcheck | | Floskel oder leer |
+| i-nutzen | Info-Text | 16 | beginnt nicht mit «Ich» | beginnt mit «Ich» | beginnt mit «Ich bin» oder «Mein Name», oder leer |
+| i-kundschaft | Info-Text | 12 | Kundschaftswort in den ersten 210 Zeichen | in den ersten 600 Zeichen | nirgends |
+| i-saetze | Info-Text | 8 | kein Satz über 25 Wörter | ein Satz | mehrere |
+| i-umfang | Info-Text | 8 | ab 300 Zeichen | ab 100 Zeichen | darunter |
+| i-floskel | Info-Text | 8 | keine Floskel | eine | mehrere |
+| i-aufruf | Info-Text | 10 | in den letzten 300 Zeichen ein Verb wie schreib, melde, ruf an, Adresse, Link oder Telefonnummer | | nicht vorhanden |
+
+   Headline zusammen 38, Info-Text 62. Ein leerer Text ergibt für seine Kriterien 0. Kundschaftswörter: du, dich, dir, dein-, Sie (gross geschrieben), Kunde, Kundin, Kunden, Kundinnen, Kundschaft, Betriebe, KMU, Vereine, Mitglieder, Publikum, Sponsoren, Familien, Hausbesitzer, Eigentümer, Eltern, Gäste (Heuristik, kein Urteil über den Inhalt). Floskeln und lange Sätze kommen aus dem Regelsatz des Textchecks (`findingsOf`, data/floskeln.json).
+2. **Punktwert** = Summe der erreichten Punkte, ganzzahlig. **Stufe** (Richtwert): 0 bis 39 «Ausbaufähig», 40 bis 69 «Solide Basis», 70 bis 100 «Stark». NaN und negative Werte gelten als 0, Werte über 100 als «Stark». Das Ergebnis zeigt den Punktwert als Kennzahl-Kachel (Stat-Block) und die erreichten Prozent je Kriterium als Balken.
+3. **Verbesserungen:** die Kriterien mit weniger als 2 Punkten, absteigend nach offenen Punkten, bei Gleichstand in der Reihenfolge der Tabelle, höchstens fünf; je mit «Was fehlt» (Text für 0 oder 1 Punkt), konkreten Funden (zum Beispiel die gefundene Floskel, Länge der Headline, Zahl langer Sätze) und «So geht es».
+4. **KI-Vorschläge** (ein Aufruf, `/api/generate`, Ausgabe `{ headlines: 3 × { text 20 bis 220, grund 10 bis 140 }, infoAnfang 80 bis 600 }`): Die KI bekommt Betrieb, Branche, Zielgruppe, die eingefügten Texte und bis zu acht Hinweise der Regeln. Prüfung jedes Vorschlags (`checkLinkedin`): keine doppelte Headline und keine gleich der heutigen («doppelt»), keine Ziffernfolge, die nicht in den Angaben steht («zahl»), jeder Vorschlag nennt ein Wort der Angaben («erfunden»), keine eckige Klammer, die nicht in den Angaben steht («platzhalter»), der neue Anfang beginnt nicht mit «Ich bin» oder «Mein Name» («ichbin»), keine Floskel aus dem Textcheck («floskel»); dazu die gemeinsame Stimme- und Zeichenprüfung (lib/generator.ts). Besteht ein Entwurf die Prüfung nicht, bekommt die KI einmal eine feste Rückmeldung und schreibt neu; danach fällt die Antwort durch.
+5. **Ausfall der KI** (Kapazität, Rate, Netz, ungültige Antwort): Das Ergebnis erscheint trotzdem mit Punktwert, Balken und Verbesserungen. Statt der Vorschläge steht ein ruhiger Hinweis, `kiAusfall` ist gesetzt, und genau ein CRM-Eintrag geht hinaus. «Vorschläge neu schreiben» holt die Vorschläge nach und schickt das vollständige Ergebnis erneut ins CRM. Scheitert das Neuschreiben bei vorhandenem Ergebnis, bleibt es stehen, der Fehler erscheint unter dem Ergebnis, und es geht nichts ins CRM. Bei «gate» und «invalid» bleibt das Formular mit Fehlermeldung.
+6. **Stand** unter `mt:linkedin-profil`: `{ v: 2, phase: "edit" | "result", headline, about, zielgruppe, firma, branche, ki: LinkedinOutput | null, kiAusfall, output?: { score, stufe } }`. Stände einer früheren Fassung (`v: 1`) ergeben das leere Formular. `ki` wird beim Lesen gegen das Ausgabeschema geprüft. `output` wird beim Lesen neu berechnet. `phase: "result"` genügt lib/progress.ts.
 
 ### Rechenbeispiel (Malerei Keller, Gossau)
-Antworten: Headline 1, Profilbild 2, Banner 1, Info-Text 1, Im Fokus 0, Erfahrung 1, Empfehlungen 1, Aktivität 0; Adresse nicht angepasst.
-Punktwert = 10 + 8 + 4 + 9 + 0 + 7 + 4 + 0 = 42, Stufe «Solide Basis». Offene Punkte: Aktivität 14, Headline 10, Im Fokus 10, Info-Text 9, Erfahrung 7, Banner 4, Empfehlungen 4 (zusammen 58). Die Liste nennt die ersten fünf. Eingefügt: Headline «Malermeister bei Malerei Keller» (Fund: weder Verb noch Zahl) und ein Info-Text, der mit «Ich bin» beginnt und in den ersten 210 Zeichen nichts über die Kundschaft sagt (zwei Funde). Zielgruppe «Familien in Gossau», Ergebnis «Fassadenanstrich und Farbberatung», Beleg «Referenzen in Gossau, Flawil und Herisau»: Muster 1 hat 109 Zeichen, Muster 2 72, Muster 3 95.
+Headline «Malermeister bei Malerei Keller» (31 Zeichen), Info-Text «Ich bin Malermeister und führe die Malerei Keller in dritter Generation. Wir streichen Fassaden und Innenräume in Gossau, Flawil und Herisau und beraten bei der Farbwahl.»
+Punkte: h-laenge 2 (6), h-aussage 0 (kein Verb), h-beleg 0, h-floskel 2 (8), i-nutzen 0 («Ich bin»), i-kundschaft 0, i-saetze 2 (8), i-umfang 1 (4, unter 300 Zeichen), i-floskel 2 (8), i-aufruf 0. Summe 6 + 8 + 8 + 4 + 8 = 34, Stufe «Ausbaufähig». Offene Punkte: h-aussage 18, i-nutzen 16, i-kundschaft 12, i-aufruf 10, h-beleg 6 (zusammen 62; die fünf grössten stehen in der Liste).
 
 ## Ausgaben
-- Ergebnis am Bildschirm (ResultCard «Dein LinkedIn-Profil-Score»): Punktwert mit Stufe und Anzeige (`role="meter"`, Name «LinkedIn-Profil-Score»), Selbsteinschätzungs-Hinweis, Tabelle Frage | Antwort | Punkte | Gewicht, Verbesserungen (nummeriert), Headline-Vorschläge als Liste (`aria-label="Headline-Vorschläge"`) mit einem Knopf «Vorschlag n kopieren» je Eintrag, drei Hinweise.
+- Ergebnis am Bildschirm (ResultCard «Dein LinkedIn-Profil-Score»): Kennzahl-Kachel mit Punktwert und Stufe, Hinweis, Balken je Kriterium, Verbesserungen (nummeriert), «Vorschläge der KI» (drei Headlines mit Begründung und Knopf «Vorschlag n kopieren», neuer Anfang mit Knopf «Neuen Anfang kopieren», KI-Hinweis «Von einer KI formuliert …»; bei Ausfall der Hinweis statt der Vorschläge), «Der Rest deines Profils» (sieben Karten ohne Punkte), drei Hinweise.
 - Text kopieren (Markdown des Dokuments), PDF und Word über DocumentExport (Download nach der E-Mail-Adresse, `guardDownload`).
-- CRM (`sendResult`): `eingabe` = eine Zeile je Angabe: Betrieb, Branche, die acht Antworten («Headline: Nur Jobtitel und Firma (1 von 2)»), «Profil-Adresse mit Namen: ja/nein», eingefügte Headline, eingefügter Anfang des Info-Texts, Zielgruppe, Ergebnis, Beleg. `ausgabe` = Markdown des Dokuments; der Server kürzt auf 1'900 Zeichen, darum stehen Punktwert und Tabelle oben.
-- Das Ergebnis erscheint erst nach dem E-Mail-Fenster; «Später» lässt das Formular stehen.
+- CRM (`sendResult` über useGenerator, bei Ausfall vom Werkzeug): `eingabe` = Betrieb, Branche, Zielgruppe, eingefügte Headline, eingefügter Info-Text, eine je Zeile; `ausgabe` = Markdown des Dokuments mit Punktwert oben (der Server kürzt auf 1'900 Zeichen).
+- Das Ergebnis erscheint erst nach dem E-Mail-Fenster; «Später» lässt das Formular stehen. Die Ladeansicht zeigt «Texte lesen», «Vorschläge schreiben», «Vorschläge kontrollieren».
 
 ## Edge Cases
-- Leere oder widersprüchliche Eingaben: Fehlen Antworten, steht in `role="alert"`, welche (Kurznamen), und es gibt weder Ergebnis noch CRM-Eintrag. Alle Texte sind freiwillig; ohne Texte entfallen die Funde, ohne Zielgruppe oder Ergebnis die Vorschläge (Hinweis statt Fehler).
-- Extremwerte: alles 0 (Punktwert 0, fünf Verbesserungen), alles 2 (100, keine Verbesserung, Hinweis «Du hast bei allen acht Fragen die volle Punktzahl»). Headline mit genau 220 Zeichen löst den Fund nicht aus, mit 221 schon. Teile von 80 Zeichen ergeben Vorschläge über 220 Zeichen, die gekürzt werden. Satz mit genau 25 Wörtern löst nichts aus.
-- Profil leer: Zielgruppe bleibt leer, Firma und Branche sind leer, im Dokument steht «Alperna» im Kopf, der Dateiname lautet `linkedin-profil-betrieb`.
-- Profil mit langem primaersegment: auf 80 Zeichen am letzten Leerzeichen gekürzt; eine getippte Zielgruppe wird nie überschrieben.
-- Kaputter gespeicherter Stand: leerer Stand. Ein Ergebnis mit weniger als acht Antworten fällt auf das Formular zurück.
-- Daten-Datei: Es gibt keine eigene Datei mit Zahlen. data/floskeln.json (Textcheck) liefert die Floskeln; fällt ein Muster dort weg, fehlt nur dieser Fund.
+- Beide Texte leer: Meldung in `role="alert"`, kein Server-Aufruf, kein CRM-Eintrag.
+- Nur Headline oder nur Info-Text: Punktwert nur für die vorhandene Stelle (die andere ergibt 0 Punkte); die KI bekommt den vorhandenen Text.
+- Extremwerte: Headline mit genau 220 Zeichen löst «h-laenge» nicht aus, mit 221 schon; Satz mit genau 25 Wörtern löst nichts aus; Info-Text mit 99 Zeichen 0, mit 100 Zeichen 1, mit 300 Zeichen 2 Punkte.
+- Das Ergebnis ist reproduzierbar: gleiche Texte ergeben denselben Punktwert; die Vorschläge der KI können abweichen.
+- Profil leer: Firma und Branche bleiben leer, im Dokument fehlt der Steckbrief, der Dateiname lautet `linkedin-profil-betrieb`.
+- Kaputter gespeicherter Stand: leerer Stand. Ein Ergebnis ohne Text fällt auf das Formular zurück.
 
 ## Texte
-- Tagline (102 Zeichen): «Acht Fragen zu deinem LinkedIn-Profil: Punktwert, priorisierte Verbesserungen und Headline-Vorschläge.»
-- SEO-Title (46): «LinkedIn-Profil Schweiz: Punktwert in 8 Fragen». Meta-Description (143): siehe content/tools/linkedin-profil.md.
-- Erklärtext: Warum das wichtig ist (Headline, Info-Text, Belege, Aktivität; ohne Zahlen von aussen), So nutzt du das Ergebnis (fünf Schritte), Häufige Fehler (vier), Beispiel Malerei Keller mit den Zahlen aus dem Rechenbeispiel, Häufige Fragen (sechs), Alperna-Block mit dem Baustein «Social Media».
-- FAQ: Liest das Werkzeug mein Profil? Woher kommen die Gewichte? Wie lang darf die Headline sein? Brauche ich ein Konto? Was bekommt Alperna? Was bleibt in meinem Browser?
-- Alperna-CTA-Satz: Ein gepflegtes Profil und regelmässige Beiträge auf LinkedIn brauchen Zeit, die im Betrieb oft fehlt (Baustein Social Media, Beweis aus content/pitch/bausteine.md).
+- Tagline (107 Zeichen): «Füge Headline und Info-Text ein: Punktwert nach festen Regeln, Verbesserungen und drei Headline-Vorschläge.»
+- SEO-Title (58): «LinkedIn-Profil Schweiz: Punktwert und Headline-Vorschläge». Meta-Description: siehe content/tools/linkedin-profil.md.
+- Erklärtext nach der Lese-Vorlage: Warum das wichtig ist (Headline, Info-Text, Belege, nächster Schritt; ohne Zahlen von aussen), So nutzt du das Ergebnis (fünf Schritte), Häufige Fehler (vier), Beispiel Malerei Keller mit den Zahlen aus dem Rechenbeispiel, Häufige Fragen (sechs), Alperna-Block mit dem Baustein «Social Media».
+- Datenhinweis im Formular: Headline, Info-Text, Betrieb, Branche und Zielgruppe gehen an den Server und den KI-Anbieter, nicht die E-Mail-Adresse; der Server speichert sie nicht; Alperna bekommt das Ergebnis mit der Adresse.
 
 ## Tests
-logic.test.ts (73 Fälle): Gewichte und Fragenkatalog; Punktwert an den Rändern, gemischt, gewichtet, alle 6'561 Kombinationen; Stufen an den Schwellen 39, 40, 69, 70; Verbesserungen (Sortierung, Gleichstand, höchstens fünf, Stufentexte, Funde, Adress-Hinweis); Funde je positiv und negativ (Länge 220 und 221, Titel ohne Verb, Verb als ganzes Wort, Floskeln, «Ich bin», keine Aussage zur Kundschaft, lange Sätze); Headline-Muster mit und ohne Beweis, Firma, Branche, Kürzung, doppelte Satzzeichen, Typografie, Grossschreibung; Vorbefüllung; validate; parseState bei kaputten Daten und Rundlauf; Fortschritt im Pfad; Dokument, eingabeText und Markdown; Sperrliste und Stilregeln aller eigenen Texte.
-Tool.test.tsx (11 Fälle): Formular und Vorbefüllung, Fehlermeldungen, Auswertung des Beispiels mit CRM-Aufruf, Speichern und Neuladen ohne zweiten CRM-Eintrag, Hinweis ohne Vorschläge, E-Mail-Fenster und «Später», Zwischenstand, «Neu beginnen», zu lange Headline, Sperrliste im gerenderten Text.
+logic.test.ts: Gewichte (Summe 100, Headline 38, Info-Text 62); jedes Kriterium positiv und negativ an den Grenzen; Rechenbeispiel von Hand (34); Stufen an den Schwellen 39, 40, 69, 70; Verbesserungen (Sortierung, höchstens fünf, Stufentexte, Funde); Vorbefüllung; validate; parseState (früherer Stand, Kürzung, Ausfall, Rundlauf, Fortschritt im Pfad); kiInput; Dokument, eingabeText und Markdown; Sperrliste und Stilregeln aller eigenen Texte.
+generator.test.ts: Eingabeschema (Längen, eines von beiden), Ausgabeschema (drei Headlines, Längen), jede Kennung der Prüfung (doppelt, zahl, erfunden, platzhalter, ichbin, floskel) positiv und negativ, gemeinsame Prüfung, Hinweise für den zweiten Versuch, Anweisung.
+Tool.test.tsx: Formular und Vorbefüllung, Fehlermeldung, Ladeansicht, Auswertung des Beispiels mit Anfrage und CRM-Aufruf, Neuladen ohne zweiten CRM-Eintrag, Ausfall der KI mit Ergebnis und einem CRM-Eintrag, Neuschreiben nach Ausfall und bei vorhandenem Ergebnis, Angaben ändern, Neu beginnen, Stand einer früheren Fassung.
+E2E (tests/e2e/smoke.spec.ts): Einfügen und Auswerten mit gestubbtem /api/generate, Kopieren-Knöpfe, CRM-Eintrag.
 
-## Nicht Teil dieses Tools
-Kein Zugriff auf LinkedIn, kein Auslesen des Profils, kein Scraping, keine KI, kein Server. Keine Aussage zu Algorithmen, Reichweite oder Erfolgsquoten. Keine Zahlen von aussen, keine Benchmarks. Keine Bewertung des Inhalts von Texten (nur Form und Wortwahl nach festen Regeln). Keine Beugung von Wörtern in den Headline-Vorschlägen. Keine Beiträge, Kommentare, Banner-Gestaltung oder Bildprüfung. Kein Schreiben ins Firmenprofil.
+## Nicht Teil dieses Werkzeugs
+Kein Zugriff auf LinkedIn, kein Auslesen des Profils, kein Scraping. Keine Aussage zu Algorithmen, Reichweite oder Erfolgsquoten. Keine Zahlen von aussen, keine Benchmarks. Keine Bewertung des Inhalts der Texte durch eine KI: Die KI schreibt nur Vorschläge, den Punktwert rechnen feste Regeln. Keine Bewertung von Bild, Banner, Empfehlungen oder Aktivität. Keine Beiträge, Kommentare oder Bildprüfung. Kein Schreiben ins Firmenprofil.

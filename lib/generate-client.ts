@@ -17,6 +17,21 @@ export const GENERATE_FAIL_MESSAGES: Record<GenerateFailReason, string> = {
   invalid: "Bitte prüfe deine Angaben und versuch es noch einmal.",
 };
 
+/** Gründe, bei denen ein Werkzeug mit festen Regeln weiterarbeiten kann, statt nichts zu zeigen. Bei «invalid» und «gate» gilt das nicht. */
+export const KI_DOWN_REASONS: readonly GenerateFailReason[] = ["failed", "capacity", "rate", "network"];
+
+/** Die Meldung von useGenerator zurück auf ihren Grund (der Hook gibt nur den Satz heraus); null ohne Meldung. */
+export function failReasonOf(message: string | null): GenerateFailReason | null {
+  if (!message) return null;
+  return (Object.keys(GENERATE_FAIL_MESSAGES) as GenerateFailReason[]).find((k) => GENERATE_FAIL_MESSAGES[k] === message) ?? null;
+}
+
+/** Ob die Meldung heisst, dass die KI nicht geliefert hat (dann zeigt ein Werkzeug mit festen Regeln trotzdem ein Ergebnis). */
+export const isKiDown = (message: string | null): boolean => {
+  const r = failReasonOf(message);
+  return r !== null && KI_DOWN_REASONS.includes(r);
+};
+
 /** Die Route darf 60 Sekunden brauchen (maxDuration); der Browser wartet etwas länger. */
 const TIMEOUT_MS = 65_000;
 
