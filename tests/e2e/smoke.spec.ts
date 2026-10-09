@@ -2090,8 +2090,53 @@ test.describe("Welle 8 im Browser (Rechner und Planer)", () => {
 });
 
 test.describe("Welle 9 im Browser (Planer und Bausteine)", () => {
-  test("Story-Post-Builder: leere Felder werden gemeldet, sechs Antworten ergeben LinkedIn- und Instagram-Fassung, Word-Download, Lead, Neuladen", async ({ page, request }) => {
+  test("Story-Post-Builder mit KI: Stichworte, Fenster, formulierter Beitrag ohne doppelten Hook-Satz, Lead, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = { generate: 0 };
+    await page.route("**/api/generate", (route) => {
+      calls.generate++;
+      return route.fulfill(
+        json({
+          ok: true,
+          output: {
+            ausgangslage: "Frau Z. aus Gossau rief uns an. Ihre Fassade blätterte nach drei Wintern ab.",
+            problem: "Zwei andere Maler hatten die Wand nur übergestrichen.",
+            wendepunkt: "Wir haben zuerst die Feuchte im Putz gemessen.",
+            ergebnis: "Die Fassade hält seit zwei Jahren. Frau Z. ist zufrieden.",
+            lehre: "Erst messen, dann streichen.",
+            bezug: "",
+          },
+        }),
+      );
+    });
     await page.goto("/tools/story-post");
+    await hydrated(page.getByRole("button", { name: "Beitrag schreiben" }));
+    await page.getByRole("button", { name: "Beitrag schreiben" }).click();
+    await expect(page.locator("#sp-error")).toBeVisible();
+    await page.locator("#sp-firma").fill("Malerei Keller");
+    await page.locator("#sp-ausgangslage").fill("Frau Z. aus Gossau, Fassade blätterte nach drei Wintern ab");
+    await page.locator("#sp-problem").fill("zwei andere Maler hatten nur übergestrichen");
+    await page.locator("#sp-wendepunkt").fill("erst Feuchte im Putz gemessen");
+    await page.locator("#sp-ergebnis").fill("Fassade hält seit zwei Jahren, Frau Z. zufrieden");
+    await page.locator("#sp-lehre").fill("erst messen, dann streichen");
+    await page.getByRole("button", { name: "Beitrag schreiben" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Dein Beitrag" })).toBeVisible();
+    await expect(page.getByTestId("sp-ki-hinweis")).toContainText("KI");
+    const text = (await page.getByTestId("sp-linkedin-text").textContent()) ?? "";
+    expect(text.startsWith("Die Fassade hält seit zwei Jahren.")).toBe(true);
+    expect(text.split("Die Fassade hält seit zwei Jahren.").length - 1).toBe(1);
+    expect(calls.generate).toBe(1);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("story-post");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Weg: KI formuliert aus Stichworten");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Dein Beitrag" })).toBeVisible();
+    expect(calls.generate).toBe(1);
+  });
+
+  test("Story-Post-Builder von Hand: leere Felder werden gemeldet, sechs Antworten ergeben LinkedIn- und Instagram-Fassung, Word-Download, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/story-post");
+    await hydrated(page.getByRole("radio", { name: "Meine Sätze ordnen" }));
+    await page.getByRole("radio", { name: "Meine Sätze ordnen" }).check();
     await hydrated(page.getByRole("button", { name: "Beitrag zusammenstellen" }));
     await page.getByRole("button", { name: "Beitrag zusammenstellen" }).click();
     await expect(page.locator("#sp-error")).toBeVisible();

@@ -70,7 +70,149 @@ function expectCalmText(where: string) {
   }
 }
 
+/** Wechselt auf den Weg «Meine Sätze ordnen» (der Standard ist der Weg mit der KI). */
+async function ordnen(u: User) {
+  await u.click(await screen.findByRole("radio", { name: "Meine Sätze ordnen" }));
+}
+
 const resultState = (felder: Felder, extra: Record<string, unknown> = {}) => JSON.stringify({ v: 1, phase: "result", anrede: "du", felder, hook: 1, ...extra });
+
+const KI_FELDER: Felder = {
+  ausgangslage: "Frau Z. aus Gossau, Fassade blätterte nach drei Wintern ab",
+  problem: "zwei andere Maler hatten nur übergestrichen",
+  wendepunkt: "erst Feuchte im Putz gemessen",
+  ergebnis: "Fassade hält seit zwei Jahren",
+  lehre: "erst messen, dann streichen",
+  bezug: "",
+};
+
+const KI_OUTPUT: Felder = {
+  ausgangslage: "Frau Z. aus Gossau rief uns an. Ihre Fassade blätterte nach drei Wintern ab.",
+  problem: "Zwei andere Maler hatten die Wand nur übergestrichen.",
+  wendepunkt: "Wir haben zuerst die Feuchte im Putz gemessen.",
+  ergebnis: "Die Fassade hält seit zwei Jahren. Frau Z. meldet sich bis heute nicht mehr.",
+  lehre: "Erst messen, dann streichen.",
+  bezug: "",
+};
+
+/** /api/generate antwortet mit `reply`; /api/result und /api/lead sind in Ordnung. */
+function mockKiApi(reply: () => { status: number; body: unknown } = () => ({ status: 200, body: { ok: true, output: KI_OUTPUT } })) {
+  const calls: Call[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (path: string, init?: RequestInit) => {
+      if (path === "/api/gate") return new Response(JSON.stringify({ email: null }), { status: 200 });
+      calls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : {} });
+      const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status });
+      if (path === "/api/generate") {
+        const r = reply();
+        return json(r.body, r.status);
+      }
+      return json({ ok: true });
+    }),
+  );
+  return { calls, count: (p: string) => calls.filter((c) => c.path === p).length };
+}
+
+describe("Story-Post-Builder im Browser: Weg mit KI", () => {
+  it("formuliert aus Stichworten, zeigt den Beitrag ohne doppelten Hook-Satz und schickt Stichworte und Beitrag ins CRM", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Malerei Keller", ort: "Gossau", branche: "Malerei", marke: { tonalitaet: { so: "ruhig und konkret" }, woerter: { vermeiden: ["günstig"] } } }));
+    const api = mockKiApi();
+    const u = userEvent.setup();
+    render(<Tool />);
+    await screen.findByLabelText("Ausgangslage");
+    await fill(u, KI_FELDER);
+    expect(screen.getByTestId("sp-fortschritt")).toHaveTextContent("5 von 5 Pflichtfeldern bereit");
+    expect(api.count("/api/generate")).toBe(0);
+    await u.click(screen.getByRole("button", { name: "Beitrag schreiben" }));
+
+    const card = await screen.findByRole("region", { name: "Dein Beitrag" });
+    expect(api.count("/api/generate")).toBe(1);
+    const gen = api.calls.find((c) => c.path === "/api/generate")!.body as { tool: string; input: Record<string, unknown> };
+    expect(gen.tool).toBe("story-post");
+    expect(gen.input).toMatchObject({ betrieb: "Malerei Keller", ort: "Gossau", branche: "Malerei", anrede: "du", tonalitaet: "So schreiben wir: ruhig und konkret.", vermeiden: ["günstig"], felder: KI_FELDER });
+    expect(JSON.stringify(gen)).not.toContain("anna@keller.ch");
+
+    expect(within(card).getByTestId("sp-ki-hinweis")).toHaveTextContent("Von einer KI formuliert.");
+    expect(within(card).queryByTestId("sp-saetze")).not.toBeInTheDocument();
+    const text = within(card).getByTestId("sp-linkedin-text").textContent ?? "";
+    expect(text.startsWith("Die Fassade hält seit zwei Jahren.\n\nFrau Z. aus Gossau rief uns an.")).toBe(true);
+    // Der Satz des Hooks steht nicht noch einmal im Ergebnis-Absatz, der Rest des Ergebnisses bleibt
+    expect(text.split("Die Fassade hält seit zwei Jahren.").length - 1).toBe(1);
+    expect(text).toContain("Frau Z. meldet sich bis heute nicht mehr.");
+    expect(within(card).getByRole("button", { name: "Neu formulieren" })).toBeEnabled();
+
+    await waitFor(() => expect(api.count("/api/result")).toBe(1));
+    const body = api.calls.find((c) => c.path === "/api/result")!.body;
+    expect(body.tool).toBe("story-post");
+    expect(String(body.eingabe).startsWith("Weg: KI formuliert aus Stichworten\nAusgangslage: Frau Z. aus Gossau, Fassade blätterte")).toBe(true);
+    expect(String(body.ausgabe).startsWith("Die Fassade hält seit zwei Jahren.\n\nFrau Z. aus Gossau rief uns an.")).toBe(true);
+
+    const saved = JSON.parse(readLocal("mt:story-post")!);
+    expect(saved).toMatchObject({ v: 1, phase: "result", modus: "ki", felder: KI_FELDER, ki: KI_OUTPUT });
+  });
+
+  it("meldet fehlenden Betrieb und zu kurze Stichworte, ohne die KI zu fragen", async () => {
+    const api = mockKiApi();
+    const u = userEvent.setup();
+    render(<Tool />);
+    await screen.findByLabelText("Ausgangslage");
+    await fill(u, { ...KI_FELDER, lehre: "kurz" });
+    await u.click(screen.getByRole("button", { name: "Beitrag schreiben" }));
+    expect(within(screen.getByRole("alert")).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["«Lehre» ist zu kurz: mindestens 8 Zeichen, du hast 4."]);
+    await u.type(screen.getByLabelText("Lehre"), "es genügt");
+    await u.click(screen.getByRole("button", { name: "Beitrag schreiben" }));
+    expect(await screen.findByText("Gib den Namen deines Betriebs an.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Firma")).toHaveFocus();
+    expect(api.count("/api/generate")).toBe(0);
+    expect(api.count("/api/result")).toBe(0);
+  });
+
+  it("zeigt einen ruhigen Satz, wenn die KI nichts Brauchbares liefert, und lässt das Formular stehen", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Malerei Keller" }));
+    const api = mockKiApi(() => ({ status: 502, body: { ok: false, error: "failed" } }));
+    const u = userEvent.setup();
+    render(<Tool />);
+    await screen.findByLabelText("Ausgangslage");
+    await fill(u, KI_FELDER);
+    await u.click(screen.getByRole("button", { name: "Beitrag schreiben" }));
+    expect(await screen.findByText(/keinen brauchbaren Entwurf/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Ausgangslage")).toHaveValue(KI_FELDER.ausgangslage);
+    expect(screen.queryByRole("region", { name: "Dein Beitrag" })).not.toBeInTheDocument();
+    expect(api.count("/api/result")).toBe(0);
+  });
+
+  it("formuliert über «Neu formulieren» erneut, stellt das Ergebnis nach dem Neuladen her und behält den Weg bei «Neu beginnen»", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Malerei Keller" }));
+    const api = mockKiApi();
+    const u = userEvent.setup();
+    const first = render(<Tool />);
+    await screen.findByLabelText("Ausgangslage");
+    await fill(u, KI_FELDER);
+    await u.click(screen.getByRole("button", { name: "Beitrag schreiben" }));
+    await screen.findByRole("region", { name: "Dein Beitrag" });
+    await waitFor(() => expect(api.count("/api/result")).toBe(1));
+    first.unmount();
+
+    render(<Tool />);
+    const card = await screen.findByRole("region", { name: "Dein Beitrag" });
+    expect(within(card).getByTestId("sp-linkedin-text").textContent).toContain("Frau Z. aus Gossau rief uns an.");
+    expect(api.count("/api/generate")).toBe(1);
+    expect(api.count("/api/result")).toBe(1);
+
+    await u.click(within(card).getByRole("button", { name: "Neu formulieren" }));
+    await waitFor(() => expect(api.count("/api/generate")).toBe(2));
+    await waitFor(() => expect(api.count("/api/result")).toBe(2));
+
+    await u.click(within(await screen.findByRole("region", { name: "Dein Beitrag" })).getByRole("button", { name: "Angaben ändern" }));
+    expect(await screen.findByLabelText("Ausgangslage")).toHaveValue(KI_FELDER.ausgangslage);
+    expect(screen.getByRole("radio", { name: "Von der KI formulieren lassen" })).toBeChecked();
+    await u.click(screen.getByRole("button", { name: "Beitrag schreiben" }));
+    await u.click(within(await screen.findByRole("region", { name: "Dein Beitrag" })).getByRole("button", { name: "Neu beginnen" }));
+    expect(await screen.findByLabelText("Ausgangslage")).toHaveValue("");
+    expect(screen.getByRole("radio", { name: "Von der KI formulieren lassen" })).toBeChecked();
+  });
+});
 
 describe("Story-Post-Builder im Browser", () => {
   it("hält im Formular und im Ergebnis die Sperrliste und die Schreibregeln ein", async () => {
@@ -78,6 +220,8 @@ describe("Story-Post-Builder im Browser", () => {
     const u = userEvent.setup();
     render(<Tool />);
     expect(await screen.findByLabelText("Ausgangslage")).toBeInTheDocument();
+    expectCalmText("Formular mit KI");
+    await ordnen(u);
     expectCalmText("Formular");
     await fill(u, KELLER);
     await u.click(screen.getByRole("button", { name: "Beitrag zusammenstellen" }));
@@ -85,8 +229,22 @@ describe("Story-Post-Builder im Browser", () => {
     expectCalmText("Ergebnis");
   });
 
-  it("zeigt sechs Felder mit Hinweis, Beispiel und Zähler und sagt offen, dass die Sätze die der Person sind", async () => {
+  it("beginnt mit dem Weg über die KI: Stichworte genügen, die Auswahl steht oben und sagt, was an den Server geht", async () => {
     render(<Tool />);
+    expect(await screen.findByLabelText("Ausgangslage")).toHaveValue("");
+    expect(screen.getByRole("radio", { name: "Von der KI formulieren lassen" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Meine Sätze ordnen" })).not.toBeChecked();
+    expect(screen.getByLabelText("Ausgangslage")).toHaveAccessibleDescription(/0 Zeichen \(8 bis 400\)/);
+    expect(screen.getByLabelText("Branche")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ort")).toBeInTheDocument();
+    expect(screen.getByText(/an unseren Server und von dort an unseren KI-Anbieter, nicht deine E-Mail-Adresse/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Beitrag schreiben" })).toBeEnabled();
+  });
+
+  it("zeigt sechs Felder mit Hinweis, Beispiel und Zähler und sagt offen, dass die Sätze die der Person sind", async () => {
+    const u = userEvent.setup();
+    render(<Tool />);
+    await ordnen(u);
     expect(await screen.findByLabelText("Ausgangslage")).toHaveValue("");
     expect(screen.getAllByRole("textbox").filter((el) => el.tagName === "TEXTAREA")).toHaveLength(6);
     const label = (f: (typeof FELDER)[number]) => screen.getByLabelText(fieldLabel(f));
@@ -104,7 +262,7 @@ describe("Story-Post-Builder im Browser", () => {
     const calls = mockApi();
     const u = userEvent.setup();
     render(<Tool />);
-    await screen.findByLabelText("Ausgangslage");
+    await ordnen(u);
     await fill(u, { ...KELLER, problem: "kurz", ergebnis: "" });
     expect(screen.getByTestId("sp-fortschritt")).toHaveTextContent("3 von 5 Pflichtfeldern bereit");
     await u.click(screen.getByRole("button", { name: "Beitrag zusammenstellen" }));
@@ -126,21 +284,21 @@ describe("Story-Post-Builder im Browser", () => {
     const calls = mockApi();
     const u = userEvent.setup();
     render(<Tool />);
-    await screen.findByLabelText("Ausgangslage");
+    await ordnen(u);
     await fill(u, KELLER);
     expect(screen.getByTestId("sp-fortschritt")).toHaveTextContent("5 von 5 Pflichtfeldern bereit");
     expect(calls).toHaveLength(0); // vor dem Ergebnis geht nichts raus
     await u.click(screen.getByRole("button", { name: "Beitrag zusammenstellen" }));
 
     const card = await screen.findByRole("region", { name: "Dein Beitrag" });
-    const erwartet = compose({ anrede: "du", felder: KELLER, hook: 1 });
+    const erwartet = compose({ anrede: "du", felder: KELLER, hook: 1, modus: "ordnen" });
     expect(within(card).getByTestId("sp-saetze")).toHaveTextContent("Die Sätze sind deine; das Werkzeug ordnet sie.");
     expect(within(card).getByTestId("sp-linkedin-text").textContent).toBe(erwartet.linkedin);
     expect(within(card).getByTestId("sp-instagram-text").textContent).toBe(erwartet.instagram.text);
-    expect(within(card).getByTestId("sp-linkedin-counter")).toHaveTextContent("296 Zeichen, davon 108 vor der Faltkante");
-    expect(within(card).getByTestId("sp-instagram-counter")).toHaveTextContent("296 Zeichen, davon 125 vor der Faltkante");
+    expect(within(card).getByTestId("sp-linkedin-counter")).toHaveTextContent("260 Zeichen, davon 108 vor der Faltkante");
+    expect(within(card).getByTestId("sp-instagram-counter")).toHaveTextContent("260 Zeichen, davon 125 vor der Faltkante");
     expect(within(card).getByTestId("sp-linkedin-over")).toHaveTextContent("Zwei andere Maler hatten nur übergestrichen.");
-    expect(within(card).getByTestId("sp-lesezeit")).toHaveTextContent("Lesezeit: unter 1 Minute (49 Wörter; Annahme von Alperna: 200 Wörter pro Minute, keine Statistik).");
+    expect(within(card).getByTestId("sp-lesezeit")).toHaveTextContent("Lesezeit: unter 1 Minute (43 Wörter; Annahme von Alperna: 200 Wörter pro Minute, keine Statistik).");
     expect(within(card).getByText(/Höchstens 2'200 Zeichen \(Richtwert von Alperna; die Plattform ändert die Grenze\)/)).toBeInTheDocument();
     expect(within(card).queryByTestId("sp-instagram-hinweis")).not.toBeInTheDocument();
     expect(within(card).queryByTestId("sp-platzhalter")).not.toBeInTheDocument();
@@ -157,15 +315,15 @@ describe("Story-Post-Builder im Browser", () => {
     const body = calls.find((c) => c.path === "/api/result")!.body;
     expect(body.tool).toBe("story-post");
     expect(body.firma).toBe("Malerei Keller");
-    expect(String(body.eingabe).startsWith("Ausgangslage: Frau Z. aus Gossau rief an")).toBe(true);
+    expect(String(body.eingabe).startsWith("Weg: Sätze der Person geordnet\nAusgangslage: Frau Z. aus Gossau rief an")).toBe(true);
     expect(String(body.eingabe)).toContain("Lehre: Erst messen, dann streichen.");
     expect(String(body.eingabe)).toContain("Hook: Hook 1");
     expect(String(body.ausgabe).startsWith("Die Fassade hält seit zwei Jahren.\n\nFrau Z. aus Gossau")).toBe(true);
-    expect(String(body.ausgabe).endsWith("Instagram: 296 Zeichen, nichts gekürzt.")).toBe(true);
+    expect(String(body.ausgabe).endsWith("Instagram: 260 Zeichen, nichts gekürzt.")).toBe(true);
 
     // Der Stand zählt für den Pfad als erledigt
     const saved = JSON.parse(readLocal("mt:story-post")!);
-    expect(saved).toMatchObject({ v: 1, phase: "result", anrede: "du", hook: 1, felder: KELLER });
+    expect(saved).toMatchObject({ v: 1, phase: "result", modus: "ordnen", anrede: "du", hook: 1, felder: KELLER });
     expect(saved.output.linkedin).toBe(erwartet.linkedin);
   });
 
@@ -186,7 +344,7 @@ describe("Story-Post-Builder im Browser", () => {
     expect(within(card).getByTestId("sp-linkedin-text").textContent?.split("\n\n")[0]).toBe(
       "Die Fassade hält seit zwei Jahren. Der Grund: Wir haben erst die Feuchte im Putz gemessen.",
     );
-    expect(within(card).getByTestId("sp-lesezeit")).toHaveTextContent("59 Wörter");
+    expect(within(card).getByTestId("sp-lesezeit")).toHaveTextContent("45 Wörter");
     expect(JSON.parse(readLocal("mt:story-post")!).hook).toBe(2);
 
     await u.click(within(group).getByRole("radio", { name: "Ohne Hook" }));
@@ -232,7 +390,7 @@ describe("Story-Post-Builder im Browser", () => {
     const calls = mockApi();
     const u = userEvent.setup();
     render(<Tool />);
-    await screen.findByLabelText("Ausgangslage");
+    await ordnen(u);
     await fill(u, KELLER);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
@@ -263,6 +421,7 @@ describe("Story-Post-Builder im Browser", () => {
     mockApi();
     const u = userEvent.setup();
     render(<Tool />);
+    await ordnen(u);
     const anrede = await screen.findByRole("radiogroup", { name: "Anrede der Leserinnen und Leser" });
     await waitFor(() => expect(within(anrede).getByRole("radio", { name: "Sie" })).toBeChecked());
     expect(screen.getByLabelText("Bezug zur Leserin (freiwillig)")).toHaveAttribute("placeholder", "Wie ist das bei Ihrem Haus?");
@@ -285,7 +444,7 @@ describe("Story-Post-Builder im Browser", () => {
     writeLocal("mt:story-post", resultState(KELLER, { hook: 2 }));
     render(<Tool />);
     const card = await screen.findByRole("region", { name: "Dein Beitrag" });
-    expect(within(card).getByTestId("sp-linkedin-text").textContent).toBe(compose({ anrede: "du", felder: KELLER, hook: 2 }).linkedin);
+    expect(within(card).getByTestId("sp-linkedin-text").textContent).toBe(compose({ anrede: "du", felder: KELLER, hook: 2, modus: "ordnen" }).linkedin);
     expect(within(card).getByRole("radio", { name: "Hook 2" })).toBeChecked();
     expect(calls).toHaveLength(0);
   });

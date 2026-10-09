@@ -22,6 +22,7 @@ import {
   eingabeText,
   fieldLabel,
   foldInfo,
+  hookSaetze,
   hooks,
   instagram,
   instagramZeile,
@@ -275,20 +276,49 @@ describe("story-post: hooks", () => {
 // ---- Zusammenstellen -----------------------------------------------------------------------------
 
 describe("story-post: compose", () => {
-  it("setzt die Absätze in der Reihenfolge Hook, Ausgangslage, Problem, Wendepunkt, Ergebnis, Lehre, Bezug zusammen", () => {
+  it("setzt die Absätze in der Reihenfolge Hook, Ausgangslage, Problem, Wendepunkt, Lehre, Bezug zusammen; das Ergebnis steht schon im Hook", () => {
     const s = story();
-    expect(s.absaetze.map((a) => a.key)).toEqual(["hook", "ausgangslage", "problem", "wendepunkt", "ergebnis", "lehre", "bezug"]);
+    expect(s.absaetze.map((a) => a.key)).toEqual(["hook", "ausgangslage", "problem", "wendepunkt", "lehre", "bezug"]);
     expect(s.linkedin).toBe(
       [
         "Die Fassade hält seit zwei Jahren.",
         "Frau Z. aus Gossau rief an: Ihre Fassade blätterte nach drei Wintern ab.",
         "Zwei andere Maler hatten nur übergestrichen.",
         "Wir haben erst die Feuchte im Putz gemessen.",
-        "Die Fassade hält seit zwei Jahren.",
         "Erst messen, dann streichen.",
         "Wie ist das bei deinem Haus?",
       ].join("\n\n"),
     );
+  });
+
+  it("sagt keinen Satz doppelt: Der Hook ersetzt den ersten Satz des Ergebnisses (und bei Hook 2 den des Wendepunkts) im Haupttext", () => {
+    const mehr = { ergebnis: "Die Fassade hält seit zwei Jahren. Frau Z. ist zufrieden.", wendepunkt: "Wir haben erst die Feuchte im Putz gemessen. Dann haben wir getrocknet." };
+    const eins = story(mehr, 1);
+    expect(eins.absaetze.find((a) => a.key === "ergebnis")?.text).toBe("Frau Z. ist zufrieden.");
+    expect(eins.absaetze.find((a) => a.key === "wendepunkt")?.text).toBe(mehr.wendepunkt);
+    const zwei = story(mehr, 2);
+    expect(zwei.absaetze.find((a) => a.key === "ergebnis")?.text).toBe("Frau Z. ist zufrieden.");
+    expect(zwei.absaetze.find((a) => a.key === "wendepunkt")?.text).toBe("Dann haben wir getrocknet.");
+    // Mit nur einem Satz entfällt der Absatz ganz
+    expect(story({}, 2).absaetze.map((a) => a.key)).toEqual(["hook", "ausgangslage", "problem", "lehre", "bezug"]);
+    // Kein Satz der Geschichte erscheint zweimal im Beitrag
+    for (const wahl of [1, 2] as const) {
+      const saetze = story(mehr, wahl).linkedin.split(/\n\n|(?<=[.!?])\s+/).filter((x) => x.length > 20);
+      expect(saetze.filter((x) => x === "Die Fassade hält seit zwei Jahren.")).toHaveLength(1);
+      expect(saetze.filter((x) => x === "Wir haben erst die Feuchte im Putz gemessen.")).toHaveLength(wahl === 1 ? 1 : 0);
+    }
+  });
+
+  it("lässt den Haupttext unberührt, wenn der Hook gekürzt ist oder fehlt", () => {
+    const lang = sent(200);
+    const s = story({ ergebnis: `${lang} Danach war Ruhe.` }, 1);
+    expect(s.hooks[0].endsWith("…")).toBe(true);
+    expect(s.absaetze.find((a) => a.key === "ergebnis")?.text).toBe(`${lang} Danach war Ruhe.`);
+    const ohne = story({}, 0);
+    expect(ohne.absaetze.map((a) => a.key)).toEqual(["ausgangslage", "problem", "wendepunkt", "ergebnis", "lehre", "bezug"]);
+    expect(hookSaetze(KELLER, "")).toEqual({});
+    expect(hookSaetze(KELLER, "Etwas anderes.")).toEqual({});
+    expect(hookSaetze(EMPTY_FELDER, "Hook.")).toEqual({});
   });
 
   it("lässt leere Teile weg und setzt den Hook nur, wenn einer übergeben wird", () => {
@@ -300,7 +330,7 @@ describe("story-post: compose", () => {
   it("trennt die Absätze durch genau eine Leerzeile und schliesst ohne Leerzeile", () => {
     const text = story().linkedin;
     expect(text).not.toMatch(/\n{3,}/);
-    expect(text.split("\n\n")).toHaveLength(7);
+    expect(text.split("\n\n")).toHaveLength(6);
     expect(text.split("\n\n").every((p) => !p.includes("\n"))).toBe(true);
     expect(text.endsWith("\n")).toBe(false);
   });
@@ -510,7 +540,7 @@ describe("story-post: instagram", () => {
   });
 
   it("formuliert die Instagram-Zeile fürs CRM und Dokument", () => {
-    expect(instagramZeile(story().instagram)).toBe("Instagram: 296 Zeichen, nichts gekürzt.");
+    expect(instagramZeile(story().instagram)).toBe("Instagram: 260 Zeichen, nichts gekürzt.");
     expect(instagramZeile(instagram(paras({ ...big, lehre: 400 })))).toBe("Instagram: 2'108 Zeichen. Gekürzt: Lehre fehlt.");
     expect(instagramZeile(instagram(paras({ hook: 2300 })))).toBe("Instagram: 2'300 Zeichen. Zu lang für Instagram: kürze von Hand.");
   });
@@ -518,9 +548,9 @@ describe("story-post: instagram", () => {
   it("liefert die Faltkante der beiden Fassungen über foldInfo (Richtwert von Alperna)", () => {
     const s = story();
     expect(RICHTWERT_NOTE).toBe("Richtwert von Alperna, keine Statistik");
-    expect(foldInfo("instagram", s.instagram.text)).toEqual({ limit: 125, before: 125, over: 171 });
+    expect(foldInfo("instagram", s.instagram.text)).toEqual({ limit: 125, before: 125, over: 135 });
     // LinkedIn: Die Vorschau endet nach der dritten Zeile (hier: nach dem zweiten Absatz), früher als 210 Zeichen
-    expect(foldInfo("linkedin", s.linkedin)).toEqual({ limit: 108, before: 108, over: 188 });
+    expect(foldInfo("linkedin", s.linkedin)).toEqual({ limit: 108, before: 108, over: 152 });
   });
 
   it("kürzt mit gültigen Angaben höchstens den Bezug: Hook, fünf Teile zu 400 Zeichen und Lehre bleiben unter 2'200", () => {
@@ -549,8 +579,8 @@ describe("story-post: toDocument", () => {
     expect(facts.items.map((f) => f.label)).toEqual(["Hook", "Lesezeit", "LinkedIn", "Instagram"]);
     expect(facts.items[0].value).toBe("Hook 1: Die Fassade hält seit zwei Jahren.");
     expect(facts.items[1].value).toBe(`unter 1 Minute (${LESEZEIT_NOTE})`);
-    expect(facts.items[2].value).toBe("296 Zeichen, davon 108 vor der Faltkante (Richtwert von Alperna, keine Statistik)");
-    expect(facts.items[3].value).toContain("296 Zeichen, höchstens 2'200");
+    expect(facts.items[2].value).toBe("260 Zeichen, davon 108 vor der Faltkante (Richtwert von Alperna, keine Statistik)");
+    expect(facts.items[3].value).toContain("260 Zeichen, höchstens 2'200");
     const headings = doc.blocks.filter((b) => b.type === "heading").map((b) => (b.type === "heading" ? b.text : ""));
     expect(headings).toEqual(["LinkedIn-Fassung", "Instagram-Fassung"]);
   });
@@ -559,7 +589,7 @@ describe("story-post: toDocument", () => {
     const paragraphs = doc.blocks.filter((b) => b.type === "paragraph").map((b) => (b.type === "paragraph" ? b.text : ""));
     expect(paragraphs[0]).toBe(SAETZE_NOTE);
     expect(paragraphs.filter((p) => p === "Erst messen, dann streichen.")).toHaveLength(2);
-    expect(paragraphs).toHaveLength(1 + 7 + 7);
+    expect(paragraphs).toHaveLength(1 + 6 + 6);
   });
 
   it("nennt ohne Hook «Ohne Hook», führt Platzhalter und Hinweise auf und zeigt den Instagram-Hinweis", () => {
@@ -588,6 +618,7 @@ describe("story-post: CRM-Texte", () => {
   it("nennt in der Eingabe die sechs Felder je Zeile, dann Anrede und Hook", () => {
     const lines = eingabeText({ anrede: "du", felder: KELLER, hook: 1 }).split("\n");
     expect(lines).toEqual([
+      "Weg: Sätze der Person geordnet",
       "Ausgangslage: Frau Z. aus Gossau rief an: Ihre Fassade blätterte nach drei Wintern ab.",
       "Problem oder Spannung: Zwei andere Maler hatten nur übergestrichen.",
       "Wendepunkt: Wir haben erst die Feuchte im Putz gemessen.",
@@ -605,12 +636,12 @@ describe("story-post: CRM-Texte", () => {
     expect(text).toContain("Lehre: Erst messen, dann streichen.");
     expect(text).toContain("Anrede: Sie");
     expect(text.endsWith("Hook: Ohne Hook")).toBe(true);
-    expect(text.split("\n")).toHaveLength(8);
+    expect(text.split("\n")).toHaveLength(9);
   });
 
   it("gibt als Ausgabe die LinkedIn-Fassung und die Instagram-Zeile", () => {
     const s = story();
-    expect(ausgabeText(s)).toBe(`${s.linkedin}\n\nInstagram: 296 Zeichen, nichts gekürzt.`);
+    expect(ausgabeText(s)).toBe(`${s.linkedin}\n\nInstagram: 260 Zeichen, nichts gekürzt.`);
     const lang = story({ ausgangslage: "a".repeat(400), problem: "b".repeat(400), wendepunkt: "c".repeat(400), ergebnis: "d".repeat(400), lehre: "e".repeat(400), bezug: "f".repeat(400) }, 0);
     expect(ausgabeText(lang).endsWith("Instagram: 2'008 Zeichen. Gekürzt: Bezug zur Leserin fehlt.")).toBe(true);
   });
@@ -623,11 +654,11 @@ describe("story-post: parseState", () => {
     for (const raw of [null, undefined, 5, "text", [], {}, { v: 2, phase: "result", felder: KELLER }, { phase: "result" }]) {
       expect(parseState(raw)).toEqual(EMPTY_STATE);
     }
-    expect(EMPTY_STATE).toEqual({ v: 1, phase: "edit", anrede: "", felder: EMPTY_FELDER, hook: 1 });
+    expect(EMPTY_STATE).toEqual({ v: 1, phase: "edit", modus: "ki", anrede: "", felder: EMPTY_FELDER, hook: 1 });
   });
 
   it("liest einen gültigen Stand mit Ergebnis vollständig zurück", () => {
-    const raw = { v: 1, phase: "result", anrede: "sie", felder: KELLER, hook: 2, output: { linkedin: "L", instagram: "I" } };
+    const raw = { v: 1, phase: "result", modus: "ordnen", anrede: "sie", felder: KELLER, hook: 2, output: { linkedin: "L", instagram: "I" } };
     expect(parseState(raw)).toEqual(raw);
   });
 

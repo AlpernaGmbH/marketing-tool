@@ -16,8 +16,9 @@ import {
 } from "@/tools/caption-baukasten/logic";
 
 // Story-Post-Builder: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
-// Die Person beantwortet sechs Fragen zu einer Geschichte. Das Werkzeug ordnet und kürzt ihre Sätze, es schreibt keine neuen.
-// Nur der Hook setzt Wörter der Person zusammen. Keine KI, kein Server. Spec: specs/story-post.md
+// Die Person beantwortet sechs Fragen zu einer Geschichte. Zwei Wege: «ordnen» (das Werkzeug ordnet und kürzt ihre Sätze, es schreibt
+// keine neuen; nur der Hook setzt Wörter der Person zusammen; keine KI) und «ki» (eine KI formuliert aus Stichworten Sätze, ohne
+// Neues dazuzuerfinden; der Aufruf steht in generator.ts). Spec: specs/story-post.md
 
 export const SLUG = "story-post";
 export const STORAGE_KEY = `mt:${SLUG}`;
@@ -39,6 +40,13 @@ export const LESEZEIT_NOTE = `Annahme von Alperna: ${WORDS_PER_MINUTE} Wörter p
 export const RICHTWERT_NOTE = "Richtwert von Alperna, keine Statistik";
 export const SAETZE_NOTE = "Die Sätze sind deine; das Werkzeug ordnet sie.";
 export const INSTAGRAM_TOO_LONG = "Zu lang für Instagram: kürze von Hand";
+
+/** Weg zum Beitrag: «ki» formuliert aus Stichworten, «ordnen» nimmt die Sätze der Person, wie sie sind. */
+export const MODI = ["ki", "ordnen"] as const;
+export type Modus = (typeof MODI)[number];
+export const isModus = (v: unknown): v is Modus => v === "ki" || v === "ordnen";
+/** Mit der KI genügen Stichworte: Pflichtfelder brauchen so viele Zeichen. */
+export const KI_MIN = 8;
 
 export const ANREDEN: { value: Anrede; label: string }[] = [
   { value: "du", label: "Du" },
@@ -157,16 +165,20 @@ const firstSentence = (text: string): string => splitSentences(text)[0] ?? "";
 
 export type Problem = { key: FeldKey; fieldId: string; message: string };
 
+/** Mindestlänge eines Feldes im gewählten Weg: von Hand 20 (10) Zeichen, mit der KI genügen Stichworte. */
+export const minOf = (f: FeldDef, modus: Modus = "ordnen"): number => (modus === "ki" ? Math.min(f.min, KI_MIN) : f.min);
+
 /** Alle Fehler der Angaben, in der Reihenfolge der Felder. Ein freiwilliges Feld darf leer sein, sonst gelten dieselben Grenzen. */
-export function validate(felder: Felder): Problem[] {
+export function validate(felder: Felder, modus: Modus = "ordnen"): Problem[] {
   const out: Problem[] = [];
   for (const f of FELDER) {
     const n = charCount(tidy(felder[f.key] ?? ""));
+    const min = minOf(f, modus);
     const problem = (message: string) => out.push({ key: f.key, fieldId: fieldId(f.key), message });
     if (n === 0) {
       if (f.pflicht) problem(`«${f.label}» fehlt noch.`);
-    } else if (n < f.min) {
-      problem(`«${f.label}» ist zu kurz: mindestens ${f.min} Zeichen, du hast ${n}.`);
+    } else if (n < min) {
+      problem(`«${f.label}» ist zu kurz: mindestens ${min} Zeichen, du hast ${n}.`);
     } else if (n > f.max) {
       problem(`«${f.label}» ist zu lang: höchstens ${numberCH(f.max, 0)} Zeichen, du hast ${numberCH(n, 0)}.`);
     }
@@ -175,10 +187,10 @@ export function validate(felder: Felder): Problem[] {
 }
 
 /** Wie viele Pflichtfelder die Mindestlänge erreichen (für die Fortschrittsanzeige). */
-export function readyCount(felder: Felder): number {
+export function readyCount(felder: Felder, modus: Modus = "ordnen"): number {
   return PFLICHT_KEYS.filter((k) => {
     const n = charCount(tidy(felder[k] ?? ""));
-    return n >= DEF[k].min && n <= DEF[k].max;
+    return n >= minOf(DEF[k], modus) && n <= DEF[k].max;
   }).length;
 }
 
@@ -264,11 +276,35 @@ export function readingTime(text: string): Lesezeit {
 export type AbsatzKey = "hook" | FeldKey;
 export type Absatz = { key: AbsatzKey; text: string };
 
-/** Die Absätze in der Reihenfolge Hook, Ausgangslage, Problem, Wendepunkt, Ergebnis, Lehre, Bezug. Leere Teile entfallen. */
+/**
+ * Welche Sätze der Hook schon sagt: Steht der Hook ungekürzt aus dem ersten Satz des Ergebnisses (Hook 1) oder aus diesem und dem
+ * ersten Satz des Wendepunkts (Hook 2), fallen diese Sätze im Haupttext weg. Sonst stünde derselbe Satz zweimal im Beitrag
+ * (Rückmeldung vom 09.10.2026). Ein gekürzter Hook («…») ist ein Anreisser und lässt den Haupttext unberührt.
+ */
+export function hookSaetze(felder: Felder, hook: string): Partial<Record<FeldKey, string>> {
+  if (!hook) return {};
+  const ergebnis = firstSentence(tidy(felder.ergebnis ?? ""));
+  if (!ergebnis) return {};
+  if (hook === ergebnis) return { ergebnis };
+  const wendepunkt = firstSentence(tidy(felder.wendepunkt ?? ""));
+  if (wendepunkt && hook === grundHook(ergebnis, wendepunkt)) return { ergebnis, wendepunkt };
+  return {};
+}
+
+/** Der Text ohne seinen ersten Satz, wenn dieser `satz` ist; sonst unverändert. */
+function ohneErstenSatz(text: string, satz: string | undefined): string {
+  if (!satz) return text;
+  const saetze = splitSentences(text);
+  if (saetze[0] !== satz) return text;
+  return saetze.slice(1).join(" ");
+}
+
+/** Die Absätze in der Reihenfolge Hook, Ausgangslage, Problem, Wendepunkt, Ergebnis, Lehre, Bezug. Leere Teile entfallen, ebenso Sätze, die der Hook schon sagt. */
 export function absaetze(felder: Felder, hook: string): Absatz[] {
   const out: Absatz[] = hook ? [{ key: "hook", text: hook }] : [];
+  const schon = hookSaetze(felder, hook);
   for (const f of FELDER) {
-    const text = tidy(felder[f.key] ?? "");
+    const text = ohneErstenSatz(tidy(felder[f.key] ?? ""), schon[f.key]).trim();
     if (text) out.push({ key: f.key, text });
   }
   return out;
@@ -380,7 +416,7 @@ export function platzhalter(felder: Felder): string[] {
 
 // ---- Beitrag ---------------------------------------------------------------------------------------
 
-export type Input = { anrede: Anrede; felder: Felder; hook: HookWahl };
+export type Input = { anrede: Anrede; felder: Felder; hook: HookWahl; modus?: Modus };
 
 export type Story = {
   /** Die Absätze der LinkedIn-Fassung, mit Hook, wenn gewählt. */
@@ -461,6 +497,7 @@ const orNone = (s: string): string => tidy(s) || "keine Angabe";
 /** Die Angaben fürs CRM, eine je Zeile: erst die sechs Felder, dann Anrede und Hook. */
 export function eingabeText(input: Input): string {
   return [
+    `Weg: ${input.modus === "ki" ? "KI formuliert aus Stichworten" : "Sätze der Person geordnet"}`,
     ...FELDER.map((f) => `${f.label}: ${orNone(input.felder[f.key] ?? "")}`),
     `Anrede: ${anredeLabel(input.anrede)}`,
     `Hook: ${hookLabel(input.hook)}`,
@@ -478,14 +515,22 @@ export type Output = { linkedin: string; instagram: string };
 export type StoryState = {
   v: 1;
   phase: "edit" | "result";
+  /** «ki»: Stichworte, die KI formuliert; «ordnen»: Sätze der Person. Neue Besucher beginnen mit «ki». */
+  modus: Modus;
   /** Leer: aus dem Profil, sonst Du. */
   anrede: Anrede | "";
+  /** Die Angaben der Person (bei «ki» Stichworte). */
   felder: Felder;
+  /** Die Sätze der KI zu den Angaben; nur bei «ki» und nach dem Schreiben. Der Beitrag entsteht aus diesen Sätzen. */
+  ki?: Felder;
   hook: HookWahl;
   output?: Output;
 };
 
-export const EMPTY_STATE: StoryState = { v: 1, phase: "edit", anrede: "", felder: EMPTY_FELDER, hook: 1 };
+export const EMPTY_STATE: StoryState = { v: 1, phase: "edit", modus: "ki", anrede: "", felder: EMPTY_FELDER, hook: 1 };
+
+/** Die Felder, aus denen der Beitrag entsteht: bei «ki» die Sätze der KI, sonst die Angaben der Person. */
+export const beitragFelder = (s: Pick<StoryState, "modus" | "felder" | "ki">): Felder => (s.modus === "ki" && s.ki ? s.ki : s.felder);
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const clamp = (s: string, max: number): string => (s.length <= max ? s : Array.from(s).slice(0, max).join(""));
@@ -503,7 +548,11 @@ export function parseFelder(raw: unknown): Felder {
 export function parseState(raw: unknown): StoryState {
   if (!isRecord(raw) || raw.v !== 1) return EMPTY_STATE;
   const felder = parseFelder(raw.felder);
-  const complete = validate(felder).length === 0;
+  // Stände aus der Zeit vor dem 09.10.2026 kennen nur den Weg «ordnen».
+  const modus: Modus = isModus(raw.modus) ? raw.modus : "ordnen";
+  const ki = raw.ki === undefined ? undefined : parseFelder(raw.ki);
+  const kiOk = ki !== undefined && validate(ki, "ordnen").length === 0;
+  const complete = modus === "ki" ? validate(felder, "ki").length === 0 && kiOk : validate(felder).length === 0;
   const phase = raw.phase === "result" && complete ? "result" : "edit";
   const o = raw.output;
   const output: Output | undefined =
@@ -513,8 +562,10 @@ export function parseState(raw: unknown): StoryState {
   return {
     v: 1,
     phase,
+    modus,
     anrede: isAnrede(raw.anrede) ? raw.anrede : "",
     felder,
+    ...(modus === "ki" && kiOk ? { ki } : {}),
     hook: isHookWahl(raw.hook) ? raw.hook : 1,
     ...(output ? { output } : {}),
   };

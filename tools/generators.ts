@@ -15,6 +15,7 @@ import bewertungsantwortGenerator from "./bewertungsantwort/generator";
 import vereinsKommunikationGenerator from "./vereins-kommunikation/generator";
 import sponsoringDossierGenerator from "./sponsoring-dossier/generator";
 import contentStrategieGenerator from "./inhalte-strategie/generator";
+import storyPostGenerator from "./story-post/generator";
 // new-tool:generator-imports
 
 // Explizite Liste aller Generatoren (kein Glob), wie tools/index.ts. Jeder Eintrag ist tools/<slug>/generator.ts.
@@ -39,6 +40,7 @@ export const generators: AnyGenerator[] = [
   vereinsKommunikationGenerator,
   sponsoringDossierGenerator,
   contentStrategieGenerator,
+  storyPostGenerator,
   // Kein Werkzeug: liest die Website für das Firmenprofil (lib/profile-scan.ts).
   profilScanGenerator,
   // new-tool:generators
