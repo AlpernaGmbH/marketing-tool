@@ -689,7 +689,7 @@ describe("empfehlungsprogramm: Konfiguration und Seitentext", () => {
     expect(config.usesProfile).toEqual(["organisationstyp", "firma", "website"]);
     expect(config.writesProfile).toEqual([]);
     expect(config.needsServer).toBe(false);
-    expect(config.pathStep).toEqual({ path: "vereine", order: 4 });
+    expect(config.pathStep).toEqual({ path: "strategie", order: 17 });
   });
 
   const md = fs.readFileSync(path.join(process.cwd(), "content", "tools", "empfehlungsprogramm.md"), "utf8");

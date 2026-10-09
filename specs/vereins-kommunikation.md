@@ -1,6 +1,6 @@
 # Vereins-Kommunikationskonzept (vereins-kommunikation)
 
-Klasse B (Generator mit KI, braucht den Server), Stand 05.10.2026. Nutzt den Generator-Baustein (`lib/generator.ts`, `components/tool/useGenerator.ts`, Route `/api/generate`) nach dem Vorbild `tools/swot` (Angaben aus einem anderen Stand) und `tools/content-saeulen` (Kanäle, Profil-Vorbelegung). `generator.ts`, `logic.ts` und die Oberfläche sind getestet.
+Klasse B (Generator mit KI, braucht den Server), Stand 05.10.2026. Nutzt den Generator-Baustein (`lib/generator.ts`, `components/tool/useGenerator.ts`, Route `/api/generate`) nach dem Vorbild `tools/swot` (Angaben aus einem anderen Stand) und `tools/inhalte-saeulen` (Kanäle, Profil-Vorbelegung). `generator.ts`, `logic.ts` und die Oberfläche sind getestet.
 
 ## Nutzen in einem Satz
 Für Vorstände von Schweizer Vereinen, die für die Generalversammlung ein Kommunikationskonzept brauchen: in rund acht Minuten ein Dokument mit Ausgangslage, Zielen mit Messgrösse, Zielgruppen, Kernbotschaft, Kanalplan, Jahreskalender aus den Anlässen, Rollen mit Stunden und Erfolgsmessung, als Text, PDF und Word.
@@ -10,7 +10,7 @@ Kategorie: strategie, Zielgruppe: verein, zweiter Schritt im Pfad «Für Vereine
 Liest aus Profil: organisationstyp, firma, ort, kanton (Grunddaten über `ProfileFieldsForm`, nie erneut gefragt), kanaele (Vorbelegung der Kanäle heute).
 Liest aus anderen Ständen: `mt:anspruchsgruppen` (Gruppen mit Interesse und Einfluss, nur lesen).
 Schreibt ins Profil: organisationstyp = «verein», nur wenn das Feld leer ist (beim ersten Laden); kanaele = `[{ name }]` mit den Kanälen heute, nur wenn das Feld leer ist (nach einem frisch erzeugten Entwurf). Die Grunddaten-Felder schreiben beim Tippen ins Profil.
-Verwandte Tools: anspruchsgruppen (liefert die Zielgruppen), sponsoring-dossier, content-kalender.
+Verwandte Tools: anspruchsgruppen (liefert die Zielgruppen), sponsoring-dossier, feiertagskalender.
 `needsServer: true`: die Angaben gehen an `/api/generate` (Ausnahme in Harte Regel 1).
 
 ## Zugang (Zugang v3)
@@ -52,7 +52,7 @@ Vor dem Knopf steht, was an die KI geht: Name, Ort und Kanton des Vereins, Zweck
    - «kanal»: ein Kanal im Kanalplan steht nicht in den Angaben (Name, Schlüssel oder Kurzform wie «WhatsApp», «Anzeiger», «Mail»; ohne Gross/Klein, Bindestrich und Leerzeichen) und trägt nicht den Zusatz «(neu)», oder es sind mehr als zwei Kanäle mit «(neu)».
    Verworfene Antworten geben 502 und die Meldung «Die KI hat keinen brauchbaren Entwurf geliefert. Versuch es noch einmal.»
    Annahme: Monat und Stunden dürfen im JSON auch als Text stehen («6») und werden gelesen (`z.coerce`), Kommazahlen fallen weg. Annahme: Zahlen als Wort («zweimal im Jahr») sind erlaubt, nur Ziffern werden geprüft. Annahme: Die Namen der Zielgruppen werden nicht gegen die Anspruchsgruppen geprüft (die KI darf kürzen und auswählen); die Anweisung verlangt den Namen wie in den Angaben. Annahme: Die Kurzformen der Kanäle (`KANAL_ALIASE`) sind eine Duldung dieses Werkzeugs, keine Statistik.
-8. **Stand speichern** (`mt:vereins-kommunikation`): `{ v: 1, input, output }`, erst nach einem erfolgreichen Entwurf. Nach dem Neuladen steht das Ergebnis wieder da, ohne neue Anfrage und ohne zweiten CRM-Eintrag. `parseState` liefert bei kaputten Daten, falscher Version oder ungültiger Eingabe den leeren Stand; ein kaputter Entwurf fällt allein weg, die Eingabe bleibt (für «Angaben ändern»). Das Formular selbst wird nicht gespeichert (Vorbild `content-saeulen`).
+8. **Stand speichern** (`mt:vereins-kommunikation`): `{ v: 1, input, output }`, erst nach einem erfolgreichen Entwurf. Nach dem Neuladen steht das Ergebnis wieder da, ohne neue Anfrage und ohne zweiten CRM-Eintrag. `parseState` liefert bei kaputten Daten, falscher Version oder ungültiger Eingabe den leeren Stand; ein kaputter Entwurf fällt allein weg, die Eingabe bleibt (für «Angaben ändern»). Das Formular selbst wird nicht gespeichert (Vorbild `inhalte-saeulen`).
 9. **Profil** (`profilePatch(profile, kanaele)`): nach einem frisch erzeugten Entwurf `kanaele = [{ name }]` mit den Namen der Kanäle heute, nur wenn `profile.kanaele` leer ist oder fehlt und mindestens ein Kanal gewählt ist. Stehen dort schon Kanäle, bleibt das Profil, wie es ist.
 10. **CRM:** macht `useGenerator` nach dem Entwurf (`eingabeText`, `reportMarkdown` mit der Eingabe aus einem Ref).
 

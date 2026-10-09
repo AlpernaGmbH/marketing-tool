@@ -3,7 +3,7 @@ import { defineTool } from "@/lib/define-tool";
 export default defineTool({
   slug: "qr-set",
   name: "QR-Set für Flyer und Aufkleber",
-  category: "schweiz",
+  category: "praktisches",
   audience: "beide",
   tagline: "Bis zu sechs QR-Codes mit Beschriftung: Druckbogen als PDF, Dateien als ZIP, fertig für Flyer und Aufkleber.",
   keyword: "QR-Code",
@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: [],
   outputs: ["pdf", "zip", "png"],
   estimatedMinutes: 4,
-  pathStep: { path: "schweiz", order: 2 },
+  pathStep: { path: "praktisches", order: 2 },
   featured: false,
 });

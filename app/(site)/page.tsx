@@ -22,9 +22,9 @@ import { cn } from "cn";
 // Meistgenutzt kommt aus Redis (popular:<slug>); einmal pro Stunde neu berechnen.
 export const revalidate = 3600;
 
-const TITLE = "Marketing-Tools für Schweizer KMU und Vereine – kostenlos";
+const TITLE = "Marketing-Tools für Schweizer KMU – kostenlos";
 const DESCRIPTION =
-  "Kostenlose Marketing-Werkzeuge für Schweizer KMU und Vereine: Strategie, Content, Analyse und Recht. Ohne Konto, mit Ergebnis in Minuten.";
+  "Kostenlose Marketing-Werkzeuge für Schweizer KMU: Strategie, Analyse, Inhalte und Praktisches. Ohne Konto, mit Ergebnis in Minuten.";
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   openGraph: { title: TITLE, description: DESCRIPTION, url: SITE_URL, type: "website", locale: "de_CH" },
 };
 
-const PATH_CARDS: CategoryPage[] = ["strategie", "content", "analyse", "schweiz"];
+const PATH_CARDS: CategoryPage[] = ["strategie", "analyse", "inhalte", "praktisches"];
 
 const slugsOf = (page: CategoryPage) => getPath(page).map((t) => t.slug);
 const cardText = (page: CategoryPage) => readCategory(page).front.description ?? "";
@@ -56,7 +56,7 @@ export default async function HomePage() {
         <Contours />
         <div className="container-page relative section">
           <p className="eyebrow">Von Alperna, Speicher AR</p>
-          <PageH1 text="Marketing-Werkzeuge für Schweizer KMU und Vereine" className="mt-5 max-w-[18ch] md:max-w-[22ch]" />
+          <PageH1 text="Marketing-Werkzeuge für Schweizer KMU" className="mt-5 max-w-[18ch] md:max-w-[22ch]" />
           <p className="measure mt-4 text-lg text-muted-foreground">
             Kostenlos, verständlich und für die Schweiz gemacht. Beantworte ein paar Fragen und du hältst in Minuten ein
             Ergebnis in der Hand.
@@ -97,9 +97,6 @@ export default async function HomePage() {
             </li>
           ))}
         </ul>
-        <div className="mt-4">
-          <PathCard href="/vereine" title={CATEGORY_LABELS.vereine} text={cardText("vereine")} slugs={slugsOf("vereine")} />
-        </div>
       </section>
 
       <section id="werkzeuge" aria-labelledby="meistgenutzt" className="container-page scroll-mt-6 pb-[var(--section-y)]">

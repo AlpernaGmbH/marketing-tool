@@ -68,7 +68,7 @@ Meist drei bis fünf Seiten im PDF (Richtwert von Alperna, keine Statistik). Die
 Das Konzept ist ein Entwurf der KI und eine Vorlage für die Generalversammlung. Wie ihr es im Verein behandelt, entscheidet ihr selbst; das Werkzeug macht dazu keine Aussage. Prüft Namen, Zahlen und Aussagen, bevor ihr den Text verwendet.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Deine Angaben und das Konzept gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und das Konzept gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Was bleibt in meinem Browser?
 Dein Firmenprofil, deine Anspruchsgruppen und der Stand dieses Werkzeugs. Du kannst alles auf der Seite «Mein Profil» löschen. An die KI gehen nur die Angaben für das Konzept.

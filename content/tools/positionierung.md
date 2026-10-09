@@ -72,7 +72,7 @@ Aus sechs Gruppen mit festen Gewichten: Zielgruppe, Unterscheidung und Beweise j
 Betrieb, Branche, Ort und Kanton aus deinem Firmenprofil, der Text deiner Startseite, die Funde des Checks und deine zwei freiwilligen Angaben. Nicht deine E-Mail-Adresse. Unser Server speichert nichts davon.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Angaben, Check und Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Angaben, Check und Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Erfindet die KI Beweise?
 Nein. Jede Ziffer im Entwurf muss auf deiner Website oder in deinen Angaben stehen, sonst verwirft das Werkzeug ihn. Fehlen Beweise, setzt die KI Platzhalter in eckigen Klammern.

@@ -893,7 +893,7 @@ describe("verzeichnisse: tool.config und Seitentext", () => {
   it("hat eine Tagline bis 110 Zeichen und das Keyword in der H1", () => {
     expect(config.tagline.length).toBeLessThanOrEqual(110);
     expect(config.slug).toBe("verzeichnisse");
-    expect(config.category).toBe("schweiz");
+    expect(config.category).toBe("analyse");
     expect(config.audience).toBe("beide");
     expect(config.needsServer).toBe(false);
     expect(config.usesProfile).toEqual(["organisationstyp", "firma", "ort", "website", "branche"]);

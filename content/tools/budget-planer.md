@@ -67,7 +67,7 @@ Ja, als Eigenleistung. Du gibst Stunden pro Monat und einen internen Stundensatz
 Fremdkosten sind Dienstleister und Werkzeuge: Website, Fotos, Newsletter-Programm. Werbebudget ist bezahlte Reichweite: Anzeigen bei Google, Instagram, Facebook, LinkedIn oder im Anzeiger. Der Planer teilt je Kanal: Google Ads und Print ganz Werbebudget, Instagram, Facebook und LinkedIn je zur Hälfte, alle anderen Fremdkosten (Quelle: Richtwert von Alperna, keine Statistik).
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich dazu kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut. PDF, Word und CSV kommen mit derselben Adresse.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut. PDF, Word und CSV kommen mit derselben Adresse.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Mit dem Ergebnis gehen deine Angaben, die Firma und das Budget als Text mit deiner E-Mail-Adresse an Alperna. Das übrige Profil und der Zwischenstand bleiben im Browser. Keine KI rechnet mit.

@@ -63,7 +63,7 @@ Dann kennt kaum jemand das Programm. Mach es sichtbar: Karte zu jedem Auftrag, B
 Ja. Wähle «Verein»: Der Jahresbeitrag ersetzt den Kundenwert, aus dem Auftrag wird der Eintritt.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Einseiter und Karte kommen mit derselben Adresse.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Einseiter und Karte kommen mit derselben Adresse.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Deine Angaben, die Firma und der Einseiter als Text gehen mit deiner E-Mail-Adresse an Alperna. Profil und Zwischenstand bleiben im Browser. Keine KI rechnet mit.

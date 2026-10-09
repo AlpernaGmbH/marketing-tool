@@ -9,7 +9,7 @@ Für KMU und Vereine, die Beiträge auf Instagram, LinkedIn, Facebook und Google
 Kategorie: content (Schritt 7 im Pfad «Content»), Zielgruppe: beide
 Liest aus Profil: marke (nur `marke.tonalitaet`, für die Vorbelegung der Anrede Du/Sie über `anredeFromProfile` aus `tools/bewertungs-kit/logic.ts`)
 Schreibt ins Profil: nichts
-Verwandte Tools: content-ideen, textcheck, post-generator
+Verwandte Tools: inhalte-ideen, textcheck, post-generator
 
 ## Zugang (Zugang v3)
 - Beim Klick auf «Caption erstellen» prüft das Werkzeug alle drei Schritte (`inputProblem`), dann `ctx.ensureEmail()`; schliesst die Person das Fenster, bleibt das Formular stehen.

@@ -1,7 +1,7 @@
 ---
-title: "Content-Ideen aus deiner Website für Schweizer KMU"
+title: "Beitragsideen aus deiner Website für Schweizer KMU"
 description: "Eine KI liest deine Startseite und schreibt 8 bis 12 Ideen für Instagram, LinkedIn, Google-Beitrag, Newsletter und Website. Kostenlos, ohne Konto."
-h1: "Content-Ideen aus deiner Website für Schweizer KMU"
+h1: "Beitragsideen aus deiner Website für Schweizer KMU"
 tagline: "Aus dem Text deiner Startseite werden 8 bis 12 Ideen für Beiträge, mit Kanal, Format und erstem Satz."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:
@@ -14,7 +14,7 @@ ablauf:
   - "Ideen kopieren"
 ---
 ## Warum das wichtig ist
-Content-Ideen stecken schon auf deiner Website; sie müssen nur zu Beiträgen werden. Dieses Werkzeug liest deine Startseite und macht daraus Vorschläge.
+Beitragsideen stecken schon auf deiner Website; sie müssen nur zu Beiträgen werden. Dieses Werkzeug liest deine Startseite und macht daraus Vorschläge.
 
 - **Die Website ist die beste Quelle:** Dort stehen deine Leistungen, dein Ort, deine Leute.
 - **Die leere Seite bremst:** Ein Malerbetrieb in Gossau oder ein Treuhandbüro in Herisau hat keine Zeit, jede Woche nach Themen zu suchen.
@@ -28,7 +28,7 @@ Content-Ideen stecken schon auf deiner Website; sie müssen nur zu Beiträgen we
 2. **Termine setzen.** Je eine Idee pro Woche in den Kalender. Anlässe wie die Olma in St. Gallen geben den Takt vor.
 3. **Ersten Satz übernehmen.** Den Rest schreibst du selbst oder lässt ihn vom Text-Umschreiber in den passenden Stil bringen.
 4. **Platzhalter füllen.** Für «[Anlass in deiner Gemeinde]» setzt du den echten Namen ein.
-5. **Nach einem Monat wiederholen.** Hat sich deine Website verändert, liefert das Werkzeug neue Content-Ideen.
+5. **Nach einem Monat wiederholen.** Hat sich deine Website verändert, liefert das Werkzeug neue Beitragsideen.
 
 => Gleich darunter: der Fehler, der die meisten Ideen unbrauchbar macht.
 
@@ -64,10 +64,10 @@ Ja. Sie soll nur verwenden, was auf der Website steht, und für Unbekanntes Plat
 Nein, nur die Seite, deren Adresse du angibst. Unterseiten, Bilder und PDF-Dateien sieht es nicht. Steht das Wichtige auf einer Unterseite, gib deren Adresse an.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Deine Angaben und die Ideen gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und die Ideen gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Was kostet das?
-Die Content-Ideen kosten nichts. Es gibt kein Limit pro Person, nur eine Bremse gegen Missbrauch pro Stunde und pro Tag.
+Die Beitragsideen kosten nichts. Es gibt kein Limit pro Person, nur eine Bremse gegen Missbrauch pro Stunde und pro Tag.
 
 ### Welche Kanäle gibt es?
 Instagram, LinkedIn, Google-Beitrag, Newsletter und Website-Beitrag. Facebook und TikTok fehlen bewusst; die Instagram-Ideen passen dort meist.

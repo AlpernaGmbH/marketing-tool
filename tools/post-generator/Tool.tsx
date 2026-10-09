@@ -85,7 +85,7 @@ function Intro() {
 }
 
 /**
- * Die gemerkten Ideen aus dem Werkzeug «Content-Ideen» (mt:merkliste). Die Ideen kommen aus dem Datensatz dieses
+ * Die gemerkten Ideen aus dem Werkzeug «Beitragsideen» (mt:merkliste). Die Ideen kommen aus dem Datensatz dieses
  * Werkzeugs; er wird erst geladen, wenn es eine Merkliste gibt. Fehlt das Werkzeug oder ist die Liste kaputt, bleibt die Liste leer.
  */
 function useMerkIdeen(): MerkIdee[] {
@@ -94,7 +94,7 @@ function useMerkIdeen(): MerkIdee[] {
   useEffect(() => {
     if (!raw) return;
     let abgebrochen = false;
-    import("@/tools/content-ideen/logic")
+    import("@/tools/inhalte-ideen/logic")
       .then((m) => {
         let data: unknown = null;
         try {
@@ -390,7 +390,7 @@ function PostFlow() {
                     ))}
                   </select>
                   <p id="pg-merk-help" className="text-sm text-muted-foreground">
-                    Aus deiner Merkliste im Werkzeug «Content-Ideen». Die Idee füllt das Feld oben, du kannst sie danach ändern.
+                    Aus deiner Merkliste im Werkzeug «Beitragsideen». Die Idee füllt das Feld oben, du kannst sie danach ändern.
                   </p>
                 </div>
               )}
@@ -488,7 +488,7 @@ function PostFlow() {
                       ))}
                     </select>
                     <p id="pg-saeule-help" className="text-sm text-muted-foreground">
-                      Aus deinen Content-Säulen im Firmenprofil. Die gewählte Säule gibt das Themenfeld vor.
+                      Aus deinen Themensäulen im Firmenprofil. Die gewählte Säule gibt das Themenfeld vor.
                     </p>
                   </div>
                 )}

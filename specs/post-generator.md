@@ -1,6 +1,6 @@
 # Post-Generator (post-generator)
 
-Klasse B (Generator mit KI, braucht den Server), Stand 05.10.2026. Nutzt den Generator-Baustein (`lib/generator.ts`, `components/tool/useGenerator.ts`, Route `/api/generate`) nach dem Vorbild `tools/botschaften` und `tools/content-saeulen`. Die Faltkante und der Zeichenzähler der Vorschau kommen aus `tools/caption-baukasten/logic.ts` (`foldInfo`, `splitAtFold`, `counterLabel`, `foldHint`, `FOLD_NOTE`). `generator.ts` und `logic.ts` sind getestet.
+Klasse B (Generator mit KI, braucht den Server), Stand 05.10.2026. Nutzt den Generator-Baustein (`lib/generator.ts`, `components/tool/useGenerator.ts`, Route `/api/generate`) nach dem Vorbild `tools/botschaften` und `tools/inhalte-saeulen`. Die Faltkante und der Zeichenzähler der Vorschau kommen aus `tools/caption-baukasten/logic.ts` (`foldInfo`, `splitAtFold`, `counterLabel`, `foldHint`, `FOLD_NOTE`). `generator.ts` und `logic.ts` sind getestet.
 
 ## Nutzen in einem Satz
 Für Inhaberinnen und Inhaber von KMU und für Vereinsvorstände, die wissen, worüber sie schreiben wollen, aber den ersten Satz nicht finden: in rund drei Minuten aus einer Idee in ein bis drei Sätzen ein Beitrag für Instagram, LinkedIn, Facebook oder den Google-Beitrag, in ihrem Ton aus dem Firmenprofil, mit zwei Hooks zur Wahl, Hauptteil und Aufforderung und einem leeren Platz für die Hashtags.
@@ -9,7 +9,7 @@ Für Inhaberinnen und Inhaber von KMU und für Vereinsvorstände, die wissen, wo
 Kategorie: ki (vierter Schritt im Pfad «KI», `pathStep.order` 4), Zielgruppe: beide
 Liest aus Profil: firma, branche, ort (Grunddaten über `ProfileFieldsForm`, nie erneut gefragt), positionierung, marke (werte, tonalitaet, woerter.vermeiden), contentSaeulen (Namen, für das Feld «Säule») und personas (Namen). Die Anrede ist aus `marke.tonalitaet` vorbelegt (`anredeFromProfile`).
 Schreibt ins Profil: nichts (`writesProfile: []`). Die Grunddaten-Felder schreiben beim Tippen in das Profil, wie beim Marketing-Check.
-Verwandte Tools: content-ideen, caption-baukasten, markenplattform
+Verwandte Tools: inhalte-ideen, caption-baukasten, markenplattform
 `needsServer: true`: die Angaben gehen an `/api/generate` (Ausnahme in Harte Regel 1). `/api/read` wird nicht gebraucht.
 
 ## Zugang (Zugang v3)
@@ -57,7 +57,7 @@ Vor dem Knopf steht, was an die KI geht: Betrieb, Branche, Ort, die Idee und die
 7. **Vorschau**: `foldInfo` und `splitAtFold` teilen den Text an der Faltkante, `counterLabel` zählt («512 Zeichen, davon 125 vor der Faltkante»; bei Google «… innerhalb der Grenze von 1'500»), `foldHint` sagt, was die Plattform tut. Die Werte sind Richtwerte von Alperna, keine Statistik; der Satz «Richtwert von Alperna, keine Statistik; die Plattformen ändern das.» steht unter jeder Vorschau (`FOLD_NOTE`). Annahme: Die Faltkante gilt für den Text mit Hashtags, wie im Caption-Baukasten.
 8. **Stand speichern** (`mt:post-generator`): `{ v: 1, input, output, hook: 0|1, hashtags, entwuerfe }`, erst nach einem erfolgreichen Beitrag. Hook-Wahl und Hashtags werden bei jeder Änderung gespeichert. Nach dem Neuladen steht das Ergebnis wieder da, ohne neue Anfrage und ohne zweiten CRM-Eintrag. `parseState` liefert bei kaputten Daten, falscher Version oder ungültiger Eingabe den leeren Stand; ein kaputtes Ergebnis lässt die Eingabe für «Angaben ändern» stehen; von den Entwürfen bleiben die gültigen (höchstens zehn, ohne doppelte IDs).
 9. **Entwürfe**: «Als Entwurf merken» legt Eingabe, Ergebnis, gewählten Hook und Hashtags in die Liste `entwuerfe` im Stand (neuester zuerst, höchstens zehn, der älteste fällt weg). Annahme: Die Merkliste `mt:merkliste` gehört dem Werkzeug «Content-Ideen» (`{ v: 1, ideen: [{ id, gemerktAm }] }`, IDs aus dessen Datensatz); Beiträge passen dort nicht hinein, darum hat der Post-Generator eine eigene Liste. «Laden» setzt Eingabe, Ergebnis, Hook und Hashtags zurück und schickt nichts ins CRM.
-10. **Gemerkte Ideen lesen**: Gibt es `mt:merkliste`, lädt das Werkzeug erst dann `tools/content-ideen/logic.ts` nach (`import()`, eigener Chunk, damit der Datensatz die Seite nicht beschwert) und zeigt die gemerkten Ideen im Feld «Gemerkte Idee übernehmen». Fehlt das Werkzeug, ist die Liste leer oder kaputt, fehlt das Feld.
+10. **Gemerkte Ideen lesen**: Gibt es `mt:merkliste`, lädt das Werkzeug erst dann `tools/inhalte-ideen/logic.ts` nach (`import()`, eigener Chunk, damit der Datensatz die Seite nicht beschwert) und zeigt die gemerkten Ideen im Feld «Gemerkte Idee übernehmen». Fehlt das Werkzeug, ist die Liste leer oder kaputt, fehlt das Feld.
 11. **Kein Schreiben ins Profil** (`writesProfile: []`).
 
 ## Ausgaben

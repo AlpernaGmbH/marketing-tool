@@ -1,11 +1,11 @@
 import { safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
 import type { Profile } from "@/lib/profile";
-import { WEEKDAYS, addDays, foldLine, formatIso, isIsoDate, parseIso, weekdayIndex } from "@/tools/content-kalender/logic";
+import { WEEKDAYS, addDays, foldLine, formatIso, isIsoDate, parseIso, weekdayIndex } from "@/tools/feiertagskalender/logic";
 import { KANAL_KEYS, TYP_KEYS, vorlagenFor, type KanalKey, type TypKey, type Vorlage, type VorlagenKanal } from "./data";
 
 // Anlass-Rückwärtsplaner: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
 // Aus Art, Name, Datum und Kanälen des Anlasses entsteht ein Zeitplan, der rückwärts vom Anlass läuft: Aufgaben von zehn
-// Wochen davor bis eine Woche danach. Datum immer als JJJJ-MM-TT, gerechnet mit UTC-Teilen (Funktionen des Content-Kalenders),
+// Wochen davor bis eine Woche danach. Datum immer als JJJJ-MM-TT, gerechnet mit UTC-Teilen (Funktionen des Feiertagskalenders),
 // das heutige Datum kommt als Parameter. Die Vorlagen (data.ts) sind ein Richtwert von Alperna, keine Statistik und keine Vorschrift.
 // Spec: specs/anlass-planer.md
 

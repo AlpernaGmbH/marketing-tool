@@ -593,7 +593,7 @@ describe("Kanalstrategie: Links auf andere Werkzeuge", () => {
     expect(slugs("whatsapp")).toEqual(["whatsapp-link", "qr-set"]);
     expect(slugs("website")).toEqual(["digitaler-auftritt-check"]);
     expect(slugs("newsletter")).toEqual(["newsletter-check"]);
-    for (const key of ["instagram", "facebook", "linkedin"] as const) expect(slugs(key)).toEqual(expect.arrayContaining(["content-saeulen", "posting-plan"]));
+    for (const key of ["instagram", "facebook", "linkedin"] as const) expect(slugs(key)).toEqual(expect.arrayContaining(["inhalte-saeulen", "posting-plan"]));
     expect(slugs("linkedin")).toContain("linkedin-profil");
   });
 

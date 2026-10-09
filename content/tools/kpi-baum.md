@@ -58,7 +58,7 @@ SMART ist eine Merkregel für gut formulierte Ziele: spezifisch, messbar, attrak
 Von dir. Du schätzt, wie viele von 10 Anfragen zu Offerten und wie viele von 10 Offerten zu Aufträgen werden. Das ist deine Annahme, keine Statistik. Das Werkzeug rechnet nur damit und rundet auf ganze Zahlen auf.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. PDF, Word und CSV laufen mit derselben Adresse.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. PDF, Word und CSV laufen mit derselben Adresse.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Alperna bekommt deine E-Mail-Adresse, den Firmennamen aus deinem Profil sowie Eingaben und Ergebnis dieses Werkzeugs. Die Rechnung läuft in deinem Browser, ohne KI. Das übrige Profil und Zwischenstände bleiben dort.

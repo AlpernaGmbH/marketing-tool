@@ -19,7 +19,7 @@ export const toolComponents: Record<string, ComponentType> = {
   "botschaften": dynamic(() => import("./botschaften/Tool")),
   "markenplattform": dynamic(() => import("./markenplattform/Tool")),
   "swot": dynamic(() => import("./swot/Tool")),
-  "content-saeulen": dynamic(() => import("./content-saeulen/Tool")),
+  "inhalte-saeulen": dynamic(() => import("./inhalte-saeulen/Tool")),
   "whatsapp-link": dynamic(() => import("./whatsapp-link/Tool")),
   "qr-set": dynamic(() => import("./qr-set/Tool")),
   "bewertungs-kit": dynamic(() => import("./bewertungs-kit/Tool")),
@@ -27,8 +27,8 @@ export const toolComponents: Record<string, ComponentType> = {
   "strategie-einseiter": dynamic(() => import("./strategie-einseiter/Tool")),
   "caption-baukasten": dynamic(() => import("./caption-baukasten/Tool")),
   "gbp-feiertage": dynamic(() => import("./gbp-feiertage/Tool")),
-  "content-ideen": dynamic(() => import("./content-ideen/Tool")),
-  "content-kalender": dynamic(() => import("./content-kalender/Tool")),
+  "inhalte-ideen": dynamic(() => import("./inhalte-ideen/Tool")),
+  "feiertagskalender": dynamic(() => import("./feiertagskalender/Tool")),
   "post-generator": dynamic(() => import("./post-generator/Tool")),
   "medienmitteilung": dynamic(() => import("./medienmitteilung/Tool")),
   "bewertungsantwort": dynamic(() => import("./bewertungsantwort/Tool")),
@@ -51,6 +51,6 @@ export const toolComponents: Record<string, ComponentType> = {
   "verzeichnisse": dynamic(() => import("./verzeichnisse/Tool")),
   "kanalstrategie": dynamic(() => import("./kanalstrategie/Tool")),
   "testimonial": dynamic(() => import("./testimonial/Tool")),
-  "content-strategie": dynamic(() => import("./content-strategie/Tool")),
+  "inhalte-strategie": dynamic(() => import("./inhalte-strategie/Tool")),
   // new-tool:components
 };

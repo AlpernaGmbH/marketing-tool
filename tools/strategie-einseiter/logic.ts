@@ -4,7 +4,7 @@ import { safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/l
 import type { Profile } from "@/lib/profile";
 import { toolStateKey } from "@/lib/progress";
 import { SLUG as BOTSCHAFTEN_SLUG, parseState as parseBotschaften } from "@/tools/botschaften/logic";
-import { SLUG as SAEULEN_SLUG, kanalLabel, parseState as parseSaeulen } from "@/tools/content-saeulen/logic";
+import { SLUG as SAEULEN_SLUG, kanalLabel, parseState as parseSaeulen } from "@/tools/inhalte-saeulen/logic";
 import { SLUG as CHECK_SLUG, host, parseCheckState } from "@/tools/digitaler-auftritt-check/logic";
 import { SLUG as ICP_SLUG, parseState as parseIcp } from "@/tools/icp-builder/logic";
 import { SLUG as MARKE_SLUG, parseState as parseMarke } from "@/tools/markenplattform/logic";
@@ -59,7 +59,7 @@ export const WERKZEUG_NAMEN = {
   nutzen: "Nutzenversprechen",
   marke: "Markenplattform",
   botschaften: "Kernbotschaften",
-  saeulen: "Content-Säulen",
+  saeulen: "Themensäulen",
   budget: "Marketing-Budget-Planer",
   swot: "SWOT-Analyse",
   reifegrad: "Reifegrad-Check",
@@ -82,7 +82,7 @@ export const BAUSTEINE: readonly BausteinDef[] = [
   def("nutzen", "Nutzen", NUTZEN_SLUG, WERKZEUG_NAMEN.nutzen, "Nutzenversprechen"),
   def("marke", "Marke", MARKE_SLUG, WERKZEUG_NAMEN.marke, "Firmenprofil (Marke) oder Markenplattform"),
   def("botschaft", "Botschaft", BOTSCHAFTEN_SLUG, WERKZEUG_NAMEN.botschaften, "Kernbotschaften"),
-  def("kanaele", "Kanäle und Säulen", SAEULEN_SLUG, WERKZEUG_NAMEN.saeulen, "Firmenprofil (Kanäle, Content-Säulen) oder Content-Säulen"),
+  def("kanaele", "Kanäle und Säulen", SAEULEN_SLUG, WERKZEUG_NAMEN.saeulen, "Firmenprofil (Kanäle, Themensäulen) oder Themensäulen"),
   def("budget", "Budget", BUDGET_SLUG, WERKZEUG_NAMEN.budget, "Firmenprofil (Budget pro Jahr) oder Marketing-Budget-Planer"),
   def("lage", "Lage und Massnahmen", SWOT_SLUG, WERKZEUG_NAMEN.swot, "SWOT-Analyse, Reifegrad-Check, Digitaler-Auftritt-Check"),
 ];

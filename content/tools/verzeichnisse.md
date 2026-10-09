@@ -69,7 +69,7 @@ Nach jeder Änderung bei Name, Adresse, Telefon oder Öffnungszeiten, sonst einm
 Nein. Es liest keine fremden Seiten. Du markierst selbst, wo du eingetragen bist, und fügst ein, wie der Eintrag dort lautet. Das Werkzeug vergleicht nur diese Angaben mit deinem einheitlichen Eintrag.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Was geht an Alperna, was bleibt im Browser?
 Mit deiner Adresse gehen Firma, Ort, Strasse, PLZ, Telefon, dein Status je Verzeichnis, die eingefügten Einträge und das Ergebnis an Alperna, damit wir bei Fragen weiterhelfen können. Dein Firmenprofil und der Zwischenstand bleiben in deinem Browser.

@@ -9,7 +9,7 @@ Für Inhaberinnen und Inhaber von KMU und für Vereinsvorstände, die vor dem Ja
 Kategorie: strategie (`pathStep.order` 9, nach der SWOT), Zielgruppe: beide (KMU und Vereine; bei Vereinen heisst der Umsatz «Jahresbudget des Vereins»)
 Liest aus Profil: organisationstyp, firma, branche, groesse (Grunddaten über `ProfileFieldsForm`, nie erneut gefragt), kanaele (Vorbelegung der Kanäle), budgetJahr (nur zur Prüfung, ob das Feld leer ist)
 Schreibt ins Profil: budgetJahr = Geldbudget pro Jahr (ganze Zahl), nur wenn dort nichts steht (`profilePatch`)
-Verwandte Tools: swot, content-saeulen, reifegrad-check
+Verwandte Tools: swot, inhalte-saeulen, reifegrad-check
 `needsServer: false`: nichts verlässt den Browser ausser dem Ergebnis ins CRM (Zugang v3).
 
 ## Zugang (Zugang v3)

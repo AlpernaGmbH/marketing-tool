@@ -6,7 +6,7 @@ import { LEAD_KEY } from "@/lib/access-client";
 import { styleIssues } from "@/lib/content-rules";
 import { PROFILE_KEY } from "@/lib/profile";
 import { clearAllLocal, readLocal, writeLocal } from "@/lib/storage";
-import { addDays } from "@/tools/content-kalender/logic";
+import { addDays } from "@/tools/feiertagskalender/logic";
 import { todayIso } from "./logic";
 import Tool from "./Tool";
 

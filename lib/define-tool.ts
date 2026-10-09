@@ -5,20 +5,28 @@ import { PROFILE_FIELDS } from "@/lib/profile-fields";
 // die Registry importiert tools/index.ts (und damit alle tool.config.ts).
 // Läge defineTool in der Registry, entstünde ein Zirkelimport.
 
-export const CATEGORIES = ["strategie", "content", "analyse", "schweiz", "ki"] as const;
+// Vier Kategorien (Entscheid 09.10.2026). «KI», «Schweiz», «Content» und «Vereine» sind weder Kategorie noch Menüpunkt;
+// alte Adressen leitet lib/redirects.ts weiter. Ein Pfad (pathStep) ist die Reihenfolge der Werkzeuge innerhalb einer Kategorie.
+export const CATEGORIES = ["strategie", "analyse", "inhalte", "praktisches"] as const;
 export type Category = (typeof CATEGORIES)[number];
 
-// Seiten unter /[kategorie]: die fünf Kategorien plus «vereine» (nach audience).
-export const CATEGORY_PAGES = [...CATEGORIES, "vereine"] as const;
+// Seiten unter /[kategorie]: genau die Kategorien.
+export const CATEGORY_PAGES = CATEGORIES;
 export type CategoryPage = (typeof CATEGORY_PAGES)[number];
 
 export const CATEGORY_LABELS: Record<CategoryPage, string> = {
   strategie: "Strategie",
-  content: "Content",
   analyse: "Analyse",
-  schweiz: "Schweiz",
-  ki: "KI",
-  vereine: "Für Vereine",
+  inhalte: "Inhalte",
+  praktisches: "Praktisches",
+};
+
+/** Eine Zeile je Kategorie für Menü, Startseite und Fusszeile. */
+export const CATEGORY_TAGLINES: Record<CategoryPage, string> = {
+  strategie: "Wen du erreichst, was du versprichst, wo du auftrittst.",
+  analyse: "Wo du stehst: Auftritt, Konkurrenz, Zahlen.",
+  inhalte: "Beiträge, Texte und Grafiken, die du wirklich veröffentlichst.",
+  praktisches: "QR-Codes, Links, Öffnungszeiten und Termine, sofort einsatzbereit.",
 };
 
 export const OUTPUTS = ["pdf", "docx", "copy", "csv", "ics", "png", "zip"] as const;

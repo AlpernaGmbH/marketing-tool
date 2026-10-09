@@ -71,7 +71,7 @@ Im Browser. Das Werkzeug liest dein Firmenprofil und die gespeicherten Ergebniss
 Ja. «Neu zusammenstellen» liest alle Werkzeuge frisch und baut die Seite neu. Nachgeholte Werkzeuge ersetzen ihren Platzhalter.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Was bekommt Alperna?
 Deine E-Mail-Adresse, die Firma aus dem Profil, die Liste der Bausteine mit Status und Quelle sowie den Einseiter als Text. Nicht das übrige Profil, nicht die Zwischenstände der anderen Werkzeuge.

@@ -66,7 +66,7 @@ Aus Ergebnissen in deinem Browser. Hat der Digitaler-Auftritt-Check einen Bereic
 Firma, Branche, Ort, Grösse und Positionierung aus deinem Profil, die vier Felder, das Ziel und die Fakten. Nicht deine E-Mail-Adresse. Unser Server speichert nichts davon. Zahlen, die nicht in Angaben oder Fakten stehen, verwirft das Werkzeug.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Deine Angaben und die Analyse gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und die Analyse gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Passt das Werkzeug für Vereine?
 Ja. Stärken sind dann Trainerinnen, Anlass und Mitglieder, Chancen ein neues Schulhaus oder eine Gemeinde, die ihre Sportanlagen ausbaut. Wähle im Profil «Verein», dann heissen die Felder passend, etwa «Name des Vereins».

@@ -131,7 +131,7 @@ describe("posting-plan: Werkzeug im Browser", () => {
     expect(screen.getByLabelText("Säule 1")).toBeEnabled();
     expect(screen.getByLabelText("Säule 2")).toBeEnabled();
     expect(screen.queryByLabelText("Säule 3")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Content-Säulen" })).toHaveAttribute("href", "/tools/content-saeulen");
+    expect(screen.getByRole("link", { name: "Themensäulen" })).toHaveAttribute("href", "/tools/inhalte-saeulen");
 
     await user.type(screen.getByLabelText("Stunden pro Woche für Beiträge"), "3.5");
     await user.click(screen.getByRole("button", { name: "Plan erstellen" }));

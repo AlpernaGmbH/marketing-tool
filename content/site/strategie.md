@@ -13,8 +13,6 @@ Eine Strategie heisst für ein KMU etwas Einfaches: Du weisst, für wen du arbei
 - Am Ende eine Marketingstrategie auf einer Seite, die du Mitarbeitenden oder deiner Bank zeigen kannst
 - Ein Firmenprofil, das die nächsten Werkzeuge vorbefüllt
 
-Der Check ist bereit, die weiteren Werkzeuge folgen.
-
 ## Hintergrund
 ### Eine Strategie hilft beim Weglassen
 Die meisten Schweizer KMU haben keine Marketingabteilung, also muss das Wenige sitzen.
@@ -52,10 +50,10 @@ Lege vor dem Start fest, woran du Erfolg erkennst.
 Ja, aber eine kleine. Es genügt, wenn du auf einer Seite festhältst, für wen du arbeitest, wofür du stehst und welche zwei oder drei Kanäle du verlässlich pflegst. Das spart Zeit und verhindert Dinge, die nicht zu deiner Kundschaft passen.
 
 ### In welcher Reihenfolge soll ich die Werkzeuge nutzen?
-Beginne mit dem Digitaler-Auftritt-Check. Danach folgen Zielgruppe, Positionierung, Botschaften und Kanäle, sobald die Werkzeuge bereitstehen. Der Pfad auf dieser Seite zeigt die Reihenfolge, du kannst aber an jeder Stelle einsteigen.
+Beginne mit dem Digitaler-Auftritt-Check. Danach folgen Zielgruppe, Positionierung, Botschaften und Kanäle. Der Pfad auf dieser Seite zeigt die Reihenfolge, du kannst aber an jeder Stelle einsteigen.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du das Ergebnis, und alle Werkzeuge und Downloads sind offen. Ein Passwort gibt es nicht.
+Nein. Du gibst deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Dann siehst du das Ergebnis, und alle Werkzeuge und Downloads sind offen. Ein Passwort gibt es nicht.
 
 ### Wer sieht meine Eingaben?
 Dein Firmenprofil und die Zwischenstände bleiben in deinem Browser. Der Digitaler-Auftritt-Check schickt die Adresse deiner Website an unseren Server, weil er die Startseite liest. An Alperna gehen deine E-Mail-Adresse, deine Eingaben und das Ergebnis, damit wir dir bei Fragen weiterhelfen können.

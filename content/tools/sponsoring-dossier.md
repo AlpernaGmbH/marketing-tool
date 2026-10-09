@@ -63,7 +63,7 @@ Nenne sie nur mit ihrem Einverständnis und frag vorher nach. Die Namen stehen i
 Nur, wenn du im Ergebnis «Texte von der KI schreiben lassen» wählst: Name des Vereins, Ort, Stichworte, Zielgruppe, Zahlen und Pakete. Nicht deine E-Mail-Adresse, nicht die Kontaktdaten, nicht die Referenzen. Unser Server speichert nichts. Das Dossier funktioniert auch ohne KI.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Mit dem Ergebnis gehen Name des Vereins, Ort, Zahlen, Zielgruppe, Pakete und die Ampel mit deiner E-Mail-Adresse an Alperna. Kontaktdaten, Referenzen und Stichworte bleiben im Browser, bis du die KI-Texte wählst.

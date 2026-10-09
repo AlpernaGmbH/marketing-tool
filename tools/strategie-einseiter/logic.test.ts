@@ -359,7 +359,7 @@ describe("strategie-einseiter: collect", () => {
     expect(q.nutzen).toEqual(["Werkzeug Nutzenversprechen"]);
     expect(q.marke).toEqual(["Werkzeug Markenplattform"]);
     expect(q.botschaft).toEqual(["Werkzeug Kernbotschaften"]);
-    expect(q.kanaele).toEqual(["Werkzeug Content-Säulen"]);
+    expect(q.kanaele).toEqual(["Werkzeug Themensäulen"]);
     expect(q.budget).toEqual(["Werkzeug Marketing-Budget-Planer"]);
     expect(q.lage).toEqual(["Werkzeug SWOT-Analyse", "Werkzeug Reifegrad-Check", "Werkzeug Digitaler-Auftritt-Check"]);
   });
@@ -505,7 +505,7 @@ describe("strategie-einseiter: toDocument", () => {
     const doc = toDocument(leer(), NOW);
     const md = textOf(leer());
     for (const name of Object.values(WERKZEUG_NAMEN)) expect(md).toContain(offen(name));
-    expect(md).toContain("0 von 8 Bausteinen vorhanden. Noch offen: Positionierungs-Check, ICP-Builder, Nutzenversprechen, Markenplattform, Kernbotschaften, Content-Säulen, Marketing-Budget-Planer, SWOT-Analyse.");
+    expect(md).toContain("0 von 8 Bausteinen vorhanden. Noch offen: Positionierungs-Check, ICP-Builder, Nutzenversprechen, Markenplattform, Kernbotschaften, Themensäulen, Marketing-Budget-Planer, SWOT-Analyse.");
     expect(md).toContain("Noch keine Massnahmen.");
     expect(doc.blocks.some((b) => b.type === "table")).toBe(false);
     expect(doc.subtitle).toBe(`Dein Betrieb, ${dateCH(NOW)}`);

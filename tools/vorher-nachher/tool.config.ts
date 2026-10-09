@@ -3,7 +3,7 @@ import { defineTool } from "@/lib/define-tool";
 export default defineTool({
   slug: "vorher-nachher",
   name: "Vorher-Nachher-Collage",
-  category: "content",
+  category: "inhalte",
   audience: "beide",
   tagline: "Zwei Fotos zur Collage: nebeneinander, untereinander oder als Schieber, mit Logo, PNG in drei Formaten.",
   keyword: "Vorher-Nachher",
@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: [],
   outputs: ["png", "zip"],
   estimatedMinutes: 5,
-  pathStep: { path: "content", order: 13 },
+  pathStep: { path: "inhalte", order: 14 },
   featured: false,
 });

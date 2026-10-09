@@ -65,7 +65,7 @@ Fass nach etwa einer Woche nach, ruhig und mit einem Satz (Richtwert von Alperna
 Kurz. Ein bis drei Sätze reichen meist (Richtwert von Alperna, keine Statistik). Das Werkzeug meldet, wenn dein Zitat sehr kurz oder lang ist, und lässt dich ganze Sätze abwählen. Die Auslassung steht dann als «[…]».
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug mehr, und Downloads sind sofort frei.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug mehr, und Downloads sind sofort frei.
 
 ### Was geht ins CRM?
 Bei der Bitte um ein Zitat gehen deine Angaben, die Nachricht und deine E-Mail-Adresse an Alperna, nie der Vorname der Person. Bei der Referenz gehen das Zitat der Kundschaft, deine Angaben und der Name mit, den du zeigst. Wählst du «Ohne Namen», geht keiner mit.

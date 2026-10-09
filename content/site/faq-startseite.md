@@ -2,7 +2,7 @@
 title: "Häufige Fragen zu den Marketing-Werkzeugen"
 ---
 ### Was kostet es?
-Nichts. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du das Ergebnis, kannst den Text kopieren und Dateien wie PDF oder Word herunterladen. Alle Werkzeuge sind offen, ein Konto gibt es nicht.
+Nichts. Du gibst deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Dann siehst du das Ergebnis, kannst den Text kopieren und Dateien wie PDF oder Word herunterladen. Alle Werkzeuge sind offen, ein Konto gibt es nicht.
 
 ### Warum fragen wir nach der E-Mail-Adresse?
 Wir finanzieren die Werkzeuge nicht mit Werbung und nicht mit Abos. Die Adresse ist unsere Gegenleistung: Dein Ergebnis und deine Eingaben gehen damit an Alperna, und wir melden uns persönlich, falls du Fragen hast. Das Häkchen dazu ist Pflicht, denn ohne deine Einwilligung dürfen wir dich nicht kontaktieren.
@@ -17,7 +17,7 @@ Text-Umschreiber und Textcheck mit KI schicken deinen Text an unseren Server und
 Die Werkzeuge stammen von der Alperna GmbH aus Speicher im Kanton Appenzell Ausserrhoden. Wir sind Partner für den digitalen Auftritt von Ostschweizer KMU: Website, Google-Profil, Social Media, Online-Shop und Buchungstool. Mehr über uns findest du auf der Seite «Über diese Werkzeuge».
 
 ### Sind die Werkzeuge auch für Vereine geeignet?
-Ja. Vereine haben eine eigene Karte auf der Startseite und eine eigene Kategorie. Die Begriffe passen sich an, es geht dann um Mitglieder statt Kunden und um den Vorstand statt die Geschäftsleitung. Für den Anfang eignen sich die Werkzeuge der Kategorie «Für Vereine».
+Ja. Wähle im Firmenprofil die Rechtsform «Verein», dann sprechen die Werkzeuge von Mitgliedern statt Kunden und vom Vorstand statt von der Geschäftsleitung. Das Sponsoring-Dossier und das Vereins-Kommunikationskonzept sind für Vereine gebaut.
 
 ### Wie aktuell sind die Rechtstexte?
 Werkzeuge mit rechtlichem Bezug zeigen den Stand ihrer Quelle an. Die Texte stammen von Menschen und werden geprüft, nicht vom Werkzeug selbst formuliert. Sie ersetzen keine Rechtsberatung. Prüfe bei Unsicherheit im Einzelfall mit einer Fachperson.

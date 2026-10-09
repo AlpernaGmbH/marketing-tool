@@ -68,7 +68,7 @@ Frag vorher nach, bei Personen genauso wie bei Kennzeichen und Hausnummern. Halt
 Feed 1:1 mit 1'080 × 1'080 Pixeln, Feed 4:5 mit 1'080 × 1'350 und Story 9:16 mit 1'080 × 1'920 (Richtwert von Alperna, keine Vorgabe der Plattformen). Du wählst eines oder alle drei. Jedes Format ist ein PNG, mehrere gibt es auch als ZIP.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug mehr, und die Downloads sind sofort frei.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug mehr, und die Downloads sind sofort frei.
 
 ### Was bekommt Alperna, und was bleibt im Browser?
 Alperna bekommt deine E-Mail-Adresse, den Firmennamen, die Einstellungen, die Dateinamen und die Bildmasse. Deine Fotos, dein Logo und die Collage bleiben im Browser, ebenso dein Firmenprofil.

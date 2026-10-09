@@ -69,7 +69,7 @@ Das hängt von deinem Angebot ab. Ein genannter Preis kann Anfragen vorsortieren
 Dann rechnet das Werkzeug Einstieg und Premium als Vorschlag: Preis nach Faustregel, Aufwand und Kosten mit denselben Faktoren vom Kern. Das sind Rechenannahmen, kein fertiges Angebot.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich dazu kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut. PDF und Word kommen mit derselben Adresse.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut. PDF und Word kommen mit derselben Adresse.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Mit dem Ergebnis gehen deine Leistungen mit Preis, Aufwand und Kosten, die Firma und die Tabelle als Text mit deiner E-Mail-Adresse an Alperna. Das übrige Profil und dein Zwischenstand bleiben im Browser. Keine KI rechnet mit.

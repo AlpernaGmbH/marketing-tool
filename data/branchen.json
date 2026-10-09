@@ -3,7 +3,7 @@
     "source": "Redaktion Alperna",
     "url": "https://tools.alperna.ch",
     "asOf": "2026-10-09",
-    "note": "Eine Branchenliste für alle Werkzeuge. check, ideen und kalender übersetzen jeden Eintrag in die Schlüssel des Marketing-Checks (lib/check/types.ts), der Ideen-Bibliothek (data/branchen-ideen.json) und des Content-Kalenders. Redaktionelle Einteilung ohne Zahlen."
+    "note": "Eine Branchenliste für alle Werkzeuge. check, ideen und kalender übersetzen jeden Eintrag in die Schlüssel des Marketing-Checks (lib/check/types.ts), der Ideen-Bibliothek (data/branchen-ideen.json) und des Feiertagskalenders. Redaktionelle Einteilung ohne Zahlen."
   },
   "branchen": [
     {

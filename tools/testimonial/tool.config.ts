@@ -3,7 +3,7 @@ import { defineTool } from "@/lib/define-tool";
 export default defineTool({
   slug: "testimonial",
   name: "Testimonial-Baukasten",
-  category: "content",
+  category: "inhalte",
   audience: "beide",
   tagline: "Aus einem Kundenzitat werden Kachel, Beitrag und Fallstudie, dazu die Nachricht, mit der du darum bittest.",
   keyword: "Testimonial",
@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: [],
   outputs: ["copy", "pdf", "docx"],
   estimatedMinutes: 5,
-  pathStep: { path: "content", order: 15 },
+  pathStep: { path: "inhalte", order: 11 },
   featured: false,
 });

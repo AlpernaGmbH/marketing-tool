@@ -69,7 +69,7 @@ Nein. Die Codes sind statisch: Die Adresse steht direkt im Code, ohne Umleitung.
 Website, Instagram, LinkedIn, WhatsApp, Google-Bewertung, Speisekarte oder PDF und jeder andere Link mit http oder https. Aus einem Instagram-Handle wird die Profiladresse, aus einer Schweizer Nummer ein wa.me-Link. Doppelte Ziele weist das Werkzeug ab.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich dazu kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut, und Druckbogen und ZIP sind sofort frei.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut, und Druckbogen und ZIP sind sofort frei.
 
 ### Was bekommt Alperna, und was bleibt im Browser?
 Mit dem Ergebnis gehen deine Ziele mit Adresse und Beschriftung, der Firmenname und deine E-Mail-Adresse an Alperna. Codes, PDF und ZIP entstehen in deinem Browser; dein Firmenprofil bleibt dort.

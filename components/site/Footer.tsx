@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { GlobalCta } from "@/components/site/GlobalCta";
 import { CATEGORY_LABELS, CATEGORY_PAGES } from "@/lib/registry";
 
 const link = "inline-block py-1 text-page/80 underline-offset-4 transition-colors hover:text-page hover:underline";
@@ -7,15 +8,16 @@ const link = "inline-block py-1 text-page/80 underline-offset-4 transition-color
 export function Footer() {
   const year = new Date().getFullYear();
   return (
-    <footer className="on-night mt-auto overflow-hidden bg-navy text-page">
+    <footer className="on-night mt-auto overflow-hidden bg-ink text-page">
       <div className="container-page pt-16">
-        <div className="grid gap-10 md:grid-cols-4">
+        <GlobalCta />
+        <div className="grid gap-10 pt-12 md:grid-cols-4">
           <section aria-labelledby="footer-alperna" className="md:col-span-1">
             <h2 id="footer-alperna" className="sr-only">
               Alperna
             </h2>
             <Image src="/brand/alperna-mark.svg" alt="" width={44} height={44} unoptimized className="size-11" />
-            <p className="mt-4 max-w-[26ch] text-page/80">Marketing-Werkzeuge für Schweizer KMU und Vereine, von der Alperna GmbH in Speicher AR.</p>
+            <p className="mt-4 max-w-[26ch] text-page/80">Marketing-Werkzeuge für Schweizer KMU, von der Alperna GmbH in Speicher AR.</p>
           </section>
 
           <section aria-labelledby="footer-kategorien">

@@ -66,7 +66,7 @@ Gewichte und Stufen sind ein Richtwert von Alperna, keine Statistik und keine Vo
 Das Werkzeug rechnet mit einem Richtwert von 220 Zeichen und meldet längere Headlines. Die Plattform ändert solche Grenzen. Prüfe in deinem Profil, was gerade möglich ist.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Was bekommt Alperna?
 Dein Ergebnis mit Antworten, eingefügten Texten, Firma, Branche und E-Mail-Adresse, damit wir dir bei Fragen weiterhelfen können. Das übrige Firmenprofil bleibt in deinem Browser.

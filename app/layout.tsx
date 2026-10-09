@@ -8,11 +8,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tools.alperna.ch";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Marketing-Werkzeuge für Schweizer KMU und Vereine | Alperna",
+    default: "Marketing-Werkzeuge für Schweizer KMU | Alperna",
     template: "%s | Alperna",
   },
   description:
-    "Kostenlose Marketing-Werkzeuge für Schweizer KMU und Vereine: verständlich, mit Ergebnis in Minuten, ohne Konto.",
+    "Kostenlose Marketing-Werkzeuge für Schweizer KMU: verständlich, mit Ergebnis in Minuten, ohne Konto.",
   applicationName: "Alperna Marketing-Tools",
   openGraph: {
     type: "website",

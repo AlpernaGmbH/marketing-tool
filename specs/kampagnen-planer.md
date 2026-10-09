@@ -9,7 +9,7 @@ Für KMU und Vereine, die eine Kampagne vorbereiten: aus Ziel, Zielgruppe, Kernb
 Kategorie: strategie (Schritt 14 im Pfad «Strategie»), Zielgruppe: beide
 Liest aus Profil: firma, branche, primaersegment, kanaele, organisationstyp
 Schreibt ins Profil: nichts (`profilePatch` gibt es nicht). Firma, Branche und Art der Organisation erfragt das Werkzeug über `ProfileFieldsForm`; `ProfileFieldsForm` kennt weder `primaersegment` noch `kanaele`, darum liest das Werkzeug beide nur und zeigt sie in eigenen Feldern, die sich je Kampagne ändern lassen.
-Liest aus anderen Werkzeugen: `mt:botschaften` (Hauptbotschaft, über `parseState` aus `tools/botschaften/logic.ts`) für die Kernbotschaft; Kennzahlen-Bezeichnungen aus `tools/kpi-baum/logic.ts` (`kpiDef`); Kanäle, Datumsfunktionen und `icsEscape` aus `tools/anlass-planer/logic.ts`, `foldLine`, `addDays` und `formatIso` aus `tools/content-kalender/logic.ts`.
+Liest aus anderen Werkzeugen: `mt:botschaften` (Hauptbotschaft, über `parseState` aus `tools/botschaften/logic.ts`) für die Kernbotschaft; Kennzahlen-Bezeichnungen aus `tools/kpi-baum/logic.ts` (`kpiDef`); Kanäle, Datumsfunktionen und `icsEscape` aus `tools/anlass-planer/logic.ts`, `foldLine`, `addDays` und `formatIso` aus `tools/feiertagskalender/logic.ts`.
 Verwandte Werkzeuge: kpi-baum, botschaften, budget-planer. Massnahmen verweisen zusätzlich auf post-generator, caption-baukasten, medienmitteilung, qr-set, whatsapp-link, bewertungs-kit und newsletter-check, wenn das Werkzeug zur Massnahme passt (Test gegen `tools/index.ts`).
 
 ## Eingaben

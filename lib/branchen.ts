@@ -2,7 +2,7 @@ import data from "@/data/branchen.json";
 import type { IndustryKey } from "@/lib/check/types";
 
 // Eine Branchenliste für alle Werkzeuge (Beschluss vom 09.10.2026). Vorher kannte der Marketing-Check 12 Branchen, die Ideen-Bibliothek 12
-// andere und der Content-Kalender 6; im Profil stand ein Freitext. Jetzt wählt der Besucher einmal aus dieser Liste (oder tippt eine
+// andere und der Feiertagskalender 6; im Profil stand ein Freitext. Jetzt wählt der Besucher einmal aus dieser Liste (oder tippt eine
 // eigene Bezeichnung wie «Malerei»), und jedes Werkzeug übersetzt den Eintrag in seine Schlüssel.
 
 export type BrancheEntry = {
@@ -12,7 +12,7 @@ export type BrancheEntry = {
   check: IndustryKey;
   /** Schlüssel in data/branchen-ideen.json; «alle», wenn es keine eigene Branche gibt. */
   ideen: string;
-  /** Schlüssel im Content-Kalender. */
+  /** Schlüssel im Feiertagskalender. */
   kalender: string;
   /** Typische Bezeichnungen; sie erscheinen als Vorschläge beim Tippen und helfen beim Erkennen. */
   beispiele: string[];

@@ -68,7 +68,7 @@ Weil keine echte Person das Werkzeug verlassen soll. Du gibst keine Kundennamen 
 Betrieb, Branche und Ort aus deinem Firmenprofil sowie Zielgruppe, Angebot, Altersgruppe, Rolle, Situation und Fragen. Nicht deine E-Mail-Adresse. Unser Server speichert die Angaben nicht. Zahlen, die nicht in deinen Angaben stehen, verwirft das Werkzeug.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Kann ich mehrere Kundenbilder machen?
 Ja. Nach der ersten änderst du oben die Angaben, etwa auf «Liegenschaftsverwaltungen im Kanton St. Gallen», und klickst erneut. Jede landet in deinem Firmenprofil unter «Personas», bis zu zehn; gleiche Namen werden ersetzt.

@@ -64,7 +64,7 @@ An die Redaktionen deiner Region: Lokalzeitung oder Anzeiger, Gemeindeblatt, Reg
 Betrieb, Ort, Kanton, Website, Anlass, deine Angaben zur Meldung, das Zitat mit Name und Funktion, das Bildangebot und die Positionierung aus dem Profil, falls vorhanden. Nicht deine E-Mail-Adresse und nicht die Kontaktdaten; die hängt dein Browser unten an. Unser Server speichert nichts.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna, Kontaktdaten und Empfänger nicht. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna, Kontaktdaten und Empfänger nicht. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Erfindet die KI Zahlen oder Zitate?
 Sie soll nicht, und das Werkzeug prüft nach: Steht eine Ziffer nicht in deinen Angaben oder stammt das Zitat nicht von dir, zeigt es keinen Entwurf. Fehlt eine Angabe, steht ein Platzhalter in eckigen Klammern.

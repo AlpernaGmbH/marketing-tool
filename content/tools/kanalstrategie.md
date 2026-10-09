@@ -67,7 +67,7 @@ Von Alperna. Die Eigenschaften der Kanäle, die Gewichte und die Schwellen sind 
 Dann fehlt eine Fähigkeit, die Zeit reicht nicht, oder der Fokus ist schon besetzt. Der Grund steht bei jedem Kanal. Prüfe nach drei Monaten neu.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug mehr.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug mehr.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Alperna bekommt deine E-Mail-Adresse, den Firmennamen aus dem Profil, deine Angaben und das Ergebnis. Die Auswertung läuft in deinem Browser, ohne KI. Das übrige Profil und der Zwischenstand bleiben dort.

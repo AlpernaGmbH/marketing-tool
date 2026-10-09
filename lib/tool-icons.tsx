@@ -61,10 +61,10 @@ export const TOOL_ICONS: Record<string, LucideIcon> = {
   botschaften: Megaphone,
   "budget-planer": Wallet,
   "caption-baukasten": Type,
-  "content-ideen": Lightbulb,
-  "content-kalender": CalendarDays,
-  "content-saeulen": Columns3,
-  "content-strategie": Route,
+  "inhalte-ideen": Lightbulb,
+  "feiertagskalender": CalendarDays,
+  "inhalte-saeulen": Columns3,
+  "inhalte-strategie": Route,
   "digitaler-auftritt-check": ScanSearch,
   empfehlungsprogramm: HeartHandshake,
   "engagement-rate": ChartLine,
@@ -106,5 +106,18 @@ type Props = { slug: string; className?: string };
 /** Piktogramm des Werkzeugs, für Vorlesegeräte versteckt (der Name steht daneben). */
 export function ToolIcon({ slug, className }: Props) {
   const Icon = TOOL_ICONS[slug] ?? Lightbulb;
+  return <Icon aria-hidden="true" strokeWidth={1.6} className={className ?? "size-6"} />;
+}
+
+/** Piktogramm je Kategorie (Menü). */
+export const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  strategie: Compass,
+  analyse: Gauge,
+  inhalte: PenLine,
+  praktisches: QrCode,
+};
+
+export function CategoryIcon({ page, className }: { page: string; className?: string }) {
+  const Icon = CATEGORY_ICONS[page] ?? Lightbulb;
   return <Icon aria-hidden="true" strokeWidth={1.6} className={className ?? "size-6"} />;
 }

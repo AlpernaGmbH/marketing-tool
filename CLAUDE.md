@@ -1,7 +1,7 @@
 # CLAUDE.md – marketing-tools (tools.alperna.ch)
 
 ## Projekt
-Öffentliche Web-App mit Marketing-Werkzeugen für Schweizer KMU und Vereine,
+Öffentliche Web-App mit Marketing-Werkzeugen für Schweizer KMU (Zielgruppe seit 09.10.2026; «Verein» ist eine Rechtsform, keine Zielgruppe),
 betrieben von der Alperna GmbH (Speicher AR).
 Zweck: echten Nutzen stiften, Besucher über Suchmaschinen gewinnen und daraus
 Gespräche für Alperna machen.
@@ -81,8 +81,9 @@ Analytics Umami. Paketmanager npm. Node 20+.
 
 ## Ordnerstruktur
 - app/(site)/page.tsx – Startseite
-- app/(site)/[kategorie]/page.tsx – Kategorieseiten strategie, content,
-analyse, schweiz, ki, vereine
+- app/(site)/[kategorie]/page.tsx – Kategorieseiten strategie, analyse,
+inhalte, praktisches (alte Adressen /content, /ki, /schweiz, /vereine und die
+alten Slugs content-* leitet lib/redirects.ts über next.config.ts mit 301 um)
 - app/(site)/tools/[slug]/page.tsx – Tool-Seite, statisch über
 generateStaticParams, Tool als Client-Komponente
 - app/(site)/profil/page.tsx – Firmenprofil ansehen, bearbeiten, aus der Website
@@ -229,8 +230,9 @@ Gold (Lockerung vom 09.10.2026, Entscheid Alperna: «sehr visuell»): der Kreis 
 primären Knopf, die eine Markierung pro Seite (`mark-yellow`: Serif kursiv mit
 goldenem Balken), Punkte vor Beschriftungen, Fokus auf Dunkel, der Hauptknopf auf
 dunklen Flächen (ResultPitch) und die eine Hervorhebung in einem Diagramm (zum
-Beispiel die schwächste Dimension, mit dunklem Rand). Navy nur für den Footer,
-die Logo-Kachel und Zustände. Nie Gold als Textfarbe auf hellem Grund (Kontrast).
+Beispiel die schwächste Dimension, mit dunklem Rand). Der Footer ist Ink
+(seit 09.10.2026, vorher Navy) mit der grossen Wortmarke «alperna» in vollem
+Papier-Weiss. Navy nur für die Logo-Kachel und Zustände. Nie Gold als Textfarbe auf hellem Grund (Kontrast).
 Typografie: Geist für Text und Titel (Titel Gewicht 500, Laufweite -0.035 bis
 -0.04em), Instrument Serif kursiv für Betonungen (`em`), Geist Mono für
 Zahlen und kleine Beschriftungen (Klasse `eyebrow`: Grossbuchstaben, goldener
@@ -260,6 +262,28 @@ Alperna-Dokumenten BRAND-VOICE-CORE und ANTI-PATTERNS). Alperna ist «Partner f�
 den digitalen Auftritt», nie «Agentur»; kein Gedankenstrich «—»; Google Ads wird
 nicht aktiv angeboten. Fakten über Alperna nur aus docs/MARKE.md.
 Dark Mode: nein.
+
+## Kategorien, Menü, Aufruf und Wortwahl (Stand 09.10.2026)
+- Vier Kategorien: Strategie, Analyse, Inhalte, Praktisches (lib/define-tool.ts,
+CATEGORY_LABELS, CATEGORY_TAGLINES). «KI», «Schweiz», «Content» und «Vereine» sind
+weder Kategorie noch Menüpunkt. «Schweiz» bleibt im Seitentitel (SEO-Regel), «KI» dort,
+wo ein Werkzeug eine KI einsetzt, «Content» kommt nirgends mehr vor (Inhalte, Beiträge,
+Themensäulen, Inhaltsstrategie). Der Pfad eines Werkzeugs (pathStep.path) ist seine
+Kategorie. Neue Kategorie oder Umbenennung: lib/redirects.ts ergänzen.
+- Header: Mega-Menü (components/site/MegaMenu.tsx, Daten aus menu-data.ts): je Kategorie
+eine Fläche mit allen Werkzeugen und ihren Piktogrammen; öffnet per Überfahren, Klick,
+Enter oder Leertaste, Escape schliesst und gibt den Fokus zurück; die Flächen stehen
+immer im Dokument. Mobil ein Akkordeon (MobileMenu). Rechts «Mein Profil» und, ab 1280 px,
+der Knopf mit dem Satz «Wir machen Marketing für dich.» (nur mit
+NEXT_PUBLIC_ERSTGESPRAECH_URL).
+- Footer: dunkles Band mit demselben Satz, Knöpfen «Kostenloses Erstgespräch» und
+«Kurz schreiben» (GlobalCta; ohne beide Links entfällt das Band), dann Kategorien,
+Rechtliches, Mehr und die grosse Wortmarke.
+- `npm run wording-check` (lib/wording-rules.ts, scripts/wording-check.ts, Teil von
+`npm run check`): Fehler bei den alten Kategoriewörtern in Menü, Kategorienamen und
+Kategorieköpfen, bei «Content» in Namen und Texten und bei Slugs, die so beginnen.
+«Vereine» im Text ist ein Hinweis mit Zahl, bis das Werkzeug seinen KMU-Wortlaut
+bekommt (P3).
 
 ## Seitenaufbau Tool-Seite (Komponente ToolPageLayout, in dieser Reihenfolge)
 1. Breadcrumbs · H1 «<Tool> für Schweizer KMU» (Vereins-Tools: «… für
@@ -345,7 +369,8 @@ und Kategorieseiten die lange Fassung mit allen sechs Bausteinen.
 
 ## Startseite (app/(site)/page.tsx)
 Hero (ein Satz Nutzen, Suchfeld, zwei Knöpfe) → TrustLine → vier PathCards
-mit Fortschritt aus dem lokalen Profil + Karte «Für Vereine» → sechs
+mit Fortschritt aus dem lokalen Profil (Strategie, Analyse, Inhalte,
+Praktisches) → sechs
 ToolCards «Meistgenutzt» (popular:<slug> aus Redis, revalidate 1 h, Fallback:
 Feld featured in tools/index.ts) → «Warum kostenlos» (content/site/warum-
 kostenlos.md) → SEO-Abschnitt (content/site/marketing-schweiz.md, 300-480
@@ -362,7 +387,7 @@ AlpernaPitch lang.
     export default defineTool({
       slug: 'icp-builder',
       name: 'ICP-Builder',
-      category: 'strategie',          // strategie | content | analyse | schweiz | ki
+      category: 'strategie',          // strategie | analyse | inhalte | praktisches
       audience: 'kmu',                // kmu | verein | beide
       tagline: 'Dein Idealkunde in 8 Fragen – mit Punktekarte zum Bewerten neuer Anfragen.',
       keyword: 'Idealkundenprofil',

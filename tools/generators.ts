@@ -8,13 +8,13 @@ import positionierungGenerator from "./positionierung/generator";
 import botschaftenGenerator from "./botschaften/generator";
 import markenplattformGenerator from "./markenplattform/generator";
 import swotGenerator from "./swot/generator";
-import contentSaeulenGenerator from "./content-saeulen/generator";
+import contentSaeulenGenerator from "./inhalte-saeulen/generator";
 import postGeneratorGenerator from "./post-generator/generator";
 import medienmitteilungGenerator from "./medienmitteilung/generator";
 import bewertungsantwortGenerator from "./bewertungsantwort/generator";
 import vereinsKommunikationGenerator from "./vereins-kommunikation/generator";
 import sponsoringDossierGenerator from "./sponsoring-dossier/generator";
-import contentStrategieGenerator from "./content-strategie/generator";
+import contentStrategieGenerator from "./inhalte-strategie/generator";
 // new-tool:generator-imports
 
 // Explizite Liste aller Generatoren (kein Glob), wie tools/index.ts. Jeder Eintrag ist tools/<slug>/generator.ts.

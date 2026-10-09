@@ -66,7 +66,7 @@ Einfluss: Wie stark kann die Gruppe deinen Erfolg beeinflussen? Interesse: Wie s
 Einmal im Jahr, bei Vereinen vor der Generalversammlung (Richtwert von Alperna, keine Statistik). Bei grossen Änderungen früher, etwa nach einem Wechsel im Gemeinderat.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich dazu kontaktieren darf. PDF und Word kommen mit derselben Adresse.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. PDF und Word kommen mit derselben Adresse.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Mit dem Ergebnis gehen deine Angaben, der Name des Vereins und das Ergebnis als Text mit deiner E-Mail-Adresse an Alperna. Profil und Zwischenstand bleiben im Browser. Keine KI rechnet mit.

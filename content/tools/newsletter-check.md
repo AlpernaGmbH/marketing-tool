@@ -56,7 +56,7 @@ Erfüllt sind Absender und Umfang. Der Betrieb kürzt den Betreff, behält den L
 
 ## Häufige Fragen
 ### Was kostet der Newsletter-Check?
-Nichts. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich dazu kontaktieren darf. Ein Konto gibt es nicht; PDF und Word kommen mit derselben Adresse.
+Nichts. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Ein Konto gibt es nicht; PDF und Word kommen mit derselben Adresse.
 
 ### Wird mein Newsletter irgendwohin gesendet?
 Die Prüfung läuft in deinem Browser. Mit dem Ergebnis gehen Betreff, Absender, Text und Bericht mit deiner E-Mail-Adresse an Alperna, damit wir bei Fragen weiterhelfen können. Keine KI. Gib nichts Vertrauliches ein.

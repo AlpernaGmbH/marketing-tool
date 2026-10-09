@@ -68,7 +68,7 @@ Beim Caption schreiben zählt, was vor der Faltkante steht. Jede Plattform legt 
 Nein. Der Baukasten setzt zusammen, was du schreibst, und läuft ohne KI in deinem Browser. Wer einen Entwurf von einer KI möchte, nimmt den Post-Generator. Seine Texte sind Entwürfe, die du vor dem Veröffentlichen prüfst.
 
 ### Brauche ich ein Konto?
-Nein. Vor der Caption gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug mehr nach.
+Nein. Vor der Caption gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug mehr nach.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Die Caption entsteht in deinem Browser. Mit dem Ergebnis gehen deine Angaben, die vier Texte und deine E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Entwürfe, Firmenprofil und Zwischenstand bleiben in deinem Browser.

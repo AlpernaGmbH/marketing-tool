@@ -65,7 +65,7 @@ Das Werkzeug erinnert nur: Es nennt die Aufgabe «Bei der Gemeinde nachfragen, o
 Nein, du hakst sie ab. Der Plan bleibt, wie er ist, und wird nie verschoben. Eigene Aufgaben ergänzt du in deinem Kalender, nachdem du die Kalenderdatei importiert hast.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut. Kalenderdatei, PDF und Word kommen mit derselben Adresse.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut. Kalenderdatei, PDF und Word kommen mit derselben Adresse.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Mit dem Ergebnis gehen Art, Name, Datum, Kanäle, Inserate und der Zeitplan mit deiner E-Mail-Adresse und deiner Firma an Alperna. Was du abhakst und dein übriges Profil bleiben in deinem Browser. Eine KI rechnet nicht mit.

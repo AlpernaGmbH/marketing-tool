@@ -9,7 +9,7 @@ Für KMU und Vereine, die eine Geschichte aus ihrem Betrieb veröffentlichen wol
 Kategorie: content (Schritt 10 im Pfad «Content»), Zielgruppe: beide
 Liest aus Profil: firma (Anzeige im Kopf der Datei, Vorbefüllung des Feldes «Firma»), organisationstyp (Beschriftung «Name des Vereins» statt «Firma» in `ProfileFieldsForm`), marke (nur `marke.tonalitaet`, für die Vorbelegung der Anrede über `anredeFromProfile`)
 Schreibt ins Profil: nichts (`profilePatch` gibt es nicht). `ProfileFieldsForm(["firma"])` speichert die Firma, wie in den anderen Werkzeugen, beim Tippen im Profil; das steht im Formular.
-Verwandte Tools: caption-baukasten, post-generator, content-saeulen
+Verwandte Tools: caption-baukasten, post-generator, inhalte-saeulen
 
 ## Zugang (Zugang v3)
 - Beim Klick auf «Beitrag zusammenstellen» prüft das Werkzeug alle Felder (`validate`), dann `ctx.ensureEmail()`; schliesst die Person das Fenster, bleibt das Formular stehen.

@@ -3,7 +3,7 @@ import { defineTool } from "@/lib/define-tool";
 export default defineTool({
   slug: "sponsoring-dossier",
   name: "Sponsoring-Dossier",
-  category: "content",
+  category: "inhalte",
   audience: "verein",
   tagline: "Verein in Zahlen, Zielgruppe und drei Pakete als Vergleich: ein Dossier, das du Sponsoren schicken kannst.",
   keyword: "Sponsoring-Dossier",
@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: [],
   outputs: ["copy", "pdf", "docx"],
   estimatedMinutes: 8,
-  pathStep: { path: "vereine", order: 3 },
+  pathStep: { path: "inhalte", order: 12 },
   featured: false,
 });

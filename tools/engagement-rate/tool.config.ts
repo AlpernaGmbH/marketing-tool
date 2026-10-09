@@ -7,7 +7,7 @@ export default defineTool({
   audience: "beide",
   tagline: "Interaktionsrate deiner Beiträge nach zwei Formeln: pro Beitrag, im Schnitt, mit Balkendiagramm und Erklärung.",
   keyword: "Engagement-Rate",
-  related: ["newsletter-check", "reifegrad-check", "content-saeulen"],
+  related: ["newsletter-check", "reifegrad-check", "inhalte-saeulen"],
   needsServer: false,
   usesProfile: ["firma", "organisationstyp"],
   writesProfile: [],

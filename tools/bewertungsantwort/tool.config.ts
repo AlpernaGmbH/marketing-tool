@@ -3,7 +3,7 @@ import { defineTool } from "@/lib/define-tool";
 export default defineTool({
   slug: "bewertungsantwort",
   name: "Bewertungsantwort mit KI",
-  category: "ki",
+  category: "inhalte",
   audience: "kmu",
   tagline: "Zwei Antworten auf eine Google-Bewertung in deinem Ton: dankbar bei Lob, ruhig und konkret bei Kritik.",
   keyword: "Bewertung beantworten",
@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: ["marke"],
   outputs: ["copy"],
   estimatedMinutes: 2,
-  pathStep: { path: "ki", order: 3 },
+  pathStep: { path: "inhalte", order: 10 },
   featured: true,
 });

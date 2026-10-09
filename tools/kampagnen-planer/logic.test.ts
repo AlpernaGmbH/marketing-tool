@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { brandHits } from "@/lib/brand-rules";
 import { toMarkdown } from "@/lib/export/model";
 import { isToolDone } from "@/lib/progress";
-import { addDays } from "@/tools/content-kalender/logic";
+import { addDays } from "@/tools/feiertagskalender/logic";
 import { KPIS, kpisFuer } from "@/tools/kpi-baum/logic";
 import { tools } from "@/tools/index";
 import config from "./tool.config";

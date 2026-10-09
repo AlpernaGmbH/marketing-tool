@@ -13,7 +13,7 @@ import positionierungConfig from "./positionierung/tool.config";
 import botschaftenConfig from "./botschaften/tool.config";
 import markenplattformConfig from "./markenplattform/tool.config";
 import swotConfig from "./swot/tool.config";
-import contentSaeulenConfig from "./content-saeulen/tool.config";
+import contentSaeulenConfig from "./inhalte-saeulen/tool.config";
 import whatsappLinkConfig from "./whatsapp-link/tool.config";
 import qrSetConfig from "./qr-set/tool.config";
 import bewertungsKitConfig from "./bewertungs-kit/tool.config";
@@ -21,8 +21,8 @@ import budgetPlanerConfig from "./budget-planer/tool.config";
 import strategieEinseiterConfig from "./strategie-einseiter/tool.config";
 import captionBaukastenConfig from "./caption-baukasten/tool.config";
 import gbpFeiertageConfig from "./gbp-feiertage/tool.config";
-import contentIdeenConfig from "./content-ideen/tool.config";
-import contentKalenderConfig from "./content-kalender/tool.config";
+import contentIdeenConfig from "./inhalte-ideen/tool.config";
+import contentKalenderConfig from "./feiertagskalender/tool.config";
 import postGeneratorConfig from "./post-generator/tool.config";
 import medienmitteilungConfig from "./medienmitteilung/tool.config";
 import bewertungsantwortConfig from "./bewertungsantwort/tool.config";
@@ -45,7 +45,7 @@ import zielgruppenSegmenteConfig from "./zielgruppen-segmente/tool.config";
 import verzeichnisseConfig from "./verzeichnisse/tool.config";
 import kanalstrategieConfig from "./kanalstrategie/tool.config";
 import testimonialConfig from "./testimonial/tool.config";
-import contentStrategieConfig from "./content-strategie/tool.config";
+import contentStrategieConfig from "./inhalte-strategie/tool.config";
 // new-tool:imports
 
 // Explizite Liste aller Tools (kein Glob). Neue Tools trägt `npm run new-tool <slug>` ein.

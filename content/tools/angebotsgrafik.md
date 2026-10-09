@@ -61,7 +61,7 @@ Das hängt vom Kanal ab: Feed 1:1 für Instagram, Facebook und LinkedIn, Feed 4:
 Er muss stimmen. Nenne nur einen Preis, den du wirklich verlangt hast, und frag bei Zweifeln eine Fachperson. Das Werkzeug prüft nur, dass er höher ist als der aktuelle Preis. Ob er zutrifft, weisst du.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich dazu kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut, und die Downloads sind frei.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut, und die Downloads sind frei.
 
 ### Was bekommt Alperna, und was bleibt im Browser?
 Mit dem Ergebnis gehen deine Angaben (Titel, Angebot, Preis, Datum, Aufforderung, Kontaktzeile, Farbe, Vorlage, Formate), der Firmenname und deine E-Mail-Adresse an Alperna. Logo, Bilder und Dateien entstehen und bleiben in deinem Browser, ebenso dein Firmenprofil.

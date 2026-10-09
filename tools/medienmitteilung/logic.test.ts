@@ -58,12 +58,12 @@ const form: FormValues = {
 };
 
 describe("medienmitteilung: Konfiguration", () => {
-  it("ist gültig und liegt als achter Schritt im Pfad Content", () => {
+  it("ist gültig und liegt als neunter Schritt im Pfad Inhalte", () => {
     expect(config.slug).toBe("medienmitteilung");
-    expect(config.category).toBe("content");
+    expect(config.category).toBe("inhalte");
     expect(config.needsServer).toBe(true);
-    expect(config.pathStep).toEqual({ path: "content", order: 8 });
-    expect(config.related).toEqual(["positionierung", "textcheck", "content-kalender"]);
+    expect(config.pathStep).toEqual({ path: "inhalte", order: 9 });
+    expect(config.related).toEqual(["positionierung", "textcheck", "feiertagskalender"]);
     expect(config.tagline.length).toBeLessThanOrEqual(110);
   });
 });

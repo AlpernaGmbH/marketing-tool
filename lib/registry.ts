@@ -5,6 +5,7 @@ export {
   CATEGORIES,
   CATEGORY_LABELS,
   CATEGORY_PAGES,
+  CATEGORY_TAGLINES,
   OUTPUTS,
   defineTool,
   type Category,
@@ -30,9 +31,7 @@ export function getTool(slug: string): ToolConfig | undefined {
 }
 
 export function getToolsByCategory(page: CategoryPage): ToolConfig[] {
-  const all = validated();
-  if (page === "vereine") return all.filter((t) => t.audience === "verein" || t.audience === "beide");
-  return all.filter((t) => t.category === page);
+  return validated().filter((t) => t.category === page);
 }
 
 /** Tools eines Pfads in pathStep-Reihenfolge. */

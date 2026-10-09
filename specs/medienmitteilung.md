@@ -9,7 +9,7 @@ Für Betriebe, die einen Anlass in der Lokalpresse unterbringen wollen (Eröffnu
 Kategorie: content (achter Schritt im Pfad «Content», `pathStep.order` 8), Zielgruppe: kmu
 Liest aus Profil: firma, ort, kanton, website (Grunddaten über `ProfileFieldsForm`, nie erneut gefragt; «Wo?» ist mit dem Ort vorbelegt), positionierung (Hinweiszeile, geht als Grundlage für die Boilerplate mit an die KI)
 Schreibt ins Profil: nichts (`writesProfile: []`). Die Grunddaten-Felder schreiben beim Tippen in das Profil, wie beim Marketing-Check.
-Verwandte Tools: positionierung, textcheck, content-kalender
+Verwandte Tools: positionierung, textcheck, feiertagskalender
 `needsServer: true`: die Angaben gehen an `/api/generate` (Ausnahme in Harte Regel 1).
 
 ## Zugang (Zugang v3)

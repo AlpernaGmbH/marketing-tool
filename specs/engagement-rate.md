@@ -7,7 +7,7 @@ Für KMU, Selbständige und Vereine: Aus der Followerzahl und den Zahlen von bis
 Kategorie: analyse (Pfad «analyse», Schritt 4), Zielgruppe: beide (KMU und Vereine), Klasse C (Rechner im Browser, kein Server, keine KI, kein Netz).
 Liest aus Profil: `firma` (nur als Kopf im Dokument), `organisationstyp` (Vereine zeigen «Verein»).
 Schreibt ins Profil: nichts. Das Feld «Firma» im Formular ist das gemeinsame Profilfeld (ProfileFieldsForm); das Werkzeug selbst schreibt kein Ergebnis ins Profil.
-Verwandte Tools: newsletter-check, reifegrad-check, content-saeulen.
+Verwandte Tools: newsletter-check, reifegrad-check, inhalte-saeulen.
 
 Instagram, LinkedIn, Facebook und TikTok lassen sich nicht auslesen (PLAN.md, Tabelle der Klassen). Die Person tippt die Zahlen aus der Statistik der Plattform ab. Das Werkzeug sagt je Plattform in einem Satz, wo sie stehen, und nennt nur Menübezeichnungen, die gesichert sind: «Insights» (Instagram, Facebook), «Beitragsanalysen» (LinkedIn), «Analysen» (TikTok).
 

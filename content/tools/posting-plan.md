@@ -65,7 +65,7 @@ Du erstellst alle Beiträge einer Woche an einem Tag am Stück: Fotos, Texte, Ge
 Der Plan streicht Kanäle von hinten und nennt sie im Ergebnis: zuerst Website, dann Newsletter, LinkedIn, Facebook. Google-Profil und Instagram bleiben am längsten. Die Reihenfolge ist ein Richtwert von Alperna. Mit mehr Stunden rücken die Kanäle wieder in den Plan.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut. PDF, Word und CSV gibt es mit derselben Adresse.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut. PDF, Word und CSV gibt es mit derselben Adresse.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Mit dem Ergebnis gehen Stunden, Kanäle, Fähigkeiten, Säulen, Produktionstag, der Plan und deine Firma mit deiner E-Mail-Adresse an Alperna. Dein übriges Profil und der Zwischenstand bleiben in deinem Browser. Eine KI rechnet nicht mit.

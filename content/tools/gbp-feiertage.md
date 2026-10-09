@@ -68,7 +68,7 @@ Aus den Ruhetagsgesetzen und Merkblättern von 18 Kantonen, geöffnet am 05.10.2
 Vom Ostersonntag aus nach der Gauss-Osterformel: Karfreitag zwei Tage davor, Ostermontag einen Tag danach, Auffahrt 39 und Pfingstmontag 50 Tage danach. 2027 ist Ostern am 28. März.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut, und Kalender und CSV sind sofort frei.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut, und Kalender und CSV sind sofort frei.
 
 ### Was bekommt Alperna, und was bleibt im Browser?
 Mit dem Ergebnis gehen Kanton, Jahr, deine Öffnungszeiten, die Regel je Feiertag, der Firmenname und deine E-Mail-Adresse an Alperna. Liste, Kalender und CSV entstehen in deinem Browser; dein Firmenprofil bleibt dort.

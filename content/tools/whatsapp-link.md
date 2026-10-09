@@ -60,7 +60,7 @@ Nein, für den Link nicht. Der Link nennt nur deine Nummer. Ob darauf WhatsApp o
 Link, QR-Code und PDF entstehen in deinem Browser. Mit dem Ergebnis gehen Nummer, Vorlage, Nachricht, Firma und deine E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Firmenprofil und Zwischenstand bleiben im Browser.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut. Dateien kommen mit derselben Adresse.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut. Dateien kommen mit derselben Adresse.
 
 ### Welche Nummern gehen für den WhatsApp-Link?
 Schweizer Nummern mit der Vorwahl +41: 079 123 45 67, 0791234567, +41 79 123 45 67 oder 0041 79 123 45 67, auch mit Punkten, Schrägstrichen oder Klammern. Das Werkzeug prüft die Form, nicht, ob die Nummer bei WhatsApp angemeldet ist.

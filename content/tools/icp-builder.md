@@ -65,7 +65,7 @@ Die Beschreibung der Kundschaft, mit der dein Betrieb am besten arbeitet: wer si
 Betrieb, Branche, Ort, Kanton und Grösse aus deinem Firmenprofil sowie deine fünf Angaben. Nicht deine E-Mail-Adresse. Unser Server reicht sie an den KI-Anbieter weiter und speichert sie nicht.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Angaben und Profil gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Angaben und Profil gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Wie funktioniert die Punktekarte?
 Jedes Kriterium wiegt einen bis drei Punkte. Du kreuzt an, was auf eine Anfrage zutrifft. Unter 50 % der Punkte passt sie eher nicht, ab 50 % passt sie, ab 80 % sehr gut (Quelle: Richtwert von Alperna, keine Statistik).
@@ -74,7 +74,7 @@ Jedes Kriterium wiegt einen bis drei Punkte. Du kreuzt an, was auf eine Anfrage 
 Ja. Darum darf sie nur Ziffern aus deinen Angaben verwenden und setzt für Unbekanntes Platzhalter in eckigen Klammern. Fremde Zahlen verwirft das Werkzeug, Namen und Aussagen prüfst du selbst.
 
 ### Passt das Werkzeug für Vereine?
-Nein. Es spricht von Kundschaft, Aufträgen und Anfragen. Für Mitglieder, Sponsoren und Helfer gibt es eigene Werkzeuge in der Kategorie «Für Vereine».
+Nein. Es spricht von Kundschaft, Aufträgen und Anfragen. Für Mitglieder, Sponsoren und Helfer gibt es eigene Werkzeuge, etwa das Sponsoring-Dossier und die Anspruchsgruppen-Analyse.
 
 ## Alperna
 problem: Ein Idealkundenprofil nützt nur, wenn Website und Google-Profil diese Kundschaft ansprechen, und dafür fehlt im Betrieb meist die Zeit.

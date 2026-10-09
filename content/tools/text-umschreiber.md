@@ -58,7 +58,7 @@ Der erste Satz trägt die Neuigkeit, am Schluss steht eine Frage, alle Angaben s
 
 ## Häufige Fragen
 ### Was kostet der Text-Umschreiber?
-Nichts. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du die Fassung. Ein Konto gibt es nicht, ein Limit pro Person auch nicht, nur eine Bremse gegen Missbrauch.
+Nichts. Du gibst deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Dann siehst du die Fassung. Ein Konto gibt es nicht, ein Limit pro Person auch nicht, nur eine Bremse gegen Missbrauch.
 
 ### Wohin geht mein Text?
 Der Text geht an unseren Server und von dort an unseren KI-Anbieter, der die Fassung schreibt; unser Server speichert ihn nicht. Text und Fassung gehen mit deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Gib nichts Vertrauliches ein.

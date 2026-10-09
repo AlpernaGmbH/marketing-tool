@@ -289,7 +289,7 @@ const L = {
   gbpFeiertage: { slug: "gbp-feiertage", name: "Feiertagsplaner für das Google-Unternehmensprofil" },
   whatsappLink: { slug: "whatsapp-link", name: "WhatsApp-Link mit QR" },
   qrSet: { slug: "qr-set", name: "QR-Set für Flyer und Aufkleber" },
-  contentSaeulen: { slug: "content-saeulen", name: "Content-Säulen" },
+  contentSaeulen: { slug: "inhalte-saeulen", name: "Themensäulen" },
   postingPlan: { slug: "posting-plan", name: "Posting-Plan nach Zeitbudget" },
   newsletterCheck: { slug: "newsletter-check", name: "Newsletter-Check" },
   linkedinProfil: { slug: "linkedin-profil", name: "LinkedIn-Profil-Score" },

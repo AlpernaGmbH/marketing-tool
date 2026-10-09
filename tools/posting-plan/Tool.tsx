@@ -351,8 +351,8 @@ function PlanFlow() {
             <p className="text-sm text-muted-foreground">
               Eine Säule ist ein Thema, auf das du immer wieder zurückkommst, zum Beispiel «Vor und nach der Arbeit». Nenne mindestens eine, bis zu {MAX_SAEULEN}. Wenn du noch
               keine hast, hilft das Werkzeug{" "}
-              <Link href="/tools/content-saeulen" className="underline underline-offset-4">
-                Content-Säulen
+              <Link href="/tools/inhalte-saeulen" className="underline underline-offset-4">
+                Themensäulen
               </Link>
               .
             </p>

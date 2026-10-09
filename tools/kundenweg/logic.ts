@@ -244,7 +244,7 @@ export type Werkzeug = { slug: string; name: string };
 
 /** Die Werkzeuge, auf die der Weg verweist. Namen wie in der tool.config.ts des jeweiligen Werkzeugs (der Test prüft es). */
 export const WERKZEUGE: Record<string, Werkzeug> = {
-  "content-saeulen": { slug: "content-saeulen", name: "Content-Säulen" },
+  "inhalte-saeulen": { slug: "inhalte-saeulen", name: "Themensäulen" },
   "gbp-feiertage": { slug: "gbp-feiertage", name: "Feiertagsplaner für das Google-Unternehmensprofil" },
   textcheck: { slug: "textcheck", name: "Textcheck" },
   "bewertungs-kit": { slug: "bewertungs-kit", name: "Bewertungs-Kit für Google" },
@@ -254,7 +254,7 @@ export const WERKZEUGE: Record<string, Werkzeug> = {
 };
 
 const WERKZEUG_SLUGS: Record<PhaseKey, { kmu: string[]; verein?: string[] }> = {
-  aufmerksam: { kmu: ["content-saeulen", "gbp-feiertage"] },
+  aufmerksam: { kmu: ["inhalte-saeulen", "gbp-feiertage"] },
   informieren: { kmu: ["textcheck"] },
   vergleichen: { kmu: ["bewertungs-kit"] },
   entscheiden: { kmu: ["whatsapp-link"] },

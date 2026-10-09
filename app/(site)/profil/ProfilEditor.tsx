@@ -35,7 +35,7 @@ export function summaryRows(p: Profile): { label: string; value: string; slug: s
     { label: "Markenwerte", value: p.marke?.werte?.join(", "), slug: "markenplattform" },
     { label: "Kanäle", value: p.kanaele?.length ? `${p.kanaele.length} Kanäle` : undefined, slug: "kanalstrategie" },
     { label: "Marketingbudget pro Jahr", value: p.budgetJahr !== undefined ? chf(p.budgetJahr) : undefined, slug: "budget-planer" },
-    { label: "Themensäulen", value: p.contentSaeulen?.length ? `${p.contentSaeulen.length} Säulen` : undefined, slug: "content-saeulen" },
+    { label: "Themensäulen", value: p.contentSaeulen?.length ? `${p.contentSaeulen.length} Säulen` : undefined, slug: "inhalte-saeulen" },
   ];
   return rows.map((r) => ({ label: r.label, value: r.value?.trim() ? r.value : "noch leer", slug: r.slug }));
 }

@@ -123,7 +123,7 @@ export const NACH_TYP: Record<TypKey, Vorlage[]> = {
     v("ju-bilder", "Alte Fotos und Dokumente zusammentragen", 9, INTERN),
     v("ju-motto", "Motto und Auftritt festlegen", 8, INTERN),
     v("ju-gaeste", "Gäste und Wegbegleiter auflisten", 8, INTERN),
-    v("ju-serie", "Rückblicke im Content-Kalender einplanen", 7, INTERN, { werkzeug: "content-kalender" }),
+    v("ju-serie", "Rückblicke im Feiertagskalender einplanen", 7, INTERN, { werkzeug: "feiertagskalender" }),
     v("ju-presse", "Medienmitteilung zum Jubiläum schreiben", 5, "presse", { nurWenn: "presse", werkzeug: "medienmitteilung" }),
     v("ju-zeitstrahl", "Zeitstrahl oder Ausstellung für den Anlass vorbereiten", 3, INTERN),
     ...einladungen("ju", 6),

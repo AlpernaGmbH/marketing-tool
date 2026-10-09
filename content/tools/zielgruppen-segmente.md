@@ -64,7 +64,7 @@ Ein bis zwei gleichzeitig (Richtwert von Alperna, keine Statistik). Das Werkzeug
 Der ICP-Builder beschreibt ein Idealkundenprofil mit Punktekarte für neue Anfragen. Dieses Werkzeug vergleicht mehrere Segmente und sagt, welches du zuerst bearbeitest. Beide ergänzen sich.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug mehr.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug mehr.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Alperna bekommt deine E-Mail-Adresse, die Firma aus dem Profil, deine Angaben und das Ergebnis, damit wir dir bei Fragen weiterhelfen können. Das übrige Profil und der Zwischenstand bleiben in deinem Browser. Eine KI ist nicht beteiligt.

@@ -60,7 +60,7 @@ Weil «zuverlässig» und «günstig» jeder sagt. Ein Beleg macht den Satz prü
 Betrieb, Branche und Ort aus deinem Firmenprofil, deine Angaben zu Kundschaft, Angebot, Wirkung, Beweisen und Anrede, dazu Positionierung, Primärsegment und Persona-Namen, falls sie im Profil stehen. Nicht deine E-Mail-Adresse. Unser Server speichert die Angaben nicht.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Du oder Sie?
 Du wählst die Anrede vor dem Entwurf, und sie gilt für alle Texte je Kanal und den Telefonsatz. Ein Malerbetrieb in Gossau duzt Hausbesitzer meist, ein Treuhandbüro in St. Gallen siezt Firmenkunden. Wichtig ist, dass du dabei bleibst.

@@ -7,7 +7,7 @@ Für KMU und Vereine, die neben dem Betrieb regelmässig posten wollen: aus Stun
 Kategorie: content, Zielgruppe beide (KMU und Vereine), Klasse C (alles im Browser, kein Server, keine KI, keine Datei in data/), Pfad «content», Schritt 11.
 Liest aus Profil: firma, organisationstyp, kanaele (Wortvergleich wie im Content-Kalender), contentSaeulen (nur die Namen).
 Schreibt ins Profil: nichts (`profilePatch` gibt es nicht). Die Grunddaten Firma und Art der Organisation fragt das Werkzeug über ProfileFieldsForm (`["organisationstyp", "firma"]`; Vereine sehen «Name des Vereins»). Kanäle und Säulen stehen im Profil nur als Vorbelegung: ProfileFieldsForm kennt für sie kein Feld.
-Verwandte Werkzeuge: content-saeulen (liefert die Säulen), content-kalender (liefert die Anlässe), caption-baukasten (liefert die Texte zu den Beiträgen).
+Verwandte Werkzeuge: inhalte-saeulen (liefert die Säulen), feiertagskalender (liefert die Anlässe), caption-baukasten (liefert die Texte zu den Beiträgen).
 
 ## Eingaben
 | Feld (Label) | Typ | Pflicht | Vorbefüllung | Validierung | Hilfetext |
@@ -17,7 +17,7 @@ Verwandte Werkzeuge: content-saeulen (liefert die Säulen), content-kalender (li
 | Produktionstag (`pp-produktionstag`) | single (Montag bis Sonntag) | ja | Montag | einer der sieben Tage | an diesem Tag entstehen alle Beiträge der Woche am Stück |
 | Kanäle (Checkboxen `pp-kanal-<key>`) | multi | ja, mindestens einer | aus profile.kanaele per Wortvergleich, sonst Instagram und Google-Unternehmensprofil | Instagram, Facebook, LinkedIn, Google-Unternehmensprofil, Newsletter, Website (Blog oder Neuigkeiten) | Hinweis «Für diesen Kanal fehlt eine Fähigkeit», sobald ein Kanal kein Format hat |
 | Was könnt ihr gut? (Checkboxen `pp-faehigkeit-<key>`) | multi | ja, mindestens «Text» | Text | Text, Foto, Video, Gestaltung | bestimmt, welche Formate möglich sind |
-| Säulen | Namen | ja, mindestens eine | profile.contentSaeulen (nur Namen, erste fünf, je höchstens 40 Zeichen); fehlen sie, zwei bis fünf Zeilen `Säule n` mit Link auf content-saeulen | 1 bis 5 Säulen, je höchstens 40 Zeichen, keine doppelte | Felder, die im Profil stehen, werden nicht erneut gefragt |
+| Säulen | Namen | ja, mindestens eine | profile.contentSaeulen (nur Namen, erste fünf, je höchstens 40 Zeichen); fehlen sie, zwei bis fünf Zeilen `Säule n` mit Link auf inhalte-saeulen | 1 bis 5 Säulen, je höchstens 40 Zeichen, keine doppelte | Felder, die im Profil stehen, werden nicht erneut gefragt |
 | Aufwand anpassen (`details`, Inputs `Aufwand: <Format>`) | number je Format | nein | Standardwerte aus `AUFWAND` | 0,1 bis 10 Stunden je Format | Annahme von Alperna, keine Statistik |
 
 ## Logik
@@ -68,4 +68,4 @@ Alle Zahlen dieses Werkzeugs sind Annahmen oder Richtwerte von Alperna, keine St
 Mindestens 26 Fälle in logic.test.ts (58 sind es): Formate je Fähigkeit, Aufwandstabelle, Überschreiben, Zuteilung bei 1, 3, 6 und 20 Stunden (Summe nie über Budget, Reihenfolge der Wichtigkeit), zu kleines Budget streicht von hinten und meldet es, Newsletter alle zwei Wochen, Website alle vier, Säulen gleichmässig (±1), Veröffentlichungstage nie am Produktionstag, Produktionsblock, ungültige Eingaben, Hinweise (weniger als 2 Beiträge, Video ohne Zeit, Reserve), Dokument, CSV, eingabeText, Formular, parseState bei kaputten Daten. Dazu Tool.test.tsx (8 Fälle): Vorbelegung aus dem Profil, Fenster vor dem Ergebnis, CRM, Neuladen, CSV-Download, Säulen-Zeilen, Aufwand und Produktionstag, und export.test.ts (3 Fälle): PDF und Word mit allen Kanälen.
 
 ## Nicht Teil dieses Tools
-Kein Server, keine KI, keine Texte zu den Beiträgen (das macht caption-baukasten), keine Anlässe und Feiertage (das macht content-kalender), keine Messung von Reichweite oder Wirkung, keine Zahlen zur idealen Posting-Häufigkeit oder zu den besten Uhrzeiten. Kein Schreiben ins Profil. Keine Kalenderdatei (nur CSV).
+Kein Server, keine KI, keine Texte zu den Beiträgen (das macht caption-baukasten), keine Anlässe und Feiertage (das macht feiertagskalender), keine Messung von Reichweite oder Wirkung, keine Zahlen zur idealen Posting-Häufigkeit oder zu den besten Uhrzeiten. Kein Schreiben ins Profil. Keine Kalenderdatei (nur CSV).

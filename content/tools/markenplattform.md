@@ -62,7 +62,7 @@ Weil mehrere Leute nach aussen schreiben: die Inhaberin die Offerte, der Lehrlin
 Betrieb, Branche und Ort aus deinem Firmenprofil, deine drei Antworten, die Anrede und, falls vorhanden, Positionierung und Primärsegment. Wenn du es ankreuzt, auch der Text deiner Startseite. Nicht deine E-Mail-Adresse. Unser Server speichert die Angaben nicht.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Muss die Website gelesen werden?
 Nein, freiwillig. Steht im Profil eine Website, ist das Häkchen gesetzt; du kannst es wegnehmen. Mit Website sagt die KI zusätzlich, wie die Startseite heute klingt und was sich ändert.

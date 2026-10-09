@@ -69,7 +69,7 @@ Nein. Sie nennt nur, was in der Bewertung steht, und erfindet keine Namen, Grün
 Antworte ruhig, bedauere den Eindruck, ohne Schuld einzugestehen, und biete ein Gespräch an. Das Werkzeug gibt keine Rechtsauskunft. Bei Fragen zu einer Bewertung, die du für unwahr hältst, wende dich an eine Fachperson.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Deine Angaben und die Antwort gehen mit der Adresse an Alperna, dein Firmenprofil bleibt im Browser. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und die Antwort gehen mit der Adresse an Alperna, dein Firmenprofil bleibt im Browser. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Was, wenn die KI nicht antwortet?
 Du bekommst eine feste Vorlage für Dank oder Bedauern, mit dem Hinweis, dass sie nicht von der KI stammt. Passe sie an die Bewertung an. «Neu formulieren» versucht es später noch einmal.

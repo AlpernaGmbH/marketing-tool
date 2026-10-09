@@ -63,7 +63,7 @@ Auch ohne Budget kannst du eine Kampagne planen. Lass das Feld leer. Der Plan ze
 Das Werkzeug verschiebt nichts und kennt keine eigenen Massnahmen. Ändere den Brief als Word-Datei oder ergänze Einträge in deinem Kalender, nachdem du die Kalenderdatei importiert hast.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut. PDF, Word und Kalenderdatei kommen mit derselben Adresse.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut. PDF, Word und Kalenderdatei kommen mit derselben Adresse.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Mit dem Ergebnis gehen Ziel, Zielgruppe, Kernbotschaft, Angebot, Kanäle, Zeitraum, Budget und der Kampagnenbrief mit deiner E-Mail-Adresse und deiner Firma an Alperna. Dein übriges Firmenprofil und der gespeicherte Stand bleiben in deinem Browser. Eine KI rechnet nicht mit.

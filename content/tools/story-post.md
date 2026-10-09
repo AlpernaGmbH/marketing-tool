@@ -77,7 +77,7 @@ Bei jedem Story-Post sieht die Leserschaft auf LinkedIn und Instagram zuerst nur
 Das legt LinkedIn fest und ändert es, darum nennt das Werkzeug keinen festen Wert. Es zeigt dir, wo die Vorschau endet. Für Instagram rechnet es mit 2'200 Zeichen (Richtwert von Alperna, keine Statistik); ist der Text länger, fällt zuerst der Bezug zur Leserin weg, und das Werkzeug nennt es.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Beitrag gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug mehr nach.
+Nein. Vor dem Beitrag gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug mehr nach.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Der Beitrag entsteht in deinem Browser. Mit dem Ergebnis gehen deine sechs Antworten, der Beitrag und deine E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Vom Firmenprofil geht nur der Firmenname mit. Zwischenstand und Profil bleiben in deinem Browser.

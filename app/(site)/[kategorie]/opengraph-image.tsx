@@ -5,7 +5,7 @@ import { readCategory } from "@/lib/site-content";
 
 export const size = OG_SIZE;
 export const contentType = "image/png";
-export const alt = "Marketing-Werkzeuge für Schweizer KMU und Vereine";
+export const alt = "Marketing-Werkzeuge für Schweizer KMU";
 
 export function generateStaticParams() {
   return CATEGORY_PAGES.map((kategorie) => ({ kategorie }));

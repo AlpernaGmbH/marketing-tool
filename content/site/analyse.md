@@ -1,17 +1,17 @@
 ---
 title: "Marketing-Analyse für Schweizer KMU"
-description: "Google-Profil, Konkurrenz, LinkedIn, Keywords und Newsletter prüfen: Analyse-Werkzeuge für Schweizer KMU. Kostenlos, ohne Konto, ohne Datenabfrage."
+description: "Reifegrad, Konkurrenz, Verzeichnisse, LinkedIn, Newsletter und Texte prüfen: Analyse-Werkzeuge für Schweizer KMU. Kostenlos und ohne Konto."
 h1: "Marketing-Analyse für Schweizer KMU"
 seoHeading: "Marketing-Analyse für KMU: wo du stehst und was als Nächstes dran ist"
-pfadText: "Vom Google-Profil bis zum Marktpotenzial: Prüfe einen Bereich nach dem anderen."
+pfadText: "Vom Reifegrad bis zu den Verzeichnissen: Prüfe einen Bereich nach dem anderen."
 ---
 ## Einleitung
 Bevor du etwas verbesserst, willst du wissen, wo du stehst. Eine Analyse zeigt, was gut läuft und wo Anfragen verloren gehen.
 
-- Der Digitaler-Auftritt-Check liest die Startseite deiner Website und bewertet Technik, Grundlagen für Suchmaschinen, Google-Profil und Social Media
-- Du bekommst eine Liste, was du zuerst angehst
-- Eine KI schreibt zusätzlich eine kurze Einordnung zu deinem Ergebnis
-- Weitere Analysen zu Bewertungen, LinkedIn, Suchbegriffen und Newsletter folgen
+- Reifegrad-Check und Digitaler-Auftritt-Check zeigen, wo dein Marketing steht
+- Wettbewerbsvergleich und Verzeichnis-Check zeigen dich neben anderen Betrieben
+- Textcheck, Newsletter-Check und LinkedIn-Profil-Score prüfen einzelne Texte und Kanäle
+- Engagement-Rate und Anspruchsgruppen ordnen Zahlen und Beziehungen
 
 ## Hintergrund
 ### Wenige Kennzahlen genügen
@@ -34,7 +34,7 @@ Ein Treuhänder in Herisau misst sich nicht mit einer Grossbank, sondern mit den
 Bewertungen sind öffentlich, darum zählt nicht nur der Durchschnitt, sondern auch, ob du antwortest.
 - Eine konkrete, freundliche Antwort auf Kritik zeigt anderen Lesern, wie du damit umgehst.
 - Auf LinkedIn nennt die Headline den Nutzen für deine Zielgruppe, nicht nur den Jobtitel.
-- Beim Newsletter prüfst du Betreff, erkennbaren Absender und eine einfache Abmeldung. Die rechtliche Seite gehört in die Kategorie Schweiz.
+- Beim Newsletter prüfst du Betreff, erkennbaren Absender und eine einfache Abmeldung.
 
 => Zum Schluss: warum einmal prüfen nicht reicht.
 
@@ -46,13 +46,13 @@ Wer alle paar Monate dieselben Fragen stellt, sieht, ob die Massnahmen gewirkt h
 
 ## Häufige Fragen
 ### Greift ein Werkzeug auf meine Konten zu?
-Nein. Kein Werkzeug meldet sich bei deinen Konten an. Der Digitaler-Auftritt-Check liest nur die öffentlich sichtbare Startseite deiner Website, weitere Analysen arbeiten mit den Zahlen, die du selbst einträgst.
+Nein. Kein Werkzeug meldet sich bei deinen Konten an. Der Wettbewerbsvergleich und der Check lesen nur öffentlich sichtbare Startseiten, die anderen Analysen arbeiten mit den Angaben, die du selbst einträgst.
 
 ### Wie oft sollte ich die Analyse wiederholen?
 Alle paar Monate genügt. Wiederhole sie nach grösseren Änderungen, etwa nach einem Relaunch der Website oder einer neuen Kampagne. So erkennst du, was gewirkt hat.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du das Ergebnis, und alle Werkzeuge und Downloads sind offen. Ein Passwort gibt es nicht.
+Nein. Du gibst deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Dann siehst du das Ergebnis, und alle Werkzeuge und Downloads sind offen. Ein Passwort gibt es nicht.
 
 ### Kann ich die Ergebnisse weitergeben?
 Ja. Du kannst den Text kopieren und einen Report als PDF oder Word herunterladen. Schicke ihn zum Beispiel deinem Team oder deiner Beraterin.

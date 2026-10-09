@@ -3,7 +3,7 @@ import { defineTool } from "@/lib/define-tool";
 export default defineTool({
   slug: "text-umschreiber",
   name: "Text-Umschreiber",
-  category: "content",
+  category: "inhalte",
   audience: "kmu",
   tagline: "Schreibe deinen Text als LinkedIn-Post, Newsletter, Medienmitteilung oder in einem anderen Stil neu.",
   keyword: "Text-Umschreiber",
@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: [],
   outputs: ["copy"],
   estimatedMinutes: 3,
-  pathStep: { path: "content", order: 2 },
+  pathStep: { path: "inhalte", order: 8 },
   featured: false,
 });

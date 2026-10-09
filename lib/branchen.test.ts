@@ -4,8 +4,8 @@ import { BRANCHEN_LISTE, brancheHinweis, brancheOf, fold } from "@/lib/branchen"
 import { INDUSTRY_KEYS } from "@/lib/check/types";
 import { guessIndustry } from "@/lib/check/industries";
 import ideenData from "@/data/branchen-ideen.json";
-import { BRANCHEN as IDEEN_BRANCHEN, branchenKeyFor } from "@/tools/content-ideen/logic";
-import { BRANCHE_KEYS, brancheAusProfil } from "@/tools/content-kalender/logic";
+import { BRANCHEN as IDEEN_BRANCHEN, branchenKeyFor } from "@/tools/inhalte-ideen/logic";
+import { BRANCHE_KEYS, brancheAusProfil } from "@/tools/feiertagskalender/logic";
 
 describe("Branchenliste", () => {
   it("trägt Quelle und eindeutige Schlüssel", () => {

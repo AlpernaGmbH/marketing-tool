@@ -86,7 +86,7 @@ describe("categoryJsonLd", () => {
     expect(blocks[2].itemListElement!.map((i) => i.name)).toEqual(["Start", "Strategie"]);
   });
   it("kommt mit einer leeren Werkzeugliste zurecht", () => {
-    const empty = categoryJsonLd("vereine", { h1: "x", description: "y" }, [], []) as unknown as Block[];
+    const empty = categoryJsonLd("praktisches", { h1: "x", description: "y" }, [], []) as unknown as Block[];
     expect((empty[0].mainEntity as { itemListElement: unknown[] }).itemListElement).toEqual([]);
   });
 });

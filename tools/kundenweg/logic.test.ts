@@ -276,7 +276,7 @@ describe("kundenweg: nächstes Werkzeug", () => {
   const slugs = (key: PhaseKey, typ: "kmu" | "verein" = "kmu") => werkzeugFuer(key, typ).map((w) => w.slug);
 
   it("verweist je Phase auf das Werkzeug der Vorgabe", () => {
-    expect(slugs("aufmerksam")).toEqual(["content-saeulen", "gbp-feiertage"]);
+    expect(slugs("aufmerksam")).toEqual(["inhalte-saeulen", "gbp-feiertage"]);
     expect(slugs("informieren")).toEqual(["textcheck"]);
     expect(slugs("vergleichen")).toEqual(["bewertungs-kit"]);
     expect(slugs("entscheiden")).toEqual(["whatsapp-link"]);
@@ -598,7 +598,7 @@ describe("kundenweg: toDocument", () => {
   it("nennt «keines», wenn für die Phase kein Werkzeug passt, und «oder» bei zwei", () => {
     const input: WegInput = { typ: "kmu", phasen: [phase({ punkte: [] }), phase(), phase(), phase(), phase({ inhalt: "nein" }), phase()] };
     const liste = (toDocument(auswerten(input, KONTEXT)).blocks.filter((b) => b.type === "table")[1] as { rows: string[][] }).rows;
-    expect(liste[0][3]).toBe("Content-Säulen oder Feiertagsplaner für das Google-Unternehmensprofil");
+    expect(liste[0][3]).toBe("Themensäulen oder Feiertagsplaner für das Google-Unternehmensprofil");
     expect(liste[1][0]).toBe("5. Kaufen oder Nutzen (Lücke)");
     expect(liste[1][3]).toBe("keines");
   });

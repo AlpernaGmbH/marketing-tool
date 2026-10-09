@@ -61,11 +61,11 @@ describe("scaffoldTool", () => {
   });
 
   it("setzt Kategorie und Zielgruppe in die Konfiguration", () => {
-    scaffoldTool({ root, slug: "sponsoring-dossier", category: "content", audience: "verein" });
+    scaffoldTool({ root, slug: "sponsoring-dossier", category: "inhalte", audience: "verein" });
     const cfg = read("tools/sponsoring-dossier/tool.config.ts");
-    expect(cfg).toContain('category: "content"');
+    expect(cfg).toContain('category: "inhalte"');
     expect(cfg).toContain('audience: "verein"');
-    expect(cfg).toContain('pathStep: { path: "content", order: 99 }');
+    expect(cfg).toContain('pathStep: { path: "inhalte", order: 99 }');
   });
 
   it("lehnt ungültige Slugs und Kategorien ab, ohne etwas anzulegen", () => {

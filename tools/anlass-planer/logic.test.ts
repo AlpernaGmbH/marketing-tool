@@ -38,7 +38,7 @@ import {
   type Plan,
   type PlanInput,
 } from "./logic";
-import { addDays, weekdayIndex } from "@/tools/content-kalender/logic";
+import { addDays, weekdayIndex } from "@/tools/feiertagskalender/logic";
 
 const HEUTE = "2026-10-05"; // Montag
 const ANLASS = "2026-11-14"; // Samstag, 40 Tage nach HEUTE

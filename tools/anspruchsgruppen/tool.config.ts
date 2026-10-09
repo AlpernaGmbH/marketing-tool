@@ -3,7 +3,7 @@ import { defineTool } from "@/lib/define-tool";
 export default defineTool({
   slug: "anspruchsgruppen",
   name: "Anspruchsgruppen-Analyse",
-  category: "strategie",
+  category: "analyse",
   audience: "beide",
   tagline: "Wer Einfluss und Interesse hat: Matrix, Strategie je Gruppe und Kommunikationsplan für Verein oder Betrieb.",
   keyword: "Anspruchsgruppen",
@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: [],
   outputs: ["copy", "pdf", "docx"],
   estimatedMinutes: 6,
-  pathStep: { path: "vereine", order: 1 },
+  pathStep: { path: "analyse", order: 7 },
   featured: true,
 });

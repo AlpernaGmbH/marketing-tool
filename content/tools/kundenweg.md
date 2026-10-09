@@ -60,7 +60,7 @@ Das hängt von deinem Angebot ab und lässt sich hier nicht beziffern. Eine Fass
 Nein, beschreib mindestens eine. Eine Phase ohne Angaben zählt in der Auswertung als Lücke. Das ist kein Fehler, sondern der Hinweis, wo du noch nichts hast.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. PDF (quer) und Word kommen mit derselben Adresse.
+Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. PDF (quer) und Word kommen mit derselben Adresse.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Alperna bekommt deine E-Mail-Adresse, den Firmennamen aus deinem Profil sowie deine Angaben und das Ergebnis. Die Auswertung läuft in deinem Browser, ohne KI. Das übrige Profil und der Zwischenstand bleiben dort.

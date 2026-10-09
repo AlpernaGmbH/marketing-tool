@@ -41,7 +41,7 @@ import {
 
 export const SLUG = "post-generator";
 export const STORAGE_KEY = `mt:${SLUG}`;
-/** Merkliste des Werkzeugs «Content-Ideen» (CLAUDE.md, Firmenprofil): Der Post-Generator liest sie, schreibt aber nicht hinein. */
+/** Merkliste des Werkzeugs «Beitragsideen» (CLAUDE.md, Firmenprofil): Der Post-Generator liest sie, schreibt aber nicht hinein. */
 export const MERKLISTE_KEY = "mt:merkliste";
 
 export const KI_HINWEIS = "Von einer KI formuliert. Prüfe Namen, Zahlen und Aussagen, bevor du den Text verwendest.";
@@ -111,7 +111,7 @@ function textList(raw: unknown, count: number, max: number): string[] {
   return out;
 }
 
-/** Namen aus Einträgen mit «name» (Personas, Content-Säulen), ohne Leere und Doppel. */
+/** Namen aus Einträgen mit «name» (Personas, Themensäulen), ohne Leere und Doppel. */
 function nameList(raw: unknown, count: number, max: number): string[] {
   if (!Array.isArray(raw)) return [];
   return textList(
@@ -154,7 +154,7 @@ export function tonalitaetText(marke: Profile["marke"]): string {
   return rest.slice(0, LIMITS.tonalitaet);
 }
 
-/** Namen der Content-Säulen aus dem Profil, für das Feld «Säule». */
+/** Namen der Themensäulen aus dem Profil, für das Feld «Säule». */
 export function saeulenNamen(profile: Pick<Profile, "contentSaeulen">): string[] {
   return nameList(profile.contentSaeulen, 10, LIMITS.saeule);
 }
@@ -269,7 +269,7 @@ export function toForm(input: PostInput): FormValues {
   return { idee: input.idee, plattform: input.plattform, format: input.format, ziel: input.ziel, saeule: input.saeule, anrede: input.anrede, emojis: input.emojis };
 }
 
-/** Die Idee aus einer gemerkten Content-Idee (Titel und Beschrieb), auf die Grenze des Feldes gekürzt. */
+/** Die Idee aus einer gemerkten Beitragsidee (Titel und Beschrieb), auf die Grenze des Feldes gekürzt. */
 export function ideeText(idea: { titel: string; beschrieb: string }): string {
   const titel = oneLine(idea.titel, LIMITS.idee);
   const beschrieb = oneLine(idea.beschrieb, LIMITS.idee);

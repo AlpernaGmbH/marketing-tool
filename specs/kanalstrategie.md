@@ -13,7 +13,7 @@ Audience: beide (Betrieb und Verein)
 Liest aus Profil: `organisationstyp`, `firma`, `branche`, `kanaele` (Vorbelegung der heutigen Kanäle)
 Schreibt ins Profil: `kanaele` = Basis und Fokus als `[{ name, url: "" }]`, nur wenn das Feld leer ist
 Verwandte Tools: zielgruppen-segmente, posting-plan, kundenweg
-Links aus den Kanalkarten: bewertungs-kit, gbp-feiertage, whatsapp-link, qr-set, content-saeulen, posting-plan, newsletter-check, linkedin-profil, digitaler-auftritt-check (der Test prüft Ordner und Namen)
+Links aus den Kanalkarten: bewertungs-kit, gbp-feiertage, whatsapp-link, qr-set, inhalte-saeulen, posting-plan, newsletter-check, linkedin-profil, digitaler-auftritt-check (der Test prüft Ordner und Namen)
 
 ## Eingaben
 Alle Felder im Formular tragen das Präfix `ks`. Der Stand liegt unter `mt:kanalstrategie` als `{ v: 1, phase: "edit" | "result", input, output? }`.

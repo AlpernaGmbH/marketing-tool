@@ -1,8 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
+import { HeaderCta } from "@/components/site/GlobalCta";
+import { MegaMenu } from "@/components/site/MegaMenu";
 import { MobileMenu } from "@/components/site/MobileMenu";
 import { Search, type SearchItem } from "@/components/site/Search";
-import { CATEGORY_LABELS, CATEGORY_PAGES, getTools } from "@/lib/registry";
+import { menuGroups } from "@/components/site/menu-data";
+import { getTools } from "@/lib/registry";
 
 export function searchItems(): SearchItem[] {
   return getTools().map((t) => ({
@@ -14,12 +17,11 @@ export function searchItems(): SearchItem[] {
   }));
 }
 
-export const NAV_LINKS = CATEGORY_PAGES.map((page) => ({ href: `/${page}`, label: CATEGORY_LABELS[page] }));
-
 export function Header() {
   const items = searchItems();
+  const groups = menuGroups();
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-page/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-line bg-page/95 backdrop-blur-md">
       <div className="container-page flex h-[4.5rem] items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2.5">
           <Image src="/brand/alperna-mark.svg" alt="" width={32} height={32} unoptimized priority className="size-8" />
@@ -27,17 +29,7 @@ export function Header() {
           <span className="eyebrow hidden pt-0.5 sm:inline-flex">Marketing-Tools</span>
         </Link>
 
-        <nav aria-label="Kategorien" className="hidden md:block">
-          <ul className="flex items-center gap-6 text-[0.95rem]">
-            {NAV_LINKS.map((l) => (
-              <li key={l.href}>
-                <Link href={l.href} className="link-slide py-2">
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <MegaMenu groups={groups} />
 
         <div className="flex items-center gap-2 md:gap-3">
           <div className="hidden md:block">
@@ -49,7 +41,8 @@ export function Header() {
           >
             Mein Profil
           </Link>
-          <MobileMenu links={NAV_LINKS} searchItems={items} />
+          <HeaderCta />
+          <MobileMenu groups={groups} searchItems={items} />
         </div>
       </div>
     </header>

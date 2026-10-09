@@ -113,8 +113,8 @@ describe("vereins-kommunikation: Konfiguration", () => {
     expect(config.slug).toBe(SLUG);
     expect(config.audience).toBe("verein");
     expect(config.needsServer).toBe(true);
-    expect(config.pathStep).toEqual({ path: "vereine", order: 2 });
-    expect(config.related).toEqual(["anspruchsgruppen", "sponsoring-dossier", "content-kalender"]);
+    expect(config.pathStep).toEqual({ path: "strategie", order: 18 });
+    expect(config.related).toEqual(["anspruchsgruppen", "sponsoring-dossier", "feiertagskalender"]);
     for (const f of [...config.usesProfile, ...config.writesProfile]) expect(PROFILE_FIELDS).toContain(f);
     expect(config.writesProfile).toEqual(["organisationstyp", "kanaele"]);
     expect(config.tagline.length).toBeLessThanOrEqual(110);

@@ -2,7 +2,7 @@ import { numberCH } from "@/lib/ch";
 import { safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
 import type { PitchSpec } from "@/lib/pitch";
 import type { Profile } from "@/lib/profile";
-import { CSV_BOM, csvCell, kanaeleAusProfil, kanaeleVorschlag, normalizeKanaele, type KanalKey } from "@/tools/content-kalender/logic";
+import { CSV_BOM, csvCell, kanaeleAusProfil, kanaeleVorschlag, normalizeKanaele, type KanalKey } from "@/tools/feiertagskalender/logic";
 
 // Posting-Plan nach Zeitbudget: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
 // Aus den Stunden pro Woche, den Kanälen und den Fähigkeiten entsteht ein Plan für vier Wochen: welche Beiträge pro Kanal

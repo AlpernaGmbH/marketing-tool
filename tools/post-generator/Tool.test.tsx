@@ -387,7 +387,7 @@ describe("Post-Generator im Browser", () => {
     expect(stored().output).toBeNull();
   });
 
-  it("bietet gemerkte Ideen aus «Content-Ideen» an und füllt damit das Feld", async () => {
+  it("bietet gemerkte Ideen aus «Beitragsideen» an und füllt damit das Feld", async () => {
     mockApi();
     const u = userEvent.setup();
     writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Malerei Keller" }));

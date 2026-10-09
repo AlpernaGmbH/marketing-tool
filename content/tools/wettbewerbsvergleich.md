@@ -52,7 +52,7 @@ Vorne liegt Keller bei Social Media (37 Punkte). Hinten bei Newsletter und Buchu
 
 ## Häufige Fragen
 ### Was kostet der Wettbewerbsvergleich?
-Nichts. Du gibst deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Dann siehst du die Tabelle, kannst den Text kopieren und PDF oder Word herunterladen. Ein Konto gibt es nicht; Angaben und Ergebnis gehen an Alperna.
+Nichts. Du gibst deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Dann siehst du die Tabelle, kannst den Text kopieren und PDF oder Word herunterladen. Ein Konto gibt es nicht; Angaben und Ergebnis gehen an Alperna.
 
 ### Was sieht der Vergleich bei den Mitbewerbern?
 Nur die Startseite, die robots.txt und die sitemap.xml, wie jede Besucherin sie sieht, mit den Prüfpunkten des Digitaler-Auftritt-Checks. Unterseiten, Preise und Inhalte, die erst im Browser laden, bleiben unsichtbar.

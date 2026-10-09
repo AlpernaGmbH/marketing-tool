@@ -65,7 +65,7 @@ In der Statistik der Plattform: bei Instagram und Facebook unter «Insights», b
 Besser nicht. Beworbene Beiträge erreichen auch Menschen, die dir nicht folgen, und verzerren die Rate. Rechne sie getrennt oder lass sie weg.
 
 ### Brauche ich ein Konto?
-Nein, es gibt keine Anmeldung. Vor dem Ergebnis gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Danach fragen wir ein Jahr lang nicht mehr. PDF, Word und CSV kommen mit derselben Adresse.
+Nein, es gibt keine Anmeldung. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragen wir ein Jahr lang nicht mehr. PDF, Word und CSV kommen mit derselben Adresse.
 
 ### Was geschieht mit meinen Zahlen?
 Der Rechner läuft in deinem Browser, ohne KI. Mit dem Ergebnis gehen deine Angaben und deine E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Vom Firmenprofil geht nur der Firmenname mit, der Rest bleibt im Browser.

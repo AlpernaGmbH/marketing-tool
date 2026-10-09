@@ -9,7 +9,7 @@ Für KMU und Vereine, die einen Anlass planen: aus Anlass-Art und Datum ein Zeit
 Kategorie: content (Schritt 9 im Pfad «Content»), Zielgruppe: beide
 Liest aus Profil: firma, organisationstyp, kanaele
 Schreibt ins Profil: nichts. Firma und Organisationstyp erfragt das Werkzeug über `ProfileFieldsForm`; die Felder gehören ins Profil und werden dort gepflegt.
-Verwandte Werkzeuge: medienmitteilung, post-generator, content-kalender. Aufgaben verweisen zusätzlich auf caption-baukasten, qr-set, whatsapp-link, bewertungs-kit, sponsoring-dossier, vereins-kommunikation und newsletter-check, wenn das Werkzeug zur Aufgabe passt.
+Verwandte Werkzeuge: medienmitteilung, post-generator, feiertagskalender. Aufgaben verweisen zusätzlich auf caption-baukasten, qr-set, whatsapp-link, bewertungs-kit, sponsoring-dossier, vereins-kommunikation und newsletter-check, wenn das Werkzeug zur Aufgabe passt.
 
 ## Eingaben
 | Feld | Typ | Pflicht | Vorbefüllung aus Profil | Validierung | Hilfetext |

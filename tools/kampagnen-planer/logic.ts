@@ -20,14 +20,14 @@ import {
   type Organisation,
 } from "@/tools/anlass-planer/logic";
 import { parseState as parseBotschaften } from "@/tools/botschaften/logic";
-import { addDays, foldLine, formatIso, isIsoDate } from "@/tools/content-kalender/logic";
+import { addDays, foldLine, formatIso, isIsoDate } from "@/tools/feiertagskalender/logic";
 import { kpiDef, type KpiKey } from "@/tools/kpi-baum/logic";
 import { MUSTER, PHASEN, PHASE_KEYS, phaseInfo, type Muster, type MusterKanal, type PhaseKey } from "./data";
 
 // Kampagnen-Planer: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
 // Aus Ziel, Zielgruppe, Kernbotschaft, Kanälen, Zeitraum und Budget entsteht ein Plan in vier Phasen: Wochenplan mit Massnahmen
 // je Kanal, Budget je Woche und Kennzahlen-Vorschläge. Daraus werden Bildschirm, Kampagnenbrief (PDF, Word, Text) und eine
-// Kalenderdatei (.ics) gebaut. Datum immer als JJJJ-MM-TT, gerechnet mit UTC-Teilen (Funktionen des Content-Kalenders); das
+// Kalenderdatei (.ics) gebaut. Datum immer als JJJJ-MM-TT, gerechnet mit UTC-Teilen (Funktionen des Feiertagskalenders); das
 // heutige Datum kommt als Parameter. Phasen, Massnahmen und Budgetverteilung sind ein Richtwert von Alperna, keine Statistik.
 // Spec: specs/kampagnen-planer.md
 

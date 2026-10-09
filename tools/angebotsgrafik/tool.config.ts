@@ -3,7 +3,7 @@ import { defineTool } from "@/lib/define-tool";
 export default defineTool({
   slug: "angebotsgrafik",
   name: "Angebotsgrafik",
-  category: "content",
+  category: "inhalte",
   audience: "beide",
   tagline: "Angebot der Woche als Grafik: drei Vorlagen, vier Formate, PNG zum Herunterladen, Logo bleibt im Browser.",
   keyword: "Angebotsgrafik",
@@ -13,6 +13,6 @@ export default defineTool({
   writesProfile: [],
   outputs: ["png", "zip"],
   estimatedMinutes: 5,
-  pathStep: { path: "content", order: 12 },
+  pathStep: { path: "inhalte", order: 13 },
   featured: false,
 });

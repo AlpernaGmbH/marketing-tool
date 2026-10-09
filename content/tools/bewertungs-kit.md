@@ -65,10 +65,10 @@ Nein. Google lässt keine Anreize für Rezensionen zu, weder Rabatte noch Gutsch
 Direkt nach dem erledigten Auftrag, wenn die Arbeit abgenommen ist und das Ergebnis frisch vor Augen steht (Richtwert von Alperna, keine Statistik). Bei längeren Projekten passt der Tag der Schlussrechnung.
 
 ### Was, wenn eine schlechte Bewertung kommt?
-Antworte ruhig, kurz und sachlich, und biete ein Gespräch an. Frag nie nach einer Änderung gegen eine Gegenleistung. Für die Antwort folgt das Werkzeug «Bewertungsantwort» in der Kategorie KI; bis dahin prüft der Textcheck den Ton deiner Antwort.
+Antworte ruhig, kurz und sachlich, und biete ein Gespräch an. Frag nie nach einer Änderung gegen eine Gegenleistung. Für die Antwort gibt es das Werkzeug «Bewertungsantwort mit KI» in der Kategorie Inhalte.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Was bekommt Alperna, was bleibt im Browser?
 Mit deiner Adresse gehen Firma, Bewertungslink oder Place-ID, Anrede, Farbe und die drei Vorlagen an Alperna, damit wir bei Fragen weiterhelfen können. QR-Code und PDFs entstehen in deinem Browser; dein Firmenprofil bleibt dort gespeichert.

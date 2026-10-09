@@ -243,7 +243,7 @@ describe("post-generator: Eingabe", () => {
     expect(toForm({ ...input, saeule: "", anrede: "sie", emojis: true })).toMatchObject({ saeule: "", anrede: "sie", emojis: true });
   });
 
-  it("macht aus einer gemerkten Content-Idee den Text für das Feld, höchstens 600 Zeichen", () => {
+  it("macht aus einer gemerkten Beitragsidee den Text für das Feld, höchstens 600 Zeichen", () => {
     expect(ideeText({ titel: "Ein Tag auf der Baustelle", beschrieb: "Zeig, wie ein Morgen im Team aussieht." })).toBe("Ein Tag auf der Baustelle. Zeig, wie ein Morgen im Team aussieht.");
     expect(ideeText({ titel: "Wie lange hält ein Anstrich?", beschrieb: "Beantworte die Frage vom Telefon." })).toBe("Wie lange hält ein Anstrich? Beantworte die Frage vom Telefon.");
     expect(ideeText({ titel: "", beschrieb: "Nur ein Beschrieb ohne Titel." })).toBe("Nur ein Beschrieb ohne Titel.");

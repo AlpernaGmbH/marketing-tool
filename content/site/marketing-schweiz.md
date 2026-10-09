@@ -25,7 +25,7 @@ In einem kleinen Markt wiegt eine Empfehlung oft mehr als eine Anzeige.
 ### Vereinskultur: Marketing ohne Marketingabteilung
 Ein Verein erzählt seine Geschichte mit Menschen und Anlässen, nicht mit Slogans.
 - Der Vorstand arbeitet meist ehrenamtlich, darum müssen Werkzeuge einfach sein.
-- Die Kategorie «Für Vereine» sammelt solche Werkzeuge.
+- Wähle im Firmenprofil die Rechtsform «Verein», dann sprechen die Werkzeuge von Mitgliedern und Vorstand.
 
 ### Google Business Profil: der erste Kontakt
 Wer einen Betrieb in der Nähe sucht, sieht zuerst das Google Business Profil.
@@ -45,7 +45,7 @@ Drei Regelwerke begegnen dir im Marketing besonders oft.
 - Das revidierte Datenschutzgesetz (revDSG) betrifft Personendaten, etwa bei Newsletter-Anmeldungen und Kontaktformularen.
 - Die Preisbekanntgabeverordnung (PBV) regelt die Preisangabe gegenüber Konsumentinnen und Konsumenten, etwa bei Aktionspreisen.
 
-Das sind Hinweise, keine Rechtsberatung. Zu jedem Thema führt dich in der Kategorie [Schweiz](/schweiz) ein Werkzeug durch die Fragen. Bei Zweifeln im Einzelfall frag eine Fachperson.
+Das sind Hinweise, keine Rechtsberatung. Bei Zweifeln im Einzelfall frag eine Fachperson.
 
 => Zum Schluss: wie viele Kanäle ein kleiner Betrieb wirklich pflegen kann.
 
@@ -57,4 +57,4 @@ Kleine Betriebe und Vereine haben selten Zeit für fünf Kanäle.
 ### Was daraus folgt
 Gutes Marketing in der Schweiz ist lokal, ehrlich und gut erreichbar.
 - Eine Website mit klaren Kontaktdaten, ein gepflegtes Google-Profil und ein Social-Media-Kanal, den du durchhältst.
-- Die Werkzeuge hier fragen nach Ort, Kanton und Grösse und passen so zu Schweizer KMU und Vereinen.
+- Die Werkzeuge hier fragen nach Ort, Kanton und Grösse und passen so zu Schweizer Betrieben.

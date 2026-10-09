@@ -7,7 +7,7 @@ export default defineTool({
   audience: "beide",
   tagline: "Dein Marketing-Budget für zwölf Monate: Rahmen, Kanäle, Eigenleistung und Werbebudget, als Tabelle und CSV.",
   keyword: "Marketing-Budget",
-  related: ["swot", "content-saeulen", "reifegrad-check"],
+  related: ["swot", "inhalte-saeulen", "reifegrad-check"],
   needsServer: false,
   usesProfile: ["firma", "branche", "groesse", "kanaele", "budgetJahr", "organisationstyp"],
   writesProfile: ["budgetJahr"],

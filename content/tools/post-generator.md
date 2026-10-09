@@ -70,7 +70,7 @@ Betrieb, Branche, Ort, deine Idee und deine Auswahl, dazu die genannten Teile de
 Lies ihn zuerst und prüfe Namen, Zahlen und Daten. Beim Social-Media-Beitrag schreiben mit KI gilt: erst prüfen, dann veröffentlichen. Ersetze die Platzhalter und ändere, was nicht nach dir klingt.
 
 ### Brauche ich ein Konto?
-Nein. Vor dem Beitrag gibst du deine E-Mail-Adresse an und stimmst zu, dass Alperna dich zu deinem Ergebnis kontaktieren darf. Deine Angaben und der Beitrag gehen mit der Adresse an Alperna. Entwürfe, Hashtags und Profil bleiben in deinem Browser.
+Nein. Vor dem Beitrag gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und der Beitrag gehen mit der Adresse an Alperna. Entwürfe, Hashtags und Profil bleiben in deinem Browser.
 
 ### Wie lang wird der Beitrag?
 Der Hauptteil bleibt bei Instagram und Facebook unter 900 Zeichen, bei LinkedIn und Google unter 1'200. Die Faltkante liegt bei Instagram nach 125 Zeichen, bei LinkedIn nach 210 oder drei Zeilen, bei Facebook nach 480. Richtwerte von Alperna, keine Statistik; die Plattformen ändern das.

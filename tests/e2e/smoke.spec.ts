@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type APIRequestContext, type Locator, type Page, type PlaywrightWorkerArgs } from "@playwright/test";
 import { sampleResult } from "../../lib/check/fixtures";
-import { output as strategieAntwort } from "../../tools/content-strategie/testdata";
+import { output as strategieAntwort } from "../../tools/inhalte-strategie/testdata";
 import { tools } from "../../tools/index";
 
 const TOOL = "digitaler-auftritt-check";
@@ -54,17 +54,69 @@ test.describe("Seiten", () => {
     await expect(page.getByRole("navigation", { name: "Kategorien" }).first()).toBeVisible();
   });
 
+  test("Mega-Menü: Klick öffnet die Fläche mit den Werkzeugen, Escape schliesst und gibt den Fokus zurück", async ({ page }) => {
+    await page.goto("/");
+    const nav = page.getByRole("navigation", { name: "Kategorien" });
+    const trigger = nav.getByRole("button", { name: "Inhalte" });
+    await hydrated(trigger);
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await trigger.click();
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    const panel = page.locator("#menu-inhalte");
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole("link", { name: "Alle Werkzeuge in «Inhalte»" })).toHaveAttribute("href", "/inhalte");
+    for (const t of tools.filter((x) => x.category === "inhalte")) await expect(panel.getByRole("link", { name: t.name })).toBeVisible();
+    // Eine andere Kategorie schliesst die erste.
+    await nav.getByRole("button", { name: "Analyse" }).click();
+    await expect(panel).toBeHidden();
+    await expect(page.locator("#menu-analyse")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#menu-analyse")).toBeHidden();
+    await expect(nav.getByRole("button", { name: "Analyse" })).toBeFocused();
+  });
+
+  test("Mega-Menü: Überfahren öffnet, ein Link führt zum Werkzeug und schliesst das Menü", async ({ page }) => {
+    await page.goto("/");
+    const nav = page.getByRole("navigation", { name: "Kategorien" });
+    await hydrated(nav.getByRole("button", { name: "Praktisches" }));
+    await nav.getByRole("button", { name: "Praktisches" }).hover();
+    const panel = page.locator("#menu-praktisches");
+    await expect(panel).toBeVisible();
+    await panel.getByRole("link", { name: "WhatsApp-Link mit QR" }).click();
+    await expect(page).toHaveURL(/\/tools\/whatsapp-link$/);
+    await expect(page.locator("#menu-praktisches")).toBeHidden();
+  });
+
+  test("die Fusszeile hat den Satz «Wir machen Marketing für dich.», die vier Kategorien und die Wortmarke", async ({ page }) => {
+    await page.goto("/");
+    const footer = page.getByRole("contentinfo");
+    await expect(footer.getByRole("link", { name: "Praktisches" })).toHaveAttribute("href", "/praktisches");
+    await expect(footer.getByRole("link", { name: "Strategie" })).toHaveAttribute("href", "/strategie");
+    // Der Satz erscheint, sobald ein Kontaktweg (Erstgespräch oder WhatsApp) gesetzt ist.
+    if (process.env.NEXT_PUBLIC_ERSTGESPRAECH_URL || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER) {
+      await expect(footer.getByRole("heading", { name: "Wir machen Marketing für dich." })).toBeVisible();
+    }
+  });
+
   test("mobil bei 375 px: kein horizontaler Überlauf, Menü öffnet", async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 375, height: 812 } });
     const page = await context.newPage();
-    for (const path of ["/", "/strategie", "/vereine", "/tools/digitaler-auftritt-check"]) {
+    for (const path of ["/", "/strategie", "/inhalte", "/praktisches", "/tools/digitaler-auftritt-check"]) {
       await page.goto(path);
       expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), path).toBe(false);
     }
     await page.goto("/");
     await hydrated(page.getByRole("button", { name: "Menü" }));
     await page.getByRole("button", { name: "Menü" }).click();
-    await expect(page.getByRole("link", { name: "Strategie" }).last()).toBeVisible();
+    // Je Kategorie ein Akkordeon: aufklappen zeigt den Link zur Kategorie und die Werkzeuge mit Namen.
+    const mobile = page.locator("#mobile-menu");
+    const strategie = mobile.getByRole("button", { name: "Strategie" });
+    await expect(strategie).toHaveAttribute("aria-expanded", "false");
+    await strategie.click();
+    await expect(strategie).toHaveAttribute("aria-expanded", "true");
+    await expect(mobile.getByRole("link", { name: "Alle Werkzeuge in «Strategie»" })).toBeVisible();
+    await expect(mobile.getByRole("link", { name: "Digitaler-Auftritt-Check" })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
     await context.close();
   });
 
@@ -141,7 +193,7 @@ test.describe("Jede Werkzeug-Seite", () => {
 });
 
 test.describe("Startseite", () => {
-  test("zeigt Hero, vier Pfade plus Vereine, Meistgenutzt, Warum kostenlos, Pitch und sieben Fragen", async ({ page }) => {
+  test("zeigt Hero, vier Pfade, Meistgenutzt, Warum kostenlos, Pitch und sieben Fragen", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.getByRole("button", { name: /Menü/ })).toBeHidden();
@@ -152,7 +204,7 @@ test.describe("Startseite", () => {
     await expect(page.getByRole("link", { name: "Strategie-Pfad starten" })).toHaveAttribute("href", "/tools/digitaler-auftritt-check");
 
     const pfade = sec(page, "pfade");
-    for (const [name, href] of [["Strategie", "/strategie"], ["Content", "/content"], ["Analyse", "/analyse"], ["Schweiz", "/schweiz"], ["Für Vereine", "/vereine"]]) {
+    for (const [name, href] of [["Strategie", "/strategie"], ["Analyse", "/analyse"], ["Inhalte", "/inhalte"], ["Praktisches", "/praktisches"]]) {
       await expect(pfade.getByRole("link", { name: new RegExp(`^${name}`) })).toHaveAttribute("href", href);
     }
 
@@ -178,7 +230,7 @@ test.describe("Startseite", () => {
 });
 
 test.describe("Kategorieseiten", () => {
-  for (const page of ["strategie", "content", "analyse", "schweiz", "ki", "vereine"]) {
+  for (const page of ["strategie", "analyse", "inhalte", "praktisches"]) {
     test(`/${page}: eine H1, Einleitung, Hintergrund, fünf Fragen, Canonical, JSON-LD`, async ({ page: p }) => {
       const res = await p.goto(`/${page}`);
       expect(res?.status()).toBe(200);
@@ -208,17 +260,30 @@ test.describe("Kategorieseiten", () => {
     else await expect(page.getByRole("note")).toHaveCount(0);
   });
 
-  test("/vereine zeigt die Werkzeuge mit audience verein oder beide, sonst ist die Seite ehrlich leer", async ({ page }) => {
-    const vereinsTools = tools.filter((t) => t.audience !== "kmu");
-    await page.goto("/vereine");
-    if (vereinsTools.length === 0) {
-      await expect(page.getByRole("note")).toContainText("noch kein Werkzeug");
-      await expect(sec(page, "werkzeuge")).toHaveCount(0);
-      return;
+  test("jede Kategorie zeigt alle ihre Werkzeuge aus der Registry", async ({ page }) => {
+    for (const kategorie of ["strategie", "analyse", "inhalte", "praktisches"]) {
+      const inKategorie = tools.filter((t) => t.category === kategorie);
+      await page.goto(`/${kategorie}`);
+      await expect(sec(page, "werkzeuge").locator(":scope > ul > li"), kategorie).toHaveCount(inKategorie.length);
+      for (const t of inKategorie) await expect(sec(page, "werkzeuge").getByRole("link", { name: new RegExp(t.name) }).first()).toBeVisible();
     }
-    await expect(sec(page, "werkzeuge").locator(":scope > ul > li")).toHaveCount(vereinsTools.length);
-    for (const t of vereinsTools) await expect(sec(page, "werkzeuge").getByRole("link", { name: new RegExp(t.name) })).toBeVisible();
-    if (vereinsTools.length < 3) await expect(page.getByRole("note")).toContainText("im Aufbau");
+  });
+
+  test("alte Adressen leiten dauerhaft auf die neuen Seiten", async ({ request }) => {
+    for (const [from, to] of [
+      ["/content", "/inhalte"],
+      ["/ki", "/inhalte"],
+      ["/schweiz", "/praktisches"],
+      ["/vereine", "/"],
+      ["/tools/content-ideen", "/tools/inhalte-ideen"],
+      ["/tools/content-saeulen", "/tools/inhalte-saeulen"],
+      ["/tools/content-strategie", "/tools/inhalte-strategie"],
+      ["/tools/content-kalender", "/tools/feiertagskalender"],
+    ]) {
+      const res = await request.get(from, { maxRedirects: 0 });
+      expect(res.status(), from).toBe(301);
+      expect(new URL(res.headers()["location"], "http://x").pathname, from).toBe(to);
+    }
   });
 
   test("unbekannte Seiten sind 404", async ({ page }) => {
@@ -227,7 +292,7 @@ test.describe("Kategorieseiten", () => {
   });
 
   test("Open-Graph-Bild pro Kategorie ist ein PNG", async ({ request, page }) => {
-    await page.goto("/content");
+    await page.goto("/inhalte");
     const href = await page.locator('meta[property="og:image"]').getAttribute("content");
     expect(href).toBeTruthy();
     const res = await request.get(new URL(href!).pathname);
@@ -455,7 +520,7 @@ test.describe("Textcheck im Browser", () => {
     const email = await runSample(page);
     await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("textcheck");
     const got = (await received(request)).find((l) => l.email === email)!;
-    expect(got.kategorie).toBe("content");
+    expect(got.kategorie).toBe("analyse");
     expect(got.eingabe).toContain("Malerei Keller");
     expect(got.ausgabe).toContain("Textcheck");
     await page.waitForLoadState("networkidle");
@@ -1230,9 +1295,9 @@ test.describe("Welle 2b im Browser (Strategie-Generatoren II)", () => {
     expect(calls).toEqual({ read: 0, generate: 1 });
   });
 
-  test("Content-Säulen: Angaben, Kanäle, Entwurf mit Wochenplan, Lead, Säulen im Profil, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+  test("Themensäulen: Angaben, Kanäle, Entwurf mit Wochenplan, Lead, Säulen im Profil, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
     const calls = await stubs(page, SAEULEN);
-    await page.goto("/tools/content-saeulen");
+    await page.goto("/tools/inhalte-saeulen");
     await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
     await page.getByLabel("Branche", { exact: true }).fill("Malerei");
     await page.getByLabel("Ort", { exact: true }).fill("Gossau");
@@ -1244,18 +1309,18 @@ test.describe("Welle 2b im Browser (Strategie-Generatoren II)", () => {
     await expect(start).toBeEnabled();
     await start.click();
     const email = await giveEmail(page);
-    await expect(page.getByRole("region", { name: "Deine Content-Säulen" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Deine Themensäulen" })).toBeVisible();
     await expect(page.getByTestId("saeulen").getByRole("heading", { name: "1. Fassaden vorher und nachher" })).toBeVisible();
     await expect(page.getByTestId("saeulen").locator("tbody tr")).toHaveCount(2);
     await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
     expect(calls).toEqual({ read: 0, generate: 1 });
-    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("content-saeulen");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("inhalte-saeulen");
     const lead = (await received(request)).find((l) => l.email === email)!;
     expect(lead.eingabe).toContain("Fassaden und Innenräume");
     expect(lead.ausgabe).toContain("Fassaden vorher und nachher");
     await expect.poll(() => page.evaluate(() => localStorage.getItem("mt:profile") ?? "")).toContain("Fassaden vorher und nachher");
     await page.reload();
-    await expect(page.getByRole("region", { name: "Deine Content-Säulen" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Deine Themensäulen" })).toBeVisible();
     expect(calls).toEqual({ read: 0, generate: 1 });
   });
 });
@@ -1360,8 +1425,8 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     await expect(page.getByRole("region", { name: "Dein Marketing-Budget" })).toBeVisible();
   });
 
-  test("Content-Kalender: ohne Kanton eine Meldung, mit Kanton und eigenem Termin Jahreskalender, .ics hinter dem Fenster, Lead, Neuladen", async ({ page, request }) => {
-    await page.goto("/tools/content-kalender");
+  test("Feiertagskalender: ohne Kanton eine Meldung, mit Kanton und eigenem Termin Jahreskalender, .ics hinter dem Fenster, Lead, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/feiertagskalender");
     await page.getByRole("button", { name: "Kalender erstellen" }).click();
     await expect(page.locator("#ck-error")).toContainText("Kanton");
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -1373,25 +1438,25 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     await expect(page.getByRole("list", { name: "Eigene Termine" })).toContainText("Tag der offenen Tür");
     await page.getByRole("button", { name: "Kalender erstellen" }).click();
     const email = await giveEmail(page);
-    await expect(page.getByRole("region", { name: "Dein Content-Kalender" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Dein Feiertagskalender" })).toBeVisible();
     await expect(page.getByTestId("ck-months")).toContainText("Muttertag");
     await expect(page.getByTestId("ck-months")).toContainText("Tag der offenen Tür");
     const ics = page.waitForEvent("download");
     await page.getByTestId("ck-ics").click();
-    expect((await ics).suggestedFilename()).toMatch(/^content-kalender-2027.*\.ics$/);
-    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("content-kalender");
+    expect((await ics).suggestedFilename()).toMatch(/^feiertagskalender-2027.*\.ics$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("feiertagskalender");
     const lead = (await received(request)).find((l) => l.email === email)!;
     expect(lead.eingabe).toContain("Kanton: St. Gallen (SG)");
     expect(lead.eingabe).toContain("Tag der offenen Tür");
-    expect(lead.ausgabe).toContain("# Content-Kalender 2027");
+    expect(lead.ausgabe).toContain("# Feiertagskalender 2027");
     await page.reload();
-    await expect(page.getByRole("region", { name: "Dein Content-Kalender" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Dein Feiertagskalender" })).toBeVisible();
     await page.setViewportSize({ width: 375, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
 
-  test("Content-Ideen: Filter, Idee merken, CSV hinter dem Fenster, Lead mit Branche und Titeln, Merkliste nach dem Neuladen", async ({ page, request }) => {
-    await page.goto("/tools/content-ideen");
+  test("Beitragsideen: Filter, Idee merken, CSV hinter dem Fenster, Lead mit Branche und Titeln, Merkliste nach dem Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/inhalte-ideen");
     await expect(page.getByTestId("ci-count")).toContainText("Ideen");
     await hydrated(page.locator("#ci-branche"));
     await page.locator("#ci-branche").selectOption("handwerk");
@@ -1403,12 +1468,12 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     const csv = page.waitForEvent("download");
     await page.getByTestId("ci-csv").click();
     const email = await giveEmail(page);
-    expect((await csv).suggestedFilename()).toMatch(/^content-ideen.*\.csv$/);
-    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("content-ideen");
+    expect((await csv).suggestedFilename()).toMatch(/^inhalte-ideen.*\.csv$/);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("inhalte-ideen");
     const lead = (await received(request)).find((l) => l.email === email)!;
     expect(lead.eingabe).toContain("Branche: Handwerk");
     expect(lead.eingabe).toContain("Export: CSV");
-    expect(lead.ausgabe).toContain("# Content-Ideen: Merkliste");
+    expect(lead.ausgabe).toContain("# Beitragsideen: Merkliste");
     await page.reload();
     await expect(page.getByTestId("ci-merk-count")).toContainText("gemerkt");
     await page.setViewportSize({ width: 375, height: 800 });
@@ -1487,7 +1552,7 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
   });
 });
 
-test.describe("Welle 4 im Browser (Content, KI und Vereine)", () => {
+test.describe("Welle 4 im Browser (Inhalte, KI und Vereine)", () => {
   async function stubGenerate(page: Page, output: unknown) {
     const calls = { generate: 0 };
     await page.route("**/api/generate", (route) => {
@@ -2376,13 +2441,13 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
     await expect(page.getByRole("region", { name: "Deine Referenz" })).toBeVisible();
   });
 
-  test("Content-Strategie: Ziel fehlt wird gemeldet, Angaben ergeben Dokument mit 90-Tage-Plan, PDF, Lead, Säulen im Profil, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+  test("Inhaltsstrategie: Ziel fehlt wird gemeldet, Angaben ergeben Dokument mit 90-Tage-Plan, PDF, Lead, Säulen im Profil, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
     let generate = 0;
     await page.route("**/api/generate", (route) => {
       generate++;
       return route.fulfill(json({ ok: true, output: strategieAntwort() }));
     });
-    await page.goto("/tools/content-strategie");
+    await page.goto("/tools/inhalte-strategie");
     await hydrated(page.getByRole("button", { name: "Strategie erstellen" }));
     await page.getByRole("button", { name: "Strategie erstellen" }).click();
     await expect(page.locator("#cs-error")).toBeVisible();
@@ -2397,18 +2462,18 @@ test.describe("Welle 10 im Browser (Grafiken und Profile)", () => {
     await page.locator("#cs-beitraege").selectOption("2");
     await page.getByRole("button", { name: "Strategie erstellen" }).click();
     const email = await giveEmail(page);
-    await expect(page.getByRole("region", { name: "Deine Content-Strategie" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Deine Inhaltsstrategie" })).toBeVisible();
     await expect(page.getByTestId("strategie")).toContainText("Die ersten 90 Tage");
     await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
     expect(generate).toBe(1);
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: "PDF herunterladen" }).click();
     expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
-    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("content-strategie");
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("inhalte-strategie");
     expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Betrieb: Malerei Keller");
     await expect.poll(() => page.evaluate(() => localStorage.getItem("mt:profile") ?? "")).toContain("Fassaden vorher und nachher");
     await page.reload();
-    await expect(page.getByRole("region", { name: "Deine Content-Strategie" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Deine Inhaltsstrategie" })).toBeVisible();
     expect(generate).toBe(1);
   });
 

@@ -59,7 +59,7 @@ Die Positionierung sagt, wofür dein Betrieb steht; sie ist für dich. Das Nutze
 Betrieb, Branche und Ort aus deinem Firmenprofil, deine Antworten auf die vier Fragen, die Beweise und, falls vorhanden, die Positionierung. Nicht deine E-Mail-Adresse. Unser Server speichert die Angaben nicht.
 
 ### Brauche ich ein Konto?
-Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an und stimmst zu, dass Alperna dich kontaktieren darf. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
+Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Kann die KI Beweise erfinden?
 Sie soll nicht, und das Werkzeug prüft nach: Jede Ziffer im Entwurf muss in deinen Angaben stehen, sonst zeigt es keinen Entwurf. Für fehlende Beweise setzt die KI Platzhalter in eckigen Klammern. Namen und Aussagen prüfst du selbst.
