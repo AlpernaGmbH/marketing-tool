@@ -16,24 +16,6 @@ function links() {
   return { erstgespraech: process.env.NEXT_PUBLIC_ERSTGESPRAECH_URL || null, wa: ctaWhatsappUrl(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER) };
 }
 
-/** Knopf im Kopf der Seite (ab breiten Bildschirmen). Ohne Link zum Erstgespräch gibt es ihn nicht. */
-export function HeaderCta() {
-  const { erstgespraech } = links();
-  if (!erstgespraech) return null;
-  return (
-    <a
-      href={erstgespraech}
-      className={cn(buttonVariants({ size: "default" }), "hidden gap-3 whitespace-nowrap pr-2 xl:inline-flex")}
-      data-umami-event="cta_header_erstgespraech"
-    >
-      {CTA_LINE}
-      <span className="btn-icon" aria-hidden="true">
-        <ArrowRight />
-      </span>
-    </a>
-  );
-}
-
 /** Band am Fuss jeder Seite, auf dunklem Grund. Ruhig, ohne Preis; ohne beide Links bleibt es weg. */
 export function GlobalCta() {
   const { erstgespraech, wa } = links();

@@ -81,10 +81,11 @@ describe("Reifegrad-Check im Browser", () => {
 
     const card = await screen.findByRole("region", { name: "Dein Marketing-Reifegrad" });
     expect(within(card).getByRole("meter", { name: "Reifegrad gesamt, Stufe «Aufbau»" })).toHaveAttribute("aria-valuenow", "42");
-    expect(within(card).getByRole("meter", { name: "Auftritt" })).toHaveAttribute("aria-valuenow", "53");
+    const dim = (name: string) => within(within(card).getByTestId("visual-radar")).getAllByRole("listitem").find((li) => li.textContent?.startsWith(name))!;
+    expect(dim("Auftritt")).toHaveTextContent("53");
     expect(within(card).getByText(/Selbstangabe 67, Marketing-Check 38/)).toBeInTheDocument();
     expect(within(card).getByText(/\(38 von 100\) zählt in «Auftritt» zur Hälfte mit/)).toBeInTheDocument();
-    expect(within(card).getByRole("meter", { name: "Steuerung" })).toHaveAttribute("aria-valuenow", "22");
+    expect(dim("Steuerung")).toHaveTextContent("22");
     // Schwächste Dimension zuerst
     const folien = within(within(card).getByRole("region", { name: /Nächste Schritte/ })).getAllByRole("listitem");
     expect(folien.length).toBeGreaterThanOrEqual(5);
@@ -117,7 +118,7 @@ describe("Reifegrad-Check im Browser", () => {
 
     const card = await screen.findByRole("region", { name: "Dein Marketing-Reifegrad" });
     expect(within(card).getByRole("meter", { name: "Reifegrad gesamt, Stufe «Aufbau»" })).toHaveAttribute("aria-valuenow", "44");
-    expect(within(card).getByRole("meter", { name: "Auftritt" })).toHaveAttribute("aria-valuenow", "67");
+    expect(within(within(card).getByTestId("visual-radar")).getAllByRole("listitem").find((li) => li.textContent?.startsWith("Auftritt"))).toHaveTextContent("67");
     expect(within(card).getByText(/nur deine Selbstangabe/)).toBeInTheDocument();
     expect(within(card).getByRole("link", { name: "Marketing-Check" })).toHaveAttribute("href", "/tools/digitaler-auftritt-check");
   });

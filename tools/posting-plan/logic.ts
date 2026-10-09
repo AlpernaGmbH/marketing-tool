@@ -521,23 +521,26 @@ export function toDocument(plan: Plan, firma?: string): DocumentModel {
   if (plan.kontrollen.length > 0) {
     blocks.push({ type: "heading", level: 2, text: "Zu beachten" }, { type: "list", items: plan.kontrollen });
   }
+  // Die Beiträge je Woche und die Annahmen sind Nachschlagewerk: am Bildschirm zugeklappt, in PDF, Word und Markdown offen.
+  const wochenBlocks: DocBlock[] = [];
   for (const w of plan.wochen) {
-    blocks.push({ type: "heading", level: 2, text: `Woche ${w.nummer}` });
+    wochenBlocks.push({ type: "heading", level: 3, text: `Woche ${w.nummer}` });
     if (w.beitraege.length === 0) {
-      blocks.push({ type: "paragraph", text: "In dieser Woche steht kein Beitrag im Plan." });
+      wochenBlocks.push({ type: "paragraph", text: "In dieser Woche steht kein Beitrag im Plan." });
       continue;
     }
-    blocks.push({
+    wochenBlocks.push({
       type: "table",
       header: ["Tag", "Kanal", "Format", "Säule", "Aufwand"],
       widths: [1.3, 1.5, 1.5, 2.6, 1.3],
       rows: w.beitraege.map((b) => [b.tag, kanalKurz(b.kanal), formatLabel(b.format), b.saeule, hoursText(b.aufwand)]),
     });
-    blocks.push({
+    wochenBlocks.push({
       type: "paragraph",
       text: `${countText(w.beitraege.length)}: ${hoursText(w.aufwand)}, dazu ${hoursText(PLANUNG)} Planung. Reserve: ${hoursText(w.reserve)}.`,
     });
   }
+  blocks.push({ type: "details", title: "Alle Beiträge, Woche für Woche", summary: "Tag, Kanal, Format, Säule und Aufwand für jede der vier Wochen.", blocks: wochenBlocks });
   blocks.push(
     { type: "heading", level: 2, text: "Produktionsblock" },
     {
@@ -545,24 +548,31 @@ export function toDocument(plan: Plan, firma?: string): DocumentModel {
       text: "Produziere alle Beiträge einer Woche an einem Tag am Stück. An den übrigen Tagen veröffentlichst du, ohne neu anzufangen.",
     },
     { type: "list", items: productionBlock(plan).map((p) => `Woche ${p.woche}, ${p.text}`) },
-    { type: "heading", level: 2, text: "Annahmen" },
     {
-      type: "table",
-      header: ["Format", "Aufwand pro Beitrag"],
-      widths: [3, 2],
-      rows: FORMATE.map((fo) => [fo.label, `${hoursText(kosten[fo.key])}${input.aufwand[fo.key] !== undefined && Math.abs(kosten[fo.key] - AUFWAND[fo.key]) > EPS ? " (angepasst)" : ""}`]),
-    },
-    {
-      type: "list",
-      items: [
-        `Planung: ${hoursText(PLANUNG)} pro Woche, vom Zeitbudget abgezogen.`,
-        `Veröffentlichungstage: ${PUBLIKATIONSTAGE.join(", ")} der Reihe nach, nie am Produktionstag (Richtwert von Alperna).`,
-        `Rhythmus: Newsletter in Woche 2 und 4, Website-Beitrag in Woche 3, höchstens ${MAX_BEITRAEGE_PRO_KANAL} Beiträge je Kanal und Woche (Richtwert von Alperna).`,
-        `Reihenfolge, wenn die Stunden knapp sind: ${WICHTIGKEIT.map(kanalKurz).join(", ")} (Richtwert von Alperna).`,
+      type: "details",
+      title: "Annahmen und Hinweise",
+      summary: "Aufwand je Format, Rhythmus und was du beachten solltest.",
+      blocks: [
+        { type: "heading", level: 3, text: "Annahmen" },
+        {
+          type: "table",
+          header: ["Format", "Aufwand pro Beitrag"],
+          widths: [3, 2],
+          rows: FORMATE.map((fo) => [fo.label, `${hoursText(kosten[fo.key])}${input.aufwand[fo.key] !== undefined && Math.abs(kosten[fo.key] - AUFWAND[fo.key]) > EPS ? " (angepasst)" : ""}`]),
+        },
+        {
+          type: "list",
+          items: [
+            `Planung: ${hoursText(PLANUNG)} pro Woche, vom Zeitbudget abgezogen.`,
+            `Veröffentlichungstage: ${PUBLIKATIONSTAGE.join(", ")} der Reihe nach, nie am Produktionstag (Richtwert von Alperna).`,
+            `Rhythmus: Newsletter in Woche 2 und 4, Website-Beitrag in Woche 3, höchstens ${MAX_BEITRAEGE_PRO_KANAL} Beiträge je Kanal und Woche (Richtwert von Alperna).`,
+            `Reihenfolge, wenn die Stunden knapp sind: ${WICHTIGKEIT.map(kanalKurz).join(", ")} (Richtwert von Alperna).`,
+          ],
+        },
+        { type: "heading", level: 3, text: "Hinweise" },
+        { type: "list", items: [...HINWEISE] },
       ],
     },
-    { type: "heading", level: 2, text: "Hinweise" },
-    { type: "list", items: [...HINWEISE] },
   );
 
   return {

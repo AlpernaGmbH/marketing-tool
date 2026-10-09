@@ -1,3 +1,4 @@
+import { flattenBlocks } from "@/lib/export/model";
 import { describe, expect, it } from "vitest";
 import { brandHits } from "@/lib/brand-rules";
 import { safeFilename, toMarkdown } from "@/lib/export/model";
@@ -408,14 +409,34 @@ describe("posting-plan: Dokument, CSV und CRM", () => {
     expect(doc.subtitle).toBe("Malerei Keller, 4 Stunden pro Woche");
     expect(doc.firma).toBe("Malerei Keller");
     expect(doc.filename).toBe("posting-plan-malerei-keller");
+    // Am Bildschirm stehen die Wochen und die Annahmen zugeklappt in zwei «details»-Blöcken; die Datei (flattenBlocks) zeigt alles offen.
     const headings = doc.blocks.filter((b) => b.type === "heading").map((b) => (b.type === "heading" ? b.text : ""));
-    expect(headings).toEqual(["Überblick", "Zu beachten", "Woche 1", "Woche 2", "Woche 3", "Woche 4", "Produktionsblock", "Annahmen", "Hinweise"]);
-    const tables = doc.blocks.filter((b) => b.type === "table");
-    expect(tables).toHaveLength(5);
-    expect(tables[0]).toMatchObject({ header: ["Tag", "Kanal", "Format", "Säule", "Aufwand"] });
-    expect(tables[0].type === "table" && tables[0].rows[1]).toEqual(["Donnerstag", "Instagram", "Story", "Einblick in den Alltag", "0,25 Stunden"]);
-    const lists = doc.blocks.filter((b) => b.type === "list");
-    expect(lists[lists.length - 1]).toEqual({ type: "list", items: [...HINWEISE] });
+    expect(headings).toEqual(["Überblick", "Zu beachten", "Produktionsblock"]);
+    const details = doc.blocks.filter((b) => b.type === "details");
+    expect(details.map((d) => (d.type === "details" ? d.title : ""))).toEqual(["Alle Beiträge, Woche für Woche", "Annahmen und Hinweise"]);
+    const flat = flattenBlocks(doc.blocks);
+    expect(flat.filter((b) => b.type === "heading").map((b) => (b.type === "heading" ? b.text : ""))).toEqual([
+      "Überblick",
+      "Die vier Wochen im Überblick",
+      "Verteilung auf die Säulen",
+      "Zu beachten",
+      "Alle Beiträge, Woche für Woche",
+      "Woche 1",
+      "Woche 2",
+      "Woche 3",
+      "Woche 4",
+      "Produktionsblock",
+      "Annahmen und Hinweise",
+      "Annahmen",
+      "Hinweise",
+    ]);
+    const wochen = details[0].type === "details" ? details[0].blocks.filter((b) => b.type === "table") : [];
+    expect(wochen).toHaveLength(4);
+    expect(wochen[0]).toMatchObject({ header: ["Tag", "Kanal", "Format", "Säule", "Aufwand"] });
+    expect(wochen[0].type === "table" && wochen[0].rows[1]).toEqual(["Donnerstag", "Instagram", "Story", "Einblick in den Alltag", "0,25 Stunden"]);
+    const annahmen = details[1].type === "details" ? details[1].blocks : [];
+    expect(annahmen.filter((b) => b.type === "table")).toHaveLength(1);
+    expect(annahmen[annahmen.length - 1]).toEqual({ type: "list", items: [...HINWEISE] });
     expect(HINWEISE).toHaveLength(3);
     const facts = doc.blocks.find((b) => b.type === "facts");
     expect(facts?.type === "facts" && facts.items.map((f) => f.label)).toEqual([

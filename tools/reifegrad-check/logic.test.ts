@@ -255,12 +255,12 @@ describe("reifegrad-check: Dokument und CRM-Text", () => {
 });
 
 describe("reifegrad-check: Bildschirm und Hinweis auf Alperna", () => {
-  it("zeigt Gesamt, fünf Balken und die Schritte als Folien, in der Reihenfolge der schwächsten Dimension", () => {
+  it("zeigt Gesamt, das Netzdiagramm der fünf Dimensionen und die Schritte als Folien, in der Reihenfolge der schwächsten Dimension", () => {
     const r = evaluate(KELLER, KELLER_CHECK);
     const blocks = visualBlocks(r);
-    expect(blocks.map((b) => b.type)).toEqual(["stat", "bars", "slides"]);
+    expect(blocks.map((b) => b.type)).toEqual(["stat", "radar", "slides"]);
     expect(blocks[0]).toMatchObject({ type: "stat", value: "42", of: "100", band: "Stufe «Aufbau»" });
-    const bars = blocks[1] as Extract<(typeof blocks)[number], { type: "bars" }>;
+    const bars = blocks[1] as Extract<(typeof blocks)[number], { type: "radar" }>;
     expect(bars.items.map((i) => i.label)).toEqual(DIMENSIONS.map((d) => d.name));
     expect(bars.items.find((i) => i.label === "Auftritt")).toMatchObject({ value: 53, note: "Stufe «Routine», Selbstangabe 67, Marketing-Check 38" });
     // genau eine Dimension ist hervorgehoben: die schwächste, mit der auch die Schritte beginnen

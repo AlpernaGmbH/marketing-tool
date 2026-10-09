@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { HeaderCta } from "@/components/site/GlobalCta";
 import { MegaMenu } from "@/components/site/MegaMenu";
 import { MobileMenu } from "@/components/site/MobileMenu";
 import { Search, type SearchItem } from "@/components/site/Search";
@@ -23,10 +22,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-page/95 backdrop-blur-md">
       <div className="container-page flex h-[4.5rem] items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5">
           <Image src="/brand/alperna-mark.svg" alt="" width={32} height={32} unoptimized priority className="size-8" />
-          <span className="text-[1.375rem] font-semibold leading-none tracking-[-0.04em]">alperna</span>
-          <span className="eyebrow hidden pt-0.5 sm:inline-flex">Marketing-Tools</span>
+          <span className="text-[1.375rem] font-semibold leading-none tracking-[-0.025em]">alperna</span>
+          <span className="eyebrow hidden whitespace-nowrap pt-0.5 2xl:inline-flex">Marketing-Tools</span>
         </Link>
 
         <MegaMenu groups={groups} />
@@ -37,11 +36,14 @@ export function Header() {
           </div>
           <Link
             href="/profil"
+            aria-label="Mein Profil"
             className="inline-flex h-11 items-center whitespace-nowrap rounded-full border border-line-strong px-4 text-[0.95rem] font-medium transition-colors duration-300 hover:border-ink hover:bg-ink hover:text-page sm:px-5"
           >
-            Mein Profil
+            <span className="sm:hidden" aria-hidden="true">
+              Profil
+            </span>
+            <span className="hidden sm:inline">Mein Profil</span>
           </Link>
-          <HeaderCta />
           <MobileMenu groups={groups} searchItems={items} />
         </div>
       </div>

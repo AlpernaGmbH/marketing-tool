@@ -273,9 +273,8 @@ Kategorie. Neue Kategorie oder Umbenennung: lib/redirects.ts ergänzen.
 - Header: Mega-Menü (components/site/MegaMenu.tsx, Daten aus menu-data.ts): je Kategorie
 eine Fläche mit allen Werkzeugen und ihren Piktogrammen; öffnet per Überfahren, Klick,
 Enter oder Leertaste, Escape schliesst und gibt den Fokus zurück; die Flächen stehen
-immer im Dokument. Mobil ein Akkordeon (MobileMenu). Rechts «Mein Profil» und, ab 1280 px,
-der Knopf mit dem Satz «Wir machen Marketing für dich.» (nur mit
-NEXT_PUBLIC_ERSTGESPRAECH_URL).
+immer im Dokument. Mobil ein Akkordeon (MobileMenu). Rechts Suche und «Mein Profil»
+(mobil «Profil»); ein Knopf mit dem Satz im Kopf hat neben der Suche keinen Platz.
 - Footer: dunkles Band mit demselben Satz, Knöpfen «Kostenloses Erstgespräch» und
 «Kurz schreiben» (GlobalCta; ohne beide Links entfällt das Band), dann Kategorien,
 Rechtliches, Mehr und die grosse Wortmarke.

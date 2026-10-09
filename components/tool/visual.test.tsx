@@ -100,4 +100,51 @@ describe("Bildschirm-Bausteine in DocView", () => {
     show([{ type: "slides", items: [{ title: "Nur eine", text: "x" }] }]);
     expect(screen.queryByRole("button", { name: "Nächste Folie" })).not.toBeInTheDocument();
   });
+
+  it("radar: Netzdiagramm für Vorlesegeräte versteckt, Legende nennt jeden Wert, der hervorgehobene hat den goldenen Punkt", () => {
+    const { container } = show([
+      {
+        type: "radar",
+        title: "Fünf Dimensionen",
+        items: [
+          { label: "Strategie", value: 60 },
+          { label: "Auftritt", value: 25, note: "Stufe «Aufbau»", highlight: true },
+          { label: "Inhalte", value: 80 },
+        ],
+      },
+    ]);
+    const radar = screen.getByTestId("visual-radar");
+    expect(radar.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    const items = within(radar).getAllByRole("listitem");
+    expect(items).toHaveLength(3);
+    expect(items[1]).toHaveTextContent("Auftritt");
+    expect(items[1]).toHaveTextContent("25");
+    expect(items[1]).toHaveTextContent("Stufe «Aufbau»");
+    // genau ein goldener Punkt im Bild, passend zum hervorgehobenen Wert
+    expect(container.querySelectorAll("svg circle[fill='var(--yellow)']")).toHaveLength(1);
+  });
+
+  it("radar: mit weniger als drei Werten gibt es kein Diagramm", () => {
+    show([{ type: "radar", items: [{ label: "A", value: 1 }, { label: "B", value: 2 }] }]);
+    expect(screen.queryByTestId("visual-radar")).not.toBeInTheDocument();
+  });
+
+  it("details: zugeklappt, mit Titel und Zusammenfassung, der Inhalt ist darin und lässt sich öffnen", async () => {
+    const u = userEvent.setup();
+    const { container } = show([
+      {
+        type: "details",
+        title: "Annahmen",
+        summary: "Aufwand je Format",
+        blocks: [{ type: "heading", level: 3, text: "Format" }, { type: "table", header: ["Format", "Aufwand"], rows: [["Story", "15 Minuten"]] }],
+      },
+    ]);
+    const details = container.querySelector("details")!;
+    expect(details).not.toHaveAttribute("open");
+    expect(within(details).getByText("Annahmen")).toBeInTheDocument();
+    expect(within(details).getByText("Aufwand je Format")).toBeInTheDocument();
+    expect(within(details).getByRole("table")).toBeInTheDocument();
+    await u.click(within(details).getByText("Annahmen"));
+    expect(details).toHaveAttribute("open");
+  });
 });

@@ -423,14 +423,14 @@ export function toDocument(result: Reifegrad): DocumentModel {
   };
 }
 
-/** Das Ergebnis für den Bildschirm: grosse Zahl, fünf Balken, die nächsten Schritte als Folien. Die Datei (PDF, Word) bekommt dieselben Inhalte als Tabelle und Liste. */
+/** Das Ergebnis für den Bildschirm: grosse Zahl, Netzdiagramm der fünf Dimensionen, die nächsten Schritte als Folien. Die Datei (PDF, Word) bekommt dieselben Inhalte als Tabelle und Liste. */
 export function visualBlocks(result: Reifegrad): DocBlock[] {
   // Die schwächste Dimension (bei Gleichstand die erste in der Reihenfolge der Werkzeuge) ist golden: Dort fängt der erste Schritt an.
   const schwach = result.dimensionen.length > 0 ? [...result.dimensionen].sort((a, b) => a.score - b.score)[0].id : null;
   return [
     { type: "stat", label: "Reifegrad gesamt", value: String(result.gesamt), of: "100", band: `Stufe «${result.stufe}»` },
     {
-      type: "bars",
+      type: "radar",
       title: "Fünf Dimensionen",
       max: 100,
       items: result.dimensionen.map((d) => ({

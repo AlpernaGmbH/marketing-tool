@@ -237,6 +237,8 @@ describe("Bildschirm-Bausteine in den Dateien", () => {
     { type: "split", title: "Themen", items: [{ label: "Wissen", value: 60 }, { label: "Team", value: 40 }] },
     { type: "grid", title: "Woche", columns: ["Mo", "Di"], rows: [{ label: "Morgen", cells: ["Beitrag"] }] },
     { type: "slides", title: "Folien", items: [{ title: "Eins", text: "a", tag: "Heute" }] },
+    { type: "radar", title: "Dimensionen", items: [{ label: "Auftritt", value: 53.4, note: "Routine", highlight: true }, { label: "Inhalte", value: 20 }, { label: "Steuerung", value: 70 }] },
+    { type: "details", title: "Annahmen", summary: "Aufwand je Format", blocks: [{ type: "paragraph", text: "Story: 15 Minuten." }, { type: "bars", items: [{ label: "A", value: 1 }] }] },
     { type: "paragraph", text: "Normaler Absatz." },
   ];
 
@@ -248,6 +250,13 @@ describe("Bildschirm-Bausteine in den Dateien", () => {
     expect(flat).toContainEqual({ type: "list", ordered: true, items: ["Profil prüfen: Lies es laut.", "Plan machen: Wähle Tage."] });
     expect(flat).toContainEqual({ type: "list", items: ["Team (Reel): Ein Foto.", "Baustelle"] });
     expect(flat).toContainEqual({ type: "table", header: ["", "Mo", "Di"], rows: [["Morgen", "Beitrag", ""]] });
+    expect(flat).toContainEqual({ type: "table", header: ["", "Wert"], rows: [["Auftritt", "53,4, Routine"], ["Inhalte", "20"], ["Steuerung", "70"]], widths: [2, 1] });
+    // zuklappbare Teile stehen in der Datei offen: Titel als Überschrift, Zusammenfassung als Absatz, dann der Inhalt (auch Bausteine darin, flach)
+    const i = flat.findIndex((b) => b.type === "heading" && b.text === "Annahmen");
+    expect(flat[i]).toEqual({ type: "heading", level: 2, text: "Annahmen" });
+    expect(flat[i + 1]).toEqual({ type: "paragraph", text: "Aufwand je Format" });
+    expect(flat[i + 2]).toEqual({ type: "paragraph", text: "Story: 15 Minuten." });
+    expect(flat[i + 3]).toMatchObject({ type: "table", rows: [["A", "1"]] });
     expect(flat.at(-1)).toEqual({ type: "paragraph", text: "Normaler Absatz." });
     const basic: DocBlock[] = [{ type: "heading", level: 1, text: "A" }, { type: "facts", items: [{ label: "x", value: "y" }] }];
     expect(flattenBlocks(basic)).toEqual(basic);

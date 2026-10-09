@@ -302,8 +302,8 @@
     user-select: none;
     font-weight: 600;
     line-height: 0.78;
-    letter-spacing: -0.06em;
-    font-size: clamp(5rem, 24vw, 20rem);
+    letter-spacing: -0.035em;
+    font-size: clamp(5rem, 22vw, 18rem);
     color: var(--paper);
   }
   .footer-wordmark::after {

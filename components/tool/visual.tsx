@@ -171,6 +171,68 @@ export function Split({ title, items }: Omit<Of<"split">, "type">) {
   );
 }
 
+/**
+ * Netzdiagramm: je Wert eine Achse vom Mittelpunkt, Ringe bei 25, 50, 75 und 100 Prozent der Skala, die Fläche in Tinte, der hervorgehobene
+ * Wert in Gold. Das Bild ist für Vorlesegeräte versteckt; die Legende daneben nennt jeden Wert mit Namen, Zahl und Anmerkung.
+ */
+export function Radar({ title, max = 100, items }: Omit<Of<"radar">, "type">) {
+  const n = items.length;
+  if (n < 3) return null;
+  const cx = 200;
+  const cy = 158;
+  const R = 100;
+  const angle = (i: number) => -Math.PI / 2 + (2 * Math.PI * i) / n;
+  const point = (i: number, f: number) => [cx + Math.cos(angle(i)) * R * f, cy + Math.sin(angle(i)) * R * f] as const;
+  const ring = (f: number) => items.map((_, i) => point(i, f).join(",")).join(" ");
+  const clamp = (v: number) => Math.min(Math.max(v / max, 0), 1);
+  const area = items.map((it, i) => point(i, clamp(it.value)).join(",")).join(" ");
+  return (
+    <div className="grid gap-3" data-testid="visual-radar">
+      <BlockTitle text={title} />
+      <div className="grid items-center gap-6 rounded-xl border border-line bg-paper p-5 md:grid-cols-[minmax(0,26rem)_1fr]">
+        <svg viewBox="0 0 400 316" className="mx-auto w-full max-w-md" aria-hidden="true">
+          {[0.25, 0.5, 0.75, 1].map((f) => (
+            <polygon key={f} points={ring(f)} fill="none" stroke="var(--line)" strokeWidth={f === 1 ? 1.5 : 1} />
+          ))}
+          {items.map((it, i) => {
+            const [x, y] = point(i, 1);
+            return <line key={it.label} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--line)" strokeWidth="1" />;
+          })}
+          <polygon points={area} fill="rgb(15 15 14 / 0.10)" stroke="var(--ink)" strokeWidth="2" strokeLinejoin="round" />
+          {items.map((it, i) => {
+            const [x, y] = point(i, clamp(it.value));
+            return <circle key={it.label} cx={x} cy={y} r={it.highlight ? 7 : 4.5} fill={it.highlight ? "var(--yellow)" : "var(--ink)"} stroke="var(--ink)" strokeWidth={it.highlight ? 2 : 0} />;
+          })}
+          {items.map((it, i) => {
+            const [x, y] = point(i, 1.2);
+            const c = Math.cos(angle(i));
+            const anchor = Math.abs(c) < 0.2 ? "middle" : c > 0 ? "start" : "end";
+            return (
+              <text key={it.label} x={x} y={y} textAnchor={anchor} dominantBaseline="middle" fontSize="13.5" fontWeight={it.highlight ? 600 : 400} fill="var(--ink)">
+                {it.label}
+              </text>
+            );
+          })}
+        </svg>
+        <ul className="grid gap-3">
+          {items.map((it) => (
+            <li key={it.label} className="grid gap-0.5">
+              <div className="flex items-baseline justify-between gap-4">
+                <span className={it.highlight ? "flex items-center gap-2 font-medium" : "flex items-center gap-2"}>
+                  <span aria-hidden="true" className={cn("size-3 shrink-0 rounded-full border border-ink", it.highlight ? "bg-yellow" : "bg-ink")} />
+                  {it.label}
+                </span>
+                <span className="font-mono text-sm">{nf(it.value)}</span>
+              </div>
+              {it.note && <p className="pl-5 text-sm text-muted-foreground">{it.note}</p>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 /** Raster mit Spalten und beschrifteten Zeilen, zum Beispiel Wochentage und Zeitfenster. Zellen ohne Text zeigen einen Punkt. */
 export function Grid({ title, columns, rows }: Omit<Of<"grid">, "type">) {
   return (
@@ -311,5 +373,10 @@ export function VisualBlockView({ block }: { block: VisualBlock }) {
       return <Grid {...block} />;
     case "slides":
       return <Slides {...block} />;
+    case "radar":
+      return <Radar {...block} />;
+    case "details":
+      // Zuklappbare Teile zeichnet DocView, weil sie wieder Blöcke enthalten (sonst entstünde ein Zirkelimport).
+      return null;
   }
 }

@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { VisualBlockView } from "@/components/tool/visual";
 import type { DocBlock } from "@/lib/export/model";
 
@@ -83,6 +84,21 @@ export function DocView({ blocks, baseLevel = 4 }: Props) {
                   </div>
                 ))}
               </dl>
+            );
+          case "details":
+            return (
+              <details key={i} className="group rounded-xl border border-line bg-paper" data-testid="doc-details">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-xl px-5 py-4 font-heading font-medium [&::-webkit-details-marker]:hidden">
+                  <span>
+                    {b.title}
+                    {b.summary && <span className="mt-0.5 block text-sm font-normal text-muted-foreground">{b.summary}</span>}
+                  </span>
+                  <ChevronDown aria-hidden="true" strokeWidth={1.8} className="size-5 shrink-0 transition-transform duration-300 group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-line px-5 py-5">
+                  <DocView blocks={b.blocks} baseLevel={baseLevel} />
+                </div>
+              </details>
             );
           default:
             return <VisualBlockView key={i} block={b} />;

@@ -30,7 +30,14 @@ export type VisualBlock =
   /** Raster mit Spalten (zum Beispiel Wochentage) und beschrifteten Zeilen. */
   | { type: "grid"; title?: string; columns: string[]; rows: { label: string; cells: string[] }[] }
   /** Karten zum Durchblättern (Pfeile, Wischen, Tastatur). */
-  | { type: "slides"; title?: string; items: { title: string; text: string; tag?: string }[] };
+  | { type: "slides"; title?: string; items: { title: string; text: string; tag?: string }[] }
+  /**
+   * Netzdiagramm für drei bis acht Werte derselben Skala (Standard 0 bis 100), zum Beispiel die Dimensionen eines Reifegrads.
+   * `highlight` markiert einen Wert in Gold. Die Legende nennt jeden Wert mit Namen und Zahl.
+   */
+  | { type: "radar"; title?: string; max?: number; items: { label: string; value: number; note?: string; highlight?: boolean }[] }
+  /** Zuklappbarer Teil für Nebensächliches (Details, Annahmen); in PDF, Word und Markdown steht er offen als Abschnitt. */
+  | { type: "details"; title: string; summary?: string; blocks: DocBlock[] };
 
 export type DocBlock = BasicBlock | VisualBlock;
 
@@ -68,6 +75,20 @@ export function flattenBlocks(blocks: DocBlock[]): BasicBlock[] {
       case "split":
         title(b.title);
         out.push({ type: "table", header: ["", "Anteil"], rows: b.items.map((it) => [it.label, `${num(it.value)} %`]), widths: [2, 1] });
+        break;
+      case "radar":
+        title(b.title);
+        out.push({
+          type: "table",
+          header: ["", "Wert"],
+          rows: b.items.map((it) => [it.label, `${num(it.value)}${it.note ? `, ${it.note}` : ""}`]),
+          widths: [2, 1],
+        });
+        break;
+      case "details":
+        out.push({ type: "heading", level: 2, text: b.title });
+        if (b.summary) out.push({ type: "paragraph", text: b.summary });
+        out.push(...flattenBlocks(b.blocks));
         break;
       case "grid":
         title(b.title);

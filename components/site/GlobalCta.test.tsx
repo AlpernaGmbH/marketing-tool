@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CTA_LINE, GlobalCta, HeaderCta, ctaWhatsappUrl } from "@/components/site/GlobalCta";
+import { CTA_LINE, GlobalCta, ctaWhatsappUrl } from "@/components/site/GlobalCta";
 
 afterEach(() => {
   cleanup();
@@ -33,18 +33,7 @@ describe("globaler Aufruf", () => {
   it("lässt das Band weg, wenn weder Erstgespräch noch WhatsApp gesetzt sind (kein Aufruf ohne Weg)", () => {
     vi.stubEnv("NEXT_PUBLIC_ERSTGESPRAECH_URL", "");
     vi.stubEnv("NEXT_PUBLIC_WHATSAPP_NUMBER", "");
-    const { container } = render(
-      <>
-        <GlobalCta />
-        <HeaderCta />
-      </>,
-    );
+    const { container } = render(<GlobalCta />);
     expect(container).toBeEmptyDOMElement();
-  });
-
-  it("zeigt den Knopf im Kopf nur mit Erstgespräch-Link", () => {
-    vi.stubEnv("NEXT_PUBLIC_ERSTGESPRAECH_URL", "https://alperna.ch/erstgespraech");
-    render(<HeaderCta />);
-    expect(screen.getByRole("link", { name: CTA_LINE })).toHaveAttribute("href", "https://alperna.ch/erstgespraech");
   });
 });
