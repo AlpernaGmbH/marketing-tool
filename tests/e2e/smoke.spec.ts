@@ -1512,8 +1512,9 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
 
-  test("Caption-Baukasten: drei Schritte, Fenster vor dem Ergebnis, Vorschau je Plattform, Lead mit Hook und Texten, Neuladen", async ({ page, request }) => {
+  test("Caption-Baukasten von Hand: drei Schritte, Fenster vor dem Ergebnis, Vorschau je Plattform, Lead mit Hook und Texten, Neuladen", async ({ page, request }) => {
     await page.goto("/tools/caption-baukasten");
+    await page.getByRole("radio", { name: "Selbst, in drei Schritten" }).check();
     await page.getByRole("button", { name: "Weiter" }).click();
     await expect(page.locator("#cb-error")).toContainText("Situation");
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -1598,6 +1599,36 @@ test.describe("Welle 4 im Browser (Inhalte, KI und Vereine)", () => {
     expect(lead.ausgabe).toContain("# Beitrag: Instagram");
     await page.reload();
     await expect(page.getByRole("region", { name: "Dein Beitrag" })).toBeVisible();
+    expect(calls.generate).toBe(1);
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+
+  test("Caption-Baukasten mit KI: drei Fragen, Fenster, Caption mit zwei Hooks, Lead, nach dem Neuladen keine neue Anfrage", async ({ page, request }) => {
+    const calls = await stubGenerate(page, BEITRAG);
+    await page.goto("/tools/caption-baukasten");
+    await page.locator("#cb-firma").fill("Malerei Keller");
+    await page.locator("#cb-ort").fill("Gossau");
+    await page.getByRole("button", { name: "Caption schreiben" }).click();
+    await expect(page.locator("#cb-error")).toContainText("Idee");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator("#cb-ki-idee").fill("Wir zeigen, warum ein Anstrich an der Wetterseite oft schon nach wenigen Wintern abblättert und was man dagegen tut.");
+    await page.locator("#cb-ki-kategorie").selectOption("tipp");
+    await page.locator("#cb-ki-ziel").selectOption("nachricht");
+    await page.getByRole("button", { name: "Caption schreiben" }).click();
+    const email = await giveEmail(page);
+    await expect(page.getByRole("region", { name: "Deine Caption" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Hook wählen" }).getByRole("button")).toHaveCount(2);
+    await expect(page.getByTestId("cb-ki-hinweis")).toContainText("KI");
+    await expect(page.getByTestId("cb-counter")).toContainText("vor der Faltkante");
+    expect(calls.generate).toBe(1);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("caption-baukasten");
+    const lead = (await received(request)).find((l) => l.email === email)!;
+    expect(lead.eingabe).toContain("Weg: KI in drei Fragen");
+    expect(lead.eingabe).toContain("Ziel: Direktnachricht");
+    expect(lead.ausgabe).toContain("Instagram (");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Deine Caption" })).toBeVisible();
     expect(calls.generate).toBe(1);
     await page.setViewportSize({ width: 375, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);

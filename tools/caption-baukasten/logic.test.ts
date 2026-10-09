@@ -563,7 +563,19 @@ describe("caption-baukasten: parseState", () => {
       cta: 5,
       hashtags: {},
     });
-    expect(f).toEqual({ formel: "frage", aufbau: "problem-loesung", ziel: "kommentar", anrede: "", hook: { Situation: "ok" }, teile: { loesung: "ok" }, cta: "", hashtags: "" });
+    expect(f).toEqual({
+      modus: "selbst", // Stände ohne Weg stammen aus der Zeit vor dem 09.10.2026
+      fragen: { idee: "", kategorie: "", ziel: "kommentar" },
+      ki: null,
+      formel: "frage",
+      aufbau: "problem-loesung",
+      ziel: "kommentar",
+      anrede: "",
+      hook: { Situation: "ok" },
+      teile: { loesung: "ok" },
+      cta: "",
+      hashtags: "",
+    });
   });
 
   it("kürzt Texte auf die Grenzen", () => {

@@ -1,11 +1,14 @@
 import { numberCH, typoCH } from "@/lib/ch";
 import { safeFilename } from "@/lib/export/model";
 import { anredeFromProfile, anredeLabel, isAnrede, type Anrede } from "@/tools/bewertungs-kit/logic";
+import type { KategorieKey, ZielKey } from "@/tools/post-generator/generator";
+import { isKategorie, isZiel, kategorieLabel, zielLabel } from "@/tools/post-generator/labels";
 import type { TextcheckState } from "@/tools/textcheck/logic";
 
 // Caption-Baukasten: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
-// Hook-Formel, Aufbau und Aufforderung ergeben je Plattform eine fertige Caption. Keine KI.
-// Alle Muster stehen hier, jedes in einer Du- und einer Sie-Fassung. Spec: specs/caption-baukasten.md
+// Zwei Wege zur Caption: «ki» (drei Fragen, eine KI schreibt Hook, Hauptteil und Aufforderung; der Aufruf steht in ki.ts) und «selbst»
+// (Hook-Formel, Aufbau und Aufforderung, ohne KI). Beide ergeben je Plattform eine fertige Caption.
+// Alle Muster des Wegs «selbst» stehen hier, jedes in einer Du- und einer Sie-Fassung. Spec: specs/caption-baukasten.md
 //
 // Für den Post-Generator (später): `foldInfo(platform, text)` ist stabil und darf importiert werden.
 //   foldInfo(platform: Platform, text: string): { limit: number; before: number; over: number }
@@ -562,7 +565,25 @@ export function compose(platform: Platform, parts: Parts): string {
 
 // ---- Felder und Stand ------------------------------------------------------------------------------
 
+export const MODI = ["ki", "selbst"] as const;
+export type Modus = (typeof MODI)[number];
+export const isModus = (v: unknown): v is Modus => v === "ki" || v === "selbst";
+
+/** Die drei Fragen des Wegs «ki». */
+export type KiFragen = { idee: string; kategorie: KategorieKey | ""; ziel: ZielKey };
+export const KI_IDEE_MIN = 20;
+export const KI_IDEE_MAX = 600;
+export const EMPTY_FRAGEN: KiFragen = { idee: "", kategorie: "", ziel: "kommentar" };
+
+/** Was die KI geschrieben hat: zwei Hooks (der gewählte steht in `hook`), der Hauptteil als Absätze, die Aufforderung. */
+export type KiText = { hooks: [string, string]; hook: 0 | 1; teile: string[]; cta: string };
+
 export type Felder = {
+  /** «ki»: drei Fragen und eine KI; «selbst»: Formel, Aufbau und Aufforderung von Hand. */
+  modus: Modus;
+  fragen: KiFragen;
+  /** Das Ergebnis der KI; null, solange nichts geschrieben wurde. */
+  ki: KiText | null;
   formel: HookKey;
   aufbau: StructureKey;
   ziel: CtaKey;
@@ -576,7 +597,7 @@ export type Felder = {
   hashtags: string;
 };
 
-export const EMPTY_FELDER: Felder = { formel: "frage", aufbau: "problem-loesung", ziel: "kommentar", anrede: "", hook: {}, teile: {}, cta: "", hashtags: "" };
+export const EMPTY_FELDER: Felder = { modus: "ki", fragen: EMPTY_FRAGEN, ki: null, formel: "frage", aufbau: "problem-loesung", ziel: "kommentar", anrede: "", hook: {}, teile: {}, cta: "", hashtags: "" };
 
 /** Anrede, die gilt: gewählt, sonst aus dem Profil, sonst Du. */
 export const resolveAnrede = (gewaehlt: Anrede | "", ausProfil: Anrede | ""): Anrede => gewaehlt || ausProfil || "du";
@@ -596,6 +617,7 @@ export function teileOf(aufbau: StructureKey, teile: Readonly<Record<string, str
 }
 
 export function partsOf(f: Felder): Parts {
+  if (f.modus === "ki" && f.ki) return { hook: f.ki.hooks[f.ki.hook], teile: f.ki.teile, cta: f.ki.cta, hashtags: f.hashtags };
   return {
     hook: hookText(f.formel, anredeOf(f), f.hook),
     teile: teileOf(f.aufbau, f.teile),
@@ -618,6 +640,9 @@ export function captionTexts(f: Felder): Texte {
 /** Felder mit den Beispielwerten der Malerei Keller; die Grundlage des Beispiels im Seitentext. */
 export function beispielFelder(formel: HookKey, aufbau: StructureKey, ziel: CtaKey, anrede: Anrede): Felder {
   return {
+    modus: "selbst",
+    fragen: EMPTY_FRAGEN,
+    ki: null,
     formel,
     aufbau,
     ziel,
@@ -655,8 +680,17 @@ export function stepProblem(step: 1 | 2 | 3, f: Felder): Problem | null {
   return null;
 }
 
+/** Meldung zur Idee des Wegs «ki»; null, wenn sie reicht. Der Server prüft mit demselben Mass noch einmal. */
+export function fragenProblem(fragen: KiFragen): Problem | null {
+  const n = Array.from(oneLine(fragen.idee)).length;
+  if (n < KI_IDEE_MIN) return { step: 1, message: `Beschreib deine Idee in mindestens ${KI_IDEE_MIN} Zeichen, zum Beispiel, was diese Woche im Betrieb passiert ist.`, fieldId: "cb-ki-idee" };
+  if (Array.from(fragen.idee.trim()).length > KI_IDEE_MAX) return { step: 1, message: `Kürze die Idee auf ${KI_IDEE_MAX} Zeichen.`, fieldId: "cb-ki-idee" };
+  return null;
+}
+
 /** Das erste Problem über alle drei Schritte; null, wenn die Angaben für die Caption reichen. */
 export function inputProblem(f: Felder): Problem | null {
+  if (f.modus === "ki") return f.ki ? null : { step: 1, message: "Schreib zuerst deine Idee und lass die Caption schreiben.", fieldId: "cb-ki-idee" };
   return stepProblem(1, f) ?? stepProblem(2, f) ?? stepProblem(3, f);
 }
 
@@ -707,9 +741,35 @@ function stringRecord(raw: unknown, allowed: ReadonlySet<string>, max: number): 
 }
 
 /** Liest Angaben aus beliebigen Daten: unbekannte Schlüssel und Werte falschen Typs fallen weg, Texte werden gekürzt. */
+export function parseFragen(raw: unknown): KiFragen {
+  if (!isRecord(raw)) return EMPTY_FRAGEN;
+  return {
+    idee: typeof raw.idee === "string" ? clamp(raw.idee, KI_IDEE_MAX) : "",
+    kategorie: isKategorie(raw.kategorie) ? raw.kategorie : "",
+    ziel: isZiel(raw.ziel) ? raw.ziel : EMPTY_FRAGEN.ziel,
+  };
+}
+
+function parseKi(raw: unknown): KiText | null {
+  if (!isRecord(raw) || !Array.isArray(raw.hooks) || raw.hooks.length !== 2 || !raw.hooks.every((h) => typeof h === "string" && h.trim() !== "")) return null;
+  if (!Array.isArray(raw.teile)) return null;
+  const teile = raw.teile.filter((t): t is string => typeof t === "string" && t.trim() !== "").map((t) => clamp(t, LIMITS.teil * 2));
+  if (teile.length === 0 || typeof raw.cta !== "string" || raw.cta.trim() === "") return null;
+  return {
+    hooks: [clamp(raw.hooks[0] as string, LIMITS.hook), clamp(raw.hooks[1] as string, LIMITS.hook)],
+    hook: raw.hook === 1 ? 1 : 0,
+    teile: teile.slice(0, 12),
+    cta: clamp(raw.cta, LIMITS.cta),
+  };
+}
+
 export function parseFelder(raw: unknown): Felder {
   if (!isRecord(raw)) return EMPTY_FELDER;
   return {
+    // Stände aus der Zeit vor dem 09.10.2026 kennen nur den Weg von Hand.
+    modus: isModus(raw.modus) ? raw.modus : "selbst",
+    fragen: parseFragen(raw.fragen),
+    ki: parseKi(raw.ki),
     formel: isHookKey(raw.formel) ? raw.formel : EMPTY_FELDER.formel,
     aufbau: isStructureKey(raw.aufbau) ? raw.aufbau : EMPTY_FELDER.aufbau,
     ziel: isCtaKey(raw.ziel) ? raw.ziel : EMPTY_FELDER.ziel,
@@ -765,6 +825,16 @@ const orNone = (s: string): string => oneLine(s) || "keine Angabe";
 
 /** Die Angaben fürs CRM, eine je Zeile. */
 export function eingabeText(f: Felder): string {
+  if (f.modus === "ki") {
+    return [
+      "Weg: KI in drei Fragen",
+      `Idee: ${orNone(f.fragen.idee)}`,
+      `Worum geht es: ${f.fragen.kategorie ? kategorieLabel(f.fragen.kategorie) : "keine Angabe"}`,
+      `Ziel: ${zielLabel(f.fragen.ziel)}`,
+      `Anrede: ${anredeLabel(anredeOf(f))}`,
+      `Hashtags: ${cleanHashtags(f.hashtags) || "keine"}`,
+    ].join("\n");
+  }
   const hook = HOOKS[f.formel];
   const aufbau = STRUCTURES[f.aufbau];
   return [

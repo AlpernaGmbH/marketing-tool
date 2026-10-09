@@ -7,6 +7,7 @@ import { brandHits } from "@/lib/brand-rules";
 import { PROFILE_KEY } from "@/lib/profile";
 import { clearAllLocal, readLocal, writeLocal } from "@/lib/storage";
 import { parseTextcheckState } from "@/tools/textcheck/logic";
+import type { PostOutput } from "@/tools/post-generator/generator";
 import Tool from "./Tool";
 import { captionTexts, beispielFelder, parseState } from "./logic";
 
@@ -40,8 +41,14 @@ type User = ReturnType<typeof userEvent.setup>;
 
 const KELLER = beispielFelder("frage", "problem-loesung", "kommentar", "du");
 
+/** Wechselt auf den Weg von Hand (der Standard ist der Weg mit KI). */
+async function selbst(u: User) {
+  await u.click(await screen.findByRole("radio", { name: "Selbst, in drei Schritten" }));
+}
+
 /** Schritt 1 und 2 mit den Beispielwerten der Malerei Keller, bis Schritt 3 offen ist. */
 async function fillUntilStep3(u: User) {
+  await selbst(u);
   expect(await screen.findByText("Schritt 1 von 3")).toBeInTheDocument();
   await u.type(screen.getByLabelText("Situation"), KELLER.hook.Situation);
   await u.click(screen.getByRole("button", { name: "Weiter" }));
@@ -72,11 +79,159 @@ function expectCalmText(where: string) {
   }
 }
 
+const KI_OUTPUT: PostOutput = {
+  hooks: ["Warum blättert der Anstrich schon nach wenigen Wintern ab?", "Ein Anstrich hält nur so gut wie der Untergrund darunter."],
+  hauptteil:
+    "Diese Woche haben wir in Gossau eine Fassade neu gestrichen. Der alte Anstrich blätterte nach wenigen Wintern ab.\n\nDer Grund war einfach: Der Untergrund war noch feucht. Dann haftet die Farbe schlecht.\n\nDarum messen wir die Feuchtigkeit, bevor wir den ersten Strich setzen.",
+  cta: "Schreib uns eine Nachricht, wenn deine Fassade ähnlich aussieht.",
+  hinweis: "",
+};
+const IDEE = "Diese Woche haben wir in Gossau eine Fassade gestrichen, deren alter Anstrich nach wenigen Wintern abblätterte.";
+
+/** /api/generate antwortet mit `reply`; /api/result und /api/lead sind in Ordnung. */
+function mockKiApi(reply: () => { status: number; body: unknown } = () => ({ status: 200, body: { ok: true, output: KI_OUTPUT } })) {
+  const calls: Call[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (path: string, init?: RequestInit) => {
+      calls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : {} });
+      const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status });
+      if (path === "/api/generate") {
+        const r = reply();
+        return json(r.body, r.status);
+      }
+      return json({ ok: true });
+    }),
+  );
+  return { calls, count: (p: string) => calls.filter((c) => c.path === p).length };
+}
+
+describe("Caption-Baukasten im Browser: Weg mit KI", () => {
+  it("beginnt mit den drei Fragen, schreibt die Caption mit der KI und schickt Eingabe und Ausgabe ins CRM", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Malerei Keller", ort: "Gossau", branche: "Malerei" }));
+    const api = mockKiApi();
+    const u = userEvent.setup();
+    render(<Tool />);
+
+    expect(await screen.findByLabelText("1. Was möchtest du mitteilen?")).toHaveValue("");
+    expect(screen.getByLabelText("2. Worum geht es? (freiwillig)")).toHaveValue("");
+    expect(screen.getByLabelText("3. Was sollen die Leute danach tun?")).toHaveValue("kommentar");
+    expect(within(screen.getByLabelText("3. Was sollen die Leute danach tun?")).getAllByRole("option")).toHaveLength(10);
+    expect(screen.queryByText("Schritt 1 von 3")).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Mit KI, in drei Fragen" })).toBeChecked();
+    expect(screen.getByText(/an unseren Server und von dort an unseren KI-Anbieter, nicht deine E-Mail-Adresse/)).toBeInTheDocument();
+    expectCalmText("Drei Fragen");
+
+    await u.click(screen.getByLabelText("1. Was möchtest du mitteilen?"));
+    await u.paste(IDEE);
+    await u.selectOptions(screen.getByLabelText("2. Worum geht es? (freiwillig)"), "kundenprojekt");
+    await u.selectOptions(screen.getByLabelText("3. Was sollen die Leute danach tun?"), "nachricht");
+    expect(api.count("/api/generate")).toBe(0); // vor dem Knopf geht nichts raus
+    await u.click(screen.getByRole("button", { name: "Caption schreiben" }));
+
+    const card = await screen.findByRole("region", { name: "Deine Caption" });
+    expect(api.count("/api/generate")).toBe(1);
+    const gen = api.calls.find((c) => c.path === "/api/generate")!.body as { tool: string; input: Record<string, unknown> };
+    expect(gen.tool).toBe("post-generator");
+    expect(gen.input).toMatchObject({ betrieb: "Malerei Keller", ort: "Gossau", plattform: "instagram", ziel: "nachricht", kategorie: "kundenprojekt", idee: IDEE });
+    expect(JSON.stringify(gen)).not.toContain("anna@keller.ch");
+
+    // Ergebnis: Hinweis der KI, beide Hooks, Instagram zuerst mit dem ersten Hook
+    expect(within(card).getByTestId("cb-ki-hinweis")).toHaveTextContent("Von einer KI formuliert.");
+    const hooks = within(card).getByRole("group", { name: "Hook wählen" });
+    expect(within(hooks).getByRole("button", { name: /Hook A/, pressed: true })).toBeInTheDocument();
+    expect(within(card).getByTestId("cb-text").textContent).toContain(KI_OUTPUT.hooks[0]);
+    expect(within(card).getByTestId("cb-text").textContent).toContain(KI_OUTPUT.cta);
+
+    // Hook B wählen ändert den Text und bleibt gespeichert
+    await u.click(within(hooks).getByRole("button", { name: /Hook B/ }));
+    expect(within(card).getByTestId("cb-text").textContent).toContain(KI_OUTPUT.hooks[1]);
+    expect(within(card).getByTestId("cb-text").textContent).not.toContain(KI_OUTPUT.hooks[0]);
+    expect(JSON.parse(readLocal("mt:caption-baukasten")!).felder.ki.hook).toBe(1);
+    expectCalmText("Ergebnis mit KI");
+
+    // Das Ergebnis geht einmal ins CRM, mit lesbarer Eingabe und Ausgabe
+    await waitFor(() => expect(api.count("/api/result")).toBe(1));
+    const body = api.calls.find((c) => c.path === "/api/result")!.body;
+    expect(body.tool).toBe("caption-baukasten");
+    expect(String(body.eingabe)).toContain("Weg: KI in drei Fragen");
+    expect(String(body.eingabe)).toContain("Worum geht es: Kundenprojekt");
+    expect(String(body.eingabe)).toContain("Ziel: Direktnachricht");
+    expect(String(body.ausgabe)).toContain("Instagram (");
+    expect(String(body.ausgabe)).toContain(KI_OUTPUT.hooks[0]);
+  });
+
+  it("meldet einen fehlenden Betrieb und eine zu kurze Idee, ohne die KI zu fragen", async () => {
+    const api = mockKiApi();
+    const u = userEvent.setup();
+    render(<Tool />);
+    await u.click(await screen.findByLabelText("1. Was möchtest du mitteilen?"));
+    await u.paste(IDEE);
+    await u.click(screen.getByRole("button", { name: "Caption schreiben" }));
+    expect(await screen.findByText("Gib den Namen deines Betriebs an.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Firma")).toHaveFocus();
+
+    await u.type(screen.getByLabelText("Firma"), "Malerei Keller");
+    await u.clear(screen.getByLabelText("1. Was möchtest du mitteilen?"));
+    await u.type(screen.getByLabelText("1. Was möchtest du mitteilen?"), "kurz");
+    await u.click(screen.getByRole("button", { name: "Caption schreiben" }));
+    expect(await screen.findByText(/Beschreib deine Idee in mindestens 20 Zeichen/)).toBeInTheDocument();
+    expect(screen.getByLabelText("1. Was möchtest du mitteilen?")).toHaveFocus();
+    expect(api.count("/api/generate")).toBe(0);
+    expect(api.count("/api/result")).toBe(0);
+  });
+
+  it("zeigt einen ruhigen Satz, wenn die KI keinen brauchbaren Entwurf liefert, und lässt das Formular stehen", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Malerei Keller" }));
+    const api = mockKiApi(() => ({ status: 502, body: { ok: false, error: "failed" } }));
+    const u = userEvent.setup();
+    render(<Tool />);
+    await u.click(await screen.findByLabelText("1. Was möchtest du mitteilen?"));
+    await u.paste(IDEE);
+    await u.click(screen.getByRole("button", { name: "Caption schreiben" }));
+    expect(await screen.findByText(/keinen brauchbaren Entwurf/)).toBeInTheDocument();
+    expect(screen.getByLabelText("1. Was möchtest du mitteilen?")).toHaveValue(IDEE);
+    expect(screen.queryByRole("region", { name: "Deine Caption" })).not.toBeInTheDocument();
+    expect(api.count("/api/result")).toBe(0);
+  });
+
+  it("behält den Weg bei «Neu beginnen» und stellt das Ergebnis nach dem Neuladen wieder her, ohne es erneut zu senden", async () => {
+    writeLocal(PROFILE_KEY, JSON.stringify({ firma: "Malerei Keller" }));
+    const api = mockKiApi();
+    const u = userEvent.setup();
+    const first = render(<Tool />);
+    await u.click(await screen.findByLabelText("1. Was möchtest du mitteilen?"));
+    await u.paste(IDEE);
+    await u.click(screen.getByRole("button", { name: "Caption schreiben" }));
+    const card = await screen.findByRole("region", { name: "Deine Caption" });
+    await waitFor(() => expect(api.count("/api/result")).toBe(1));
+    first.unmount();
+
+    render(<Tool />);
+    const again = await screen.findByRole("region", { name: "Deine Caption" });
+    expect(within(again).getByTestId("cb-text").textContent).toContain(KI_OUTPUT.hooks[0]);
+    expect(api.count("/api/generate")).toBe(1);
+    expect(api.count("/api/result")).toBe(1);
+    expect(card).toBeDefined();
+
+    await u.click(within(again).getByRole("button", { name: "Angaben ändern" }));
+    expect(await screen.findByLabelText("1. Was möchtest du mitteilen?")).toHaveValue(IDEE);
+    await u.click(screen.getByRole("button", { name: "Caption schreiben" }));
+    await screen.findByRole("region", { name: "Deine Caption" });
+    expect(api.count("/api/generate")).toBe(2);
+    await u.click(screen.getByRole("button", { name: "Neu beginnen" }));
+    expect(await screen.findByLabelText("1. Was möchtest du mitteilen?")).toHaveValue("");
+  });
+});
+
 describe("Caption-Baukasten im Browser", () => {
   it("hält auf allen Schritten und im Ergebnis die Sperrliste und die Schreibregeln ein", async () => {
     mockApi();
     const u = userEvent.setup();
     render(<Tool />);
+    await screen.findByLabelText("1. Was möchtest du mitteilen?");
+    expectCalmText("Drei Fragen");
+    await selbst(u);
     expect(await screen.findByText("Schritt 1 von 3")).toBeInTheDocument();
     expectCalmText("Schritt 1");
     await u.type(screen.getByLabelText("Situation"), KELLER.hook.Situation);
@@ -98,6 +253,7 @@ describe("Caption-Baukasten im Browser", () => {
     const calls = mockApi();
     const u = userEvent.setup();
     render(<Tool />);
+    await selbst(u);
 
     // Schritt 1: acht Formeln, Frage ist gewählt, der Hook entsteht beim Tippen
     const formeln = screen.getByRole("radiogroup", { name: "Hook-Formel" });
@@ -200,6 +356,7 @@ describe("Caption-Baukasten im Browser", () => {
     mockApi();
     const u = userEvent.setup();
     render(<Tool />);
+    await selbst(u);
 
     const anrede = await screen.findByRole("radiogroup", { name: "Anrede" });
     await waitFor(() => expect(within(anrede).getByRole("radio", { name: "Sie" })).toBeChecked());
@@ -291,7 +448,10 @@ describe("Caption-Baukasten im Browser", () => {
   it("übersteht kaputte Daten im Speicher", async () => {
     mockApi();
     writeLocal("mt:caption-baukasten", "{kaputt");
+    const u = userEvent.setup();
     render(<Tool />);
+    expect(await screen.findByLabelText("1. Was möchtest du mitteilen?")).toHaveValue("");
+    await selbst(u);
     expect(await screen.findByText("Schritt 1 von 3")).toBeInTheDocument();
     expect(screen.getByLabelText("Situation")).toHaveValue("");
   });

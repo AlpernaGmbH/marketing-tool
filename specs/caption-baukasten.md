@@ -95,3 +95,13 @@ Ein Formular mit drei Abschnitten, einer sichtbar. Fortschritt als `role="status
 - Emojis, Hashtag-Vorschläge, Beste Zeit zum Posten: Dafür gibt es keine belegte Quelle.
 - Bilder, Reels, Karussells und die Beschriftung darin.
 - Das genaue Abschneiden der Plattformen: Die Vorschau ist ein Richtwert, kein Abbild.
+
+## Weg mit KI in drei Fragen (Stand 09.10.2026, Charge C2)
+- **Zwei Wege.** Oben im Formular wählt die Person «Mit KI, in drei Fragen» (Standard für neue Besucher) oder «Selbst, in drei Schritten» (der bisherige Weg, ohne KI). Die Wahl steht in `Felder.modus`; Stände ohne diese Angabe stammen aus der Zeit vor dem 09.10.2026 und gelten als «selbst». «Neu beginnen» behält den gewählten Weg.
+- **Drei Fragen.** (1) «Was möchtest du mitteilen?» (Textarea `cb-ki-idee`, 20 bis 600 Zeichen), (2) «Worum geht es?» (freiwillig, sieben Kategorien wie im Post-Generator, `cb-ki-kategorie`), (3) «Was sollen die Leute danach tun?» (zehn Ziele wie im Post-Generator, `cb-ki-ziel`, Standard Kommentieren). Dazu die Grunddaten (Firma, Branche, Ort über `ProfileFieldsForm`, `cb-firma`), die Anrede und freiwillige Hashtags. Die Auswahllisten stehen in `tools/post-generator/labels.ts`.
+- **Aufruf.** `kiInput` (ki.ts) macht daraus die Eingabe des Generators `post-generator` (Plattform Instagram als strengste Länge, Format je Kategorie nach `FORMAT_JE_KATEGORIE`, keine Emojis, Säule leer). `useGenerator(postGenerator)` macht Fenster, Anfrage, Wiederholung bei 403 und CRM. Die Route prüft die Antwort mit denselben Regeln wie im Post-Generator. Nie die E-Mail-Adresse, nie das ganze Profil.
+- **Ergebnis.** `kiTextVon` übernimmt zwei Hooks, den Hauptteil als Absätze und die Aufforderung; der erste Hook gilt, «Hook B» ist per Knopf wählbar (`Felder.ki.hook`). Daraus entstehen dieselben vier Texte mit Vorschau an der Faltkante, Zähler, Entwürfen und Übergabe an den Textcheck. Hinweis «Von einer KI formuliert. Prüfe Namen, Zahlen und Aussagen …» steht im Ergebnis.
+- **CRM.** Eingabe «Weg: KI in drei Fragen», Idee, Worum geht es, Ziel, Anrede, Hashtags; Ausgabe wie beim Weg von Hand (vier Texte mit Zeichenzahl). Ein geladener Entwurf und die Wahl des Hooks schicken nichts.
+- **Fehler.** Betrieb fehlt oder Idee zu kurz oder zu lang: Meldung, Fokus ins Feld, kein Aufruf. Die KI liefert nichts Brauchbares: ruhiger Satz, das Formular bleibt.
+- **Config.** `needsServer: true`, Zielgruppe KMU, Profilfelder firma, branche, ort, positionierung, marke, personas.
+- **Offen.** Dieser Weg und der Post-Generator tun fast dasselbe (Idee → Beitrag mit zwei Hooks). Die Empfehlung ist, beide in einem Werkzeug zusammenzuführen, sobald Alperna entscheidet (siehe C10b, gleiche Frage bei den Bild-Werkzeugen).

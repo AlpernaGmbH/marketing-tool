@@ -1,16 +1,16 @@
 ---
 title: "Caption schreiben Schweiz: Hook, Text und Aufforderung"
-description: "Caption schreiben in drei Schritten: Hook, Hauptteil, Aufforderung. Fertig für Instagram, LinkedIn, Facebook und Google, mit Vorschau. Ohne Konto."
+description: "Caption schreiben in drei Fragen: Eine KI macht Hook, Hauptteil und Aufforderung. Fertig für Instagram, LinkedIn, Facebook und Google. Ohne Konto."
 h1: "Caption schreiben mit dem Caption-Baukasten für Schweizer KMU"
-tagline: "Hook, Hauptteil und Aufforderung in drei Schritten, fertig für Instagram, LinkedIn, Facebook und Google."
+tagline: "Drei Fragen, eine KI schreibt Hook, Text und Aufforderung für Instagram, LinkedIn, Facebook und Google."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:
   - "Eine fertige Caption für Instagram, LinkedIn, Facebook und den Google-Beitrag, mit Vorschau an der Faltkante und Zeichenzähler."
-  - "Du wählst Hook-Formel, Aufbau und Ziel und schreibst die Felder in deinen Worten."
+  - "Du beantwortest drei Fragen und eine KI schreibt; wer lieber selbst schreibt, baut die Caption in drei Schritten."
   - "Danach weisst du, was vor der Faltkante steht und was erst hinter «mehr» kommt."
 ablauf:
-  - "Hook-Formel wählen und füllen"
-  - "Hauptteil und Aufforderung schreiben"
+  - "Idee, Thema und Ziel angeben"
+  - "Caption schreiben lassen oder selbst bauen"
   - "Text je Plattform kopieren"
 ---
 ## Warum das wichtig ist
@@ -19,7 +19,7 @@ Beim Caption schreiben fehlt meistens einer von drei Teilen: der Hook, der Inhal
 - **Der Hook entscheidet:** Auf Instagram, LinkedIn und Facebook sieht die Kundschaft zuerst nur den Anfang, den Rest zeigt erst «mehr».
 - **Jede Plattform bekommt ihre Form:** Instagram mit kurzen Zeilen und Hashtags, LinkedIn mit kurzen Absätzen, Google ohne Leerzeilen.
 - **Die Aufforderung sagt, was folgt:** Ohne sie weiss niemand in Gossau oder Herisau, ob eine Nachricht erwünscht ist.
-- **Der Ton bleibt deiner:** Der Baukasten setzt zusammen, was du schreibst, ohne KI.
+- **Der Ton bleibt deiner:** Die KI nimmt Tonalität und Werte aus deinem Profil, du prüfst den Text vor dem Veröffentlichen.
 
 => Gleich darunter: was du mit dem fertigen Text machst.
 
@@ -41,7 +41,7 @@ Beim Caption schreiben fehlt meistens einer von drei Teilen: der Hook, der Inhal
 => Gleich darunter: eine fertige Caption mit allen Zahlen.
 
 ## Beispiel
-Malerei Keller, Gossau, will eine Caption schreiben und wählt die Formel «Frage», den Aufbau «Problem und Lösung» und das Ziel «Kommentar». So sieht der Instagram-Text aus:
+Malerei Keller, Gossau, baut eine Caption von Hand und wählt die Formel «Frage», den Aufbau «Problem und Lösung» und das Ziel «Kommentar». So sieht der Instagram-Text aus:
 
 > Was machst du, wenn der Anstrich schon nach wenigen Wintern abblättert?
 >
@@ -59,19 +59,19 @@ Der Zähler meldet 350 Zeichen, davon 125 vor der Faltkante (Richtwert von Alper
 
 ## Häufige Fragen
 ### Was ist ein Hook?
-Der Hook ist der erste Satz einer Caption. Er soll zum Weiterlesen bringen, bevor die Plattform den Rest hinter «mehr» verbirgt. Der Baukasten kennt acht Formeln, von der Frage bis zum Zitat. Du füllst nur die Platzhalter in den eckigen Klammern.
+Der Hook ist der erste Satz einer Caption. Er soll zum Weiterlesen bringen, bevor die Plattform den Rest hinter «mehr» verbirgt. Von Hand kennt der Baukasten acht Formeln, von der Frage bis zum Zitat.
 
 ### Wie lang darf eine Caption sein?
 Beim Caption schreiben zählt, was vor der Faltkante steht. Jede Plattform legt sie selbst fest und ändert sie. Der Baukasten rechnet mit diesen Richtwerten von Alperna, keine Statistik: Instagram nach 125 Zeichen, LinkedIn nach 210 Zeichen oder drei Zeilen, Facebook nach 480 Zeichen. Beim Google-Beitrag zeigt er die Grenze von 1'500 Zeichen.
 
 ### Schreibt hier eine KI?
-Nein. Der Baukasten setzt zusammen, was du schreibst, und läuft ohne KI in deinem Browser. Wer einen Entwurf von einer KI möchte, nimmt den Post-Generator. Seine Texte sind Entwürfe, die du vor dem Veröffentlichen prüfst.
+Ja, wenn du den Weg mit KI wählst. Sie schreibt Hook, Hauptteil und Aufforderung aus deinen drei Antworten; die Texte sind Entwürfe, die du vor dem Veröffentlichen prüfst. Beim Weg von Hand läuft alles ohne KI in deinem Browser.
 
 ### Brauche ich ein Konto?
 Nein. Vor der Caption gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug mehr nach.
 
 ### Was bekommt Alperna, was bleibt im Browser?
-Die Caption entsteht in deinem Browser. Mit dem Ergebnis gehen deine Angaben, die vier Texte und deine E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Entwürfe, Firmenprofil und Zwischenstand bleiben in deinem Browser.
+Beim Weg von Hand entsteht die Caption in deinem Browser. Beim Weg mit KI gehen Betrieb, Branche, Ort, Idee und Auswahl an unseren Server und von dort an den KI-Anbieter, nicht deine E-Mail-Adresse; unser Server speichert nichts. Mit dem Ergebnis gehen deine Angaben, die vier Texte und deine E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Entwürfe und Firmenprofil bleiben in deinem Browser.
 
 ## Alperna
 problem: Eine gute Caption ist schnell gebaut, ein Auftritt, der jede Woche etwas Neues zeigt, braucht Planung und Zeit.

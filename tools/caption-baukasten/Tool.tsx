@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { CopyButton } from "@/components/tool/CopyButton";
+import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { ResultCard } from "@/components/tool/ResultCard";
 import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
+import { useGenerator } from "@/components/tool/useGenerator";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +15,10 @@ import { dateCH } from "@/lib/ch";
 import { writeLocal } from "@/lib/storage";
 import { useLocalJson } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
+import { postGenerator } from "@/tools/post-generator/generator";
+import { KATEGORIEN, ZIELE, isKategorie, isZiel } from "@/tools/post-generator/labels";
+import { KI_HINWEIS, hinweisNamen, joinNamen, profilTeile } from "@/tools/post-generator/logic";
+import { kiInput, kiProblem, kiTextVon } from "./ki";
 import {
   ANREDEN,
   CTAS,
@@ -21,6 +27,8 @@ import {
   FOLD_NOTE,
   HOOKS,
   HOOK_KEYS,
+  KI_IDEE_MAX,
+  KI_IDEE_MIN,
   LIMITS,
   MAX_ENTWUERFE,
   PLATFORMS,
@@ -32,6 +40,7 @@ import {
   TEXTCHECK_PATH,
   addDraft,
   anredeFromProfile,
+  charCount,
   ausgabeText,
   captionTexts,
   counterLabel,
@@ -58,6 +67,8 @@ import {
   type Entwurf,
   type Felder,
   type HookKey,
+  type KiFragen,
+  type Modus,
   type Platform,
   type Problem,
   type StructureKey,
@@ -74,12 +85,13 @@ function Intro() {
   return (
     <>
       <p>
-        Wähle eine Hook-Formel, bau den Hauptteil und setz eine Aufforderung dazu. Daraus entsteht deine Caption für Instagram, LinkedIn, Facebook und den
-        Google-Beitrag, mit Vorschau an der Faltkante und Zeichenzähler. Eine KI ist nicht im Spiel: Das Werkzeug setzt zusammen, was du schreibst.
+        Beschreib deine Idee, wähl, worum es geht, und sag, was die Leute danach tun sollen. Eine KI schreibt daraus Hook, Hauptteil und Aufforderung. Du
+        bekommst die Caption für Instagram, LinkedIn, Facebook und den Google-Beitrag, mit Vorschau an der Faltkante und Zeichenzähler. Wer lieber selbst
+        schreibt, wählt den Weg von Hand: Das Werkzeug setzt dann zusammen, was du schreibst, ohne KI.
       </p>
       <p>
-        Die Caption entsteht in deinem Browser. Dein Ergebnis geht zusammen mit deinen Angaben und deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen
-        weiterhelfen können. Entwürfe bleiben in deinem Browser.
+        Dein Ergebnis geht zusammen mit deinen Angaben und deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Entwürfe bleiben in
+        deinem Browser.
       </p>
     </>
   );
@@ -145,7 +157,12 @@ function RadioGroup<T extends string>({
 
 // ---- Schritte --------------------------------------------------------------------------------------
 
-type StepProps = { form: Felder; anrede: Anrede; edit: (patch: Partial<Felder>) => void; disabled: boolean };
+type StepProps = {
+  form: Felder;
+  anrede: Anrede;
+  edit: (patch: Partial<Felder>) => void;
+  disabled: boolean;
+};
 
 function HookStep({ form, anrede, edit, disabled }: StepProps) {
   const hook = HOOKS[form.formel];
@@ -155,7 +172,11 @@ function HookStep({ form, anrede, edit, disabled }: StepProps) {
         legend="Hook-Formel"
         name="cb-formel"
         intro="Der Hook ist der erste Satz. Er entscheidet, ob jemand weiterliest. Die Muster zeigen, wo deine Angaben hinkommen."
-        options={HOOK_KEYS.map((k) => ({ value: k, label: HOOKS[k].label, hint: HOOKS[k].pattern[anrede] }))}
+        options={HOOK_KEYS.map((k) => ({
+          value: k,
+          label: HOOKS[k].label,
+          hint: HOOKS[k].pattern[anrede],
+        }))}
         value={form.formel}
         onChange={(formel) => edit({ formel })}
         disabled={disabled}
@@ -203,7 +224,10 @@ function TeilStep({ form, anrede, edit, disabled }: StepProps) {
         legend="Aufbau"
         name="cb-aufbau"
         intro="Der Hauptteil trägt den Inhalt. Wähle, wie er gebaut ist."
-        options={STRUCTURE_KEYS.map((k) => ({ value: k, label: STRUCTURES[k].label }))}
+        options={STRUCTURE_KEYS.map((k) => ({
+          value: k,
+          label: STRUCTURES[k].label,
+        }))}
         value={form.aufbau}
         onChange={(a) => edit({ aufbau: a })}
         disabled={disabled}
@@ -300,6 +324,131 @@ function CtaStep({ form, anrede, edit, disabled }: StepProps) {
   );
 }
 
+// ---- Weg mit KI: drei Fragen -----------------------------------------------------------------------
+
+const selectClass =
+  "h-11 w-full rounded-lg border border-input bg-paper px-3 text-base focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+
+function KiStep({
+  fragen,
+  hashtags,
+  setFragen,
+  setHashtags,
+  disabled,
+  joinedProfil,
+}: {
+  fragen: KiFragen;
+  hashtags: string;
+  setFragen: (patch: Partial<KiFragen>) => void;
+  setHashtags: (value: string) => void;
+  disabled: boolean;
+  joinedProfil: string;
+}) {
+  return (
+    <div className="grid gap-5">
+      <fieldset className="grid gap-4 rounded-xl border border-line p-4 md:grid-cols-3" disabled={disabled}>
+        <legend className="px-2 font-heading font-semibold">Dein Betrieb</legend>
+        <ProfileFieldsForm idPrefix="cb" fields={["firma", "branche", "ort"]} />
+        <p className="text-sm text-muted-foreground md:col-span-3">Firma, Branche und Ort speichern wir in deinem Firmenprofil, in deinem Browser.</p>
+      </fieldset>
+
+      <fieldset className="grid gap-5" disabled={disabled}>
+        <legend className="mb-1 font-heading font-semibold">Drei Fragen</legend>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="cb-ki-idee">1. Was möchtest du mitteilen?</Label>
+          <Textarea
+            id="cb-ki-idee"
+            rows={4}
+            maxLength={KI_IDEE_MAX}
+            value={fragen.idee}
+            onChange={(e) => setFragen({ idee: e.target.value })}
+            aria-describedby="cb-ki-idee-help cb-ki-idee-count"
+            aria-required="true"
+            lang="de-CH"
+            spellCheck
+          />
+          <p id="cb-ki-idee-help" className="text-sm text-muted-foreground">
+            Ein bis drei Sätze: Was ist passiert, was hast du gelernt, was fragt dich die Kundschaft? Zum Beispiel: «Diese Woche haben wir in Gossau eine
+            Fassade gestrichen, deren alter Anstrich nach wenigen Wintern abblätterte. Der Untergrund war noch feucht.»
+          </p>
+          <p id="cb-ki-idee-count" className="mono text-sm text-muted-foreground">
+            {charCount(fragen.idee)} von {KI_IDEE_MAX} Zeichen, mindestens {KI_IDEE_MIN}
+          </p>
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="cb-ki-kategorie">2. Worum geht es? (freiwillig)</Label>
+          <select
+            id="cb-ki-kategorie"
+            className={selectClass}
+            value={fragen.kategorie}
+            onChange={(e) =>
+              setFragen({
+                kategorie: isKategorie(e.target.value) ? e.target.value : "",
+              })
+            }
+            aria-describedby="cb-ki-kategorie-help"
+          >
+            <option value="">Keine Angabe</option>
+            {KATEGORIEN.map((k) => (
+              <option key={k.key} value={k.key}>
+                {k.label}
+              </option>
+            ))}
+          </select>
+          <p id="cb-ki-kategorie-help" className="text-sm text-muted-foreground">
+            {KATEGORIEN.find((k) => k.key === fragen.kategorie)?.hint ?? "Sagt der KI, aus welchem Blickwinkel sie schreibt."}
+          </p>
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="cb-ki-ziel">3. Was sollen die Leute danach tun?</Label>
+          <select
+            id="cb-ki-ziel"
+            className={selectClass}
+            value={fragen.ziel}
+            onChange={(e) => isZiel(e.target.value) && setFragen({ ziel: e.target.value })}
+            aria-describedby="cb-ki-ziel-help"
+            aria-required="true"
+          >
+            {ZIELE.map((z) => (
+              <option key={z.key} value={z.key}>
+                {z.label}
+              </option>
+            ))}
+          </select>
+          <p id="cb-ki-ziel-help" className="text-sm text-muted-foreground">
+            {ZIELE.find((z) => z.key === fragen.ziel)?.hint}
+          </p>
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="cb-ki-hashtags">Hashtags (freiwillig)</Label>
+          <Textarea
+            id="cb-ki-hashtags"
+            rows={2}
+            value={hashtags}
+            maxLength={LIMITS.hashtags}
+            placeholder="#MalereiKeller #Gossau"
+            onChange={(e) => setHashtags(e.target.value)}
+            aria-describedby="cb-ki-hashtags-help"
+          />
+          <p id="cb-ki-hashtags-help" className="text-sm text-muted-foreground">
+            Die KI schreibt keine Hashtags. Deine kommen nur unter den Instagram-Text.
+          </p>
+        </div>
+      </fieldset>
+
+      <p className="text-sm text-muted-foreground">
+        Dafür gehen Betrieb, Branche, Ort, deine Idee und deine Auswahl (Kategorie, Ziel, Anrede)
+        {joinedProfil ? `, dazu ${joinedProfil} aus deinem Profil,` : ""} an unseren Server und von dort an unseren KI-Anbieter, nicht deine E-Mail-Adresse.
+        Unser Server speichert die Angaben nicht. Gib nichts Vertrauliches ein.
+      </p>
+    </div>
+  );
+}
+
 // ---- Entwürfe --------------------------------------------------------------------------------------
 
 function Entwuerfe({
@@ -391,10 +540,12 @@ function ResultView({
   onDelete,
   onEdit,
   onNew,
+  onChooseHook,
 }: {
   felder: Felder;
   entwuerfe: Entwurf[];
   headingRef: React.Ref<HTMLHeadingElement>;
+  onChooseHook: (hook: 0 | 1) => void;
   onSaveDraft: () => void;
   onLoad: (d: Entwurf) => void;
   onDelete: (d: Entwurf) => void;
@@ -432,6 +583,31 @@ function ResultView({
         </>
       }
     >
+      {felder.modus === "ki" && felder.ki && (
+        <section aria-label="Von der KI" className="grid gap-3">
+          <p className="text-sm text-muted-foreground" data-testid="cb-ki-hinweis">
+            {KI_HINWEIS}
+          </p>
+          <div role="group" aria-label="Hook wählen" className="grid gap-2 sm:grid-cols-2">
+            {felder.ki.hooks.map((h, i) => (
+              <Button
+                key={i}
+                type="button"
+                variant={felder.ki?.hook === i ? "default" : "outline"}
+                aria-pressed={felder.ki?.hook === i}
+                className="h-auto justify-start whitespace-normal py-3 text-left"
+                onClick={() => onChooseHook(i as 0 | 1)}
+              >
+                <span>
+                  <span className="eyebrow block">Hook {i === 0 ? "A" : "B"}</span>
+                  {h}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div role="group" aria-label="Plattform" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {PLATFORM_KEYS.map((p) => (
           <Button key={p} type="button" variant={p === platform ? "default" : "outline"} aria-pressed={p === platform} onClick={() => setPlatform(p)}>
@@ -481,6 +657,13 @@ function CaptionFlow() {
   const { profile, ready: profileReady } = useProfile();
   const { value: saved, ready, set } = useLocalJson(STORAGE_KEY, parseState);
 
+  // useGenerator hält seine Optionen fest; die Angaben für das CRM kommen darum über einen Ref.
+  const felderRef = useRef<Felder>(saved.felder);
+  const gen = useGenerator(postGenerator, {
+    eingabe: () => eingabeText(felderRef.current),
+    ausgabe: (o) => ausgabeText(captionTexts({ ...felderRef.current, ki: kiTextVon(o) })),
+  });
+
   // Die Angaben leben im Entwurf; der Speicher folgt mit etwas Verzögerung (nicht bei jedem Tastendruck).
   const [draft, setDraft] = useState<Felder | null>(null);
   const form = draft ?? saved.felder;
@@ -517,7 +700,13 @@ function CaptionFlow() {
     setError(null);
   };
 
-  const chooseAnrede = (a: Anrede) => edit({ anrede: a, cta: switchCta(form.ziel, form.cta, anrede, a) });
+  const setFragen = (patch: Partial<KiFragen>) => edit({ fragen: { ...form.fragen, ...patch } });
+  const chooseModus = (modus: Modus) => edit({ modus });
+  const chooseAnrede = (a: Anrede) =>
+    edit({
+      anrede: a,
+      ...(form.modus === "selbst" ? { cta: switchCta(form.ziel, form.cta, anrede, a) } : {}),
+    });
 
   function showProblem(problem: Problem) {
     setError(problem.message);
@@ -561,22 +750,68 @@ function CaptionFlow() {
       if (!(await ctx.ensureEmail())) return;
       const felder: Felder = { ...form, anrede };
       shouldFocus.current = "heading";
-      set({ v: 1, phase: "result", felder, entwuerfe: savedRef.current.entwuerfe });
+      set({
+        v: 1,
+        phase: "result",
+        felder,
+        entwuerfe: savedRef.current.entwuerfe,
+      });
       setDraft(null);
-      void ctx.sendResult({ eingabe: eingabeText(felder), ausgabe: ausgabeText(captionTexts(felder)) });
+      void ctx.sendResult({
+        eingabe: eingabeText(felder),
+        ausgabe: ausgabeText(captionTexts(felder)),
+      });
     } finally {
       setBusy(false);
     }
   }
+
+  async function createKi() {
+    const problem = kiProblem({ firma: profile.firma }, form.fragen);
+    if (problem) {
+      setError(problem.message);
+      document.getElementById(problem.fieldId)?.focus();
+      return;
+    }
+    setError(null);
+    gen.clearError();
+    const felder: Felder = { ...form, modus: "ki", anrede, ki: null };
+    felderRef.current = felder;
+    // generate() macht Fenster, Anfrage, Wiederholung bei 403 und CRM selbst; bei einem Fehler steht gen.error.
+    const out = await gen.generate(kiInput(profile, felder.fragen, anrede));
+    if (!out) return;
+    shouldFocus.current = "heading";
+    set({
+      v: 1,
+      phase: "result",
+      felder: { ...felder, ki: kiTextVon(out) },
+      entwuerfe: savedRef.current.entwuerfe,
+    });
+    setDraft(null);
+  }
+
+  const chooseHook = (hook: 0 | 1) => {
+    const ki = saved.felder.ki;
+    if (ki) set({ ...saved, felder: { ...saved.felder, ki: { ...ki, hook } } });
+  };
 
   const loadDraft = (d: Entwurf) => {
     // Ein geladener Entwurf ist kein neues Ergebnis: nichts geht ins CRM.
     shouldFocus.current = "heading";
     setDraft(null);
     setError(null);
-    set({ v: 1, phase: "result", felder: d.felder, entwuerfe: savedRef.current.entwuerfe });
+    set({
+      v: 1,
+      phase: "result",
+      felder: d.felder,
+      entwuerfe: savedRef.current.entwuerfe,
+    });
   };
-  const deleteDraft = (d: Entwurf) => set({ ...savedRef.current, entwuerfe: removeDraft(savedRef.current.entwuerfe, d.id) });
+  const deleteDraft = (d: Entwurf) =>
+    set({
+      ...savedRef.current,
+      entwuerfe: removeDraft(savedRef.current.entwuerfe, d.id),
+    });
 
   if (ready && saved.phase === "result") {
     return (
@@ -584,7 +819,13 @@ function CaptionFlow() {
         felder={saved.felder}
         entwuerfe={saved.entwuerfe}
         headingRef={headingRef}
-        onSaveDraft={() => set({ ...saved, entwuerfe: addDraft(saved.entwuerfe, newDraft(saved.felder, new Date(), saved.entwuerfe)) })}
+        onChooseHook={chooseHook}
+        onSaveDraft={() =>
+          set({
+            ...saved,
+            entwuerfe: addDraft(saved.entwuerfe, newDraft(saved.felder, new Date(), saved.entwuerfe)),
+          })
+        }
         onLoad={loadDraft}
         onDelete={deleteDraft}
         onEdit={() => {
@@ -598,14 +839,17 @@ function CaptionFlow() {
           setDraft(null);
           setError(null);
           setStep(1);
-          set({ ...EMPTY_STATE, entwuerfe: saved.entwuerfe });
+          set({ ...EMPTY_STATE, felder: { ...EMPTY_STATE.felder, modus: saved.felder.modus }, entwuerfe: saved.entwuerfe });
         }}
       />
     );
   }
 
-  const disabled = !ready || busy;
+  const kiBusy = gen.busy;
+  const disabled = !ready || busy || kiBusy;
   const stepProps: StepProps = { form, anrede, edit, disabled };
+  const namen = hinweisNamen(profilTeile(profile));
+  const shownError = error ?? gen.error;
 
   return (
     <div className="grid gap-6">
@@ -615,13 +859,34 @@ function CaptionFlow() {
         aria-busy={!ready || !profileReady}
         onSubmit={(e) => {
           e.preventDefault();
-          if (step < 3) next();
+          if (form.modus === "ki") void createKi();
+          else if (step < 3) next();
           else void create();
         }}
       >
         <div className="content">
           <Intro />
         </div>
+
+        <RadioGroup<Modus>
+          legend="Wie willst du die Caption schreiben?"
+          name="cb-modus"
+          options={[
+            {
+              value: "ki",
+              label: "Mit KI, in drei Fragen",
+              hint: "Du beschreibst die Idee, die KI schreibt Hook, Hauptteil und Aufforderung.",
+            },
+            {
+              value: "selbst",
+              label: "Selbst, in drei Schritten",
+              hint: "Du wählst Hook-Formel und Aufbau und schreibst die Felder in deinen Worten.",
+            },
+          ]}
+          value={form.modus}
+          onChange={chooseModus}
+          disabled={disabled}
+        />
 
         <RadioGroup<Anrede>
           legend="Anrede"
@@ -634,39 +899,56 @@ function CaptionFlow() {
           disabled={disabled}
         />
 
-        <div className="grid gap-3">
-          <p role="status" aria-live="polite" className="mono text-sm" data-testid="cb-step">
-            Schritt {step} von 3
-          </p>
-          <div className="grid grid-cols-3 gap-1" aria-hidden="true">
-            {[1, 2, 3].map((n) => (
-              <span key={n} className={`h-1 rounded-full ${n <= step ? "bg-ink" : "bg-line"}`} />
-            ))}
-          </div>
-          <p ref={stepRef} tabIndex={-1} className="font-heading text-lg font-medium outline-none" data-testid="cb-step-title">
-            {STEP_TITLES[step - 1]}
-          </p>
-        </div>
+        {form.modus === "ki" && (
+          <KiStep
+            fragen={form.fragen}
+            hashtags={form.hashtags}
+            setFragen={setFragen}
+            setHashtags={(hashtags) => edit({ hashtags })}
+            disabled={disabled}
+            joinedProfil={namen.length > 0 ? joinNamen(namen) : ""}
+          />
+        )}
 
-        {step === 1 && <HookStep {...stepProps} />}
-        {step === 2 && <TeilStep {...stepProps} />}
-        {step === 3 && <CtaStep {...stepProps} />}
+        {form.modus === "selbst" && (
+          <div className="grid gap-3">
+            <p role="status" aria-live="polite" className="mono text-sm" data-testid="cb-step">
+              Schritt {step} von 3
+            </p>
+            <div className="grid grid-cols-3 gap-1" aria-hidden="true">
+              {[1, 2, 3].map((n) => (
+                <span key={n} className={`h-1 rounded-full ${n <= step ? "bg-ink" : "bg-line"}`} />
+              ))}
+            </div>
+            <p ref={stepRef} tabIndex={-1} className="font-heading text-lg font-medium outline-none" data-testid="cb-step-title">
+              {STEP_TITLES[step - 1]}
+            </p>
+          </div>
+        )}
+
+        {form.modus === "selbst" && step === 1 && <HookStep {...stepProps} />}
+        {form.modus === "selbst" && step === 2 && <TeilStep {...stepProps} />}
+        {form.modus === "selbst" && step === 3 && <CtaStep {...stepProps} />}
 
         <p id="cb-error" role="alert" className="min-h-6 text-destructive">
-          {error}
+          {shownError}
         </p>
 
         <div className="flex flex-wrap items-center gap-3">
-          {step > 1 && (
+          {form.modus === "selbst" && step > 1 && (
             <Button type="button" variant="outline" size="lg" onClick={back} disabled={disabled}>
               Zurück
             </Button>
           )}
-          <Button type="submit" size="lg" disabled={disabled}>
-            {step < 3 ? "Weiter" : "Caption erstellen"}
+          <Button type="submit" size="lg" disabled={disabled || !profileReady}>
+            {form.modus === "ki" ? (kiBusy ? "Die KI schreibt …" : "Caption schreiben") : step < 3 ? "Weiter" : "Caption erstellen"}
           </Button>
-          <span className="text-sm text-muted-foreground">Dauert etwa vier Minuten.</span>
+          <span className="text-sm text-muted-foreground">{form.modus === "ki" ? "Dauert meist unter einer Minute." : "Dauert etwa vier Minuten."}</span>
         </div>
+
+        <p role="status" aria-live="polite" className="sr-only">
+          {kiBusy ? "Die KI schreibt deine Caption." : ""}
+        </p>
       </form>
 
       {saved.entwuerfe.length > 0 && <Entwuerfe list={saved.entwuerfe} onLoad={loadDraft} onDelete={deleteDraft} />}
