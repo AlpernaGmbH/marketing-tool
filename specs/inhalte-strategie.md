@@ -74,3 +74,6 @@ CRM: `eingabe` ist je Zeile «Frage: Antwort» (Betrieb zuerst), `ausgabe` das M
 - Keine Zahlenziele und keine Benchmarks: Die Messgrössen sind in Worten, die Richtwerte legt die Person fest.
 - Keine Website-Analyse und keine Wettbewerbsbeobachtung.
 - Kein Budget- und Zeitplan (dafür «Posting-Plan nach Zeitbudget»).
+
+## Bildschirm-Bausteine (Stand 09.10.2026, Charge C6)
+Zielgruppen und Themen erscheinen als Karten (`cards`), die ersten 90 Tage als drei Schritte (`steps`, eine Karte je Monat, die Aufgaben untereinander). Ziele und Kanalrollen bleiben Tabellen. In PDF, Word und Markdown werden Karten zu Listen «Name: Text» und Schritte zu einer nummerierten Liste (Aufgaben durch Semikolon getrennt).

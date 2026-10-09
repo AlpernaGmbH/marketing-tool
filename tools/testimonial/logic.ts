@@ -703,6 +703,30 @@ export function fallstudieOf(r: ReferenzInput): DocumentModel {
   };
 }
 
+/**
+ * Die Fallstudie für den Bildschirm: Ausgangslage, Aufgabe, Vorgehen und Ergebnis erscheinen als vier nummerierte Schritte statt als
+ * vier Überschriften mit Absatz. Zitat, Quelle und das Zitat im Wortlaut bleiben, wie sie sind. PDF und Word behalten die Überschriften.
+ */
+export function fallstudieBildschirm(doc: DocumentModel): DocBlock[] {
+  const abschnitte = [ABSCHNITT_AUSGANG, ABSCHNITT_AUFGABE, ABSCHNITT_VORGEHEN, ABSCHNITT_ERGEBNIS];
+  const out: DocBlock[] = [];
+  const schritte: { title: string; text: string }[] = [];
+  let platz = -1;
+  for (let i = 0; i < doc.blocks.length; i++) {
+    const b = doc.blocks[i];
+    const next = doc.blocks[i + 1];
+    if (b.type === "heading" && abschnitte.includes(b.text) && next?.type === "paragraph") {
+      if (platz < 0) platz = out.length;
+      schritte.push({ title: b.text, text: next.text });
+      i++;
+      continue;
+    }
+    out.push(b);
+  }
+  if (schritte.length > 0) out.splice(platz, 0, { type: "steps", items: schritte });
+  return out;
+}
+
 export const PRUEF_SCHLUSS = "Bei Zweifeln frag eine Fachperson.";
 
 /** Die Prüfliste vor der Veröffentlichung: nur Fragen, keine Rechtsaussagen. */

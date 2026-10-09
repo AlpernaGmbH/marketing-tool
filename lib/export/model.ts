@@ -42,6 +42,8 @@ export type VisualBlock =
 export type DocBlock = BasicBlock | VisualBlock;
 
 const num = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
+/** Zeilenumbrüche in Texten von Karten und Schritten werden in Datei und Liste zu einem Leerzeichen (eine Listenzeile bleibt eine Zeile). */
+const oneLine = (s: string) => s.replace(/([.!?:;])\s*\n+\s*/g, "$1 ").replace(/\s*\n+\s*/g, "; ");
 
 /** Macht aus Bildschirm-Bausteinen Grundbausteine; Grundbausteine bleiben unverändert. */
 export function flattenBlocks(blocks: DocBlock[]): BasicBlock[] {
@@ -65,12 +67,12 @@ export function flattenBlocks(blocks: DocBlock[]): BasicBlock[] {
         break;
       case "steps":
         title(b.title);
-        out.push({ type: "list", ordered: true, items: b.items.map((it) => `${it.title}: ${it.text}`) });
+        out.push({ type: "list", ordered: true, items: b.items.map((it) => `${it.title}: ${oneLine(it.text)}`) });
         break;
       case "cards":
       case "slides":
         title(b.title);
-        out.push({ type: "list", items: b.items.map((it) => `${it.title}${it.tag ? ` (${it.tag})` : ""}${it.text ? `: ${it.text}` : ""}`) });
+        out.push({ type: "list", items: b.items.map((it) => `${it.title}${it.tag ? ` (${it.tag})` : ""}${it.text ? `: ${oneLine(it.text)}` : ""}`) });
         break;
       case "split":
         title(b.title);

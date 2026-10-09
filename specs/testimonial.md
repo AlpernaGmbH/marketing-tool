@@ -122,3 +122,6 @@ Mindestens 40 Fälle in `logic.test.ts`, dazu `Tool.test.tsx`: Satzteilung (Kür
 - Keine Bilder, kein Foto-Zuschnitt, keine grafische Kachel als PNG (die Kachel ist Text für die Website).
 - Keine Hashtags, keine Plattform-Faltkante für die Kachel.
 - Keine Speicherung von Zitaten auf dem Server und keine Sammlung mehrerer Zitate.
+
+## Bildschirm-Bausteine (Stand 09.10.2026, Charge C6)
+Die Fallstudie erscheint am Bildschirm mit Ausgangslage, Aufgabe, Vorgehen und Ergebnis als vier nummerierte Schritte (`fallstudieBildschirm`, `steps`); Zitat, Quelle und «Das Zitat im Wortlaut» bleiben. Die Datei (PDF, Word) behält die Überschriften der Fallstudie.

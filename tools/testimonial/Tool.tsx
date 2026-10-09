@@ -42,6 +42,7 @@ import {
   cleanZitat,
   eingabeAnfrage,
   eingabeReferenz,
+  fallstudieBildschirm,
   frageId,
   kanalLabel,
   leitfadenText,
@@ -334,7 +335,7 @@ function ReferenzResult({
           <p lang="de-CH" className="font-heading text-lg font-medium" data-testid="tb-fallstudie-titel">
             {res.dokument.title}
           </p>
-          <DocView blocks={res.dokument.blocks} baseLevel={5} />
+          <DocView blocks={fallstudieBildschirm(res.dokument)} baseLevel={5} />
         </div>
         <DocumentExport model={res.dokument} />
       </section>

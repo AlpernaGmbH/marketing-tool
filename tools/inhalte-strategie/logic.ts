@@ -337,9 +337,10 @@ export function toDocument(output: StrategieOutput, input: StrategieInput): Docu
     { type: "heading", level: 1, text: KAPITEL.ziele },
     { type: "table", header: ["Ziel", "Messgrösse"], widths: [3, 2], rows: output.ziele.map((z) => [z.ziel, z.messgroesse]) },
     { type: "heading", level: 1, text: KAPITEL.zielgruppen },
-    { type: "list", items: output.zielgruppen.map((z) => `${z.name}: ${z.bedarf}`) },
+    // Bildschirm: Karten. In PDF, Word und Markdown werden sie zu einer Liste «Name (Marke): Text».
+    { type: "cards", items: output.zielgruppen.map((z) => ({ title: z.name, text: z.bedarf })) },
     { type: "heading", level: 1, text: KAPITEL.themen },
-    { type: "list", items: output.saeulen.map((s) => `${s.name}: ${s.rolle}`) },
+    { type: "cards", items: output.saeulen.map((s) => ({ title: s.name, text: s.rolle })) },
     { type: "heading", level: 1, text: KAPITEL.kanaele },
     {
       type: "table",
@@ -351,9 +352,8 @@ export function toDocument(output: StrategieOutput, input: StrategieInput): Docu
     { type: "paragraph", text: output.rhythmus.satz },
     { type: "heading", level: 1, text: KAPITEL.plan },
   ];
-  for (const p of output.plan90) {
-    blocks.push({ type: "paragraph", text: `${p.monat}: ${p.schwerpunkt}` }, { type: "list", items: p.aufgaben });
-  }
+  // Ein Schritt je Monat; die Aufgaben stehen untereinander (in der Datei durch Semikolon getrennt).
+  blocks.push({ type: "steps", items: output.plan90.map((p) => ({ title: `${p.monat}: ${p.schwerpunkt}`, text: p.aufgaben.join("\n") })) });
   blocks.push(
     { type: "heading", level: 1, text: KAPITEL.messung },
     { type: "paragraph", text: "Gemessen wird nur, was ihr selbst zählt. Legt die Richtwerte selbst fest; Vergleichswerte von aussen stehen hier nicht." },

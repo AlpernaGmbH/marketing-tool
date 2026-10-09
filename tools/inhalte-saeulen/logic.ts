@@ -197,14 +197,19 @@ export function toDocument(output: SaeulenOutput, input: SaeulenInput | null): D
     },
     { type: "paragraph", text: KI_HINWEIS },
   ];
-  output.saeulen.forEach((s, i) => {
-    blocks.push(
-      { type: "heading", level: 1, text: `${i + 1}. ${s.name}` },
-      { type: "paragraph", text: s.beschreibung },
-      { type: "list", items: s.beispiele },
-      // pctCH mit Standard-Dezimalen: pctCH(30) → «30 %» (mit 0 Dezimalen würde die Endnull wegfallen).
-      { type: "paragraph", text: `Anteil ${pctCH(s.anteil)} der Beiträge, Ziel: ${ZIEL_LABELS[s.ziel]}` },
-    );
+  // Bildschirm: Kuchen mit den Anteilen und eine Karte je Säule (Beschreibung, Beispiele, Anteil und Ziel). In PDF, Word und Markdown werden
+  // sie zu Tabelle und Liste; pctCH mit Standard-Dezimalen: pctCH(30) → «30 %» (mit 0 Dezimalen würde die Endnull wegfallen).
+  if (output.saeulen.length > 1) {
+    blocks.push({ type: "split", title: "Verteilung der Beiträge", items: output.saeulen.map((s) => ({ label: s.name, value: s.anteil })) });
+  }
+  blocks.push({
+    type: "cards",
+    title: "Deine Themensäulen",
+    items: output.saeulen.map((s, i) => ({
+      title: `${i + 1}. ${s.name}`,
+      tag: `${pctCH(s.anteil)} der Beiträge, Ziel: ${ZIEL_LABELS[s.ziel]}`,
+      text: `${s.beschreibung}\nBeispiele: ${s.beispiele.join("; ")}`,
+    })),
   });
   blocks.push(
     { type: "heading", level: 1, text: "Rhythmus" },

@@ -97,7 +97,7 @@ export function Steps({ title, items }: Omit<Of<"steps">, "type">) {
               {i + 1}
             </span>
             <span className="font-heading font-medium">{it.title}</span>
-            <span className="text-muted-foreground">{it.text}</span>
+            <span className="whitespace-pre-line text-muted-foreground">{it.text}</span>
           </li>
         ))}
       </ol>
@@ -115,7 +115,7 @@ export function Cards({ title, items }: Omit<Of<"cards">, "type">) {
           <li key={`${i}-${it.title}`} className="grid content-start gap-2 rounded-xl border border-line bg-paper p-5">
             {it.tag && <span className="eyebrow">{it.tag}</span>}
             <span className="font-heading font-medium">{it.title}</span>
-            {it.text && <span className="text-muted-foreground">{it.text}</span>}
+            {it.text && <span className="whitespace-pre-line text-muted-foreground">{it.text}</span>}
           </li>
         ))}
       </ul>

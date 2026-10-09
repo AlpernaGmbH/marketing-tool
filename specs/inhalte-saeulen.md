@@ -82,3 +82,6 @@ Vor dem Knopf steht, was an die KI geht: Betrieb, Branche, Ort, Angebot, Alltag,
 - Säulen im Profil ersetzen oder zusammenführen: nur ins leere Feld; ändern über /profil.
 - Bilder oder Videos erzeugen.
 - Rechtsaussagen (Regel 8): keine.
+
+## Bildschirm-Bausteine (Stand 09.10.2026, Charge C6)
+Das Dokument zeigt am Bildschirm einen Kuchen «Verteilung der Beiträge» (`split`, nur ab zwei Säulen) und die Säulen als Karten (`cards`: Titel «1. Name», Marke «35 % der Beiträge, Ziel: Anfragen», Text Beschreibung und «Beispiele: …»). In PDF, Word und Markdown werden Kuchen zur Tabelle und Karten zur Liste (Zeilenumbruch in einer Karte wird zu Leerzeichen oder Semikolon, `flattenBlocks`), der Inhalt ist derselbe.

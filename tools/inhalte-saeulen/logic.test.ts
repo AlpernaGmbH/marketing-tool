@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { toMarkdown } from "@/lib/export/model";
 import type { Saeule, SaeulenInput, SaeulenOutput } from "./generator";
 import {
   BEITRAEGE,
@@ -219,13 +220,18 @@ describe("inhalte-saeulen: Dokument", () => {
       ],
     });
     expect(doc.blocks[1]).toEqual({ type: "paragraph", text: KI_HINWEIS });
+    // Bildschirm: Kuchen mit den Anteilen und eine Karte je Säule
+    expect(doc.blocks[2]).toEqual({ type: "split", title: "Verteilung der Beiträge", items: output.saeulen.map((s) => ({ label: s.name, value: s.anteil })) });
+    const karten = doc.blocks[3];
+    expect(karten.type).toBe("cards");
+    if (karten.type !== "cards") throw new Error("cards erwartet");
+    expect(karten.items).toHaveLength(output.saeulen.length);
     output.saeulen.forEach((s, i) => {
-      expect(doc.blocks).toContainEqual({ type: "heading", level: 1, text: `${i + 1}. ${s.name}` });
-      expect(doc.blocks).toContainEqual({ type: "paragraph", text: s.beschreibung });
-      expect(doc.blocks).toContainEqual({ type: "list", items: s.beispiele });
+      expect(karten.items[i].title).toBe(`${i + 1}. ${s.name}`);
+      expect(karten.items[i].text).toBe(`${s.beschreibung}\nBeispiele: ${s.beispiele.join("; ")}`);
     });
-    expect(doc.blocks).toContainEqual({ type: "paragraph", text: "Anteil 35 % der Beiträge, Ziel: Anfragen" });
-    expect(doc.blocks).toContainEqual({ type: "paragraph", text: "Anteil 20 % der Beiträge, Ziel: Bindung" });
+    expect(karten.items[0].tag).toBe("35 % der Beiträge, Ziel: Anfragen");
+    expect(karten.items[2].tag).toBe("20 % der Beiträge, Ziel: Bindung");
     expect(doc.blocks).toContainEqual({ type: "heading", level: 1, text: "Rhythmus" });
     expect(doc.blocks).toContainEqual({ type: "paragraph", text: output.rhythmus.satz });
     expect(doc.blocks).toContainEqual({
@@ -239,8 +245,16 @@ describe("inhalte-saeulen: Dokument", () => {
     });
     expect(doc.blocks).toContainEqual({ type: "heading", level: 1, text: "Das posten wir nicht" });
     expect(doc.blocks[doc.blocks.length - 1]).toEqual({ type: "list", items: output.niemals });
-    // Je Säule vier Blöcke, dazu Facts, Hinweis, Rhythmus (3) und «niemals» (2).
-    expect(doc.blocks).toHaveLength(2 + output.saeulen.length * 4 + 3 + 2);
+    // Facts, Hinweis, Kuchen, Karten, Rhythmus (3) und «niemals» (2).
+    expect(doc.blocks).toHaveLength(2 + 2 + 3 + 2);
+    // In der Datei bleibt alles: jede Säule mit Beschreibung, Beispielen, Anteil und Ziel
+    const md = toMarkdown(doc);
+    for (const s of output.saeulen) {
+      expect(md).toContain(s.name);
+      expect(md).toContain(s.beschreibung);
+      for (const b of s.beispiele) expect(md).toContain(b);
+    }
+    expect(md).toContain("35 %");
   });
   it("kommt ohne Eingabe und ohne Ort aus", () => {
     const ohne = toDocument(output, null);
@@ -254,7 +268,7 @@ describe("inhalte-saeulen: Dokument", () => {
         { label: "Beiträge pro Woche", value: "keine Angabe" },
       ],
     });
-    expect(ohne.blocks).toContainEqual({ type: "heading", level: 1, text: "1. Fassaden vorher und nachher" });
+    expect(JSON.stringify(ohne.blocks)).toContain("1. Fassaden vorher und nachher");
     const ohneOrt = toDocument(output, { ...input, ort: "" });
     expect(ohneOrt.blocks[0]).toMatchObject({ items: [{ label: "Betrieb", value: "Malerei Keller" }, { label: "Kanäle", value: "Instagram, Google-Beitrag" }, { label: "Beiträge pro Woche", value: "2" }] });
   });
@@ -269,9 +283,10 @@ describe("inhalte-saeulen: Dokument", () => {
     const md = reportMarkdown(output, input);
     expect(md.startsWith("# Themensäulen\n\n_Für Malerei Keller_")).toBe(true);
     expect(md).toContain("- **Kanäle:** Instagram, Google-Beitrag");
-    expect(md).toContain("## 1. Fassaden vorher und nachher");
-    expect(md).toContain("- Ein Haus in Gossau in drei Bildern: vor, während und nach dem Gerüst.");
-    expect(md).toContain("Anteil 35 % der Beiträge, Ziel: Anfragen");
+    expect(md).toContain("### Deine Themensäulen");
+    expect(md).toContain("- 1. Fassaden vorher und nachher (35 % der Beiträge, Ziel: Anfragen): ");
+    expect(md).toContain("Beispiele: Ein Haus in Gossau in drei Bildern: vor, während und nach dem Gerüst.");
+    expect(md).toContain("| Fassaden vorher und nachher | 35 % |"); // Kuchen als Tabelle
     expect(md).toContain("| Tag | Säule | Kanal |");
     expect(md).toContain("| Dienstag | Fassaden vorher und nachher | Instagram |");
     expect(md).toContain("## Das posten wir nicht\n\n- Memes");

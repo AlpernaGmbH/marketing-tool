@@ -36,6 +36,7 @@ import {
   eingabeAnfrage,
   eingabeReferenz,
   ersterSatz,
+  fallstudieBildschirm,
   fallstudieOf,
   floskelHinweise,
   freigabeFrage,
@@ -792,5 +793,29 @@ describe("testimonial: Konfiguration und Seitentext", () => {
     const n = (`${c.frontmatter.h1}\n${c.body}`.toLowerCase().match(/testimonial/g) ?? []).length;
     expect(n).toBeGreaterThanOrEqual(3);
     expect(n).toBeLessThanOrEqual(5);
+  });
+});
+
+describe("testimonial: Fallstudie am Bildschirm", () => {
+  it("zeigt Ausgangslage, Aufgabe, Vorgehen und Ergebnis als vier Schritte und lässt Zitat und Wortlaut stehen", () => {
+    const doc = fallstudieOf(KELLER);
+    const screen = fallstudieBildschirm(doc);
+    const steps = screen.find((b) => b.type === "steps");
+    expect(steps?.type === "steps" && steps.items.map((s) => s.title)).toEqual(["Ausgangslage", "Aufgabe", "Vorgehen", "Ergebnis"]);
+    // Zitat und Quelle stehen vor den Schritten, der Wortlaut danach
+    expect(screen[0]).toEqual(doc.blocks[0]);
+    expect(screen.findIndex((b) => b.type === "steps")).toBe(2);
+    expect(screen.some((b) => b.type === "heading" && b.text === "Das Zitat im Wortlaut")).toBe(true);
+    expect(screen.some((b) => b.type === "heading" && b.text === "Ausgangslage")).toBe(false);
+    // Die Datei behält die Überschriften
+    expect(doc.blocks.some((b) => b.type === "heading" && b.text === "Ausgangslage")).toBe(true);
+  });
+
+  it("lässt das Ergebnis weg, wenn es keins gibt, und ändert ein Dokument ohne diese Abschnitte nicht", () => {
+    const ohne = fallstudieBildschirm(fallstudieOf({ ...KELLER, ergebnis: "" }));
+    const steps = ohne.find((b) => b.type === "steps");
+    expect(steps?.type === "steps" && steps.items.map((s) => s.title)).toEqual(["Ausgangslage", "Aufgabe", "Vorgehen"]);
+    const fremd = { title: "x", filename: "x", blocks: [{ type: "paragraph", text: "nur Text" } as const] };
+    expect(fallstudieBildschirm(fremd)).toEqual(fremd.blocks);
   });
 });

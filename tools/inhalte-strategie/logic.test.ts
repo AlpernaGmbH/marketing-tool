@@ -325,7 +325,7 @@ describe("inhalte-strategie: toDocument", () => {
     ]);
     expect(Object.values(KAPITEL)).toEqual(headings);
   });
-  it("zeigt Ziele und Kanäle als Tabellen", () => {
+  it("zeigt Ziele und Kanalrollen als Tabellen", () => {
     const tables = doc.blocks.filter((b) => b.type === "table");
     expect(tables).toHaveLength(2);
     expect(tables[0]).toMatchObject({ header: ["Ziel", "Messgrösse"], rows: [[output().ziele[0].ziel, output().ziele[0].messgroesse], [output().ziele[1].ziel, output().ziele[1].messgroesse]] });
@@ -337,18 +337,33 @@ describe("inhalte-strategie: toDocument", () => {
       ],
     });
   });
-  it("zeigt Zielgruppen und Themen als Listen mit «Name: Text»", () => {
-    const lists = doc.blocks.filter((b) => b.type === "list");
-    expect(lists[0]).toMatchObject({ items: [`Hausbesitzer in Gossau: ${output().zielgruppen[0].bedarf}`] });
-    expect(lists[1]).toMatchObject({ items: output().saeulen.map((s) => `${s.name}: ${s.rolle}`) });
+  it("zeigt Zielgruppen und Themen als Karten mit Name und Text", () => {
+    const cards = doc.blocks.filter((b) => b.type === "cards");
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toEqual({ type: "cards", items: [{ title: "Hausbesitzer in Gossau", text: output().zielgruppen[0].bedarf }] });
+    expect(cards[1]).toEqual({ type: "cards", items: output().saeulen.map((s) => ({ title: s.name, text: s.rolle })) });
   });
-  it("zeigt die ersten 90 Tage als drei Absätze mit je einer Liste", () => {
+  it("zeigt die ersten 90 Tage als drei Schritte, einen je Monat, mit den Aufgaben untereinander", () => {
     const i = doc.blocks.findIndex((b) => b.type === "heading" && b.text === KAPITEL.plan);
-    const plan = doc.blocks.slice(i + 1, i + 7);
-    expect(plan.map((b) => b.type)).toEqual(["paragraph", "list", "paragraph", "list", "paragraph", "list"]);
-    expect(plan[0]).toEqual({ type: "paragraph", text: `Monat 1: ${output().plan90[0].schwerpunkt}` });
-    expect(plan[1]).toEqual({ type: "list", items: output().plan90[0].aufgaben });
-    expect(plan[4]).toEqual({ type: "paragraph", text: `Monat 3: ${output().plan90[2].schwerpunkt}` });
+    const plan = doc.blocks[i + 1];
+    expect(plan.type).toBe("steps");
+    if (plan.type !== "steps") throw new Error("steps erwartet");
+    expect(plan.items).toHaveLength(3);
+    expect(plan.items[0]).toEqual({ title: `Monat 1: ${output().plan90[0].schwerpunkt}`, text: output().plan90[0].aufgaben.join("\n") });
+    expect(plan.items[2].title).toBe(`Monat 3: ${output().plan90[2].schwerpunkt}`);
+  });
+  it("macht daraus in der Datei Listen mit «Name: Text», Aufgaben durch Semikolon getrennt, und lässt nichts weg", () => {
+    const md = toMarkdown(doc);
+    expect(md).toContain(`- Hausbesitzer in Gossau: ${output().zielgruppen[0].bedarf}`);
+    for (const s of output().saeulen) expect(md).toContain(`- ${s.name}: ${s.rolle}`);
+    for (const p of output().plan90) {
+      expect(md).toContain(`${p.monat}: ${p.schwerpunkt}`);
+      for (const a of p.aufgaben) expect(md).toContain(a);
+    }
+    // Der Schritt eines Monats bleibt eine Zeile
+    const zeile = md.split("\n").find((l) => l.includes(`${output().plan90[0].monat}: ${output().plan90[0].schwerpunkt}`))!;
+    expect(zeile.startsWith("1. ")).toBe(true);
+    expect(zeile).toContain(output().plan90[0].aufgaben[0]);
   });
   it("schliesst mit der Messung und «Das lassen wir weg» und sagt, dass die Richtwerte die Person festlegt", () => {
     const last = doc.blocks.slice(-4);
