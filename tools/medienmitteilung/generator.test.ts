@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkGenerated, placeholdersIn, systemPrompt } from "@/lib/generator";
+import { checkGenerated, placeholdersIn, repairHint, systemPrompt } from "@/lib/generator";
 import { BEISPIEL_INPUT, BEISPIEL_OUTPUT } from "./beispiel";
 import {
   ANLASS_KEYS,
@@ -9,7 +9,9 @@ import {
   LEAD_MAX_WORDS,
   betriebKern,
   checkMitteilung,
+  fremdeWertungen,
   fremdeZahlen,
+  fuellSatz,
   gesamtWoerter,
   leadNenntBetrieb,
   leadNenntOrt,
@@ -17,6 +19,7 @@ import {
   medienGenerator,
   medienInput,
   medienOutput,
+  metaSatz,
   numbersIn,
   ortSchluessel,
   wannSchluessel,
@@ -125,6 +128,25 @@ describe("medienmitteilung: Wörter und Namen", () => {
   });
 });
 
+describe("medienmitteilung: Anweisung und Rückmeldung zu Meta- und Füllsätzen", () => {
+  it("verbietet Metasätze, Füllsätze und fremde Wertungen in der Anweisung", () => {
+    const system = systemPrompt(medienGenerator);
+    expect(system).toContain("Nur Fakten aus den Angaben");
+    expect(system).toContain("Diese Medienmitteilung informiert");
+    expect(system).toContain("stösst auf grosses Interesse");
+    expect(system).toContain("wertenden Wörter");
+  });
+  it("gibt der KI bei jeder neuen Kennung eine eigene Rückmeldung ohne Teile des Entwurfs", () => {
+    for (const kennung of ["meta", "fuell", "wertung"]) {
+      const hint = repairHint("check", kennung);
+      expect(hint).toContain("Dein Entwurf hat die Prüfung nicht bestanden.");
+      expect(hint).not.toContain("Kennung:");
+      expect(hint).toContain("korrigierten JSON-Objekt");
+    }
+    expect(repairHint("check", "laenge")).toContain("Kennung: laenge");
+  });
+});
+
 describe("medienmitteilung: checkMitteilung", () => {
   it("lässt den Beispiel-Entwurf durch (300 Wörter, Lead mit 30 Wörtern)", () => {
     expect(gesamtWoerter(BEISPIEL_OUTPUT)).toBe(300);
@@ -194,6 +216,66 @@ describe("medienmitteilung: checkMitteilung", () => {
     expect(zitatStimmt({ zitat: "" }, input)).toBe(true);
     expect(zitatStimmt({ zitat: "" }, { zitat: "" })).toBe(true);
     expect(zitatStimmt({ zitat: "Etwas ganz anderes" }, { zitat: "" })).toBe(false);
+  });
+  it("meta: verwirft Sätze über die Mitteilung, die Redaktion, Rückfragen und die Berichterstattung", () => {
+    const mit = (satz: string) => output({ text: [`${BEISPIEL_OUTPUT.text[0]} ${satz}`, ...BEISPIEL_OUTPUT.text.slice(1)] });
+    for (const satz of [
+      "Diese Medienmitteilung informiert über den Tag der offenen Tür.",
+      "Mit dieser Mitteilung laden wir die Region ein.",
+      "Wir freuen uns auf Ihre Berichterstattung.",
+      "Bei Rückfragen steht Anna Keller gerne zur Verfügung.",
+      "Weitere Informationen erhalten Sie auf Anfrage.",
+      "Die Redaktion ist herzlich eingeladen.",
+      "Bildmaterial steht zur Verfügung.",
+    ]) {
+      expect(checkMitteilung(mit(satz), input), satz).toBe("meta");
+    }
+    expect(metaSatz(mit("Wir freuen uns auf Ihre Berichterstattung."))).toBe("Bitte um Berichterstattung");
+  });
+  it("meta: das Bildangebot in der Bildzeile und das Zitat sind erlaubt", () => {
+    expect(metaSatz(BEISPIEL_OUTPUT)).toBeNull();
+    expect(BEISPIEL_OUTPUT.bildzeile).toMatch(/zur Verfügung/);
+    expect(checkMitteilung(output({ zitat: "Wir wollen den Leuten zeigen, wie wir arbeiten, und uns bei der Kundschaft bedanken." }), input)).toBeNull();
+  });
+  it("meta: was die Person selbst schreibt, ist kein Fehler des Entwurfs", () => {
+    const i = { ...input, was: `${input.was} Die Redaktion der Gossauer Zeitung ist eingeladen.` };
+    const o = output({ text: [`${BEISPIEL_OUTPUT.text[0]} Die Redaktion der Gossauer Zeitung ist eingeladen.`, ...BEISPIEL_OUTPUT.text.slice(1)] });
+    expect(metaSatz(o)).toBe("Satz über die Mitteilung oder die Redaktion");
+    expect(metaSatz(o, i)).toBeNull();
+  });
+  it("fuell: verwirft behauptete Nachfrage, Werbesprache und Füllsätze", () => {
+    const mit = (satz: string) => output({ text: [`${BEISPIEL_OUTPUT.text[0]} ${satz}`, ...BEISPIEL_OUTPUT.text.slice(1)] });
+    for (const satz of [
+      "Der Anlass stösst auf grosses Interesse.",
+      "Der Tag verspricht ein Highlight zu werden.",
+      "Für jeden Geschmack ist etwas dabei.",
+      "Für Jung und Alt ist etwas dabei.",
+      "Es wird ein unvergesslicher Tag.",
+      "Der Anlass bietet Raum für Begegnungen.",
+      "Das Fest sorgt für Stimmung.",
+      "Wir freuen uns auf viele Besucherinnen und Besucher.",
+      "Der Tag erfreut sich grosser Beliebtheit.",
+    ]) {
+      expect(checkMitteilung(mit(satz), input), satz).toBe("fuell");
+    }
+    expect(fuellSatz(BEISPIEL_OUTPUT)).toBeNull();
+    // «stösst auf» allein ist keine Behauptung
+    expect(checkMitteilung(output({ text: [`${BEISPIEL_OUTPUT.text[0]} Der Verkehr stösst auf eine Baustelle an der Wilerstrasse.`, ...BEISPIEL_OUTPUT.text.slice(1)] }), input)).not.toBe("fuell");
+  });
+  it("wertung: verwirft wertende Wörter, die nicht in den Angaben stehen, und lässt sie zu, wenn die Angaben sie nennen", () => {
+    const mit = (satz: string) => output({ text: [`${BEISPIEL_OUTPUT.text[0]} ${satz}`, ...BEISPIEL_OUTPUT.text.slice(1)] });
+    const o = mit("Die Malerei Keller ist ein traditionsreicher Betrieb.");
+    expect(checkMitteilung(o, input)).toBe("wertung");
+    expect(fremdeWertungen(o, input)).toEqual(["traditionsreich"]);
+    expect(checkMitteilung(mit("Es gibt ein spannendes Programm."), input)).toBe("wertung");
+    expect(fremdeWertungen(o, { ...input, positionierung: "Der traditionsreiche Malerbetrieb in Gossau." })).toEqual([]);
+    expect(checkMitteilung(o, { ...input, positionierung: "Der traditionsreiche Malerbetrieb in Gossau." })).toBeNull();
+    // Der Beispiel-Entwurf enthält keine fremde Wertung
+    expect(fremdeWertungen(BEISPIEL_OUTPUT, input)).toEqual([]);
+  });
+  it("meldet meta, fuell und wertung vor der Länge", () => {
+    const o = output({ text: ["Diese Medienmitteilung informiert über den Tag der offenen Tür in Gossau und seine Gäste. ".repeat(2), "y".repeat(100)] });
+    expect(checkMitteilung(o, input)).toBe("meta");
   });
   it("meldet den ersten Grund in fester Reihenfolge: Lead vor Zahl vor Länge", () => {
     const lang = `${BEISPIEL_OUTPUT.lead} ${Array.from({ length: 12 }, () => "Gossau").join(" ")} 99`;

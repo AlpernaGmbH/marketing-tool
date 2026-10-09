@@ -90,3 +90,13 @@ Jede grosse Textarea zeigt «n von max Zeichen, mindestens min» (`charCount`, j
 - Mehrere Sprachen (Französisch, Italienisch) und mehrere Varianten in einem Durchlauf.
 - Rechtsaussagen (Regel 8), etwa zu Bildrechten: keine; die Checkliste lässt nur die zitierte Person ihren Satz vor dem Versand lesen.
 - Schreiben ins Profil.
+
+## Sperre für Metasätze, Füllsätze und fremde Wertungen (Stand 09.10.2026, Charge C3)
+Rückmeldung vom 09.10.2026: Der Entwurf enthielt Sätze über die Mitteilung selbst («Diese Medienmitteilung informiert …», «Wir freuen uns auf Ihre Berichterstattung», «Bei Rückfragen …») und Füllsätze («stösst auf grosses Interesse», «für jeden etwas dabei»). Die Prüfung `checkMitteilung` (generator.ts) kennt dazu drei neue Kennungen, in dieser Reihenfolge nach «zahl» und vor «laenge»:
+- **meta:** Sätze über die Mitteilung, die Redaktion, Rückfragen, weitere Informationen oder die Berichterstattung (`META_MUSTER`). Kontakt und Bildangebot setzt das Dokument selbst ein (Feld `bildzeile`, Kontaktblock in logic.ts); darum gilt die Regel nicht für Zitat und Bildzeile.
+- **fuell:** behauptete Nachfrage, Werbesprache, «für jeden etwas», wertendes Beiwort («unvergesslich», «einzigartig»), «bietet Raum für», «sorgt für Stimmung» (`FUELL_MUSTER`).
+- **wertung:** wertende Wörter (`WERTUNG_STAEMME`, zum Beispiel beliebt, traditionsreich, spannend), die nicht wörtlich in den Angaben stehen.
+- Ausnahme für `meta` und `fuell`: Steht die Fundstelle wörtlich in den Angaben (die Person hat sie selbst geschrieben), ist es kein Fehler des Entwurfs.
+- Die Anweisung nennt dieselben Regeln («Nur Fakten aus den Angaben»). Bei einer Verletzung bekommt die KI im zweiten Versuch einen festen Satz je Kennung (`CHECK_HINWEISE` in lib/generator.ts, nie Teile des Entwurfs).
+- Tests: je Kennung Beispiele, Ausnahmen (Bildzeile, Zitat, Angaben der Person), Reihenfolge der Gründe, Anweisung, Rückmeldung.
+- Grenze der Methode: Muster erkennen bekannte Formulierungen, keine Bedeutung. Neue Floskeln der KI tauchen weiter auf; die Liste wächst mit den Rückmeldungen.

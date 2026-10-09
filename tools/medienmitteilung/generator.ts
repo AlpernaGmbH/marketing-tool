@@ -197,15 +197,96 @@ export function zitatStimmt(output: Pick<MedienOutput, "zitat">, input: Pick<Med
   return words.filter((w) => known.has(w)).length / words.length >= 0.75;
 }
 
+// ---- Metasätze, Füllsätze und Wertungen (Beschluss vom 09.10.2026, Rückmeldung zur Medienmitteilung) ------------------
+
+/**
+ * Metasätze reden über die Mitteilung, ihren Zweck oder die Redaktion statt über die Sache («Diese Medienmitteilung informiert
+ * über …», «Wir freuen uns auf Ihre Berichterstattung», «Bei Rückfragen …»). Kontakt und Bildangebot setzt das Dokument selbst ein
+ * (logic.ts, Feld «bildzeile»); im Haupttext haben solche Sätze nichts verloren.
+ */
+export const META_MUSTER: { re: RegExp; was: string }[] = [
+  {
+    re: /\b(?:diese[rnms]?|die vorliegende|die) (?:medien|presse)?mitteilung\b|\b(?:diese|die) meldung\b|\bmit diesem schreiben\b|\bdie redaktion\b|\bmedienschaffende\b|\bjournalist(?:en|innen)?\b/i,
+    was: "Satz über die Mitteilung oder die Redaktion",
+  },
+  {
+    re: /\bwir freuen uns (?:auf|über) (?:ihre|eure|die) (?:berichterstattung|veröffentlichung)\b|\bberichterstattung\b|\bveröffentlichung dieser\b/i,
+    was: "Bitte um Berichterstattung",
+  },
+  {
+    re: /\b(?:bei|für) rückfragen\b|\bweitere (?:informationen|auskünfte|details)\b[^.!?\n]{0,40}\b(?:erhalten|finden|gibt es|unter|auf anfrage)\b|\bstehe[n]? (?:ihnen|euch|gerne|gern)\b[^.!?\n]{0,40}\bzur verfügung\b/i,
+    was: "Hinweis auf Rückfragen oder weitere Informationen",
+  },
+  {
+    re: /\b(?:bild|foto)(?:material)?\b[^.!?\n]{0,40}\b(?:zur verfügung|auf anfrage|erhältlich)\b/i,
+    was: "Bildangebot im Haupttext",
+  },
+];
+
+/**
+ * Füllsätze und Werbesprache in einer Meldung: sie klingen nach Nachricht, sagen aber nichts, was in den Angaben steht
+ * («stösst auf grosses Interesse», «für jeden Geschmack etwas dabei», «verspricht ein Highlight»).
+ */
+export const FUELL_MUSTER: { re: RegExp; was: string }[] = [
+  { re: /\b(?:grossen|riesigen|regen|breiten|starken|hohen) (?:anklang|zuspruch|interesse|andrang|nachfrage|beliebtheit)\b|\bstösst auf (?:grosses|reges|breites|viel\w*|positive\w*)\b|\berfreut sich (?:grosser|reger)\b/i, was: "behauptete Nachfrage" },
+  { re: /\bverspricht\b|\bhighlight\b|\bhöhepunkt\b|\bpublikumsmagnet\b|\bmuss man (?:gesehen|erlebt)\b/i, was: "Werbesprache («verspricht», «Highlight»)" },
+  { re: /\bfür (?:jeden|jede|jedes|alle)\b[^.!?\n]{0,40}\b(?:etwas|geschmack|alter|generation)\b|\bfür jung und alt\b/i, was: "«für jeden etwas»" },
+  { re: /\b(?:unvergessliche[rnms]?|einzigartige[rnms]?|unvergleichliche[rnms]?|einmalige[rnms]?|besondere[rnms]?) (?:erlebnis|moment|abend|tag|atmosphäre|gelegenheit|chance)\w*\b/i, was: "wertendes Beiwort («unvergesslich», «einzigartig»)" },
+  { re: /\bbietet (?:raum|platz|gelegenheit) für\b|\bsorgt für (?:begeisterung|stimmung|freude|abwechslung)\b|\bbereichert (?:die|das|den)\b|\bwir freuen uns auf (?:viele|zahlreiche|alle)\b|\bzahlreiche (?:gäste|besucher)\b/i, was: "Füllsatz («bietet Raum für», «sorgt für Stimmung»)" },
+];
+
+/** Wertende Wörter (Wortanfang): Sie dürfen nur vorkommen, wenn die Angaben sie selbst enthalten. */
+export const WERTUNG_STAEMME = [
+  "beliebt", "traditionsreich", "renommiert", "langjährig", "etabliert", "hochwertig", "bewährt", "attraktiv",
+  "spannend", "vielfältig", "abwechslungsreich", "hochkarätig", "namhaft", "gemütlich", "herzlich", "wegweisend",
+] as const;
+
+/** Die Texte der Mitteilung ohne Zitat und Bildzeile; nur dort gelten die Regeln gegen Meta- und Füllsätze. */
+const berichtsTexte = (o: MedienOutput): string[] => [o.titel, o.lead, ...o.text, o.boilerplate];
+
+/** Erste Fundstelle eines Musters, die nicht wörtlich in den Angaben steht (was die Person selbst schreibt, ist kein Fehler des Entwurfs). */
+function ersteFundstelle(output: MedienOutput, muster: { re: RegExp; was: string }[], input?: MedienInput): string | null {
+  const angaben = input ? norm(Object.values(input).join("\n")) : "";
+  for (const t of berichtsTexte(output)) {
+    for (const m of muster) {
+      const hit = m.re.exec(t);
+      if (hit && !(angaben && angaben.includes(norm(hit[0])))) return m.was;
+    }
+  }
+  return null;
+}
+
+/** Bezeichnung des ersten Metasatzes im Entwurf; null, wenn keiner da ist. */
+export function metaSatz(output: MedienOutput, input?: MedienInput): string | null {
+  return ersteFundstelle(output, META_MUSTER, input);
+}
+
+/** Bezeichnung des ersten Füllsatzes im Entwurf; null, wenn keiner da ist. */
+export function fuellSatz(output: MedienOutput, input?: MedienInput): string | null {
+  return ersteFundstelle(output, FUELL_MUSTER, input);
+}
+
+/** Wertende Wörter im Entwurf, die in den Angaben nicht stehen (Wortanfang, ohne Gross- und Kleinschreibung). */
+export function fremdeWertungen(output: MedienOutput, input: MedienInput): string[] {
+  const angaben = norm(Object.values(input).join("\n"));
+  const text = norm(berichtsTexte(output).join("\n"));
+  return WERTUNG_STAEMME.filter((stamm) => new RegExp(`(?<![\\p{L}])${stamm}`, "u").test(text) && !new RegExp(`(?<![\\p{L}])${stamm}`, "u").test(angaben));
+}
+
 /**
  * Prüfung, die nur dieses Werkzeug kennt. Gibt den Grund zurück oder null:
  * «lead» (mehr als 40 Wörter), «w-fragen» (Betrieb oder Ort fehlt im Lead), «zahl» (Ziffer ohne Angabe),
+ * «meta» (Satz über die Mitteilung selbst, die Redaktion oder Rückfragen), «fuell» (Füllsatz oder Werbesprache),
+ * «wertung» (wertendes Wort, das nicht in den Angaben steht),
  * «laenge» (Gesamtlänge ausserhalb von 150 bis 400 Wörtern), «zitat» (Zitat nicht aus den Angaben).
  */
 export function checkMitteilung(output: MedienOutput, input: MedienInput): string | null {
   if (wordCount(output.lead) > LEAD_MAX_WORDS) return "lead";
   if (!leadNenntBetrieb(output.lead, input) || !leadNenntOrt(output.lead, input)) return "w-fragen";
   if (fremdeZahlen(output, input).length > 0) return "zahl";
+  if (metaSatz(output, input)) return "meta";
+  if (fuellSatz(output, input)) return "fuell";
+  if (fremdeWertungen(output, input).length > 0) return "wertung";
   const n = gesamtWoerter(output);
   if (n < LAENGE_MIN_WORDS || n > LAENGE_MAX_WORDS) return "laenge";
   if (!zitatStimmt(output, input)) return "zitat";
@@ -218,6 +299,7 @@ const INSTRUCTION = `Schreib eine Medienmitteilung für Schweizer Lokalmedien au
 - «titel»: eine Schlagzeile, 20 bis 90 Zeichen, die sagt, was passiert; ohne Doppelpunkt-Kette und ohne Wertung.
 - «lead»: höchstens ${LEAD_MAX_WORDS} Wörter, 40 bis 320 Zeichen. Er beantwortet wer (Betrieb aus «betrieb», mit seinem Namen), was, wann («wann», so geschrieben, wie angegeben) und wo (Ort aus «ort» oder «wo»).
 - «text»: 2 bis 5 Absätze, je 80 bis 600 Zeichen. Absatz 1: Einzelheiten zu was, wann, wo und wer («wer»). Absatz 2: warum es für die Region von Bedeutung ist («warum»). Weitere Absätze: Hintergrund, ausschliesslich aus den Angaben. Nenne Ort und Kanton, wo es passt.
+- Nur Fakten aus den Angaben. Schreib keine Sätze über die Mitteilung selbst («Diese Medienmitteilung informiert …», «Wir freuen uns auf Ihre Berichterstattung», «Bei Rückfragen …», «Bildmaterial steht zur Verfügung»): Kontakt und Bildangebot setzt das Dokument selbst ein. Schreib keine Füllsätze und keine Werbesprache («stösst auf grosses Interesse», «für jeden etwas dabei», «verspricht ein Highlight», «bietet Raum für Begegnungen»). Schreib keine wertenden Wörter («beliebt», «traditionsreich», «erfolgreich», «bekannt», «wichtig», «spannend»), die nicht wörtlich in den Angaben stehen. Behauptungen über Nachfrage, Publikum oder Wirkung gibt es nur, wenn die Angaben sie nennen.
 - Gesamtlänge: «titel», «lead», «text», «zitat» und «boilerplate» zusammen ${LAENGE_MIN_WORDS + 30} bis ${LAENGE_MAX_WORDS - 40} Wörter. Fehlt der Stoff dafür, schreib keine Füllsätze und erfinde keine Einzelheiten; setz stattdessen einen Platzhalter in eckigen Klammern, zum Beispiel [Zahl der Gäste].
 - Ziffern nur, wenn sie wörtlich in den Angaben stehen. Datum und Uhrzeit schreib genau so, wie sie in «wann» stehen. Sonst schreib die Zahl als Wort oder lass sie weg.
 - «zitat»: nur, wenn «zitat» in den Angaben nicht leer ist: der Wortlaut aus den Angaben, höchstens leicht geglättet (Gross- und Kleinschreibung, Satzzeichen, offensichtliche Tippfehler), ohne Anführungszeichen, ohne Namen der Person. Nicht erfinden und nicht umformulieren. Das Zitat steht nur in «zitat», nicht im Haupttext. Ist «zitat» leer, ist auch dieses Feld ein leerer String.

@@ -172,6 +172,16 @@ export function checkGenerated<I, O>(def: GeneratorDef<I, O>, raw: unknown, inpu
 }
 
 /**
+ * Genauere Rückmeldung zu Kennungen der eigenen Prüfung eines Werkzeugs (check). Feste Sätze, nie Teile des Entwurfs.
+ * Eine Kennung ohne Eintrag bekommt den allgemeinen Satz von repairHint.
+ */
+const CHECK_HINWEISE: Record<string, string> = {
+  meta: "Ein Satz redet über die Mitteilung selbst, die Redaktion, Rückfragen oder die Berichterstattung. Streich ihn: Schreib nur, was passiert ist; Kontakt und Bildangebot setzt das Dokument selbst ein.",
+  fuell: "Der Entwurf enthält einen Füllsatz oder Werbesprache (behauptete Nachfrage, «für jeden etwas dabei», «Highlight», «bietet Raum für»). Streich ihn oder ersetze ihn durch eine Tatsache aus den Angaben; fehlt der Stoff, setz einen Platzhalter in eckigen Klammern.",
+  wertung: "Der Entwurf enthält ein wertendes Wort (zum Beispiel beliebt, traditionsreich, spannend), das nicht in den Angaben steht. Streich es und schreib nur Tatsachen aus den Angaben.",
+};
+
+/**
  * Rückmeldung an die KI, wenn ihr Entwurf die Prüfung nicht bestanden hat (zweiter Versuch beim selben Modell, lib/ai.ts).
  * Der Text ist fest und enthält nie Eingaben oder Teile des Entwurfs; nur die Art des Fehlers und bei der eigenen Prüfung des Werkzeugs deren Kennung.
  */
@@ -186,6 +196,8 @@ export function repairHint(reason: GeneratorFail, detail?: string): string {
     check: `Eine Regel der Anweisung ist verletzt (Kennung: ${detail ?? "unbekannt"}). Prüfe besonders: Ziffern nur, wenn sie wörtlich in den Angaben stehen (sonst als Wort schreiben oder weglassen); Zahl der Einträge, Summen und Längen genau wie verlangt.`,
   };
   const konkret = detail && (reason === "regel" || reason === "stimme") ? ` Gefunden wurde: ${detail}.` : "";
+  const eigen = reason === "check" && detail ? CHECK_HINWEISE[detail] : undefined;
+  if (eigen) return `Dein Entwurf hat die Prüfung nicht bestanden. ${eigen} Antworte nur mit dem vollständigen, korrigierten JSON-Objekt in der verlangten Form.`;
   return `Dein Entwurf hat die Prüfung nicht bestanden. ${grund[reason]}${konkret} Antworte nur mit dem vollständigen, korrigierten JSON-Objekt in der verlangten Form.`;
 }
 
