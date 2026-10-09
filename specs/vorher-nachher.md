@@ -1,6 +1,6 @@
 # Vorher-Nachher-Collage (vorher-nachher)
 
-Klasse C (Rechner und Formular mit Canvas, alles im Browser), Stand 05.10.2026. Kein Server, keine KI, kein Netz (`needsServer: false`). Bibliotheken: `jszip` (ZIP, erst beim Download geladen), sonst nur der Bildbaustein `lib/export/png.ts` (Formate, `coverCrop`, `loadImageFile`, `imageFileProblem`, `drawCover`, `canvasToPng`, `loadCanvasFonts`, `textColorFor`, `pngFilename`). Zugang v3: E-Mail-Fenster vor dem Ergebnis, Ergebnis mit Eingabe und Ausgabe ins CRM, Downloads über `guardDownload`. **Die Bilder werden nur lokal gelesen und verlassen den Browser nie** (Harte Regel 1): Das steht im Formular, im Seitentext und in der FAQ. Ins CRM gehen die Einstellungen und die Dateinamen, nie Bilddaten.
+Klasse C (Rechner und Formular mit Canvas, alles im Browser), Stand 09.10.2026 (Charge C10a: Formate als Karten oben, Vorschau per Knopf). Kein Server, keine KI, kein Netz (`needsServer: false`). Bibliotheken: `jszip` (ZIP, erst beim Download geladen), sonst nur der Bildbaustein `lib/export/png.ts` (Formate, `coverCrop`, `loadImageFile`, `imageFileProblem`, `drawCover`, `canvasToPng`, `loadCanvasFonts`, `textColorFor`, `pngFilename`). Zugang v3: E-Mail-Fenster vor dem Ergebnis, Ergebnis mit Eingabe und Ausgabe ins CRM, Downloads über `guardDownload`. **Die Bilder werden nur lokal gelesen und verlassen den Browser nie** (Harte Regel 1): Das steht im Formular, im Seitentext und in der FAQ. Ins CRM gehen die Einstellungen und die Dateinamen, nie Bilddaten.
 
 ## Nutzen in einem Satz
 Für KMU und Vereine, die eine Veränderung zeigen wollen (Fassade, Garten, Raum, Umbau): in rund fünf Minuten aus zwei Fotos eine Collage als PNG in den Formaten Feed 1:1, Feed 4:5 und Story 9:16, nebeneinander, untereinander oder als Schieber-Standbild, mit Beschriftung und Logo, ohne Konto und ohne Bild-Upload.
@@ -26,8 +26,8 @@ Verwandte Tools: angebotsgrafik, caption-baukasten, post-generator
 | Logo (freiwillig) (`#vn-logo`, Datei) | file | nein | – | wie die Bilder | «Dein Logo verlässt den Browser nicht.» Knopf «Logo entfernen» |
 | Ecke des Logos (`#vn-ecke`) | select | ja | unten rechts | oben links, oben rechts, unten links, unten rechts | – |
 | Grösse des Logos (`#vn-logo-groesse`) | range 8 bis 24 | ja | 14 | – | Wertanzeige «14 % der Breite» |
-| Formate | Checkboxen | ja | Feed 1:1 | mindestens eines von Feed 1:1, Feed 4:5, Story 9:16 | Pixelmasse als Richtwert von Alperna |
-| Vorschau (`#vn-vorschau`) | select | – | erstes gewähltes Format | gewählte Formate | – |
+| Formate (`vn-format-*`) | Karten mit Checkbox (`FormatCards`), direkt unter den Bildern | ja | Feed 1:1 | mindestens eines von Feed 1:1, Feed 4:5, Story 9:16 | Ein Klick wählt ein Format; die Karte zeigt das Seitenverhältnis als Rechteck, den Namen und die Pixelmasse (Richtwert von Alperna) |
+| Vorschau (Gruppe «Vorschau», `PreviewTabs`) | Knöpfe mit `aria-pressed`, nur ab zwei gewählten Formaten | – | erstes gewähltes Format | gewählte Formate | – |
 
 Die Vorschau (Canvas) ist eine Bedienhilfe: Sie zeigt das gewählte Format und aktualisiert sich bei jeder Änderung, auch bevor Bilder gewählt sind (graue Flächen mit «Vorher-Bild wählen»). Ziehen in der Vorschau (Pointer Events, Maus oder Finger waagrecht) ändert dieselben Werte wie die Regler; auf Touchgeräten bleibt das senkrechte Scrollen der Seite frei, die senkrechte Verschiebung geht dort über den Regler. **Download und CRM gibt es erst nach «Collage erstellen» und `ensureEmail()`.**
 

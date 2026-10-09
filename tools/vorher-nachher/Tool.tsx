@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormatCards, PreviewTabs } from "@/components/tool/FormatPicker";
 import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { ResultCard } from "@/components/tool/ResultCard";
 import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
@@ -703,29 +704,34 @@ function CollageFlow() {
           />
         </fieldset>
 
+        <fieldset className="grid min-w-0 gap-3 rounded-xl border border-line p-4 lg:col-start-1" disabled={busy} aria-describedby="vn-formate-hilfe">
+          <legend className="px-2 font-heading font-semibold">Formate</legend>
+          <FormatCards
+            formats={FORMATE.map((f) => ({ key: f.key, label: f.label, width: f.width, height: f.height, detail: formatPixel(f.key) }))}
+            selected={settings.formate}
+            idPrefix="vn-format"
+            invalidKey={invalid("formate") ? "feed" : undefined}
+            describedBy={invalid("formate") ? "vn-error" : undefined}
+            onToggle={(key) => patch({ formate: toggleFormat(settings.formate, key as FormatKey) })}
+          />
+          <p id="vn-formate-hilfe" className="text-sm text-muted-foreground">
+            Ein Klick wählt ein Format. Pixelmasse: Richtwert von Alperna, keine Vorgabe der Plattformen.
+          </p>
+        </fieldset>
+
         <aside
           aria-label="Vorschau der Collage"
           className="grid min-w-0 content-start gap-3 rounded-xl border border-line p-4 lg:sticky lg:top-4 lg:col-start-2 lg:row-start-1 lg:row-span-6 lg:self-start"
         >
-          <div className="grid gap-1.5">
-            <Label htmlFor="vn-vorschau">Vorschau</Label>
-            <select
-              id="vn-vorschau"
-              className={selectClass}
-              value={previewFormat}
-              disabled={settings.formate.length === 0}
-              onChange={(e) => {
-                const v = FORMATE.find((x) => x.key === e.target.value);
-                if (v) setPreviewKey(v.key);
-              }}
-            >
-              {settings.formate.map((key) => (
-                <option key={key} value={key}>
-                  {formatOf(key).label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <PreviewTabs
+            label="Vorschau"
+            formats={FORMATE.filter((f) => settings.formate.includes(f.key)).map((f) => ({ key: f.key, label: f.label }))}
+            value={previewFormat}
+            onChange={(key) => {
+              const v = FORMATE.find((x) => x.key === key);
+              if (v) setPreviewKey(v.key);
+            }}
+          />
           <div className="grid justify-items-center">
             <Preview
               settings={settings}
@@ -874,29 +880,6 @@ function CollageFlow() {
           </div>
           <p className="text-sm text-muted-foreground">
             Steht die gewählte Ecke einer Beschriftung im Weg, rückt das Logo in eine freie Ecke. Abstand zum Rand: {pctCH(GEO.rand * 100, 0)} der Breite.
-          </p>
-        </fieldset>
-
-        <fieldset className="grid min-w-0 gap-3 rounded-xl border border-line p-4 lg:col-start-1" disabled={busy} aria-describedby="vn-formate-hilfe">
-          <legend className="px-2 font-heading font-semibold">Formate</legend>
-          <div className="flex flex-wrap gap-3">
-            {FORMATE.map((f) => (
-              <label key={f.key} className={choiceClass}>
-                <input
-                  type="checkbox"
-                  id={`vn-format-${f.key}`}
-                  checked={settings.formate.includes(f.key)}
-                  onChange={() => patch({ formate: toggleFormat(settings.formate, f.key) })}
-                  aria-invalid={f.key === "feed" && invalid("formate")}
-                  aria-describedby={invalid("formate") ? "vn-error" : undefined}
-                  className="size-5 accent-ink"
-                />
-                {f.label}
-              </label>
-            ))}
-          </div>
-          <p id="vn-formate-hilfe" className="text-sm text-muted-foreground">
-            {FORMATE.map((f) => `${f.label}: ${formatPixel(f.key)}`).join(", ")}. Pixelmasse: Richtwert von Alperna, keine Vorgabe der Plattformen.
           </p>
         </fieldset>
 

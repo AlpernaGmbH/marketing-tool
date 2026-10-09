@@ -2,14 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CopyButton } from "@/components/tool/CopyButton";
+import { FormatCards, PreviewTabs } from "@/components/tool/FormatPicker";
 import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { ResultCard } from "@/components/tool/ResultCard";
 import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { numberCH } from "@/lib/ch";
 import { downloadBytes } from "@/lib/download";
 import { IMAGE_FORMATS, imageFormat, loadCanvasFonts, loadImageFile, normalizeHex, type ImageFormat, type ImageFormatKey, type LoadedImage } from "@/lib/export/png";
 import { useLocalJson } from "@/lib/use-local";
@@ -454,6 +455,19 @@ function AngebotFlow() {
             {fieldError("firma")}
           </fieldset>
 
+          <fieldset id="ag-formate" className="grid gap-3 rounded-xl border border-line p-4" disabled={busy} tabIndex={-1}>
+            <legend className="px-2 font-heading font-semibold">Formate</legend>
+            <p className="text-sm text-muted-foreground">Wähle mindestens ein Format, ein Klick genügt. Die Pixelmasse sind ein Richtwert von Alperna, keine Statistik.</p>
+            <FormatCards
+              formats={IMAGE_FORMATS.map((f) => ({ key: f.key, label: f.label, width: f.width, height: f.height, detail: `${numberCH(f.width, 0)} × ${numberCH(f.height, 0)} Pixel, ${f.note}` }))}
+              selected={live ? form.formate : []}
+              idPrefix="ag-format"
+              disabled={!live}
+              onToggle={(key, on) => toggleFormat(key as ImageFormatKey, on)}
+            />
+            {fieldError("formate")}
+          </fieldset>
+
           <fieldset className="grid gap-4 rounded-xl border border-line p-4" disabled={busy}>
             <legend className="px-2 font-heading font-semibold">Das Angebot</legend>
             <div className="grid gap-1.5">
@@ -705,53 +719,18 @@ function AngebotFlow() {
               </ul>
             </fieldset>
           </fieldset>
-
-          <fieldset id="ag-formate" className="grid gap-3 rounded-xl border border-line p-4" disabled={busy} tabIndex={-1}>
-            <legend className="px-2 font-heading font-semibold">Formate</legend>
-            <p className="text-sm text-muted-foreground">Wähle mindestens ein Format. Die Pixelmasse sind ein Richtwert von Alperna, keine Statistik.</p>
-            <ul className="grid gap-2" aria-label="Formate">
-              {IMAGE_FORMATS.map((f) => (
-                <li key={f.key} className="flex min-h-11 items-center gap-3">
-                  <Checkbox
-                    id={`ag-format-${f.key}`}
-                    aria-label={f.label}
-                    aria-describedby={`ag-format-${f.key}-hilfe`}
-                    className="size-6"
-                    checked={live && form.formate.includes(f.key)}
-                    onCheckedChange={(v) => toggleFormat(f.key, v === true)}
-                    disabled={!live}
-                  />
-                  <div>
-                    <label htmlFor={`ag-format-${f.key}`} className="cursor-pointer">
-                      {f.label}
-                    </label>
-                    <span id={`ag-format-${f.key}-hilfe`} className="block text-sm text-muted-foreground">
-                      {f.width} × {f.height} Pixel, {f.note}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            {fieldError("formate")}
-          </fieldset>
         </div>
 
         <aside aria-labelledby="ag-vorschau-titel" className="grid content-start gap-3 md:sticky md:top-4 md:self-start">
           <h4 id="ag-vorschau-titel" className="font-heading font-semibold">
             Vorschau
           </h4>
-          {formate.length > 1 && (
-            <div className="grid gap-1.5">
-              <Label htmlFor="ag-vorschau-format">Vorschau-Format</Label>
-              <select id="ag-vorschau-format" className={selectClass} value={previewFormat} onChange={(e) => setPreviewKey(e.target.value as ImageFormatKey)}>
-                {formate.map((k) => (
-                  <option key={k} value={k}>
-                    {imageFormat(k).label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          <PreviewTabs
+            label="Vorschau-Format"
+            formats={formate.map((k) => ({ key: k, label: imageFormat(k).label }))}
+            value={previewFormat}
+            onChange={(key) => setPreviewKey(key as ImageFormatKey)}
+          />
           <div className="mx-auto w-full max-w-[320px]" data-testid="ag-vorschau">
             <OfferCanvas
               model={preview.model}

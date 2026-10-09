@@ -136,7 +136,7 @@ describe("angebotsgrafik: Werkzeug im Browser", () => {
     expect(canvas).toHaveAttribute("width", "1080");
     expect(canvas).toHaveAttribute("height", "1080");
 
-    await user.selectOptions(screen.getByLabelText("Vorschau-Format"), "Story 9:16");
+    await user.click(within(screen.getByRole("group", { name: "Vorschau-Format" })).getByRole("button", { name: "Story 9:16" }));
     await waitFor(() => expect(screen.getByTestId("ag-vorschau-canvas")).toHaveAttribute("height", "1920"));
     expect(screen.getByTestId("ag-vorschau-canvas").getAttribute("aria-label")).toContain("Vorschau Story 9:16");
     // Nichts davon ist ein Ergebnis: kein Fenster, kein CRM

@@ -146,7 +146,8 @@ describe("Vorher-Nachher-Collage im Browser: Formular", () => {
     expect(within(formate).getByLabelText("Feed 4:5")).not.toBeChecked();
     expect(within(formate).getByLabelText("Story 9:16")).not.toBeChecked();
     expect(within(formate).queryByLabelText(/Google/)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Vorschau")).toHaveValue("feed");
+    // Die Vorschau-Knöpfe erscheinen erst, wenn mindestens zwei Formate gewählt sind.
+    expect(screen.queryByRole("group", { name: "Vorschau" })).not.toBeInTheDocument();
     expect(preview()).toHaveAccessibleName(/^Vorschau Feed 1:1: zwei Bilder nebeneinander.*Es fehlt noch: Vorher-Bild und Nachher-Bild\.$/);
     expect(screen.getByText(/verlassen ihn nie/)).toBeInTheDocument();
     expectCalmText("Formular");
@@ -353,20 +354,22 @@ describe("Vorher-Nachher-Collage im Browser: Formular", () => {
     await addImages(u);
     const feed = screen.getByLabelText("Feed 1:1");
     await u.click(feed);
-    expect(screen.getByLabelText("Vorschau")).toBeDisabled();
+    expect(screen.queryByRole("group", { name: "Vorschau" })).not.toBeInTheDocument();
     await u.click(screen.getByRole("button", { name: "Collage erstellen" }));
     expect(document.getElementById("vn-error")).toHaveTextContent("Wähle mindestens ein Format.");
     expect(feed).toHaveFocus();
     await u.click(feed);
-    expect(screen.getByLabelText("Vorschau")).toBeEnabled();
+    expect(feed).toBeChecked();
   });
 
   it("wählt die Vorschau unter den gewählten Formaten", async () => {
     const u = await openForm();
     await u.click(screen.getByLabelText("Story 9:16"));
-    const select = screen.getByLabelText("Vorschau");
-    expect(within(select).getAllByRole("option").map((o) => o.textContent)).toEqual(["Feed 1:1", "Story 9:16"]);
-    await u.selectOptions(select, "story");
+    const tabs = screen.getByRole("group", { name: "Vorschau" });
+    expect(within(tabs).getAllByRole("button").map((b) => b.textContent)).toEqual(["Feed 1:1", "Story 9:16"]);
+    expect(within(tabs).getByRole("button", { name: "Feed 1:1" })).toHaveAttribute("aria-pressed", "true");
+    await u.click(within(tabs).getByRole("button", { name: "Story 9:16" }));
+    expect(within(tabs).getByRole("button", { name: "Story 9:16" })).toHaveAttribute("aria-pressed", "true");
     expect(preview()).toHaveAccessibleName(/^Vorschau Story 9:16/);
     expect([preview().width, preview().height]).toEqual([720, 1280]); // höchstens 720 Pixel breit, Seitenverhältnis 9:16
   });
