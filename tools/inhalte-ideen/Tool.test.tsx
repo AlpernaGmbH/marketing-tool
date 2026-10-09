@@ -7,7 +7,7 @@ import { downloadBytes } from "@/lib/download";
 import { PROFILE_KEY } from "@/lib/profile";
 import { isToolDone } from "@/lib/progress";
 import { clearAllLocal, readLocal, writeLocal } from "@/lib/storage";
-import { EMPTY_FILTER, IDEEN, PAGE_SIZE, filterIdeen, type Filter } from "./logic";
+import { EMPTY_FILTER, FORMAT_LABELS, FORMATE, IDEEN, PAGE_SIZE, filterIdeen, formatCounts, sortByGruppe, type Filter } from "./logic";
 import Tool from "./Tool";
 
 // Durchlauf im Browser (jsdom): Filter, Suche, Merkliste im Browser, Export hinter dem E-Mail-Fenster, ein CRM-Eintrag je Liste.
@@ -86,7 +86,7 @@ describe("Beitragsideen im Browser: Filter und Liste", () => {
     await u.selectOptions(screen.getByLabelText("Format"), "gbp-post");
     const gbp = filterIdeen(IDEEN, filter({ format: "gbp-post" }));
     expect(screen.getByTestId("ci-count")).toHaveTextContent(`${gbp.length} Ideen`);
-    for (const card of cards()) expect(within(card).getByText("Google-Beitrag")).toBeInTheDocument();
+    for (const card of cards()) expect(within(card).getByText("Format").nextElementSibling).toHaveTextContent("Google-Beitrag");
 
     await u.selectOptions(screen.getByLabelText("Ziel"), "anfragen");
     await u.selectOptions(screen.getByLabelText("Säule"), "angebot");
@@ -167,6 +167,86 @@ describe("Beitragsideen im Browser: Filter und Liste", () => {
     for (const [term, value] of [["Format", "Reel"], ["Aufwand", "mittel"], ["Ziel", "Sichtbarkeit"], ["Monate", "März bis Mai, September und Oktober"]]) {
       expect(within(card).getByText(term).nextElementSibling).toHaveTextContent(value);
     }
+  });
+});
+
+describe("Beitragsideen im Browser: Format-Chips und Gruppen", () => {
+  const chips = () => within(screen.getByRole("group", { name: "Nach Format eingrenzen" }));
+
+  it("zeigt je Format einen Knopf mit der Zahl der Treffer, die den anderen Filtern genügen", async () => {
+    const u = await open();
+    await u.selectOptions(screen.getByLabelText("Monat"), "alle");
+    const counts = formatCounts(filterIdeen(IDEEN, filter()));
+    expect(chips().getByRole("button", { name: `Alle Formate ${IDEEN.length}` })).toHaveAttribute("aria-pressed", "true");
+    for (const f of FORMATE) expect(chips().getByRole("button", { name: `${FORMAT_LABELS[f]} ${counts[f]}` })).toHaveAttribute("aria-pressed", "false");
+    // Ein weiterer Filter ändert die Zahlen der Knöpfe, nicht aber die des gewählten Formats selbst.
+    await u.selectOptions(screen.getByLabelText("Ziel"), "anfragen");
+    const nach = formatCounts(filterIdeen(IDEEN, filter({ ziel: "anfragen" })));
+    for (const f of FORMATE) expect(chips().getByRole("button", { name: `${FORMAT_LABELS[f]} ${nach[f]}` })).toBeInTheDocument();
+  });
+
+  it("ein Klick wählt das Format (auch im Feld «Format»), ein zweiter hebt es wieder auf", async () => {
+    const u = await open();
+    await u.selectOptions(screen.getByLabelText("Monat"), "alle");
+    const reel = chips().getByRole("button", { name: /^Reel \d+$/ });
+    await u.click(reel);
+    expect(reel).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Format")).toHaveValue("reel");
+    expect(screen.getByTestId("ci-count")).toHaveTextContent(`${filterIdeen(IDEEN, filter({ format: "reel" })).length} Ideen`);
+    for (const card of cards()) expect(within(card).getByText("Format").nextElementSibling).toHaveTextContent("Reel");
+    await u.click(reel);
+    expect(reel).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByLabelText("Format")).toHaveValue("alle");
+    await u.click(chips().getByRole("button", { name: /^Karussell \d+$/ }));
+    await u.click(chips().getByRole("button", { name: /^Alle Formate \d+$/ }));
+    expect(screen.getByLabelText("Format")).toHaveValue("alle");
+  });
+
+  it("ohne Gruppen steht eine flache Liste «Ideen»; «Ordnen nach» teilt sie in beschriftete Gruppen", async () => {
+    const u = await open();
+    await u.selectOptions(screen.getByLabelText("Monat"), "alle");
+    expect(screen.getByLabelText("Ordnen nach")).toHaveValue("keine");
+    expect(screen.queryByTestId("ci-gruppe-block")).not.toBeInTheDocument();
+    await u.selectOptions(screen.getByLabelText("Ordnen nach"), "format");
+    expect(screen.queryByRole("list", { name: "Ideen" })).not.toBeInTheDocument();
+    const blocks = screen.getAllByTestId("ci-gruppe-block");
+    // Die ersten 24 Karten gehören zu den ersten Gruppen in der Reihenfolge der Formate; die letzte Gruppe kann angebrochen sein.
+    const ordered = sortByGruppe(filterIdeen(IDEEN, filter()), "format").slice(0, PAGE_SIZE);
+    const expected = FORMATE.filter((f) => ordered.some((i) => i.format === f));
+    expect(blocks).toHaveLength(expected.length);
+    expect(blocks.map((b) => b.querySelector("p")!.textContent!.split(" ")[0])).toEqual(expected.map((f) => FORMAT_LABELS[f].split(" ")[0]));
+    const total = blocks.reduce((n, b) => n + within(b).getAllByTestId("ci-card").length, 0);
+    expect(total).toBe(PAGE_SIZE);
+    for (const b of blocks) expect(within(b).getByRole("list")).toHaveAccessibleName(/^Ideen: /);
+  });
+
+  it("die Gruppe nennt ihre wahre Grösse, solange erst ein Teil zu sehen ist, und «Mehr Ideen anzeigen» führt weiter", async () => {
+    const u = await open();
+    await u.selectOptions(screen.getByLabelText("Monat"), "alle");
+    await u.selectOptions(screen.getByLabelText("Ordnen nach"), "saeule");
+    const first = screen.getAllByTestId("ci-gruppe-block")[0];
+    expect(first).toHaveTextContent(/Arbeit \d+, 24 angezeigt/);
+    await u.click(screen.getByTestId("ci-more"));
+    const all = screen.getAllByTestId("ci-card");
+    expect(all).toHaveLength(PAGE_SIZE * 2);
+    // Die zweite Seite hängt sich an die geordnete Liste an; die ID der ersten neuen Karte ist die 25. der geordneten Treffer.
+    const ordered = sortByGruppe(filterIdeen(IDEEN, filter()), "saeule");
+    expect(document.activeElement).toBe(all.find((c) => c.getAttribute("data-idea-id") === ordered[PAGE_SIZE].id));
+  });
+
+  it("ein Wechsel der Gruppe beginnt wieder mit einer Seite, und die zufällige Idee liegt in der Gruppenliste", async () => {
+    const u = await open();
+    await u.selectOptions(screen.getByLabelText("Monat"), "alle");
+    await u.selectOptions(screen.getByLabelText("Ordnen nach"), "ziel");
+    await u.click(screen.getByTestId("ci-more"));
+    expect(screen.getAllByTestId("ci-card")).toHaveLength(PAGE_SIZE * 2);
+    await u.selectOptions(screen.getByLabelText("Ordnen nach"), "format");
+    expect(screen.getAllByTestId("ci-card")).toHaveLength(PAGE_SIZE);
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    await u.click(screen.getByTestId("ci-random"));
+    const lit = screen.getAllByTestId("ci-card").filter((c) => c.hasAttribute("data-highlight"));
+    expect(lit).toHaveLength(1);
+    expect(document.activeElement).toBe(lit[0]);
   });
 });
 

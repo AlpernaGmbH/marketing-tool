@@ -1467,6 +1467,15 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     await page.locator("#ci-branche").selectOption("handwerk");
     await page.locator("#ci-monat").selectOption("10");
     await expect(page.getByTestId("ci-card").first()).toBeVisible();
+    // Format-Knopf, Gruppen und zurück zur flachen Liste (Charge C7)
+    const chips = page.getByRole("group", { name: "Nach Format eingrenzen" });
+    await chips.getByRole("button", { name: /^Reel \d+$/ }).click();
+    await expect(page.locator("#ci-format")).toHaveValue("reel");
+    await page.locator("#ci-gruppe").selectOption("saeule");
+    await expect(page.getByTestId("ci-gruppe-block").first()).toBeVisible();
+    await chips.getByRole("button", { name: /^Alle Formate \d+$/ }).click();
+    await page.locator("#ci-gruppe").selectOption("keine");
+    await expect(page.getByRole("list", { name: "Ideen" })).toBeVisible();
     await page.getByTestId("ci-card").first().getByRole("button", { name: "Merken" }).click();
     await expect(page.getByTestId("ci-merk-count")).toContainText("gemerkt");
     await expect(page.getByTestId("ci-merk-count")).not.toContainText("Noch nichts");

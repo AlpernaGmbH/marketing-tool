@@ -24,7 +24,7 @@ Wer jede Woche neu überlegt, was er posten soll, postet bald nicht mehr; eine B
 => Gleich darunter: wie aus der Merkliste ein Plan für die nächsten Wochen wird.
 
 ## So nutzt du das Ergebnis
-1. **Wähle Branche und Monat.** Das Werkzeug nimmt beides aus deinem Firmenprofil und der Uhr; ändern kannst du es jederzeit.
+1. **Wähle Branche und Monat.** Das Werkzeug nimmt beides aus deinem Firmenprofil und der Uhr; ändern kannst du es jederzeit. Format-Knöpfe und «Ordnen nach» sortieren die Karten.
 2. **Merke, was du schaffst.** Mische bei den Beitragsideen Formate und Ziele: ein Reel, ein Karussell, ein Google-Beitrag, dazu etwas fürs Team.
 3. **Exportiere die Merkliste.** Die CSV öffnest du in Excel, der Kalender-Entwurf legt je Idee einen Ganztagstermin an, den du verschiebst.
 4. **Schreib den Beitrag mit deinen Worten.** Der Hook ist der Anfang; Namen, Ort und Werkzeug kommen aus deinem Alltag.
@@ -52,7 +52,7 @@ Malerei Keller, Gossau, wählt die Branche «Handwerk» und den Monat «Oktober�
 
 ## Häufige Fragen
 ### Woher kommen die Ideen?
-Die Redaktion von Alperna hat sie geschrieben, für Betriebe in der Schweiz, ohne KI, ohne Zahlen und ohne Rechtsaussagen. Bei Bildern von Personen steht der Hinweis auf das Einverständnis dabei.
+Die Redaktion von Alperna hat sie geschrieben, für Betriebe in der Schweiz, mit Schweizer Anlässen und Bräuchen, ohne KI, ohne Zahlen und ohne Rechtsaussagen. Bei Bildern von Personen steht der Hinweis auf das Einverständnis dabei.
 
 ### Kann ich die Beitragsideen frei verwenden?
 Ja. Setz sie für deinen Betrieb oder Verein um, passe sie an und ändere den Hook. Du musst Alperna nicht nennen.

@@ -265,6 +265,69 @@ export function countText(n: number): string {
   return `${n} ${n === 1 ? "Idee" : "Ideen"}`;
 }
 
+// ---- Gruppieren und Zählen ----------------------------------------------------------------------
+
+/** Wonach die Liste gruppiert wird. «keine»: eine flache Liste wie bisher. */
+export const GRUPPEN = ["keine", "format", "saeule", "ziel"] as const;
+export type Gruppe = (typeof GRUPPEN)[number];
+export const GRUPPE_LABELS: Record<Gruppe, string> = { keine: "Keine Gruppen", format: "Format", saeule: "Säule", ziel: "Ziel" };
+export const isGruppe = (v: unknown): v is Gruppe => typeof v === "string" && (GRUPPEN as readonly string[]).includes(v);
+
+/** Schlüssel für Ideen ohne Säule. */
+const OHNE = "ohne";
+
+type GruppeInfo = { keys: readonly string[]; labels: Record<string, string>; of: (i: Idea) => string };
+const GRUPPE_INFO: Record<Exclude<Gruppe, "keine">, GruppeInfo> = {
+  format: { keys: FORMATE, labels: FORMAT_LABELS, of: (i) => i.format },
+  saeule: { keys: [...SAEULEN, OHNE], labels: { ...SAEULE_LABELS, [OHNE]: "Ohne Säule" }, of: (i) => i.saeule ?? OHNE },
+  ziel: { keys: ZIELE, labels: ZIEL_LABELS, of: (i) => i.ziel },
+};
+
+export type IdeenGruppe = {
+  key: string;
+  label: string;
+  /** So viele Ideen hat die Gruppe in der ganzen Trefferliste (nicht nur unter den angezeigten). */
+  total: number;
+  ideen: Idea[];
+};
+
+/**
+ * Ordnet die Treffer nach der Reihenfolge der Gruppen (Formate, Säulen oder Ziele wie in den Auswahllisten). Innerhalb einer Gruppe
+ * bleibt die Reihenfolge der Treffer (stabil). «keine» gibt die Liste unverändert zurück. Die Eingabeliste bleibt unverändert.
+ */
+export function sortByGruppe(ideen: readonly Idea[], gruppe: Gruppe): Idea[] {
+  if (gruppe === "keine") return [...ideen];
+  const info = GRUPPE_INFO[gruppe];
+  const rank = (i: Idea) => {
+    const r = info.keys.indexOf(info.of(i));
+    return r === -1 ? info.keys.length : r;
+  };
+  return ideen.map((idea, index) => ({ idea, index })).sort((a, b) => rank(a.idea) - rank(b.idea) || a.index - b.index).map((x) => x.idea);
+}
+
+/**
+ * Teilt die angezeigten Ideen in Gruppen. `alle` ist die ganze Trefferliste und liefert nur die Summen (`total`), damit eine Gruppe,
+ * von der erst ein Teil zu sehen ist, ihre wahre Grösse nennt. Leere Gruppen fehlen. «keine»: eine einzige Gruppe ohne Beschriftung.
+ */
+export function groupIdeen(shown: readonly Idea[], alle: readonly Idea[], gruppe: Gruppe): IdeenGruppe[] {
+  if (gruppe === "keine") return shown.length === 0 ? [] : [{ key: "alle", label: "", total: alle.length, ideen: [...shown] }];
+  const info = GRUPPE_INFO[gruppe];
+  const out: IdeenGruppe[] = [];
+  for (const key of info.keys) {
+    const ideen = shown.filter((i) => info.of(i) === key);
+    if (ideen.length === 0) continue;
+    out.push({ key, label: info.labels[key] ?? key, total: alle.filter((i) => info.of(i) === key).length, ideen });
+  }
+  return out;
+}
+
+/** Zahl der Ideen je Format (alle Formate kommen vor, auch mit 0). */
+export function formatCounts(ideen: readonly Idea[]): Record<Format, number> {
+  const out = Object.fromEntries(FORMATE.map((f) => [f, 0])) as Record<Format, number>;
+  for (const i of ideen) out[i.format] += 1;
+  return out;
+}
+
 /**
  * So viele Karten zeigt die Liste: mindestens eine Seite, so viele wie `limit` sagt, und immer genug, dass die Karte an Stelle `index`
  * (zum Beispiel die zufällige Idee) dabei ist. Ungültige Werte ergeben eine Seite.

@@ -19,6 +19,8 @@ import {
   EXPORT_LABELS,
   FORMATE,
   FORMAT_LABELS,
+  GRUPPEN,
+  GRUPPE_LABELS,
   IDEEN,
   MAX_MERK,
   MERKLISTE_KEY,
@@ -39,8 +41,11 @@ import {
   eingabeText,
   exportBasename,
   filterIdeen,
+  formatCounts,
+  groupIdeen,
   initialFilter,
   isFormat,
+  isGruppe,
   isMonatWert,
   isSaeule,
   isZiel,
@@ -51,11 +56,13 @@ import {
   parseMerkliste,
   parseState,
   randomIdea,
+  sortByGruppe,
   stateAfterMerk,
   toggleMerk,
   visibleLimit,
   type ExportKind,
   type Filter,
+  type Gruppe,
   type Idea,
 } from "./logic";
 import config from "./tool.config";
@@ -68,6 +75,14 @@ const WRAP_BUTTON = "h-auto min-h-11 whitespace-normal py-2 text-center";
 
 /** Leise Knöpfe (Entfernen, Liste leeren): unterstrichen wie «ändern» im Kopf, mit voller Trefferfläche. */
 const LINK_BUTTON = "px-1 underline";
+
+/** Raster der Karten: so viele Spalten, wie mit mindestens 18 rem Breite Platz haben; auf dem Handy eine. */
+const GRID = "grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(100%,18rem),1fr))]";
+
+const AUFWAND_STUFE: Record<Idea["aufwand"], number> = { S: 1, M: 2, L: 3 };
+
+const CHIP =
+  "inline-flex min-h-11 items-center gap-2 rounded-full border border-input px-4 text-sm aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-paper focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 const DOWNLOAD_ERROR = "Der Download hat nicht geklappt. Versuch es noch einmal oder kopiere die Merkliste.";
 
@@ -128,7 +143,7 @@ function IdeaCard({
   onToggle: (id: string) => void;
 }) {
   return (
-    <li>
+    <li className="flex">
       <article
         id={cardDomId(idea.id)}
         tabIndex={-1}
@@ -136,18 +151,26 @@ function IdeaCard({
         data-testid="ci-card"
         data-idea-id={idea.id}
         data-highlight={highlighted ? "true" : undefined}
-        className={cn("rounded-xl border bg-paper p-5", highlighted ? "border-ink ring-2 ring-ink" : "border-line")}
+        className={cn("flex w-full flex-col rounded-xl border bg-paper p-5", highlighted ? "border-ink ring-2 ring-ink" : "border-line")}
       >
+        <div className="mb-3 flex items-center justify-between gap-3" aria-hidden="true">
+          <span className="eyebrow">{FORMAT_LABELS[idea.format]}</span>
+          <span className="flex items-center gap-1" data-testid="ci-aufwand-punkte">
+            {[1, 2, 3].map((n) => (
+              <span key={n} className={cn("size-2 rounded-full border border-ink", n <= AUFWAND_STUFE[idea.aufwand] ? "bg-ink" : "bg-transparent")} />
+            ))}
+          </span>
+        </div>
         <p id={titleDomId(idea.id)} className="font-heading text-lg leading-snug font-medium">
           {idea.titel}
         </p>
         <p className="mt-2">{idea.beschrieb}</p>
-        <p className="mt-2">
+        <p className="mt-3 border-l-2 border-ink pl-3">
           <span className="text-sm text-muted-foreground">Erster Satz: </span>
           <em>«{idea.hook}»</em>
         </p>
         <Facts idea={idea} showBranche={showBranche} />
-        <div className="mt-4">
+        <div className="mt-auto pt-4">
           <Button
             type="button"
             variant={merkt ? "default" : "outline"}
@@ -184,6 +207,7 @@ function ContentIdeen() {
   );
   const [touched, setTouched] = useState<Partial<Filter>>({});
   const [query, setQuery] = useState("");
+  const [gruppe, setGruppe] = useState<Gruppe>("keine");
   const filter: Filter = { ...base, ...touched };
   const { branche, mitAllgemein, format, monat, ziel, saeule } = filter;
   const change = (patch: Partial<Filter>) => setTouched((t) => ({ ...t, ...patch }));
@@ -195,15 +219,24 @@ function ContentIdeen() {
     () => filterIdeen(IDEEN, { branche, mitAllgemein, format, monat, ziel, saeule }, query),
     [branche, mitAllgemein, format, monat, ziel, saeule, query],
   );
-  const filterKey = `${branche}|${mitAllgemein}|${format}|${monat}|${ziel}|${saeule}|${query}`;
+  // Die Formate zählen über alle Treffer, die den anderen Filtern genügen; so zeigt jede Auswahl, was sie bringt.
+  const counts = useMemo(
+    () => formatCounts(filterIdeen(IDEEN, { branche, mitAllgemein, format: "alle", monat, ziel, saeule }, query)),
+    [branche, mitAllgemein, monat, ziel, saeule, query],
+  );
+  const countsTotal = FORMATE.reduce((n, f) => n + counts[f], 0);
+  // Mit Gruppen wird die ganze Trefferliste vor dem Kürzen geordnet, damit «Mehr Ideen anzeigen» Gruppe für Gruppe weiterführt.
+  const ordered = useMemo(() => (gruppe === "keine" ? results : sortByGruppe(results, gruppe)), [results, gruppe]);
+  const filterKey = `${branche}|${mitAllgemein}|${format}|${monat}|${ziel}|${saeule}|${query}|${gruppe}`;
 
   // ---- Liste: Seiten, zufällige Idee, Fokus ----
   const [paging, setPaging] = useState({ key: "", limit: PAGE_SIZE });
   const [highlight, setHighlight] = useState<Highlight | null>(null);
   const highlightId = highlight && highlight.key === filterKey ? highlight.id : null;
-  const highlightIndex = highlightId ? results.findIndex((i) => i.id === highlightId) : -1;
+  const highlightIndex = highlightId ? ordered.findIndex((i) => i.id === highlightId) : -1;
   const limit = visibleLimit(paging.key === filterKey ? paging.limit : PAGE_SIZE, highlightIndex);
-  const shown = results.slice(0, limit);
+  const shown = ordered.slice(0, limit);
+  const gruppen = useMemo(() => groupIdeen(shown, ordered, gruppe), [shown, ordered, gruppe]);
   const pending = useRef<PendingFocus | null>(null);
 
   // Scrollen und Fokus nur nach einer Aktion der Person (Zufall, Mehr anzeigen), nie beim ersten Zeigen der Seite.
@@ -219,14 +252,14 @@ function ContentIdeen() {
   });
 
   const pickRandom = () => {
-    const pick = randomIdea(results, undefined, highlightId ?? undefined);
+    const pick = randomIdea(ordered, undefined, highlightId ?? undefined);
     if (!pick) return;
     pending.current = { id: pick.id, block: "center" };
     setHighlight({ id: pick.id, key: filterKey });
   };
 
   const showMore = () => {
-    const next = results[limit];
+    const next = ordered[limit];
     if (next) pending.current = { id: next.id, block: "nearest" };
     setPaging({ key: filterKey, limit: limit + PAGE_SIZE });
   };
@@ -431,11 +464,48 @@ function ContentIdeen() {
             </div>
           </form>
 
+          <div role="group" aria-label="Nach Format eingrenzen" className="flex flex-wrap gap-2" data-testid="ci-format-chips">
+            <button type="button" aria-pressed={format === "alle"} className={CHIP} onClick={() => change({ format: "alle" })}>
+              Alle Formate <span className="mono text-xs">{countsTotal}</span>
+            </button>
+            {FORMATE.map((f) => (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={format === f}
+                className={cn(CHIP, counts[f] === 0 && format !== f && "text-muted-foreground")}
+                onClick={() => change({ format: format === f ? "alle" : f })}
+                data-umami-event="idea_format"
+                data-umami-event-tool={config.slug}
+              >
+                {FORMAT_LABELS[f]} <span className="mono text-xs">{counts[f]}</span>
+              </button>
+            ))}
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p role="status" aria-live="polite" data-testid="ci-count" className="mono text-sm">
               {countText(results.length)}
             </p>
             <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="ci-gruppe" className="text-sm">
+                  Ordnen nach
+                </Label>
+                <select
+                  id="ci-gruppe"
+                  className={cn(selectClass, "w-auto min-w-36")}
+                  value={gruppe}
+                  onChange={(e) => setGruppe(isGruppe(e.target.value) ? e.target.value : "keine")}
+                  data-testid="ci-gruppe"
+                >
+                  {GRUPPEN.map((g) => (
+                    <option key={g} value={g}>
+                      {GRUPPE_LABELS[g]}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <a href="#ci-merkliste" className="text-sm underline underline-offset-4 lg:hidden">
                 Zur Merkliste ({gemerkt.length})
               </a>
@@ -455,19 +525,40 @@ function ContentIdeen() {
               </div>
             </div>
           ) : (
-            <ul aria-label="Ideen" className="grid gap-4">
-              {shown.map((idea) => (
-                <IdeaCard
-                  key={idea.id}
-                  idea={idea}
-                  merkt={merkIds.has(idea.id)}
-                  highlighted={idea.id === highlightId}
-                  canMerk={merkReady && !voll}
-                  showBranche={!specificBranche || idea.branche === ALLE}
-                  onToggle={toggle}
-                />
-              ))}
-            </ul>
+            <div className="grid gap-8">
+              {gruppen.map((g) => {
+                const cards = g.ideen.map((idea) => (
+                  <IdeaCard
+                    key={idea.id}
+                    idea={idea}
+                    merkt={merkIds.has(idea.id)}
+                    highlighted={idea.id === highlightId}
+                    canMerk={merkReady && !voll}
+                    showBranche={!specificBranche || idea.branche === ALLE}
+                    onToggle={toggle}
+                  />
+                ));
+                if (gruppe === "keine") {
+                  return (
+                    <ul key={g.key} aria-label="Ideen" className={GRID}>
+                      {cards}
+                    </ul>
+                  );
+                }
+                const labelId = `ci-gruppe-${g.key}`;
+                return (
+                  <div key={g.key} role="group" aria-labelledby={labelId} className="grid gap-3" data-testid="ci-gruppe-block">
+                    <p id={labelId} className="eyebrow">
+                      {g.label} <span className="mono">{g.total}</span>
+                      {g.ideen.length < g.total ? <span className="text-muted-foreground">, {g.ideen.length} angezeigt</span> : null}
+                    </p>
+                    <ul aria-label={`Ideen: ${g.label}`} className={GRID}>
+                      {cards}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           {results.length > shown.length && (
