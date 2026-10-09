@@ -1,5 +1,7 @@
 # Engagement-Rate-Rechner (engagement-rate)
 
+Stand 09.10.2026 (Charge B1): Kurzmodus (Summen statt Zahlen je Beitrag) und Vergleichswert für Instagram und Facebook; der Rest gilt wie bisher.
+
 ## Nutzen in einem Satz
 Für KMU, Selbständige und Vereine: Aus der Followerzahl und den Zahlen von bis zu zehn Beiträgen entsteht in fünf Minuten die Interaktionsrate pro Beitrag und im Schnitt, nach zwei Formeln, mit Balkendiagramm und einer Auswertung in Worten.
 
@@ -11,7 +13,12 @@ Verwandte Tools: newsletter-check, reifegrad-check, inhalte-saeulen.
 
 Instagram, LinkedIn, Facebook und TikTok lassen sich nicht auslesen (PLAN.md, Tabelle der Klassen). Die Person tippt die Zahlen aus der Statistik der Plattform ab. Das Werkzeug sagt je Plattform in einem Satz, wo sie stehen, und nennt nur Menübezeichnungen, die gesichert sind: «Insights» (Instagram, Facebook), «Beitragsanalysen» (LinkedIn), «Analysen» (TikTok).
 
-## Eingaben
+## Eingabe in zwei Wegen (B1)
+Moduswahl `role="radiogroup"` «Eingabe»: **Summen über mehrere Beiträge** (Standard, `modus: "kurz"`) oder **Beiträge einzeln** (`modus: "einzeln"`). Plattform, Follower und Firma gelten für beide; die Zahlen jedes Weges bleiben beim Wechsel erhalten. Ein gespeicherter Stand ohne `modus` (vor B1) gilt als «einzeln».
+- **Kurzmodus** (ids `er-k-*`): «Zahl der Beiträge» (ganze Zahl 1 bis 1'000), je Interaktionsfeld der Plattform eine Summe («Likes, Summe» …) und «Reichweite, Summe» (freiwillig); alles ganze Zahlen 0 bis 1'000'000'000, leer zählt als 0, mindestens eine Summe. Rechnung: ein Durchschnittsbeitrag (Summen geteilt durch die Zahl der Beiträge). Rate auf Follower = Interaktionen je Beitrag ÷ Follower × 100; Rate auf Reichweite = alle Interaktionen ÷ alle Reichweiten × 100 (Summe durch Summe). **Kein bester und kein schwächster Beitrag, kein Balkendiagramm.** Dokument: Kennzahlen, Tabelle «Zahl | Summe über n Beiträge | je Beitrag», Vergleich, Hinweise ohne Beitragsnummern, Erklärung. CSV: Kopfzeile wie bisher, Zeile «Summe über n Beiträgen» und Zeile «Durchschnitt je Beitrag». CRM-Eingabe: eine Zeile «Summen über n Beiträge: …». «Beispiel einfügen» setzt SAMPLE_KURZ (dieselben fünf Beiträge als Summen: 245, 30, 24, 48, Reichweite 7'020 bei 1'240 Followern; gleiche 5,6 % wie im Einzelmodus).
+- **Einzelmodus**: wie unten beschrieben (Beitragszeilen, Diagramm, bester und schwächster Beitrag).
+
+## Eingaben (Einzelmodus)
 | Feld | Typ | Pflicht | Vorbefüllung aus Profil | Validierung | Hilfetext |
 |---|---|---|---|---|---|
 | Firma (Kopf im Dokument) | text (ProfileFieldsForm) | nein | `firma` | bis 200 Zeichen (Profil) | Wird nur im Kopf des Dokuments gezeigt |
@@ -48,7 +55,11 @@ Schnitt, zwei Wege, getrennt ausgewiesen:
 
 Bester und schwächster Beitrag: nach Rate auf Follower (gleich geordnet wie die Interaktionen). Bei Gleichstand gilt der erste. Abstand zum eigenen Schnitt auf Follower: in Prozentpunkten (Rate minus Schnitt) und in Prozent des Schnitts ((Rate minus Schnitt) ÷ Schnitt × 100; entfällt, wenn der Schnitt 0 ist).
 
-Keine Einordnung gegen Branchenwerte: Es gibt keine Datei `data/benchmarks-engagement.json`, keine Aussage wie «gut», «schlecht» oder «überdurchschnittlich» gegenüber einem Markt. Die Auswertung vergleicht nur Beiträge der Person untereinander. Das Dokument sagt: «Keine Einordnung gegen Branchenwerte, weil uns eine belastbare Quelle fehlt.»
+**Vergleichswert (B1, `data/engagement-benchmarks.json`):** Die Datei trägt `meta { name, source, url, asOf }` und je Plattform `{ plattform, formel, formelText, wert, jahr }`. Sie enthält nur Werte, bei denen die Formel der Quelle genau zur Rechnung des Werkzeugs passt (Prüfung am 09.10.2026 auf der Seite der Quelle, siehe `meta.note`):
+- **Instagram 0,48 % (2025):** Socialinsider rechnet (Likes + Kommentare) ÷ Follower × 100 je Beitrag. Das Werkzeug rechnet dafür **nur Feld a und b** (`formel: "likes_kommentare"`), nicht Teilen und Gespeichert; der Vergleich steht darum neben der Rate mit den Feldern a und b, nicht neben der Hauptrate.
+- **Facebook 0,15 % (2025):** Socialinsider rechnet (Reaktionen + Kommentare + Teilen) ÷ Fans × 100, das ist die Rate des Werkzeugs (`formel: "alle"`).
+- **Nicht aufgenommen:** LinkedIn (dort nicht geprüft), TikTok (die Seite nennt für 2025 3,70 % und 3,73 % und für 2026 2,60 %), Hootsuite (3,5 % und 3 % in zwei Artikeln, Formel nicht genannt). Für diese Plattformen gibt es keinen Satz und keine Zahl; das Dokument sagt: «Keine Einordnung gegen Branchenwerte, weil uns eine belastbare Quelle fehlt.»
+Der Satz im Dokument («Zum Vergleich»): «Du hast X (Formel, je Beitrag im Schnitt). Der Durchschnitt internationaler Marken lag 2025 bei Y (Socialinsider, nicht Schweiz).» dazu zwei Balken und der Hinweis, dass der Wert Konten jeder Grösse und Branche mischt und nichts darüber sagt, was für das Konto gut ist. Keine Wertung («gut», «schlecht», «überdurchschnittlich»). Die Quelle steht mit Adresse im Dokument. Fehlen die Daten oder die Quelle (`meta`), entfällt der Vergleich ohne Fehler (`loadBenchmarks`, `benchmarkFor`).
 
 Richtwerte von Alperna, keine Statistik: Unter drei Beiträgen warnt das Werkzeug («Mit weniger als drei Beiträgen sagt der Schnitt wenig»); empfohlen sind mindestens fünf Beiträge. Beides sind Faustregeln, im UI und im Dokument so benannt.
 
@@ -91,7 +102,7 @@ Mindestens 24 Fälle in `logic.test.ts`: beide Formeln mit Handrechnung, Schnitt
 
 ## Nicht Teil dieses Tools
 - Kein automatisches Auslesen von Plattformen, kein Anmelden bei Instagram, LinkedIn, Facebook oder TikTok.
-- Keine Einordnung gegen Branchen- oder Marktwerte, keine Bewertung als «gut» oder «schlecht».
+- Keine Bewertung als «gut» oder «schlecht»; der Vergleichswert (nur Instagram und Facebook) steht neben der Zahl der Person, ohne Wertung.
 - Keine Entwicklung über die Zeit (Verlauf, Monatsvergleich), keine Aufteilung nach Beitragsart oder Format.
 - Keine KI, kein Server ausser dem Versand des Ergebnisses ins CRM.
 - Kein Schreiben ins Firmenprofil.

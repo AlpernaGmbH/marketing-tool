@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "name": "Socialinsider",
+    "source": "Socialinsider, Social Media Benchmarks 2026 (Auswertung von 70 Millionen Beiträgen internationaler Marken auf TikTok, Instagram, Facebook und X, Januar 2024 bis Dezember 2025). Die Werte stehen in der Tabelle «Social media benchmarks 2026 by platform» (Spalte 2025); die Formeln in der Methodik der Seite.",
+    "url": "https://www.socialinsider.io/social-media-benchmarks",
+    "asOf": "2026-10-09",
+    "note": "Nur Plattformen, bei denen die Formel der Quelle genau zu einer Formel des Werkzeugs passt: Instagram (Likes plus Kommentare, geteilt durch Follower, je Beitrag) und Facebook (Reaktionen plus Kommentare plus Teilen, geteilt durch Fans, je Beitrag). Internationale Marken, nicht Schweiz. Nicht aufgenommen: LinkedIn (Quelle dort nicht geprüft), TikTok (die Seite nennt für 2025 sowohl 3,70 % als auch 3,73 % und für 2026 2,60 %) und die Werte von Hootsuite (3,5 % und 3 % in zwei Artikeln, Formel nicht genannt)."
+  },
+  "werte": [
+    {
+      "plattform": "instagram",
+      "formel": "likes_kommentare",
+      "formelText": "Likes und Kommentare, geteilt durch Follower",
+      "wert": 0.48,
+      "jahr": 2025
+    },
+    {
+      "plattform": "facebook",
+      "formel": "alle",
+      "formelText": "Reaktionen, Kommentare und Teilen, geteilt durch Follower",
+      "wert": 0.15,
+      "jahr": 2025
+    }
+  ]
+}

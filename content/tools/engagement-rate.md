@@ -1,17 +1,17 @@
 ---
 title: "Engagement-Rate berechnen Schweiz: Beiträge vergleichen"
-description: "Berechne die Interaktionsrate deiner Beiträge nach zwei Formeln, mit Balkendiagramm und Erklärung. Kostenlos, ohne Konto, ohne Branchenvergleich."
+description: "Berechne die Interaktionsrate nach zwei Formeln, mit Summen oder je Beitrag, bei Instagram und Facebook mit Vergleichswert. Kostenlos, ohne Konto."
 h1: "Engagement-Rate-Rechner für Schweizer KMU"
-tagline: "Interaktionsrate deiner Beiträge nach zwei Formeln: pro Beitrag, im Schnitt, mit Balkendiagramm und Erklärung."
+tagline: "Interaktionsrate nach zwei Formeln, mit Summen oder je Beitrag, bei Instagram und Facebook mit Vergleichswert."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:
-  - "Du bekommst die Interaktionsrate jedes Beitrags und im Schnitt, nach zwei Formeln, mit Balkendiagramm."
-  - "Du tippst die Followerzahl und die Zahlen von bis zu zehn Beiträgen aus der Statistik der Plattform ab."
-  - "Danach weisst du, welcher Beitrag über und welcher unter deinem eigenen Schnitt liegt."
+  - "Du bekommst die Interaktionsrate nach zwei Formeln, kurz für alle Beiträge zusammen oder für jeden einzeln."
+  - "Du tippst die Followerzahl und wenige Summen aus der Statistik ab, oder die Zahlen von bis zu zehn Beiträgen."
+  - "Danach siehst du bei Instagram und Facebook deinen Wert neben dem Durchschnitt internationaler Marken."
 ablauf:
-  - "Zahlen abtippen"
+  - "Zahlen eintragen"
   - "Rate berechnen"
-  - "Beiträge vergleichen"
+  - "Vergleichen"
 ---
 ## Warum das wichtig ist
 Die Engagement-Rate zeigt, bei welchen Beiträgen deine Follower reagieren. Das sagt mehr über deinen Auftritt als die Followerzahl allein.
@@ -19,14 +19,15 @@ Die Engagement-Rate zeigt, bei welchen Beiträgen deine Follower reagieren. Das 
 - **Ein Vergleich statt einer Zahl:** Du siehst, welcher Beitrag über deinem eigenen Schnitt liegt und welcher darunter.
 - **Zwei Formeln:** Eine rechnet auf deine Follower, die andere auf die Reichweite.
 - **Lernen statt raten:** Ob das Fassadenfoto aus Gossau oder der Beitrag zum Team besser ankommt, steht in deinen Zahlen.
-- **Ehrlich eingeordnet:** Wir vergleichen nur deine Beiträge untereinander, weil uns für Branchenwerte eine belastbare Quelle fehlt.
+- **Ehrlich eingeordnet:** Bei Instagram und Facebook nennen wir den Durchschnitt internationaler Marken mit Quelle. Bei LinkedIn und TikTok fehlt uns eine Quelle mit passender Formel, also gibt es dort keine Zahl.
 
 => Gleich darunter: was du mit dem Ergebnis tust.
 
 ## So nutzt du das Ergebnis
-1. **Den besten Beitrag ansehen.** Notiere, was Thema, Bild und Text gemeinsam haben, und plane davon mehr.
-2. **Den schwächsten Beitrag prüfen.** Frag dich, ob Thema, Bild oder Zeitpunkt nicht zu deinen Followern in Herisau oder Appenzell gepasst haben.
-3. **Beide Raten lesen.** Ist die Rate auf Reichweite hoch, die Reichweite aber klein, kam der Beitrag bei denen an, die ihn sahen. Nur sahen ihn wenige.
+1. **Den Vergleichswert lesen.** Er mischt Konten jeder Grösse und stammt nicht aus der Schweiz, also nimm ihn als Anhaltspunkt und nicht als Ziel.
+2. **Im Einzelmodus den besten Beitrag ansehen.** Notiere, was Thema, Bild und Text gemeinsam haben, und plane davon mehr.
+3. **Den schwächsten Beitrag prüfen.** Frag dich, ob Thema, Bild oder Zeitpunkt nicht zu deinen Followern in Herisau oder Appenzell gepasst haben.
+4. **Beide Raten lesen.** Ist die Rate auf Reichweite hoch, die Reichweite aber klein, kam der Beitrag bei denen an, die ihn sahen. Nur sahen ihn wenige.
 
 => Gleich darunter: die Fehler, die den Vergleich verfälschen.
 
@@ -36,18 +37,12 @@ Die Engagement-Rate zeigt, bei welchen Beiträgen deine Follower reagieren. Das 
 - **Mit einem Beitrag rechnen.** Ein einzelner Beitrag kann Zufall sein, also werte mindestens fünf aus (Richtwert von Alperna, keine Statistik).
 
 ## Beispiel
-Malerei Keller, Gossau, wertet fünf Instagram-Beiträge aus, bei 1'240 Followern. Je Beitrag stehen die Interaktionen, die Rate auf Follower und die Rate auf Reichweite da.
-
-- **Fassade Gossau:** 86 Interaktionen, 6,94 % und 5,66 %.
-- **Team beim Streichen:** 50 Interaktionen, 4,03 % und 4,24 %.
-- **Vorher nachher Treppenhaus:** 123 Interaktionen, 9,92 % und 5,32 %.
-- **Farbtrends Herbst:** 38 Interaktionen, 3,06 % und 3,96 %.
-- **Lehrling gesucht:** 50 Interaktionen, 4,03 % und 4,76 %.
-
-Die Rechnung für den ersten Beitrag: 62 Likes, 8 Kommentare, 5 Mal geteilt und 11 Mal gespeichert sind 86 Interaktionen. 86 geteilt durch 1'240 Follower, mal 100, ergibt 6,94 %. 86 geteilt durch 1'520 Reichweite ergibt 5,66 %.
+Malerei Keller, Gossau, wertet fünf Instagram-Beiträge aus, bei 1'240 Followern. Beim ersten Beitrag sind 62 Likes, 8 Kommentare, 5 Mal geteilt und 11 Mal gespeichert zusammen 86 Interaktionen. 86 geteilt durch 1'240 Follower, mal 100, ergibt 6,94 %. 86 geteilt durch 1'520 Reichweite ergibt 5,66 %.
 
 - **Schnitt:** 5,6 % auf Follower, 4,79 % auf Reichweite. Summe durch Summe: 347 Interaktionen bei 7'020 Reichweite ergeben 4,94 %.
 - **Bester Beitrag:** Vorher nachher Treppenhaus, 4,32 Prozentpunkte über dem Schnitt. **Schwächster:** Farbtrends Herbst, 2,53 Prozentpunkte darunter.
+- **Kurzmodus:** Mit den Summen (245 Likes, 30 Kommentare, 24 Mal geteilt, 48 Mal gespeichert, 7'020 Reichweite) kommt sie auf dieselben 5,6 %.
+- **Vergleich:** Nur Likes und Kommentare gerechnet, so wie die Quelle, sind es 4,44 %. Der Durchschnitt internationaler Marken lag 2025 bei 0,48 % (Socialinsider, nicht Schweiz).
 
 Der Betrieb zeigt künftig öfter Vorher-nachher-Bilder.
 
@@ -56,7 +51,7 @@ Der Betrieb zeigt künftig öfter Vorher-nachher-Bilder.
 Beide, sie beantworten zwei Fragen zur Engagement-Rate. Die Rate auf Follower zeigt, welcher Anteil deiner Follower reagiert hat, und ist über Beiträge hinweg vergleichbar. Die Rate auf Reichweite zeigt, wie stark ein Beitrag bei denen ankam, die ihn sahen. Der Rechner zeigt beide.
 
 ### Was ist eine gute Engagement-Rate?
-Dafür fehlt uns eine belastbare Quelle, darum nennen wir keine Zahl und vergleichen nicht mit Branchenwerten. Vergleiche deine eigenen Beiträge desselben Kanals im selben Zeitraum. Liegt ein Beitrag über deinem Schnitt, ist er besser angekommen als deine Beiträge im Durchschnitt.
+Einen festen Wert gibt es nicht. Zum Vergleich: Internationale Marken kamen im Schnitt auf 0,48 % bei Instagram (Quelle: Socialinsider, 2025; Likes und Kommentare, geteilt durch Follower) und auf 0,15 % bei Facebook (Quelle: Socialinsider, 2025; Reaktionen, Kommentare und Teilen, geteilt durch Follower). Der Wert mischt alle Grössen und Branchen und stammt nicht aus der Schweiz. Für LinkedIn und TikTok nennen wir keine Zahl.
 
 ### Wo finde ich die Zahlen?
 In der Statistik der Plattform: bei Instagram und Facebook unter «Insights», bei LinkedIn unter «Beitragsanalysen», bei TikTok unter «Analysen». Der Rechner nennt dir die Stelle zu jeder Plattform. Auslesen können wir die Zahlen nicht, du tippst sie ab.

@@ -42,7 +42,8 @@ describe("engagement-rate: PDF und Word", () => {
       const zip = await JSZip.loadAsync(await buildDocx(doc));
       const xml = await zip.file("word/document.xml")!.async("string");
       expect(xml).toContain("<w:tbl>");
-      expect(xml).toContain("Keine Einordnung gegen Branchenwerte");
+      // Instagram hat einen Vergleichswert, LinkedIn nicht: je einer der beiden Hinweise
+      expect(xml).toMatch(/Keine Einordnung gegen Branchenwerte|Durchschnitt internationaler Marken/);
       expect(xml).toContain("Rate auf");
     });
   }

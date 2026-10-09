@@ -4,14 +4,17 @@ import { styleIssues } from "@/lib/content-rules";
 import { toMarkdown } from "@/lib/export/model";
 import { isToolDone } from "@/lib/progress";
 import {
+  BENCHMARKS,
   CSV_BOM,
   EMPTY_STATE,
   LIMITS,
   MAX_POSTS,
   NOTE_BRANCHE,
+  NOTE_VERGLEICHSWERT,
   NUTZUNG,
   PLATTFORMEN,
   SAMPLE,
+  SAMPLE_KURZ,
   addPost,
   chartLabel,
   chartSvg,
@@ -20,8 +23,12 @@ import {
   eingabeText,
   emptyPost,
   interactions,
+  isBlankKurz,
   isBlankPost,
+  loadBenchmarks,
+  benchmarkFor,
   markedPost,
+  modusOf,
   niceScale,
   parseCount,
   parseState,
@@ -39,6 +46,7 @@ import {
   validate,
   type FormState,
   type Input,
+  type KurzForm,
   type PostForm,
 } from "./logic";
 
@@ -208,8 +216,19 @@ describe("engagement-rate: Anzahl der Beiträge", () => {
   });
 
   it("die Startzeilen ohne Zahlen ergeben einen Fehler, kein Ergebnis", () => {
-    expect(validate(EMPTY_STATE)).toEqual(["Trage ein, wie viele Follower du am Tag der Auswertung hast.", "Trage für mindestens einen Beitrag Zahlen ein."]);
+    const einzeln: FormState = { ...EMPTY_STATE, modus: "einzeln" };
+    expect(validate(einzeln)).toEqual(["Trage ein, wie viele Follower du am Tag der Auswertung hast.", "Trage für mindestens einen Beitrag Zahlen ein."]);
     expect(EMPTY_STATE.posts).toHaveLength(LIMITS.beitraege.start);
+  });
+
+  it("der neue Stand beginnt im Kurzmodus; ohne Angabe gilt «einzeln» (ältere Stände)", () => {
+    expect(modusOf(EMPTY_STATE)).toBe("kurz");
+    expect(validate(EMPTY_STATE)).toEqual([
+      "Trage ein, wie viele Follower du am Tag der Auswertung hast.",
+      "Trage ein, über wie viele Beiträge du die Summen bildest.",
+      "Trage mindestens eine Summe ein, zum Beispiel die Likes.",
+    ]);
+    expect(modusOf({})).toBe("einzeln");
   });
 });
 
@@ -504,18 +523,28 @@ describe("engagement-rate: Dokument", () => {
     expect(tiktok).toContain("«Aufrufe» zählen, wie oft das Video angesehen wurde");
   });
 
-  it("keine Einordnung gegen Branchenwerte: der Hinweis steht da, Wertungen gegenüber dem Markt nicht", () => {
-    const text = JSON.stringify(doc.blocks);
+  it("ohne Vergleichswert (LinkedIn): der Hinweis steht da, Wertungen gegenüber dem Markt nicht", () => {
+    const li = toDocument(sum(form({ plattform: "linkedin", posts: [post(10, 2, 1, "", 500), post(5, 1, 0, "", 400), post(8, 0, 1, "", 450)] })));
+    const text = JSON.stringify(li.blocks);
     expect(text).toContain(NOTE_BRANCHE);
     expect(NOTE_BRANCHE).toBe("Keine Einordnung gegen Branchenwerte, weil uns eine belastbare Quelle fehlt.");
-    expect(text).not.toMatch(/überdurchschnittlich|unterdurchschnittlich|schlecht|Branchenschnitt|Benchmark/i);
+    expect(text).not.toMatch(/überdurchschnittlich|unterdurchschnittlich|schlecht|Branchenschnitt|Benchmark|Zum Vergleich/i);
     expect(text).toContain("Verglichen werden nur deine Beiträge untereinander.");
+  });
+
+  it("mit Vergleichswert (Instagram): der Satz nennt Quelle, Jahr und «nicht Schweiz», der Hinweis zu Branchenwerten entfällt", () => {
+    const text = JSON.stringify(doc.blocks);
+    expect(text).toContain(NOTE_VERGLEICHSWERT);
+    expect(text).not.toContain(NOTE_BRANCHE);
+    expect(text).toContain("Der Durchschnitt internationaler Marken lag 2025 bei 0,48 % (Socialinsider, nicht Schweiz).");
+    expect(text).toContain("https://www.socialinsider.io/social-media-benchmarks");
+    expect(text).not.toMatch(/überdurchschnittlich|unterdurchschnittlich|schlecht|Branchenschnitt/i);
   });
 
   it("drei Hinweise zur Nutzung, der Richtwert ist so benannt", () => {
     expect(NUTZUNG).toHaveLength(3);
     const last = doc.blocks[doc.blocks.length - 1];
-    expect(last).toEqual({ type: "list", items: [NOTE_BRANCHE, ...NUTZUNG] });
+    expect(last).toEqual({ type: "list", items: [NOTE_VERGLEICHSWERT, ...NUTZUNG] });
     expect(NUTZUNG[0]).toMatch(/^Vergleiche gleiche Zeiträume/);
     expect(NUTZUNG[1]).toMatch(/^Zähle nur eigene Beiträge ohne bezahlte Reichweite/);
     expect(NUTZUNG[2]).toContain("mindestens fünf Beiträge");
@@ -526,7 +555,7 @@ describe("engagement-rate: Dokument", () => {
     expect(JSON.stringify(doc.blocks)).not.toContain("Hinweise zu deinen Zahlen");
     const eng = toDocument(sum(form()));
     const headings = eng.blocks.filter((b) => b.type === "heading").map((b) => (b.type === "heading" ? b.text : ""));
-    expect(headings).toEqual(["Ergebnis", "Hinweise zu deinen Zahlen", "Vergleich deiner Beiträge", "So rechnet das Werkzeug", "Hinweise zur Auswertung"]);
+    expect(headings).toEqual(["Ergebnis", "Zum Vergleich", "Hinweise zu deinen Zahlen", "Vergleich deiner Beiträge", "So rechnet das Werkzeug", "Hinweise zur Auswertung"]);
   });
 
   it("Formatierung: 81 Interaktionen bei 1'000 Followern sind 8,1 %", () => {

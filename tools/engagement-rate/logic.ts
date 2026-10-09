@@ -1,10 +1,14 @@
+import { z } from "zod";
+import benchmarkData from "@/data/engagement-benchmarks.json";
 import { numberCH, pctCH } from "@/lib/ch";
 import { safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
 
 // Engagement-Rate-Rechner: reine Funktionen, kein React, kein DOM, kein Netz (CLAUDE.md, Harte Regel 3).
 // Die Person tippt die Zahlen aus der Statistik der Plattform ab; Instagram, LinkedIn, Facebook und TikTok lassen sich nicht
-// auslesen. Gerechnet wird nach zwei Formeln (auf Follower, auf Reichweite). Es gibt keine Einordnung gegen Branchenwerte:
-// Dafür fehlt eine belastbare Quelle (Harte Regel 7). Die Auswertung vergleicht nur Beiträge der Person untereinander.
+// auslesen. Gerechnet wird nach zwei Formeln (auf Follower, auf Reichweite). Zwei Wege der Eingabe: «kurz» (Summen über alle
+// Beiträge und deren Zahl, ein Durchschnittsbeitrag) und «einzeln» (bis zu zehn Beiträge). Ein Vergleichswert («Du hast X, der
+// Durchschnitt internationaler Marken lag bei Y») erscheint nur dort, wo die Formel der Quelle genau zur Formel des Werkzeugs
+// passt (data/engagement-benchmarks.json, Harte Regel 7); sonst entfällt der Satz.
 
 export const SLUG = "engagement-rate";
 
@@ -91,6 +95,51 @@ export function plattformOf(key: string): Plattform {
   return PLATTFORMEN.find((p) => p.key === key) ?? PLATTFORMEN[0];
 }
 
+// ---- Vergleichswerte (data/engagement-benchmarks.json) ----------------------------------------------
+
+export const BENCHMARK_FORMELN = ["likes_kommentare", "alle"] as const;
+export type BenchmarkFormel = (typeof BENCHMARK_FORMELN)[number];
+
+const benchmarkSchema = z.object({
+  meta: z.object({
+    name: z.string().min(2),
+    source: z.string().min(10),
+    url: z.string().url(),
+    asOf: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    note: z.string().optional(),
+  }),
+  werte: z.array(
+    z.object({
+      plattform: z.enum(PLATTFORM_KEYS),
+      formel: z.enum(BENCHMARK_FORMELN),
+      formelText: z.string().min(5),
+      wert: z.number().positive().max(100),
+      jahr: z.number().int().min(2020).max(2100),
+    }),
+  ),
+});
+export type BenchmarkWert = z.infer<typeof benchmarkSchema>["werte"][number];
+export type BenchmarkMeta = z.infer<typeof benchmarkSchema>["meta"];
+
+/**
+ * Liest die Vergleichswerte. Ohne gültige Quelle (meta) oder bei kaputten Daten gibt es keine Werte; dann entfällt der Vergleichssatz.
+ * Zwei Werte für dieselbe Plattform: der erste gilt.
+ */
+export function loadBenchmarks(raw: unknown): { meta: BenchmarkMeta | null; werte: BenchmarkWert[] } {
+  const r = benchmarkSchema.safeParse(raw);
+  if (!r.success) return { meta: null, werte: [] };
+  const seen = new Set<string>();
+  const werte = r.data.werte.filter((w) => (seen.has(w.plattform) ? false : (seen.add(w.plattform), true)));
+  return { meta: r.data.meta, werte };
+}
+
+export const BENCHMARKS = loadBenchmarks(benchmarkData);
+
+/** Der Vergleichswert zu einer Plattform, oder null, wenn keine Quelle mit passender Formel vorliegt. */
+export function benchmarkFor(plattform: PlattformKey, bm = BENCHMARKS): BenchmarkWert | null {
+  return bm.meta ? (bm.werte.find((w) => w.plattform === plattform) ?? null) : null;
+}
+
 // ---- Grenzen und Texte -----------------------------------------------------------------------------
 
 export const LIMITS = {
@@ -99,6 +148,8 @@ export const LIMITS = {
   zahl: { max: 1_000_000_000 },
   name: 60,
   beitraege: { min: 1, max: 10, start: 3 },
+  /** Zahl der Beiträge, über die im Kurzmodus summiert wird. */
+  beitraegeKurz: { min: 1, max: 1_000 },
 } as const;
 export const MAX_POSTS = LIMITS.beitraege.max;
 
@@ -107,6 +158,9 @@ export const RICHTWERT_NOTE = "Richtwert von Alperna, keine Statistik";
 export const RICHTWERT = { hinweisUnter: 3, empfohlen: 5 } as const;
 
 export const NOTE_BRANCHE = "Keine Einordnung gegen Branchenwerte, weil uns eine belastbare Quelle fehlt.";
+/** Statt NOTE_BRANCHE, wo ein Vergleichswert mit passender Formel vorliegt. */
+export const NOTE_VERGLEICHSWERT =
+  "Der Vergleichswert ist ein Durchschnitt internationaler Marken jeder Grösse und Branche, nicht der Schweiz. Er sagt nicht, was für dein Konto gut ist.";
 export const NOTE_VERGLEICH = "Verglichen werden nur deine Beiträge untereinander.";
 
 export const NUTZUNG: readonly string[] = [
@@ -121,11 +175,24 @@ const fmtLimit = (n: number) => numberCH(n, 0);
 
 /** Eine Zeile des Formulars: alles Text, so wie die Person es tippt. */
 export type PostForm = { name: string; a: string; b: string; c: string; d: string; reichweite: string };
-export type FormState = { plattform: PlattformKey; follower: string; posts: PostForm[] };
+/** Eingabe: «kurz» = Summen über alle Beiträge und deren Zahl (wenige Zahlen), «einzeln» = Zahlen je Beitrag (Diagramm, bester Beitrag). */
+export const MODI = ["kurz", "einzeln"] as const;
+export type Modus = (typeof MODI)[number];
+export const isModus = (v: unknown): v is Modus => v === "kurz" || v === "einzeln";
+export const MODUS_LABELS: Record<Modus, string> = { kurz: "Summen über mehrere Beiträge", einzeln: "Beiträge einzeln" };
+
+/** Kurzmodus, alles Text: Zahl der Beiträge und die Summen der Felder über diese Beiträge. */
+export type KurzForm = { beitraege: string; a: string; b: string; c: string; d: string; reichweite: string };
+/** Ohne `modus` gilt «einzeln» (so wurden ältere Stände gespeichert). */
+export type FormState = { plattform: PlattformKey; follower: string; posts: PostForm[]; modus?: Modus; kurz?: KurzForm };
 
 export const emptyPost = (): PostForm => ({ name: "", a: "", b: "", c: "", d: "", reichweite: "" });
+export const emptyKurz = (): KurzForm => ({ beitraege: "", a: "", b: "", c: "", d: "", reichweite: "" });
 export const startPosts = (): PostForm[] => Array.from({ length: LIMITS.beitraege.start }, emptyPost);
-export const newForm = (): FormState => ({ plattform: "instagram", follower: "", posts: startPosts() });
+/** Neues Formular: Standard ist der Kurzmodus (wenige Zahlen statt bis zu 50). */
+export const newForm = (): FormState => ({ plattform: "instagram", follower: "", posts: startPosts(), modus: "kurz", kurz: emptyKurz() });
+export const modusOf = (form: Pick<FormState, "modus">): Modus => form.modus ?? "einzeln";
+export const kurzOf = (form: Pick<FormState, "kurz">): KurzForm => form.kurz ?? emptyKurz();
 
 /**
  * Zahl aus einem Textfeld. Leer ergibt null, etwas anderes als eine ganze Zahl ab 0 ergibt NaN.
@@ -158,6 +225,30 @@ export function setPost(posts: PostForm[], index: number, patch: Partial<PostFor
   return posts.map((p, i) => (i === index ? { ...p, ...patch } : p));
 }
 
+/** Ob im Kurzmodus keine Summe der Interaktionsfelder (und keine Reichweite) steht. */
+export function isBlankKurz(k: KurzForm, plattform: PlattformKey): boolean {
+  const keys = [...plattformOf(plattform).felder.map((f) => f.key), "reichweite" as const];
+  return keys.every((key) => k[key].trim() === "");
+}
+
+function validateKurz(form: FormState): string[] {
+  const out: string[] = [];
+  const k = kurzOf(form);
+  const n = parseCount(k.beitraege);
+  const { min, max } = LIMITS.beitraegeKurz;
+  if (n === null) out.push("Trage ein, über wie viele Beiträge du die Summen bildest.");
+  else if (Number.isNaN(n) || n < min || n > max) out.push(`Beiträge: Trage eine ganze Zahl von ${fmtLimit(min)} bis ${fmtLimit(max)} ein.`);
+  const p = plattformOf(form.plattform);
+  const labels: [KeyOfKurz, string][] = [...p.felder.map((x): [KeyOfKurz, string] => [x.key, x.label]), ["reichweite", p.reichweiteLabel]];
+  for (const [key, label] of labels) {
+    const v = parseCount(k[key]);
+    if (v !== null && (Number.isNaN(v) || v > LIMITS.zahl.max)) out.push(`${label}: Trage eine ganze Zahl von 0 bis ${fmtLimit(LIMITS.zahl.max)} ein.`);
+  }
+  if (isBlankKurz(k, form.plattform)) out.push(`Trage mindestens eine Summe ein, zum Beispiel die ${p.felder[0].label}.`);
+  return out;
+}
+type KeyOfKurz = keyof KurzForm;
+
 /**
  * Prüft das Formular. Jede Meldung ist ein Fehler, der das Ergebnis verhindert; Auffälligkeiten, die das Ergebnis nicht
  * verhindern, stehen als Hinweise in `summary().hinweise`.
@@ -169,6 +260,8 @@ export function validate(form: FormState): string[] {
   else if (Number.isNaN(f) || f < LIMITS.follower.min || f > LIMITS.follower.max) {
     out.push(`Follower: Trage eine ganze Zahl von ${fmtLimit(LIMITS.follower.min)} bis ${fmtLimit(LIMITS.follower.max)} ein.`);
   }
+
+  if (modusOf(form) === "kurz") return [...out, ...validateKurz(form)];
 
   if (form.posts.length > MAX_POSTS) out.push(`Du kannst höchstens ${MAX_POSTS} Beiträge auswerten.`);
 
@@ -203,13 +296,37 @@ export type PostInput = {
   /** null: nicht angegeben. */
   reichweite: number | null;
 };
-export type Input = { plattform: PlattformKey; follower: number; posts: PostInput[] };
+/** Summen des Kurzmodus (ganze Zahlen); `reichweite` null, wenn nicht angegeben. */
+export type Summen = { a: number; b: number; c: number; d: number; reichweite: number | null };
+/**
+ * `modus` fehlt bei «einzeln». Im Kurzmodus steht in `posts` ein einziger Durchschnittsbeitrag (Summen geteilt durch die Zahl der
+ * Beiträge, daher mit Nachkommastellen), `anzahl` ist die Zahl der Beiträge und `summen` sind die eingegebenen Summen.
+ */
+export type Input = { plattform: PlattformKey; follower: number; posts: PostInput[]; modus?: "kurz"; anzahl?: number; summen?: Summen };
 
 /** Das Formular als Zahlen, oder null, wenn `validate` etwas meldet. */
 export function toInput(form: FormState): Input | null {
   if (validate(form).length > 0) return null;
   const follower = parseCount(form.follower);
   if (follower === null || Number.isNaN(follower)) return null;
+  if (modusOf(form) === "kurz") {
+    const k = kurzOf(form);
+    const n = parseCount(k.beitraege);
+    if (n === null || Number.isNaN(n)) return null;
+    const offeredKurz = new Set<string>(plattformOf(form.plattform).felder.map((f) => f.key));
+    const sumOf = (key: FeldKey) => (offeredKurz.has(key) ? (parseCount(k[key]) ?? 0) : 0);
+    const summen: Summen = { a: sumOf("a"), b: sumOf("b"), c: sumOf("c"), d: sumOf("d"), reichweite: parseCount(k.reichweite) };
+    const avg: PostInput = {
+      nr: 1,
+      name: `Durchschnitt von ${n} ${n === 1 ? "Beitrag" : "Beiträgen"}`,
+      a: summen.a / n,
+      b: summen.b / n,
+      c: summen.c / n,
+      d: summen.d / n,
+      reichweite: summen.reichweite === null ? null : summen.reichweite / n,
+    };
+    return { plattform: form.plattform, follower, posts: [avg], modus: "kurz", anzahl: n, summen };
+  }
   const offered = new Set<string>(plattformOf(form.plattform).felder.map((f) => f.key));
   const posts: PostInput[] = [];
   form.posts.forEach((p, i) => {
@@ -255,9 +372,32 @@ export type Abstand = {
   prozent: number | null;
 };
 
+/** «Du hast X, der Durchschnitt internationaler Marken lag bei Y»: nur, wenn die Formel der Quelle zur Rechnung passt. */
+export type Vergleich = {
+  formel: BenchmarkFormel;
+  /** Was gezählt wurde, zum Beispiel «Likes und Kommentare, geteilt durch Follower». */
+  formelText: string;
+  /** Mittel der Raten der Person nach dieser Formel, in Prozent. */
+  du: number;
+  /** Wert der Quelle, in Prozent. */
+  ueblich: number;
+  jahr: number;
+  /** Kurzname der Quelle und Adresse (aus meta in data/engagement-benchmarks.json). */
+  quelle: string;
+  url: string;
+};
+
 export type Summary = {
   plattform: PlattformKey;
   follower: number;
+  /** Im Kurzmodus ein einziger Durchschnittsbeitrag. */
+  modus: Modus;
+  /** Zahl der ausgewerteten Beiträge (im Kurzmodus die eingegebene Zahl). */
+  anzahl: number;
+  /** Summen des Kurzmodus. */
+  summen?: Summen;
+  /** Vergleichswert der Quelle; null bei Plattformen ohne passende Formel. */
+  vergleich: Vergleich | null;
   posts: PostResult[];
   /** Mittel der Interaktionen je Beitrag. */
   schnittInteraktionen: number;
@@ -285,8 +425,25 @@ function abstand(post: PostResult, schnitt: number): Abstand {
 const beitraege = (nrs: number[]) =>
   `Beitrag ${nrs.length <= 1 ? String(nrs[0]) : `${nrs.slice(0, -1).join(", ")} und ${nrs[nrs.length - 1]}`}`;
 
+/** Hinweise im Kurzmodus: ohne Nummern einzelner Beiträge, weil es nur den Durchschnittsbeitrag gibt. */
+function hinweiseKurz(plattform: Plattform, follower: number, avg: PostResult | undefined, anzahl: number): string[] {
+  const out: string[] = [];
+  if (!avg) return out;
+  if (follower <= 0) out.push("Ohne Follower lässt sich keine Rate auf Follower rechnen.");
+  if (avg.interaktionen === 0) out.push("Die Summen ergeben 0 Interaktionen. Prüfe, ob du die Zahlen aus der richtigen Spalte der Statistik übernommen hast.");
+  if (anzahl < RICHTWERT.hinweisUnter) out.push(`Mit weniger als drei Beiträgen sagt der Schnitt wenig (${RICHTWERT_NOTE}).`);
+  if (avg.rateReichweite !== null && avg.rateReichweite > 100) out.push(`Die Interaktionen sind grösser als die ${plattform.reichweiteLabel}. Prüfe die ${plattform.reichweiteLabel}.`);
+  if (avg.reichweite === 0 && avg.interaktionen > 0) out.push(`Die ${plattform.reichweiteLabel} ist 0, obwohl es Interaktionen gibt. Prüfe die ${plattform.reichweiteLabel}.`);
+  if (follower > 0 && avg.interaktionen > follower) {
+    out.push("Im Schnitt gibt es mehr Interaktionen je Beitrag als Follower. Das ist möglich, wenn Beiträge weit über deine Follower hinaus verteilt wurden. Prüfe die Zahlen trotzdem.");
+  }
+  if (avg.reichweite === null) out.push(`Ohne ${plattform.reichweiteLabel} rechnet nur die Formel auf Follower.`);
+  return out;
+}
+
 /** Auffälligkeiten, die das Ergebnis nicht verhindern (Hinweis statt Fehler). */
-function hinweiseFor(plattform: Plattform, follower: number, posts: PostResult[]): string[] {
+function hinweiseFor(plattform: Plattform, follower: number, posts: PostResult[], kurz?: { anzahl: number }): string[] {
+  if (kurz) return hinweiseKurz(plattform, follower, posts[0], kurz.anzahl);
   const out: string[] = [];
   if (follower <= 0) out.push("Ohne Follower lässt sich keine Rate auf Follower rechnen.");
   if (posts.length > 0 && posts.every((p) => p.interaktionen === 0)) {
@@ -343,19 +500,37 @@ export function summary(input: Input): Summary {
     if (p.interaktionen < posts[worstI].interaktionen) worstI = i;
   });
 
+  const kurz = input.modus === "kurz";
   return {
     plattform: input.plattform,
     follower: input.follower,
+    modus: kurz ? "kurz" : "einzeln",
+    anzahl: kurz ? (input.anzahl ?? posts.length) : posts.length,
+    ...(input.summen ? { summen: input.summen } : {}),
+    vergleich: vergleichFor(input.plattform, input.follower, posts, schnittFollower),
     posts,
     schnittInteraktionen: mean(posts.map((p) => p.interaktionen)),
     schnittFollower,
     schnittReichweite: mitReichweite.length > 0 ? mean(mitReichweite.map((p) => p.rateReichweite ?? 0)) : null,
     summenRate: reichSumme > 0 ? (sum(mitReichweite.map((p) => p.interaktionen)) / reichSumme) * 100 : null,
     mitReichweite: mitReichweite.length,
-    best: posts.length > 0 ? abstand(posts[bestI], schnittFollower) : null,
-    worst: posts.length > 0 ? abstand(posts[worstI], schnittFollower) : null,
-    hinweise: hinweiseFor(plattform, input.follower, posts),
+    best: !kurz && posts.length > 0 ? abstand(posts[bestI], schnittFollower) : null,
+    worst: !kurz && posts.length > 0 ? abstand(posts[worstI], schnittFollower) : null,
+    hinweise: hinweiseFor(plattform, input.follower, posts, kurz ? { anzahl: input.anzahl ?? posts.length } : undefined),
   };
+}
+
+/**
+ * Vergleichswert zur Plattform. «likes_kommentare» rechnet nur Feld a und b (so rechnet die Quelle bei Instagram), «alle» alle Felder
+ * der Plattform. Ohne Follower, ohne Beitrag oder ohne Quelle mit passender Formel: null.
+ */
+export function vergleichFor(plattform: PlattformKey, follower: number, posts: PostResult[], schnittFollower: number, bm = BENCHMARKS): Vergleich | null {
+  const b = benchmarkFor(plattform, bm);
+  if (!b || !bm.meta || follower <= 0 || posts.length === 0) return null;
+  const du =
+    b.formel === "likes_kommentare" ? mean(posts.map((x) => rateFollower(x.werte.a + x.werte.b, follower) ?? 0)) : schnittFollower;
+  if (!Number.isFinite(du)) return null;
+  return { formel: b.formel, formelText: b.formelText, du, ueblich: b.wert, jahr: b.jahr, quelle: bm.meta.name, url: bm.meta.url };
 }
 
 // ---- Dokument --------------------------------------------------------------------------------------
@@ -400,11 +575,106 @@ function vergleichBlocks(s: Summary): DocBlock[] {
   return out;
 }
 
+/** «Zum Vergleich»: Satz und zwei Balken, nur wenn es einen Vergleichswert mit passender Formel gibt. */
+function benchmarkBlocks(s: Summary): DocBlock[] {
+  const v = s.vergleich;
+  if (!v) return [];
+  const du = Math.round(v.du * 100) / 100;
+  const ueblich = Math.round(v.ueblich * 100) / 100;
+  return [
+    { type: "heading", level: 1, text: "Zum Vergleich" },
+    {
+      type: "paragraph",
+      text: `Du hast ${pctCH(v.du, 2)} (${v.formelText}, je Beitrag im Schnitt). Der Durchschnitt internationaler Marken lag ${v.jahr} bei ${pctCH(v.ueblich, 2)} (${v.quelle}, nicht Schweiz).`,
+    },
+    {
+      type: "bars",
+      title: `Rate auf Follower in %, nach der Formel von ${v.quelle}`,
+      unit: " %",
+      items: [
+        { label: "Deine Beiträge", value: du, highlight: true },
+        { label: `Durchschnitt internationaler Marken, ${v.jahr}`, value: ueblich },
+      ],
+    },
+    { type: "paragraph", text: `${NOTE_VERGLEICHSWERT} Quelle: ${v.quelle}, ${v.url}` },
+  ];
+}
+
+function formelnKurz(p: Plattform): string[] {
+  const felder = p.felder.map((f) => f.label);
+  const reichweite = p.reichweiteLabel;
+  return [
+    `Als Interaktion zählen auf ${p.label}: ${felder.slice(0, -1).join(", ")} und ${felder[felder.length - 1]}, zusammengezählt.`,
+    "Rate auf Follower = Interaktionen je Beitrag (die Summe geteilt durch die Zahl der Beiträge) geteilt durch Follower, mal 100.",
+    `Rate auf ${reichweite} = alle Interaktionen geteilt durch alle ${reichweite}, mal 100. Sie zeigt, wie stark die Beiträge bei denen ankamen, die sie gesehen haben.`,
+    "Mit Summen gibt es keinen besten und keinen schwächsten Beitrag. Wähle «Beiträge einzeln», wenn du die Beiträge vergleichen willst.",
+  ];
+}
+
+/** Ergebnis im Kurzmodus: Kennzahlen, Tabelle der Summen, Vergleich, Hinweise. */
+function toDocumentKurz(s: Summary, kopf: Kopf): DocumentModel {
+  const p = plattformOf(s.plattform);
+  const firma = kopf.firma?.trim() || undefined;
+  const reichweite = p.reichweiteLabel;
+  const sm: Summen = s.summen ?? { a: 0, b: 0, c: 0, d: 0, reichweite: null };
+  const n = Math.max(1, s.anzahl);
+  const avg = s.posts[0];
+  const total = p.felder.reduce((a, f) => a + sm[f.key], 0);
+  const blocks: DocBlock[] = [
+    {
+      type: "facts",
+      items: [
+        { label: kopf.verein ? "Verein" : "Firma", value: firma ?? "nicht angegeben" },
+        { label: "Plattform", value: p.label },
+        { label: "Follower", value: numberCH(s.follower, 0) },
+        { label: "Beiträge", value: `${numberCH(n, 0)} zusammen ausgewertet` },
+      ],
+    },
+    { type: "heading", level: 1, text: "Ergebnis" },
+    {
+      type: "facts",
+      items: [
+        { label: "Interaktionen je Beitrag", value: numberCH(avg?.interaktionen ?? 0, 1) },
+        { label: "Rate auf Follower", value: pctCH(s.schnittFollower, 2) },
+        { label: `Rate auf ${reichweite}`, value: s.summenRate === null ? `keine ${reichweite} angegeben` : pctCH(s.summenRate, 2) },
+      ],
+    },
+    {
+      type: "table",
+      header: ["Zahl", `Summe über ${numberCH(n, 0)} ${n === 1 ? "Beitrag" : "Beiträge"}`, "je Beitrag"],
+      widths: [3, 2, 2],
+      rows: [
+        ...p.felder.map((f) => [f.label, numberCH(sm[f.key], 0), numberCH(sm[f.key] / n, 1)]),
+        ["Interaktionen insgesamt", numberCH(total, 0), numberCH(total / n, 1)],
+        [reichweite, sm.reichweite === null ? "–" : numberCH(sm.reichweite, 0), sm.reichweite === null ? "–" : numberCH(sm.reichweite / n, 1)],
+      ],
+    },
+    ...benchmarkBlocks(s),
+  ];
+  if (s.hinweise.length > 0) blocks.push({ type: "heading", level: 1, text: "Hinweise zu deinen Zahlen" }, { type: "list", items: s.hinweise });
+  const formeln = formelnKurz(p);
+  if (p.reichweiteHinweis) formeln.push(p.reichweiteHinweis);
+  blocks.push(
+    { type: "heading", level: 1, text: "So rechnet das Werkzeug" },
+    { type: "list", items: formeln },
+    { type: "heading", level: 1, text: "Hinweise zur Auswertung" },
+    { type: "list", items: [s.vergleich ? NOTE_VERGLEICHSWERT : NOTE_BRANCHE, ...NUTZUNG] },
+  );
+  return {
+    title: "Engagement-Rate",
+    subtitle: `${p.label}, ${numberCH(s.follower, 0)} Follower`,
+    firma: firma ?? (kopf.verein ? "Verein" : undefined),
+    blocks,
+    filename: `engagement-rate-${safeFilename(firma ?? "", p.key)}`,
+  };
+}
+
 /**
  * Ergebnis als Dokument für Bildschirm, PDF, Word und Markdown. Die Kennzahlen und die Tabelle stehen oben, weil der Server das
  * Ergebnis für das CRM auf 1'900 Zeichen kürzt. Im Bildschirm sitzt das Diagramm zwischen den Kennzahlen und der Tabelle.
  */
 export function toDocument(s: Summary, kopf: Kopf = {}): DocumentModel {
+  if (s.modus === "kurz") return toDocumentKurz(s, kopf);
   const p = plattformOf(s.plattform);
   const firma = kopf.firma?.trim() || undefined;
   const reichweite = p.reichweiteLabel;
@@ -450,6 +720,8 @@ export function toDocument(s: Summary, kopf: Kopf = {}): DocumentModel {
     });
   }
 
+  blocks.push(...benchmarkBlocks(s));
+
   if (s.hinweise.length > 0) {
     blocks.push({ type: "heading", level: 1, text: "Hinweise zu deinen Zahlen" }, { type: "list", items: s.hinweise });
   }
@@ -468,7 +740,7 @@ export function toDocument(s: Summary, kopf: Kopf = {}): DocumentModel {
     { type: "heading", level: 1, text: "So rechnet das Werkzeug" },
     { type: "list", items: formeln },
     { type: "heading", level: 1, text: "Hinweise zur Auswertung" },
-    { type: "list", items: [NOTE_BRANCHE, ...NUTZUNG] },
+    { type: "list", items: [s.vergleich ? NOTE_VERGLEICHSWERT : NOTE_BRANCHE, ...NUTZUNG] },
   );
 
   return {
@@ -489,6 +761,13 @@ export function reportMarkdown(s: Summary, kopf: Kopf = {}): string {
 export function eingabeText(input: Input): string {
   const p = plattformOf(input.plattform);
   const lines = [`Plattform: ${p.label}`, `Follower: ${numberCH(input.follower, 0)}`];
+  if (input.modus === "kurz" && input.summen) {
+    const n = input.anzahl ?? 1;
+    const werte = p.felder.map((f) => `${f.label} ${numberCH(input.summen?.[f.key] ?? 0, 0)}`);
+    werte.push(input.summen.reichweite === null ? `${p.reichweiteLabel} nicht angegeben` : `${p.reichweiteLabel} ${numberCH(input.summen.reichweite, 0)}`);
+    lines.push(`Summen über ${numberCH(n, 0)} ${n === 1 ? "Beitrag" : "Beiträge"}: ${werte.join(", ")}`);
+    return lines.join("\n");
+  }
   for (const post of input.posts) {
     const werte = p.felder.map((f) => `${f.label} ${numberCH(post[f.key], 0)}`);
     werte.push(post.reichweite === null ? `${p.reichweiteLabel} nicht angegeben` : `${p.reichweiteLabel} ${numberCH(post.reichweite, 0)}`);
@@ -523,6 +802,23 @@ export function toCsv(s: Summary): string {
   const head = [p.label, String(s.follower)];
   const blank = Array(p.felder.length + 1).fill("") as string[];
   const rows: string[][] = [csvHeader(s.plattform)];
+  if (s.modus === "kurz" && s.summen) {
+    const sm = s.summen;
+    const n = Math.max(1, s.anzahl);
+    const avg = s.posts[0];
+    rows.push([...head, "", `Summe über ${n} ${n === 1 ? "Beitrag" : "Beiträge"}`, ...p.felder.map((f) => String(sm[f.key])), sm.reichweite === null ? "" : String(sm.reichweite), String(p.felder.reduce((a, f) => a + sm[f.key], 0)), "", ""]);
+    rows.push([
+      ...head,
+      "",
+      "Durchschnitt je Beitrag",
+      ...p.felder.map((f) => csvNum(sm[f.key] / n)),
+      sm.reichweite === null ? "" : csvNum(sm.reichweite / n),
+      csvNum(avg?.interaktionen ?? 0),
+      csvNum(s.schnittFollower),
+      csvNum(s.summenRate),
+    ]);
+    return CSV_BOM + rows.map((r) => r.map(csvCell).join(";")).join("\r\n") + "\r\n";
+  }
   for (const x of s.posts) {
     rows.push([
       ...head,
@@ -662,6 +958,12 @@ export const EMPTY_STATE: State = { v: 1, phase: "edit", ...newForm() };
 
 const text = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : typeof v === "number" && Number.isFinite(v) ? String(Math.trunc(v)).slice(0, max) : "");
 
+function parseKurz(raw: unknown): KurzForm {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return emptyKurz();
+  const r = raw as Record<string, unknown>;
+  return { beitraege: text(r.beitraege, 6), a: text(r.a, 12), b: text(r.b, 12), c: text(r.c, 12), d: text(r.d, 12), reichweite: text(r.reichweite, 12) };
+}
+
 function parsePost(raw: unknown): PostForm {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return emptyPost();
   const r = raw as Record<string, unknown>;
@@ -678,6 +980,8 @@ export function parseState(raw: unknown): State {
     plattform: isPlattformKey(r.plattform) ? r.plattform : "instagram",
     follower: text(r.follower, 12),
     posts: posts.length > 0 ? posts : startPosts(),
+    modus: isModus(r.modus) ? r.modus : "einzeln",
+    kurz: parseKurz(r.kurz),
   };
   const input = r.phase === "result" ? toInput(form) : null;
   return input ? { v: 1, phase: "result", ...form, output: summary(input) } : { v: 1, phase: "edit", ...form };
@@ -696,4 +1000,13 @@ export const SAMPLE: FormState = {
     { name: "Farbtrends Herbst", a: "29", b: "2", c: "1", d: "6", reichweite: "960" },
     { name: "Lehrling gesucht", a: "35", b: "5", c: "7", d: "3", reichweite: "1050" },
   ],
+};
+
+/** Dieselben fünf Beiträge als Summen (Kurzmodus): Zahlen der Malerei Keller, zusammengezählt. */
+export const SAMPLE_KURZ: FormState = {
+  plattform: "instagram",
+  follower: "1240",
+  posts: startPosts(),
+  modus: "kurz",
+  kurz: { beitraege: "5", a: "245", b: "30", c: "24", d: "48", reichweite: "7020" },
 };

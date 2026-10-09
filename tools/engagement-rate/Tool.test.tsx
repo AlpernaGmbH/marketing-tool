@@ -35,6 +35,11 @@ afterEach(() => {
 });
 
 describe("Engagement-Rate-Rechner im Browser", () => {
+  // Der Standard ist seit Charge B1 der Kurzmodus; diese Tests prüfen den Weg «Beiträge einzeln» und starten darum mit diesem Stand.
+  beforeEach(() => {
+    writeLocal("mt:engagement-rate", JSON.stringify({ v: 1, phase: "edit", plattform: "instagram", follower: "", modus: "einzeln", posts: [] }));
+  });
+
   it("zeigt Plattform, Follower und drei leere Beiträge mit Labels, die Nummer und Feld nennen", async () => {
     mockApi();
     render(<Tool />);
@@ -136,7 +141,7 @@ describe("Engagement-Rate-Rechner im Browser", () => {
     expect(within(card).getByText(/Summe durch Summe: 347 Interaktionen bei 7'020 Reichweite ergeben 4,94 %/)).toBeInTheDocument();
     expect(within(card).getByText(/Bester Beitrag: Beitrag 3/)).toBeInTheDocument();
     expect(within(card).getByText(/Schwächster Beitrag: Beitrag 4/)).toBeInTheDocument();
-    expect(within(card).getByText("Keine Einordnung gegen Branchenwerte, weil uns eine belastbare Quelle fehlt.")).toBeInTheDocument();
+    expect(within(card).getByText(/Der Durchschnitt internationaler Marken lag 2025 bei 0,48 % \(Socialinsider, nicht Schweiz\)/)).toBeInTheDocument();
     expect(within(card).getByRole("button", { name: "Text kopieren" })).toBeInTheDocument();
     expect(within(card).getByRole("button", { name: "PDF herunterladen" })).toBeInTheDocument();
     expect(within(card).getByRole("button", { name: "Word herunterladen" })).toBeInTheDocument();
@@ -199,7 +204,9 @@ describe("Engagement-Rate-Rechner im Browser", () => {
     await u.click(within(dialog).getByRole("button", { name: "Später" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(screen.queryByRole("region", { name: "Deine Engagement-Rate" })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Beitrag 1")).toHaveValue("Fassade Gossau");
+    // Ohne gespeicherten Stand beginnt das Werkzeug im Kurzmodus; das Beispiel füllt die Summen und bleibt nach «Später» stehen.
+    expect(screen.getByLabelText("Zahl der Beiträge")).toHaveValue(5);
+    expect(screen.getByLabelText("Likes, Summe")).toHaveValue(245);
   });
 
   it("Formular und Ergebnis halten die Sperrliste und die Stilregeln ein", async () => {
@@ -230,5 +237,140 @@ describe("Engagement-Rate-Rechner im Browser", () => {
     render(<Tool />);
     expect(await screen.findByLabelText("Follower (oder Abonnenten) am Tag der Auswertung")).toHaveValue(800);
     expect(screen.getByLabelText("Beitrag 1: Likes")).toHaveValue(40);
+  });
+});
+
+describe("Engagement-Rate-Rechner im Browser: Kurzmodus", () => {
+  const fillKurz = async (u: ReturnType<typeof userEvent.setup>) => {
+    await u.type(screen.getByLabelText("Follower (oder Abonnenten) am Tag der Auswertung"), "1240");
+    await u.type(screen.getByLabelText("Zahl der Beiträge"), "5");
+    await u.type(screen.getByLabelText("Likes, Summe"), "245");
+    await u.type(screen.getByLabelText("Kommentare, Summe"), "30");
+    await u.type(screen.getByLabelText("Teilen, Summe"), "24");
+    await u.type(screen.getByLabelText("Gespeichert, Summe"), "48");
+    await u.type(screen.getByLabelText("Reichweite, Summe"), "7020");
+  };
+
+  it("beginnt im Kurzmodus: sieben Zahlenfelder statt Beitragszeilen, die Moduswahl steht davor", async () => {
+    mockApi();
+    render(<Tool />);
+    await screen.findByLabelText("Plattform");
+    const modus = screen.getByRole("radiogroup", { name: "Eingabe" });
+    expect(within(modus).getAllByRole("radio").map((r) => (r as HTMLInputElement).labels?.[0].textContent)).toEqual(["Summen über mehrere Beiträge", "Beiträge einzeln"]);
+    expect(within(modus).getByRole("radio", { name: "Summen über mehrere Beiträge" })).toBeChecked();
+    expect(screen.queryByRole("list", { name: "Beiträge" })).not.toBeInTheDocument();
+    for (const label of ["Zahl der Beiträge", "Likes, Summe", "Kommentare, Summe", "Teilen, Summe", "Gespeichert, Summe", "Reichweite, Summe"]) {
+      expect(screen.getByLabelText(label)).toHaveAttribute("type", "number");
+    }
+    expect(screen.getByRole("button", { name: "Beispiel einfügen" })).toBeEnabled();
+  });
+
+  it("LinkedIn zeigt Reaktionen, Reposts und Impressionen, kein «Gespeichert»", async () => {
+    mockApi();
+    const u = userEvent.setup();
+    render(<Tool />);
+    await u.selectOptions(await screen.findByLabelText("Plattform"), "linkedin");
+    expect(screen.getByLabelText("Reaktionen, Summe")).toBeInTheDocument();
+    expect(screen.getByLabelText("Reposts, Summe")).toBeInTheDocument();
+    expect(screen.getByLabelText("Impressionen, Summe")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Gespeichert, Summe")).not.toBeInTheDocument();
+  });
+
+  it("meldet fehlende Zahlen der Reihe nach und zeigt kein Ergebnis", async () => {
+    const calls = mockApi();
+    const u = userEvent.setup();
+    render(<Tool />);
+    await u.click(await screen.findByRole("button", { name: "Rate berechnen" }));
+    const alert = document.getElementById("er-error")!;
+    expect(alert).toHaveTextContent("Trage ein, wie viele Follower du am Tag der Auswertung hast.");
+    expect(alert).toHaveTextContent("Trage ein, über wie viele Beiträge du die Summen bildest.");
+    expect(alert).toHaveTextContent("Trage mindestens eine Summe ein, zum Beispiel die Likes.");
+    expect(screen.queryByRole("region", { name: "Deine Engagement-Rate" })).not.toBeInTheDocument();
+    expect(calls.filter((c) => c.path === "/api/result")).toHaveLength(0);
+  });
+
+  it("«Beispiel einfügen» füllt die Summen der Malerei Keller; das Ergebnis zeigt die Kennzahlen ohne Diagramm, den Vergleich und geht ins CRM", async () => {
+    const calls = mockApi();
+    const u = userEvent.setup();
+    render(<Tool />);
+    await u.click(await screen.findByRole("button", { name: "Beispiel einfügen" }));
+    expect(screen.getByLabelText("Zahl der Beiträge")).toHaveValue(5);
+    expect(screen.getByLabelText("Reichweite, Summe")).toHaveValue(7020);
+    await u.click(screen.getByRole("button", { name: "Rate berechnen" }));
+
+    const card = await screen.findByRole("region", { name: "Deine Engagement-Rate" });
+    expect(within(card).queryByRole("img", { name: /^Balkendiagramm/ })).not.toBeInTheDocument();
+    // Kennzahlen und Tabelle nennen die 69,4 beide (Interaktionen je Beitrag, Interaktionen insgesamt je Beitrag)
+    expect(within(card).getAllByText("69,4").length).toBeGreaterThanOrEqual(1);
+    expect(within(card).getByText("5,6 %")).toBeInTheDocument(); // Rate auf Follower
+    expect(within(card).getByText("4,94 %")).toBeInTheDocument(); // Rate auf Reichweite
+    const table = within(card).getByRole("table");
+    expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Zahl", "Summe über 5 Beiträge", "je Beitrag"]);
+    expect(within(table).getByRole("row", { name: /^Likes 245 49$/ })).toBeInTheDocument();
+    expect(within(card).getByText(/Der Durchschnitt internationaler Marken lag 2025 bei 0,48 % \(Socialinsider, nicht Schweiz\)/)).toBeInTheDocument();
+    expect(within(card).getByText(/Du hast 4,44 % \(Likes und Kommentare, geteilt durch Follower, je Beitrag im Schnitt\)/)).toBeInTheDocument();
+    expect(within(card).queryByText(/Bester Beitrag/)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Deine Engagement-Rate" })).toHaveFocus();
+
+    const results = calls.filter((c) => c.path === "/api/result");
+    expect(results).toHaveLength(1);
+    const body = results[0].body as { eingabe: string; ausgabe: string };
+    expect(body.eingabe).toContain("Summen über 5 Beiträge: Likes 245, Kommentare 30, Teilen 24, Gespeichert 48, Reichweite 7'020");
+    expect(body.ausgabe).toContain("Rate auf Follower");
+    expect(body.ausgabe).toContain("5,6 %");
+  });
+
+  it("LinkedIn: Ergebnis ohne Vergleichswert, mit dem Hinweis zu den Branchenwerten", async () => {
+    mockApi();
+    const u = userEvent.setup();
+    render(<Tool />);
+    await u.selectOptions(await screen.findByLabelText("Plattform"), "linkedin");
+    await u.type(screen.getByLabelText("Follower (oder Abonnenten) am Tag der Auswertung"), "800");
+    await u.type(screen.getByLabelText("Zahl der Beiträge"), "4");
+    await u.type(screen.getByLabelText("Reaktionen, Summe"), "120");
+    await u.click(screen.getByRole("button", { name: "Rate berechnen" }));
+    const card = await screen.findByRole("region", { name: "Deine Engagement-Rate" });
+    expect(within(card).getByText("Keine Einordnung gegen Branchenwerte, weil uns eine belastbare Quelle fehlt.")).toBeInTheDocument();
+    expect(within(card).queryByText(/Durchschnitt internationaler Marken/)).not.toBeInTheDocument();
+  });
+
+  it("der Wechsel zwischen den Wegen behält die Zahlen beider; das Ergebnis bleibt nach dem Neuladen", async () => {
+    mockApi();
+    const u = userEvent.setup();
+    const { unmount } = render(<Tool />);
+    await screen.findByLabelText("Plattform");
+    await fillKurz(u);
+    await u.click(screen.getByRole("radio", { name: "Beiträge einzeln" }));
+    expect(screen.getByRole("list", { name: "Beiträge" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Follower (oder Abonnenten) am Tag der Auswertung")).toHaveValue(1240); // gilt für beide Wege
+    await u.click(screen.getByRole("radio", { name: "Summen über mehrere Beiträge" }));
+    expect(screen.getByLabelText("Likes, Summe")).toHaveValue(245);
+    await u.click(screen.getByRole("button", { name: "Rate berechnen" }));
+    await screen.findByRole("region", { name: "Deine Engagement-Rate" });
+
+    unmount();
+    render(<Tool />);
+    const card = await screen.findByRole("region", { name: "Deine Engagement-Rate" });
+    expect(within(card).getAllByText("69,4").length).toBeGreaterThanOrEqual(1);
+    const stored = JSON.parse(readLocal("mt:engagement-rate") ?? "null");
+    expect(stored.modus).toBe("kurz");
+    expect(stored.kurz.a).toBe("245");
+    expect(stored.output.modus).toBe("kurz");
+  });
+
+  it("«Angaben ändern» und «Neu beginnen» führen zurück in den Kurzmodus mit den Zahlen bzw. leer", async () => {
+    mockApi();
+    const u = userEvent.setup();
+    render(<Tool />);
+    await u.click(await screen.findByRole("button", { name: "Beispiel einfügen" }));
+    await u.click(screen.getByRole("button", { name: "Rate berechnen" }));
+    await screen.findByRole("region", { name: "Deine Engagement-Rate" });
+    await u.click(screen.getByRole("button", { name: "Angaben ändern" }));
+    expect(await screen.findByLabelText("Likes, Summe")).toHaveValue(245);
+    await u.click(screen.getByRole("button", { name: "Rate berechnen" }));
+    await screen.findByRole("region", { name: "Deine Engagement-Rate" });
+    await u.click(screen.getByRole("button", { name: "Neu beginnen" }));
+    expect(await screen.findByLabelText("Likes, Summe")).toHaveValue(null);
+    expect(screen.getByRole("radio", { name: "Summen über mehrere Beiträge" })).toBeChecked();
   });
 });

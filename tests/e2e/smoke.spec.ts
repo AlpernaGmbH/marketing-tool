@@ -2013,6 +2013,7 @@ test.describe("Welle 8 im Browser (Rechner und Planer)", () => {
   test("Engagement-Rate-Rechner: Beispiel einfügen, Fehler ohne Follower, Ergebnis mit Diagramm und Tabelle, CSV, Lead, Neuladen", async ({ page, request }) => {
     await page.goto("/tools/engagement-rate");
     await hydrated(page.getByRole("button", { name: "Rate berechnen" }));
+    await page.getByRole("radio", { name: "Beiträge einzeln" }).check();
     await page.getByRole("button", { name: "Beispiel einfügen" }).click();
     await expect(page.getByTestId("er-beitrag")).toHaveCount(5);
     await page.locator("#er-follower").fill("");
@@ -2032,6 +2033,30 @@ test.describe("Welle 8 im Browser (Rechner und Planer)", () => {
     expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Plattform: Instagram");
     await page.reload();
     await expect(page.getByRole("region", { name: "Deine Engagement-Rate" })).toBeVisible();
+  });
+
+  test("Engagement-Rate-Rechner, Kurzmodus: Summen mit Beispiel, Ergebnis ohne Diagramm mit Vergleichswert, Lead mit Summen, Neuladen", async ({ page, request }) => {
+    await page.goto("/tools/engagement-rate");
+    await hydrated(page.getByRole("button", { name: "Rate berechnen" }));
+    await expect(page.getByRole("radio", { name: "Summen über mehrere Beiträge" })).toBeChecked();
+    await page.getByRole("button", { name: "Rate berechnen" }).click();
+    await expect(page.locator("#er-error")).toContainText("über wie viele Beiträge");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByRole("button", { name: "Beispiel einfügen" }).click();
+    await expect(page.locator("#er-k-a")).toHaveValue("245");
+    await page.getByRole("button", { name: "Rate berechnen" }).click();
+    const email = await giveEmail(page);
+    const card = page.getByRole("region", { name: "Deine Engagement-Rate" });
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("Durchschnitt internationaler Marken lag 2025 bei 0,48 %");
+    await expect(card).toContainText("Socialinsider");
+    await expect(page.getByTestId("er-diagramm")).toHaveCount(0);
+    await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("engagement-rate");
+    expect((await received(request)).find((l) => l.email === email)!.eingabe).toContain("Summen über 5 Beiträge: Likes 245");
+    await page.reload();
+    await expect(card).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
 
   test("Anlass-Zeitplan: Datum in der Vergangenheit wird abgelehnt, Zeitplan mit Abhaken, .ics, Lead, Neuladen mit Haken", async ({ page, request }) => {

@@ -5,7 +5,7 @@ export default defineTool({
   name: "Engagement-Rate-Rechner",
   category: "analyse",
   audience: "beide",
-  tagline: "Interaktionsrate deiner Beiträge nach zwei Formeln: pro Beitrag, im Schnitt, mit Balkendiagramm und Erklärung.",
+  tagline: "Interaktionsrate nach zwei Formeln, mit Summen oder je Beitrag, bei Instagram und Facebook mit Vergleichswert.",
   keyword: "Engagement-Rate",
   related: ["newsletter-check", "reifegrad-check", "inhalte-saeulen"],
   needsServer: false,

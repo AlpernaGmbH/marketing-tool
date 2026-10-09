@@ -16,18 +16,23 @@ import { useProfile } from "@/lib/use-profile";
 import {
   LIMITS,
   MAX_POSTS,
-  NOTE_BRANCHE,
+  MODI,
+  MODUS_LABELS,
   PLATTFORMEN,
   RICHTWERT,
   RICHTWERT_NOTE,
   SAMPLE,
+  SAMPLE_KURZ,
   SLUG,
   addPost,
   chartSvg,
   csvFilename,
   eingabeText,
+  isModus,
   isPlattformKey,
+  kurzOf,
   markedPost,
+  modusOf,
   newForm,
   parseState,
   plattformOf,
@@ -41,6 +46,8 @@ import {
   validate,
   type FeldKey,
   type FormState,
+  type KurzForm,
+  type Modus,
   type PostForm,
   type Summary,
 } from "./logic";
@@ -53,13 +60,14 @@ function Intro() {
   return (
     <>
       <p>
-        Gib die Followerzahl und die Zahlen von bis zu {MAX_POSTS} Beiträgen ein, so wie sie in der Statistik der Plattform stehen. Der Rechner zeigt die
-        Interaktionsrate jedes Beitrags und im Schnitt, nach zwei Formeln, mit Balkendiagramm und einer Auswertung in Worten. Alles rechnet in deinem
-        Browser, ohne KI.
+        Gib die Followerzahl und die Zahlen aus der Statistik der Plattform ein, entweder als Summen über mehrere Beiträge (kurz) oder für bis zu {MAX_POSTS}{" "}
+        Beiträge einzeln (mit Balkendiagramm und bestem Beitrag). Der Rechner zeigt die Interaktionsrate nach zwei Formeln und eine Auswertung in Worten. Alles
+        rechnet in deinem Browser, ohne KI.
       </p>
       <p>
-        Instagram, LinkedIn, Facebook und TikTok lassen sich nicht auslesen, darum tippst du die Zahlen selbst ab. Verglichen werden nur deine Beiträge
-        untereinander: {NOTE_BRANCHE} Dein Ergebnis geht zusammen mit deinen Angaben und deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen
+        Instagram, LinkedIn, Facebook und TikTok lassen sich nicht auslesen, darum tippst du die Zahlen selbst ab. Für Instagram und Facebook nennt das Ergebnis
+        zum Vergleich den Durchschnitt internationaler Marken (Socialinsider, nicht Schweiz); für LinkedIn und TikTok gibt es keinen Vergleichswert, weil uns eine
+        belastbare Quelle mit passender Formel fehlt. Dein Ergebnis geht zusammen mit deinen Angaben und deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen
         weiterhelfen können.
       </p>
     </>
@@ -88,7 +96,7 @@ function RateFlow() {
 
   // Änderungen am Formular leben im Entwurf; der Speicher folgt mit etwas Verzögerung (nicht bei jedem Tastendruck).
   const [draft, setDraft] = useState<FormState | null>(null);
-  const form: FormState = draft ?? { plattform: saved.plattform, follower: saved.follower, posts: saved.posts };
+  const form: FormState = draft ?? { plattform: saved.plattform, follower: saved.follower, posts: saved.posts, modus: saved.modus, kurz: saved.kurz };
   const [errors, setErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -174,7 +182,7 @@ function RateFlow() {
                 pendingFocus.current = "follower";
                 setErrors([]);
                 setDraft(null);
-                set({ v: 1, phase: "edit", plattform: saved.plattform, follower: saved.follower, posts: saved.posts });
+                set({ v: 1, phase: "edit", plattform: saved.plattform, follower: saved.follower, posts: saved.posts, modus: saved.modus, kurz: saved.kurz });
               }}
             >
               Angaben ändern
@@ -195,7 +203,7 @@ function RateFlow() {
         }
       >
         <DocView blocks={doc.blocks.slice(0, split)} />
-        <Chart s={output} />
+        {output.modus === "einzeln" && <Chart s={output} />}
         <div data-testid="er-tabelle">
           <DocView blocks={doc.blocks.slice(split)} />
         </div>
@@ -210,7 +218,10 @@ function RateFlow() {
 
   const plattform = plattformOf(form.plattform);
   const verein = profile.organisationstyp === "verein";
+  const modus = modusOf(form);
+  const kurz = kurzOf(form);
   const setField = (i: number, patch: Partial<PostForm>) => change({ ...form, posts: setPost(form.posts, i, patch) });
+  const setKurz = (patch: Partial<KurzForm>) => change({ ...form, modus: "kurz", kurz: { ...kurz, ...patch } });
 
   return (
     <form
@@ -280,6 +291,83 @@ function RateFlow() {
         </div>
       </fieldset>
 
+      <fieldset className="grid gap-3" disabled={busy}>
+        <legend className="mb-1 font-heading font-semibold">Wie willst du die Zahlen eingeben?</legend>
+        <div role="radiogroup" aria-label="Eingabe" className="flex flex-wrap gap-3">
+          {MODI.map((m) => (
+            <label
+              key={m}
+              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-line bg-paper px-4 has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
+            >
+              <input
+                type="radio"
+                name="er-modus"
+                id={`er-modus-${m}`}
+                value={m}
+                className="size-5 accent-ink"
+                checked={modus === m}
+                disabled={!ready}
+                onChange={(e) => {
+                  if (isModus(e.target.value)) change({ ...form, modus: e.target.value as Modus });
+                }}
+              />
+              {MODUS_LABELS[m]}
+            </label>
+          ))}
+        </div>
+        <p className="text-sm text-muted-foreground" id="er-modus-hilfe">
+          {modus === "kurz"
+            ? "Kurz: Du trägst die Zahl der Beiträge und je eine Summe ein, etwa wenn die Statistik die Zahlen für einen Zeitraum zusammenzählt. Du bekommst die Raten für den Durchschnittsbeitrag, aber keinen besten und keinen schwächsten Beitrag."
+            : "Einzeln: Du trägst die Zahlen jedes Beitrags ein. Du bekommst ein Balkendiagramm und siehst, welcher Beitrag aus dem Rahmen fällt."}
+        </p>
+      </fieldset>
+
+      {modus === "kurz" ? (
+        <fieldset className="grid gap-4" disabled={busy}>
+          <legend className="mb-1 font-heading font-semibold">Deine Beiträge, zusammengezählt</legend>
+          <p className="text-sm text-muted-foreground">
+            Trage die Summen über die Beiträge ein, die du auswerten willst, so wie sie in der Statistik stehen. Leere Zahlenfelder zählen als 0. Die {plattform.reichweiteLabel}{" "}
+            ist freiwillig: Ohne sie entfällt die zweite Formel. Werte mindestens {RICHTWERT.empfohlen} Beiträge aus ({RICHTWERT_NOTE}).
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" data-testid="er-kurz">
+            {(
+              [
+                ["beitraege", "Zahl der Beiträge"],
+                ...plattform.felder.map((f) => [f.key, `${f.label}, Summe`] as const),
+                ["reichweite", `${plattform.reichweiteLabel}, Summe`],
+              ] as const
+            ).map(([key, label]) => (
+              <div key={key} className="grid gap-1.5">
+                <Label htmlFor={`er-k-${key}`}>{label}</Label>
+                <Input
+                  id={`er-k-${key}`}
+                  type="number"
+                  inputMode="numeric"
+                  min={key === "beitraege" ? LIMITS.beitraegeKurz.min : 0}
+                  max={key === "beitraege" ? LIMITS.beitraegeKurz.max : LIMITS.zahl.max}
+                  step={1}
+                  value={kurz[key]}
+                  onChange={(e) => setKurz({ [key]: e.target.value })}
+                  disabled={!ready}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={!ready}
+              onClick={() => {
+                change({ ...SAMPLE_KURZ, kurz: { ...(SAMPLE_KURZ.kurz as KurzForm) }, posts: form.posts });
+                setStatus("Beispiel eingefügt: Malerei Keller, Instagram, Summen über fünf Beiträge.");
+              }}
+            >
+              Beispiel einfügen
+            </Button>
+          </div>
+        </fieldset>
+      ) : (
       <fieldset className="grid gap-4" disabled={busy}>
         <legend className="mb-1 font-heading font-semibold">Deine Beiträge</legend>
         <p className="text-sm text-muted-foreground">
@@ -372,7 +460,7 @@ function RateFlow() {
             variant="ghost"
             disabled={!ready}
             onClick={() => {
-              change({ plattform: SAMPLE.plattform, follower: SAMPLE.follower, posts: SAMPLE.posts.map((p) => ({ ...p })) });
+              change({ ...form, plattform: SAMPLE.plattform, follower: SAMPLE.follower, posts: SAMPLE.posts.map((p) => ({ ...p })), modus: "einzeln" });
               setStatus("Beispiel eingefügt: Malerei Keller, Instagram, fünf Beiträge.");
             }}
           >
@@ -380,6 +468,7 @@ function RateFlow() {
           </Button>
         </div>
       </fieldset>
+      )}
 
       <div id="er-error" role="alert" className="min-h-6 text-destructive">
         {errors.length > 0 && (
