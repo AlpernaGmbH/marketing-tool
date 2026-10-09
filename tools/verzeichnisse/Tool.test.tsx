@@ -497,3 +497,139 @@ describe("Verzeichnis-Check: Ergebnis", () => {
     expect(card.textContent).not.toMatch(/NaN|undefined|!|—/);
   });
 });
+
+// ---- Angaben aus der eigenen Website ------------------------------------------------------------
+
+describe("Verzeichnis-Check: Angaben von der eigenen Website", () => {
+  const SEITE = {
+    url: "https://malerei-keller.ch/",
+    host: "malerei-keller.ch",
+    title: "Malerei Keller",
+    description: "",
+    headings: ["Malerei Keller"],
+    text: "Malerei Keller streicht Fassaden und Innenräume in Gossau und Umgebung. Wir beraten gern.",
+    truncated: false,
+    tail: "© Malerei Keller · Wilerstrasse 24 · 9200 Gossau · Tel. 071 123 45 67 · Impressum",
+  };
+
+  /** /api/read antwortet mit `reply`; alles andere wie in den übrigen Tests. */
+  function stubRead(reply: { status: number; body: unknown }) {
+    const reads: Record<string, unknown>[] = [];
+    const base = globalThis.fetch;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: { body?: string }) => {
+        if (String(url) === "/api/read") {
+          reads.push(init?.body ? (JSON.parse(init.body) as Record<string, unknown>) : {});
+          return new Response(JSON.stringify(reply.body), { status: reply.status });
+        }
+        return base(url, init as RequestInit);
+      }),
+    );
+    return reads;
+  }
+  const lesen = (user: User) => user.click(screen.getByRole("button", { name: "Von meiner Website lesen" }));
+
+  beforeEach(() => writeLocal(LEAD_KEY, "anna@keller.ch"));
+
+  it("liest die Startseite, zeigt Strasse, PLZ und Telefon als Vorschläge und übernimmt die gewählten Felder", async () => {
+    profile(KELLER_PROFIL);
+    const reads = stubRead({ status: 200, body: { ok: true, page: SEITE } });
+    const user = userEvent.setup();
+    render(<Tool />);
+    await lesen(user);
+
+    const vorschau = await screen.findByTestId("website-vorschau");
+    expect(reads).toEqual([{ website: "malerei-keller.ch" }]);
+    const boxen = within(vorschau).getAllByRole("checkbox");
+    expect(boxen).toHaveLength(3);
+    expect(boxen.every((b) => (b as HTMLInputElement).checked)).toBe(true);
+    expect(vorschau).toHaveTextContent("Strasse und Nummer: Wilerstrasse 24");
+    expect(vorschau).toHaveTextContent("PLZ: 9200");
+    expect(vorschau).toHaveTextContent("Telefon: 071 123 45 67");
+    expect(within(vorschau).queryByText(/Bei dir steht schon eine Angabe/)).not.toBeInTheDocument();
+
+    // Telefon abwählen: nur Strasse und PLZ werden übernommen
+    await user.click(within(vorschau).getByRole("checkbox", { name: /Telefon/ }));
+    await user.click(within(vorschau).getByRole("button", { name: "Übernehmen" }));
+    expect(el("vz-strasse")).toHaveValue("Wilerstrasse 24");
+    expect(el("vz-plz")).toHaveValue("9200");
+    expect(el("vz-telefon")).toHaveValue("");
+    expect(screen.queryByTestId("website-vorschau")).not.toBeInTheDocument();
+    // Das Lesen ist kein Ergebnis: nichts geht ins CRM
+    expect(crm()).toHaveLength(0);
+  });
+
+  it("wählt Felder mit eigener Angabe nicht vor und lässt gleiche Felder weg", async () => {
+    profile(KELLER_PROFIL);
+    stubRead({ status: 200, body: { ok: true, page: SEITE } });
+    const user = userEvent.setup();
+    render(<Tool />);
+    setText("vz-strasse", "Bahnhofstrasse 3");
+    setText("vz-plz", "9200");
+    await lesen(user);
+
+    const vorschau = await screen.findByTestId("website-vorschau");
+    // PLZ ist gleich und fehlt; Strasse weicht ab und ist nicht vorgewählt; Telefon ist leer und vorgewählt
+    expect(within(vorschau).getAllByRole("checkbox")).toHaveLength(2);
+    expect(within(vorschau).getByRole("checkbox", { name: /Strasse und Nummer/ })).not.toBeChecked();
+    expect(within(vorschau).getByRole("checkbox", { name: /Telefon/ })).toBeChecked();
+    expect(vorschau).toHaveTextContent("Bei dir steht schon eine Angabe");
+    await user.click(within(vorschau).getByRole("button", { name: "Übernehmen" }));
+    expect(el("vz-strasse")).toHaveValue("Bahnhofstrasse 3");
+    expect(el("vz-telefon")).toHaveValue("071 123 45 67");
+  });
+
+  it("weist darauf hin, wenn die Website einen anderen Ort nennt als das Firmenprofil", async () => {
+    profile({ ...KELLER_PROFIL, ort: "Herisau" });
+    stubRead({ status: 200, body: { ok: true, page: SEITE } });
+    const user = userEvent.setup();
+    render(<Tool />);
+    await lesen(user);
+    expect(await screen.findByTestId("website-ort")).toHaveTextContent("Auf der Website steht als Ort «Gossau», in deinem Firmenprofil «Herisau».");
+  });
+
+  it("sagt, wenn auf der Startseite nichts Neues steht, und lässt die Felder in Ruhe", async () => {
+    profile(KELLER_PROFIL);
+    stubRead({ status: 200, body: { ok: true, page: { ...SEITE, tail: "", text: "Wir streichen Fassaden in Gossau und beraten gern." } } });
+    const user = userEvent.setup();
+    render(<Tool />);
+    await lesen(user);
+    expect(await screen.findByTestId("website-leer")).toHaveTextContent("keine Adresse und keine Telefonnummer gefunden");
+    expect(el("vz-strasse")).toHaveValue("");
+  });
+
+  it("meldet ohne Website im Profil einen Satz und ruft den Server nicht auf", async () => {
+    profile({ firma: "Malerei Keller", ort: "Gossau" });
+    const reads = stubRead({ status: 200, body: { ok: true, page: SEITE } });
+    const user = userEvent.setup();
+    render(<Tool />);
+    await lesen(user);
+    expect(await screen.findByText("Trag zuerst die Adresse deiner Website ein.")).toBeInTheDocument();
+    expect(reads).toHaveLength(0);
+  });
+
+  it("zeigt bei einem Fehler des Abrufs dessen Satz und füllt nichts aus", async () => {
+    profile(KELLER_PROFIL);
+    stubRead({ status: 502, body: { error: "unreachable" } });
+    const user = userEvent.setup();
+    render(<Tool />);
+    await lesen(user);
+    expect(await screen.findByText("Die Website konnte nicht geladen werden. Stimmt die Adresse?")).toBeInTheDocument();
+    expect(screen.queryByTestId("website-vorschau")).not.toBeInTheDocument();
+    expect(el("vz-plz")).toHaveValue("");
+  });
+
+  it("zeigt im Ergebnis die Einheitlichkeit der eingefügten Einträge", async () => {
+    profile(KELLER_PROFIL);
+    const user = userEvent.setup();
+    render(<Tool />);
+    await fillBeispiel(user);
+    await pruefen(user);
+    const k = await karte();
+    // Google: Name gleich (1), Adresse mit «Str.» (0,5), Telefon national statt international (0,5): (1 + 0,5 + 0,5) / 3 = 67
+    expect(within(k).getByText("Einheitlichkeit der Einträge")).toBeInTheDocument();
+    expect(k).toHaveTextContent("67");
+    expect(within(k).getByText(/Richtwert von Alperna, keine Statistik und kein Urteil von Google/)).toBeInTheDocument();
+  });
+});

@@ -8,7 +8,7 @@ export default defineTool({
   tagline: "In welchen Verzeichnissen du stehst, was fehlt und wo Name, Adresse und Telefon nicht übereinstimmen.",
   keyword: "Verzeichniseinträge",
   related: ["bewertungs-kit", "qr-set", "digitaler-auftritt-check"],
-  needsServer: false,
+  needsServer: true,
   usesProfile: ["organisationstyp", "firma", "ort", "website", "branche"],
   writesProfile: [],
   outputs: ["copy", "pdf", "docx"],

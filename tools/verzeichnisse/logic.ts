@@ -1,7 +1,7 @@
 import { z } from "zod";
 import verzeichnisseJson from "@/data/verzeichnisse.json";
 import { KANTONE, dateCH } from "@/lib/ch";
-import { safeFilename, toMarkdown, type DocumentModel } from "@/lib/export/model";
+import { safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
 import { PHONE_ERROR_LENGTH, normalizePhone, phoneProblem } from "@/tools/whatsapp-link/logic";
 
 // Verzeichnis-Check: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
@@ -395,7 +395,7 @@ export function itemsFor(branche: string, anderesName: string, data: VzData | nu
 
 // ---- Vergleich ---------------------------------------------------------------------------------
 
-export type AbweichungArt = "str-abkuerzung" | "ss-eszett" | "telefon-format" | "name-zusatz" | "plz-fehlt" | "gross-klein" | "sonstige";
+export type AbweichungArt = "str-abkuerzung" | "ss-eszett" | "telefon-format" | "name-zusatz" | "rechtsform" | "plz-fehlt" | "ort-abweicht" | "gross-klein" | "sonstige";
 export type Stufe = "hinweis" | "warnung";
 export type Abweichung = {
   feld: "name" | "adresse" | "telefon";
@@ -414,7 +414,9 @@ export const ART_LABEL: Record<AbweichungArt, string> = {
   "ss-eszett": "«ß» statt «ss»",
   "telefon-format": "Telefon anders geschrieben",
   "name-zusatz": "Zusatz im Namen",
+  rechtsform: "Andere Rechtsform",
   "plz-fehlt": "PLZ fehlt",
+  "ort-abweicht": "Ort weicht ab",
   "gross-klein": "Gross- und Kleinschreibung",
   sonstige: "Weitere Abweichung",
 };
@@ -459,6 +461,13 @@ function zusatzOf(master: string, found: string): Zusatz | null {
   return { dortMehr: mehr, woerter: extra };
 }
 
+/** Das Rechtsform-Wort eines Namens («GmbH», «AG», …) wie geschrieben; null, wenn keines drinsteht. */
+function rechtsformWort(name: string): string | null {
+  return wordsOf(name).find((w) => RECHTSFORM.has(squash(w))) ?? null;
+}
+/** Ein Name ohne sein Rechtsform-Wort, zum Vergleich des Rests. */
+const ohneRechtsform = (name: string): string => wordsOf(name).filter((w) => !RECHTSFORM.has(squash(w))).join(" ");
+
 function compareName(m: string, f: string): Abweichung[] {
   const mm = clean(m);
   const ff = clean(f);
@@ -474,7 +483,11 @@ function compareName(m: string, f: string): Abweichung[] {
       out.push(make("sonstige", "hinweis", "Gleich, aber anders geschrieben: Satzzeichen, Leerzeichen oder Umlaute weichen ab."));
     } else {
       const z = zusatzOf(mm, ff);
-      if (z) {
+      const rm = rechtsformWort(mm);
+      const rf = rechtsformWort(ff);
+      if (rm && rf && squash(rm) !== squash(rf) && squash(ohneRechtsform(mm)) === squash(ohneRechtsform(ff))) {
+        out.push(make("rechtsform", "warnung", `Dort steht die Rechtsform «${rf}», bei dir «${rm}». Die Rechtsform gehört zum Namen und sollte überall gleich lauten.`));
+      } else if (z) {
         const liste = z.woerter.join(" ");
         const nurRechtsform = z.woerter.every((w) => RECHTSFORM.has(squash(w)));
         out.push(
@@ -501,6 +514,19 @@ const STR_ABK_ALL = /str\.?(?=[\s,\d]|$)/gi;
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const plzRe = (plz: string) => new RegExp(`(?<!\\d)${escapeRe(plz)}(?!\\d)`, "g");
 const kantonCodes: string[] = KANTONE.map(([c]) => c);
+
+/** Was in der Adresse nach der Strasse (mit Nummer) folgt, wenn sie so beginnt wie die Strasse des Soll; sonst null. */
+function ortNachStrasse(rest: string, strasse: string): string | null {
+  const target = squash(strasse);
+  const words = wordsOf(rest);
+  let acc = "";
+  for (let i = 0; i < words.length; i++) {
+    acc += squash(words[i]);
+    if (acc === target) return words.slice(i + 1).join(" ");
+    if (!target.startsWith(acc)) return null;
+  }
+  return null;
+}
 
 function compareAdresse(e: Eintrag, f0: string): Abweichung[] {
   const f = clean(f0);
@@ -554,7 +580,9 @@ function compareAdresse(e: Eintrag, f0: string): Abweichung[] {
   const cM = squash(mRest);
   const cF = squash(rest);
   if (cM !== cF) {
+    const ortDort = ortNachStrasse(rest, e.strasse.replace(STR_ABK_ALL, "strasse"));
     if (cF !== "" && cM === cF + squash(e.ort)) out.push(make("sonstige", "hinweis", "Dort fehlt der Ort. Schreib die Adresse überall mit Ort."));
+    else if (ortDort && squash(ortDort) !== squash(e.ort)) out.push(make("ort-abweicht", "warnung", `Der Ort weicht ab: dort «${ortDort}», bei dir «${e.ort}».`));
     else out.push(make("sonstige", "warnung", "Strasse, Nummer oder Ort weichen ab."));
   } else if (caseDiff) {
     out.push(make("gross-klein", "hinweis", "Die Adresse ist gleich, aber anders gross und klein geschrieben als bei dir."));
@@ -625,11 +653,15 @@ export type Aufgabe = {
   abweichungen: Abweichung[];
   /** Hat die Person den Eintrag dort eingefügt? */
   eingefuegt: boolean;
+  /** Welche Felder die Person dort eingefügt hat (leere Felder werden nicht verglichen). */
+  verglichen: Abweichung["feld"][];
 };
 
 export const kostenText = (k: boolean | null): string => (k === true ? KOSTEN_JA : k === false ? KOSTEN_NEIN : KOSTEN_UNKLAR);
 const safeHttps = (u: string | null): string | null => (u && u.startsWith("https://") ? u : null);
 const hatFund = (f: Fund) => clean(f.name) !== "" || clean(f.adresse) !== "" || clean(f.telefon) !== "";
+
+const FELDER = ["name", "adresse", "telefon"] as const;
 
 export function aufgabeFor(item: Item, master: Eintrag, input: VzInput, nr = 1): Aufgabe {
   const status = statusOf(input, item.id);
@@ -662,6 +694,7 @@ export function aufgabeFor(item: Item, master: Eintrag, input: VzInput, nr = 1):
     geprueft: item.geprueft,
     abweichungen,
     eingefuegt,
+    verglichen: eingefuegt ? FELDER.filter((feld) => clean(fund[feld]) !== "") : [],
   };
 }
 
@@ -683,6 +716,43 @@ export function auswerten(stamm: Stamm, input: VzInput, datum: string, data: VzD
   const aufgaben = items.map((it, i) => aufgabeFor(it, eintrag, input, i + 1));
   const zaehlung = Object.fromEntries(AKTIONEN.map((a) => [a, aufgaben.filter((x) => x.aktion === a).length])) as Record<Aktion, number>;
   return { stamm, datum, eintrag, aufgaben, zaehlung, quelle: data ? { source: data.meta.source, asOf: data.meta.asOf } : null };
+}
+
+export type Einheitlichkeit = { punkte: number; je: { verzeichnis: string; punkte: number }[] };
+export const EINHEITLICHKEIT_NOTE =
+  "Die Einheitlichkeit zählt je eingefügtes Feld: gleich 1 Punkt, gleich aber anders geschrieben einen halben, abweichend keinen. Sie ist ein Richtwert von Alperna, keine Statistik und kein Urteil von Google oder einem Verzeichnis.";
+
+/**
+ * Wie einheitlich die eingefügten Einträge sind, von 0 bis 100 (Richtwert von Alperna): Je Feld, das die Person dort eingefügt hat,
+ * zählt gleich 1, gleich aber anders geschrieben 0,5 und abweichend 0. null, wenn kein Eintrag eingefügt wurde.
+ */
+export function einheitlichkeit(aufgaben: Aufgabe[]): Einheitlichkeit | null {
+  const je: Einheitlichkeit["je"] = [];
+  let summe = 0;
+  let anzahl = 0;
+  for (const a of aufgaben) {
+    if (!a.eingefuegt || a.verglichen.length === 0) continue;
+    let s = 0;
+    for (const feld of a.verglichen) {
+      const abw = a.abweichungen.filter((x) => x.feld === feld);
+      s += abw.some((x) => x.stufe === "warnung") ? 0 : abw.length > 0 ? 0.5 : 1;
+    }
+    je.push({ verzeichnis: a.verzeichnis, punkte: Math.round((100 * s) / a.verglichen.length) });
+    summe += s;
+    anzahl += a.verglichen.length;
+  }
+  return anzahl === 0 ? null : { punkte: Math.round((100 * summe) / anzahl), je };
+}
+
+/** Kennzahl, Balken je Verzeichnis und Hinweis zur Einheitlichkeit; leer, wenn kein Eintrag eingefügt wurde. Für Bildschirm und Dokument. */
+export function einheitBlocks(aufgaben: Aufgabe[]): DocBlock[] {
+  const einheit = einheitlichkeit(aufgaben);
+  if (!einheit) return [];
+  return [
+    { type: "stat", label: "Einheitlichkeit der Einträge", value: String(einheit.punkte), of: "100", note: "Richtwert von Alperna, keine Statistik" },
+    { type: "bars", title: "Einheitlichkeit je Verzeichnis", unit: " von 100", max: 100, items: einheit.je.map((x) => ({ label: x.verzeichnis, value: x.punkte })) },
+    { type: "paragraph", text: EINHEITLICHKEIT_NOTE },
+  ];
 }
 
 export function alleAbweichungen(e: Ergebnis): (Abweichung & { verzeichnis: string })[] {
@@ -730,6 +800,7 @@ export function toDocument(e: Ergebnis): DocumentModel {
   const abw = alleAbweichungen(e);
   const blocks: DocumentModel["blocks"] = [
     { type: "paragraph", text: summaryText(e) },
+    ...einheitBlocks(e.aufgaben),
     { type: "heading", level: 2, text: "Einheitlicher Eintrag (Kopiervorlage)" },
     { type: "facts", items: eintragFelder(e.eintrag).map((f) => ({ label: f.label, value: f.value })) },
     { type: "heading", level: 2, text: "Aufgabenliste" },

@@ -16,6 +16,7 @@ import {
   ART_LABEL,
   BEDINGUNGEN_NOTE,
   DATA,
+  EINHEITLICHKEIT_NOTE,
   EMPTY_FUND,
   EMPTY_INPUT,
   EMPTY_STATE,
@@ -37,6 +38,7 @@ import {
   buildEintrag,
   compareEntry,
   eingabeText,
+  einheitlichkeit,
   eintragFelder,
   eintragText,
   formatPhoneCH,
@@ -365,6 +367,33 @@ describe("verzeichnisse: compareEntry", () => {
     expect(r[0]).toMatchObject({ art: "sonstige", stufe: "warnung" });
   });
 
+  it("rechtsform: eine andere Rechtsform bei gleichem Namen ist eine Abweichung, nicht nur ein Hinweis", () => {
+    const mitForm = buildEintrag({ ...KELLER, firma: "Malerei Keller GmbH" }, KELLER_INPUT)!;
+    const a = compareEntry(mitForm, found({ name: "Malerei Keller AG" }));
+    expect(a).toHaveLength(1);
+    expect(a[0]).toMatchObject({ feld: "name", art: "rechtsform", stufe: "warnung", dort: "Malerei Keller AG", soll: "Malerei Keller GmbH" });
+    expect(a[0].text).toContain("Dort steht die Rechtsform «AG», bei dir «GmbH»");
+    // gleiche Rechtsform in anderer Schreibweise ist nur gross-klein, ein anderer Name bleibt «sonstige»
+    expect(arten(compareEntry(mitForm, found({ name: "Malerei Keller Gmbh" })))).toEqual(["gross-klein"]);
+    expect(arten(compareEntry(mitForm, found({ name: "Malerei Huber AG" })))).toEqual(["sonstige"]);
+    // fehlt die Rechtsform dort, bleibt es der Hinweis «name-zusatz»
+    expect(arten(compareEntry(mitForm, found({ name: "Malerei Keller" })))).toEqual(["name-zusatz"]);
+  });
+
+  it("ort-abweicht: gleiche Strasse und PLZ, anderer Ort ist eine Abweichung mit beiden Orten", () => {
+    const a = compareEntry(m, found({ adresse: "Wilerstrasse 24, 9200 Niederuzwil" }));
+    expect(a).toHaveLength(1);
+    expect(a[0]).toMatchObject({ feld: "adresse", art: "ort-abweicht", stufe: "warnung" });
+    expect(a[0].text).toBe("Der Ort weicht ab: dort «Niederuzwil», bei dir «Gossau».");
+    // Abkürzung der Strasse und Kanton bleiben eigene Hinweise
+    const b = compareEntry(m, found({ adresse: "Wilerstr. 24, 9200 Niederuzwil SG" }));
+    expect(b.map((x) => `${x.art}:${x.stufe}`)).toEqual(["str-abkuerzung:hinweis", "sonstige:hinweis", "ort-abweicht:warnung"]);
+    // eine andere Hausnummer ist keine Ortsabweichung
+    expect(arten(compareEntry(m, found({ adresse: "Wilerstrasse 26, 9200 Gossau" })))).toEqual(["sonstige"]);
+    expect(arten(compareEntry(m, found({ adresse: "Wilerstrasse 24, 9200 Gossau" })))).toEqual([]);
+    expect(arten(compareEntry(m, found({ adresse: "Wilerstrasse 24, 9200" })))).toEqual(["sonstige"]);
+  });
+
   it("plz-fehlt: Adresse ohne PLZ, nicht mit PLZ", () => {
     const r = compareEntry(m, found({ adresse: "Wilerstrasse 24, Gossau" }));
     expect(arten(r)).toEqual(["plz-fehlt"]);
@@ -426,7 +455,7 @@ describe("verzeichnisse: compareEntry", () => {
   });
 
   it("hat zu jeder Art eine Bezeichnung und nennt in jeder Abweichung dort und soll", () => {
-    expect(Object.keys(ART_LABEL).sort()).toEqual(["gross-klein", "name-zusatz", "plz-fehlt", "telefon-format", "sonstige", "ss-eszett", "str-abkuerzung"].sort());
+    expect(Object.keys(ART_LABEL).sort()).toEqual(["gross-klein", "name-zusatz", "ort-abweicht", "plz-fehlt", "rechtsform", "telefon-format", "sonstige", "ss-eszett", "str-abkuerzung"].sort());
     const r = compareEntry(m, found({ name: "MALEREI KELLER GMBH", adresse: "Wilerstraße 24, 9200 Gossau SG", telefon: "0711234567" }));
     for (const x of r) {
       expect(x.dort.length).toBeGreaterThan(0);
@@ -583,6 +612,63 @@ describe("verzeichnisse: Aufgaben", () => {
     const frei = itemsFor("Malerei", "", SCRAMBLED).find((i) => i.id === FREI_GEMEINDE)!;
     const a = aufgabeFor(frei, e, withStatus(FREI_GEMEINDE, "nein"));
     expect(a).toMatchObject({ aktion: "eintragen", url: null, kosten: null, frei: true });
+  });
+});
+
+describe("verzeichnisse: Einheitlichkeit", () => {
+  const e = eintrag();
+  const data = SCRAMBLED;
+  const items = itemsFor("Malerei", "", data);
+  const einInput = (funde: Record<string, Fund>): VzInput => ({
+    ...KELLER_INPUT,
+    status: Object.fromEntries(Object.keys(funde).map((id) => [id, "ja" as const])),
+    funde,
+  });
+  const aufgaben = (funde: Record<string, Fund>) => items.map((it, i) => aufgabeFor(it, e, einInput(funde), i + 1));
+  const [a, b] = [items[0].id, items[1].id];
+  const gleich: Fund = { name: "Malerei Keller", adresse: "Wilerstrasse 24, 9200 Gossau", telefon: "+41 71 123 45 67" };
+
+  it("gibt null, wenn kein Eintrag eingefügt wurde", () => {
+    expect(einheitlichkeit(aufgaben({}))).toBeNull();
+    expect(einheitlichkeit(aufgaben({ [a]: EMPTY_FUND }))).toBeNull();
+  });
+
+  it("zählt gleich 1, gleich aber anders geschrieben 0,5 und abweichend 0 je eingefügtes Feld", () => {
+    expect(einheitlichkeit(aufgaben({ [a]: gleich }))).toEqual({ punkte: 100, je: [{ verzeichnis: items[0].anzeige, punkte: 100 }] });
+    // zwei Felder gleich, eines anders geschrieben: (1 + 1 + 0,5) / 3 = 83
+    expect(einheitlichkeit(aufgaben({ [a]: { ...gleich, telefon: "071 123 45 67" } }))?.punkte).toBe(83);
+    // ein Feld weicht ab: (1 + 0 + 1) / 3 = 67
+    expect(einheitlichkeit(aufgaben({ [a]: { ...gleich, adresse: "Wilerstrasse 26, 9200 Gossau" } }))?.punkte).toBe(67);
+    // nur ein Feld eingefügt und gleich: 100; ein Feld abweichend: 0
+    expect(einheitlichkeit(aufgaben({ [a]: { name: "Malerei Keller", adresse: "", telefon: "" } }))?.punkte).toBe(100);
+    expect(einheitlichkeit(aufgaben({ [a]: { name: "Malerei Huber", adresse: "", telefon: "" } }))?.punkte).toBe(0);
+  });
+
+  it("rechnet über alle eingefügten Felder und nennt jedes Verzeichnis", () => {
+    const r = einheitlichkeit(aufgaben({ [a]: gleich, [b]: { name: "Malerei Huber", adresse: "Wilerstrasse 26, 9200 Gossau", telefon: "+41 71 999 99 99" } }));
+    // (3 + 0) / 6 = 50
+    expect(r?.punkte).toBe(50);
+    expect(r?.je).toEqual([
+      { verzeichnis: items[0].anzeige, punkte: 100 },
+      { verzeichnis: items[1].anzeige, punkte: 0 },
+    ]);
+  });
+
+  it("ändert sich nicht durch Verzeichnisse, die nur zum Eintragen oder Suchen in der Liste stehen", () => {
+    const nur = aufgaben({ [a]: gleich });
+    expect(nur.some((x) => !x.eingefuegt)).toBe(true);
+    expect(einheitlichkeit(nur)?.je).toHaveLength(1);
+  });
+
+  it("steht im Dokument als Kennzahl und Balken, mit Hinweis auf den Richtwert; ohne Einträge fehlt der Abschnitt", () => {
+    const ergebnis = auswerten(KELLER, einInput({ [a]: { ...gleich, telefon: "071 123 45 67" } }), "2026-10-09", data)!;
+    const doc = toDocument(ergebnis);
+    const stat = doc.blocks.find((x) => x.type === "stat");
+    expect(stat).toMatchObject({ label: "Einheitlichkeit der Einträge", value: "83", of: "100" });
+    expect(doc.blocks.some((x) => x.type === "bars")).toBe(true);
+    expect(reportMarkdown(ergebnis)).toContain(EINHEITLICHKEIT_NOTE);
+    const leer = toDocument(auswerten(KELLER, KELLER_INPUT, "2026-10-09", data)!);
+    expect(leer.blocks.some((x) => x.type === "stat")).toBe(false);
   });
 });
 
@@ -785,7 +871,7 @@ describe("verzeichnisse: PDF und Word", () => {
     expect(xml).toContain("Aufgabenliste");
     expect(xml).toContain("Abweichungen");
     expect(xml).toContain("Quelle und Stand");
-    expect(xml.match(/<w:tbl>/g)).toHaveLength(3); // Steckbrief, Aufgabenliste, Abweichungen
+    expect(xml.match(/<w:tbl>/g)).toHaveLength(4); // Steckbrief, Einheitlichkeit je Verzeichnis, Aufgabenliste, Abweichungen
   });
 });
 
@@ -895,7 +981,7 @@ describe("verzeichnisse: tool.config und Seitentext", () => {
     expect(config.slug).toBe("verzeichnisse");
     expect(config.category).toBe("analyse");
     expect(config.audience).toBe("beide");
-    expect(config.needsServer).toBe(false);
+    expect(config.needsServer).toBe(true);
     expect(config.usesProfile).toEqual(["organisationstyp", "firma", "ort", "website", "branche"]);
     expect(config.writesProfile).toEqual([]);
     expect(parsed.frontmatter.h1?.toLowerCase()).toContain(config.keyword.toLowerCase());
@@ -921,6 +1007,7 @@ describe("verzeichnisse: tool.config und Seitentext", () => {
     const beispiel = parsed.sections.beispiel ?? "";
     expect(alleAbweichungen(r)).toHaveLength(2);
     expect(beispiel).toContain(summaryText(r));
+    expect(beispiel).toContain(`Einheitlichkeit der Einträge: ${einheitlichkeit(r.aufgaben)!.punkte} von 100`);
     for (const f of eintragFelder(r.eintrag).filter((x) => x.key !== "oeffnungszeiten" && x.key !== "beschreibung")) expect(beispiel).toContain(f.value);
     for (const a of r.aufgaben) {
       expect(beispiel, a.verzeichnis).toContain(a.verzeichnis);

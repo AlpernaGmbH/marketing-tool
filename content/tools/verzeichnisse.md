@@ -5,11 +5,11 @@ h1: "Verzeichniseinträge prüfen mit dem Verzeichnis-Check für Schweizer KMU"
 tagline: "In welchen Verzeichnissen du stehst, was fehlt und wo Name, Adresse und Telefon nicht übereinstimmen."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:
-  - "Eine Aufgabenliste für Google, Apple, Bing, local.ch und weitere Verzeichnisse, dazu deinen einheitlichen Eintrag zum Kopieren."
-  - "Du gibst Strasse, PLZ und Telefon an und markierst, wo du schon eingetragen bist."
+  - "Eine Aufgabenliste für Google, Apple, Bing, local.ch und weitere Verzeichnisse, dazu deinen einheitlichen Eintrag zum Kopieren und eine Einheitlichkeit von 0 bis 100."
+  - "Du gibst Strasse, PLZ und Telefon an, auf Wunsch von deiner Website vorgeschlagen, und markierst, wo du schon eingetragen bist."
   - "Danach weisst du, wo du dich einträgst, was du prüfst und wo du die Schreibweise angleichst."
 ablauf:
-  - "Stammdaten eingeben"
+  - "Stammdaten eingeben oder von der Website lesen"
   - "Je Verzeichnis Ja, Nein oder Weiss ich nicht wählen"
   - "Aufgabenliste und Eintrag mitnehmen"
 ---
@@ -18,7 +18,7 @@ Einheitliche Verzeichniseinträge erleichtern es Kundschaft in Gossau, Herisau o
 
 - **Zwei Schreibweisen wirken wie zwei Betriebe:** «Wilerstr. 24» im einen und «Wilerstrasse 24» im anderen Verzeichnis lässt Leute zweifeln.
 - **Alte Angaben bleiben stehen:** Eine frühere Telefonnummer steht oft in Verzeichnissen, die du nie geöffnet hast.
-- **Mehrere Einträge sind kostenlos:** Was der Anbieter dazu schreibt, steht in der Liste, mit Quelle.
+- **Mehrere Einträge sind kostenlos:** Was der Anbieter schreibt, steht in der Liste, mit Quelle.
 - **Wer bestätigt, bestimmt selbst:** Angaben, Öffnungszeiten und Fotos pflegst du dann selber.
 
 => Gleich unten: was du mit der Liste machst.
@@ -37,7 +37,6 @@ Einheitliche Verzeichniseinträge erleichtern es Kundschaft in Gossau, Herisau o
 - **Einen alten Eintrag liegen lassen.** Such deinen Betrieb zuerst, sonst stehen zwei Einträge nebeneinander.
 - **Die Bestätigung vergessen.** Bei Google musst du dein Unternehmen bestätigen, um Angaben zu bearbeiten (Quelle: Google, Unternehmensprofil-Hilfe).
 - **Nur Google pflegen.** Prüfe auch Telefonbuch und Karten, die du selten öffnest.
-- **Die Rechtsform mal so, mal so schreiben.** Entscheide, ob «GmbH» im Namen steht, und nimm überall dasselbe.
 
 ## Beispiel
 Malerei Keller, Gossau, gibt Wilerstrasse 24, 9200 Gossau und 071 123 45 67 an. Bei Google ist sie eingetragen, bei Apple und Bing nicht. Bei local.ch und search.ch steht sie drin, den Eintrag hat sie nicht geprüft. So sieht das Ergebnis des Werkzeugs aus:
@@ -54,25 +53,30 @@ Malerei Keller, Gossau, gibt Wilerstrasse 24, 9200 Gossau und 071 123 45 67 an. 
 > 6. Branchenverband oder Gewerbeverein: Suchen, ob du schon drin bist
 >
 > Abweichungen bei Google: Adresse «Wilerstr. 24, 9200 Gossau» statt «Wilerstrasse 24, 9200 Gossau» (Abkürzung bei der Strasse). Telefon «071 123 45 67» statt «+41 71 123 45 67» (Telefon anders geschrieben).
+>
+> Einheitlichkeit der Einträge: 67 von 100 (Richtwert von Alperna, keine Statistik).
 
 ## Häufige Fragen
 ### Wozu müssen Name, Adresse und Telefon überall gleich sein?
-Einheitliche Angaben erleichtern es, dich zu finden und zu erkennen. Wer zwei Schreibweisen liest, fragt sich, ob es derselbe Betrieb ist. Wie stark das die Platzierung beeinflusst, sagt dieses Werkzeug nicht.
+Wer zwei Schreibweisen liest, fragt sich, ob es derselbe Betrieb ist. Wie stark das die Platzierung beeinflusst, sagt dieses Werkzeug nicht.
 
 ### Kosten die Einträge etwas?
-Das hängt vom Anbieter ab. Die Liste zeigt je Verzeichnis, was die Seite des Anbieters sagt, etwa «Laut Anbieter kostenlos». Wo die Seite es nicht eindeutig sagt, steht «Prüfe die Bedingungen auf der Seite des Anbieters». Angebote ändern sich, prüfe sie vor dem Eintragen.
+Das hängt vom Anbieter ab. Die Liste zeigt je Verzeichnis, was seine Seite sagt, etwa «Laut Anbieter kostenlos». Angebote ändern sich, prüfe sie vor dem Eintragen.
 
 ### Wie oft soll ich meine Verzeichniseinträge prüfen?
 Nach jeder Änderung bei Name, Adresse, Telefon oder Öffnungszeiten, sonst einmal im Jahr. Das ist ein Richtwert von Alperna, keine Statistik.
 
 ### Ruft das Werkzeug meine Einträge ab?
-Nein. Es liest keine fremden Seiten. Du markierst selbst, wo du eingetragen bist, und fügst ein, wie der Eintrag dort lautet. Das Werkzeug vergleicht nur diese Angaben mit deinem einheitlichen Eintrag.
+Nein. Es liest keine fremden Seiten. Du markierst selbst, wo du eingetragen bist, und fügst ein, wie der Eintrag dort lautet. Nur auf Klick liest es deine eigene Startseite und schlägt Strasse, PLZ und Telefon vor; du bestätigst jeden Vorschlag.
+
+### Wie rechnet die Einheitlichkeit?
+Je eingefügtes Feld zählt gleich 1 Punkt, gleich aber anders geschrieben einen halben, abweichend keinen. Der Durchschnitt ergibt 0 bis 100, als Richtwert von Alperna und nicht als Statistik.
 
 ### Brauche ich ein Konto?
 Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Was geht an Alperna, was bleibt im Browser?
-Mit deiner Adresse gehen Firma, Ort, Strasse, PLZ, Telefon, dein Status je Verzeichnis, die eingefügten Einträge und das Ergebnis an Alperna, damit wir bei Fragen weiterhelfen können. Dein Firmenprofil und der Zwischenstand bleiben in deinem Browser.
+Mit deiner Adresse gehen Firma, Ort, Strasse, PLZ, Telefon, dein Status je Verzeichnis, die eingefügten Einträge und das Ergebnis an Alperna, damit wir bei Fragen weiterhelfen können. Liest du deine Website, geht deren Adresse an unseren Server, nicht deine E-Mail-Adresse. Dein Firmenprofil und der Zwischenstand bleiben in deinem Browser.
 
 ## Alperna
 problem: Eintragen, bestätigen und angleichen kostet Zeit, und ein Profil, das niemand pflegt, zeigt bald wieder alte Angaben.

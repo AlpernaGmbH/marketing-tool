@@ -3,6 +3,7 @@
 import { cn } from "cn";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CopyButton } from "@/components/tool/CopyButton";
+import { DocView } from "@/components/tool/DocView";
 import { DocumentExport } from "@/components/tool/DocumentExport";
 import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { ResultCard } from "@/components/tool/ResultCard";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { dateCH } from "@/lib/ch";
+import { readWebsite } from "@/lib/read-client";
 import { useLocalJson } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
 import {
@@ -33,6 +35,7 @@ import {
   auswerten,
   clean,
   eingabeText,
+  einheitBlocks,
   eintragFelder,
   eintragText,
   formatPhoneCH,
@@ -58,6 +61,7 @@ import {
   type VzState,
 } from "./logic";
 import config from "./tool.config";
+import { kontaktAus, kontaktVorschlaege, type KontaktFeld, type KontaktVorschlag } from "./website";
 
 function Intro() {
   return (
@@ -67,8 +71,9 @@ function Intro() {
         dazu deinen einheitlichen Eintrag zum Kopieren. Wo du den Eintrag dort einfügst, zeigt das Werkzeug Abweichungen zur Schreibweise.
       </p>
       <p>
-        Das Werkzeug ruft keine Verzeichnisse ab und liest keine fremden Seiten. Dein Ergebnis geht zusammen mit deinen Angaben und deiner E-Mail-Adresse an
-        Alperna, damit wir dir bei Fragen weiterhelfen können.
+        Das Werkzeug ruft keine Verzeichnisse ab und liest keine fremden Seiten. Auf Wunsch liest es deine eigene Startseite und schlägt Strasse, PLZ und
+        Telefon vor; du bestätigst jeden Vorschlag. Dein Ergebnis geht zusammen mit deinen Angaben und deiner E-Mail-Adresse an Alperna, damit wir dir bei
+        Fragen weiterhelfen können.
       </p>
     </>
   );
@@ -290,6 +295,8 @@ function ResultView({ e, headingRef, onEdit, onNew }: { e: Ergebnis; headingRef:
         {summaryText(e)}
       </p>
 
+      <DocView blocks={einheitBlocks(e.aufgaben)} />
+
       <section aria-labelledby="vz-eintrag" className="grid gap-3">
         <h4 id="vz-eintrag">Dein einheitlicher Eintrag</h4>
         <p className="text-sm text-muted-foreground">Schreib Name, Adresse und Telefon in jedem Verzeichnis genau so.</p>
@@ -332,6 +339,128 @@ function ResultView({ e, headingRef, onEdit, onNew }: { e: Ergebnis; headingRef:
         </ul>
       </section>
     </ResultCard>
+  );
+}
+
+// ---- Angaben aus der eigenen Website ------------------------------------------------------------
+
+type Lesen = { vorschlaege: (KontaktVorschlag & { vorhanden: boolean })[]; ortHinweis: string | null } | { vorschlaege: []; ortHinweis: null; leer: true };
+
+/**
+ * «Von meiner Website lesen»: liest die Startseite aus dem Firmenprofil und schlägt Strasse, PLZ und Telefon vor. Die Person wählt, was sie
+ * übernimmt; Felder, die schon etwas enthalten, sind nicht vorgewählt. Es wird nichts gespeichert, was die Person nicht bestätigt.
+ */
+function WebsiteLesen({ stamm, input, disabled, onApply }: { stamm: Stamm; input: VzInput; disabled: boolean; onApply: (patch: Partial<VzInput>) => void }) {
+  const ctx = useToolContext();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lesen, setLesen] = useState<Lesen | null>(null);
+  const [chosen, setChosen] = useState<Set<KontaktFeld>>(new Set());
+  const hasSite = stamm.website.trim() !== "";
+
+  async function run() {
+    setError(null);
+    setLesen(null);
+    if (!hasSite) return setError("Trag zuerst die Adresse deiner Website ein.");
+    if (!(await ctx.ensureEmail())) return;
+    setBusy(true);
+    const stop = ctx.startLoading(["Website lesen", "Angaben suchen", "Angaben prüfen"]);
+    try {
+      let read = await readWebsite(stamm.website.trim());
+      // Der Server kennt keine Adresse (Cookie fehlt): erst das Fenster, dann einmal wiederholen.
+      if (!read.ok && read.reason === "gate") {
+        if (!(await ctx.renewEmail())) return;
+        read = await readWebsite(stamm.website.trim());
+      }
+      if (!read.ok) return setError(read.message);
+      const kontakt = kontaktAus(read.page, stamm.ort);
+      const vorschlaege = kontaktVorschlaege(kontakt, input);
+      const ortAnders = kontakt.ort !== "" && stamm.ort.trim() !== "" && !kontakt.ort.toLowerCase().startsWith(stamm.ort.trim().toLowerCase());
+      if (vorschlaege.length === 0 && !ortAnders) {
+        return setLesen({ vorschlaege: [], ortHinweis: null, leer: true });
+      }
+      setLesen({ vorschlaege, ortHinweis: ortAnders ? `Auf der Website steht als Ort «${kontakt.ort}», in deinem Firmenprofil «${stamm.ort.trim()}». Prüfe, welcher stimmt.` : null });
+      setChosen(new Set(vorschlaege.filter((v) => !v.vorhanden).map((v) => v.key)));
+    } finally {
+      stop();
+      setBusy(false);
+    }
+  }
+
+  function apply() {
+    if (!lesen) return;
+    const patch: Partial<VzInput> = {};
+    for (const v of lesen.vorschlaege) if (chosen.has(v.key)) patch[v.key] = v.wert;
+    onApply(patch);
+    setLesen(null);
+  }
+
+  const toggle = (key: KontaktFeld) =>
+    setChosen((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  return (
+    <div className="grid gap-3 md:col-span-2" data-testid="website-lesen">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="outline" disabled={disabled || busy} onClick={() => void run()}>
+          {busy ? "Die Website wird gelesen …" : "Von meiner Website lesen"}
+        </Button>
+        <span className="text-sm text-muted-foreground">Schlägt Strasse, PLZ und Telefon vor. Dafür geht die Adresse deiner Website an unseren Server, nicht deine E-Mail-Adresse.</span>
+      </div>
+      {error && (
+        <p role="alert" className="text-destructive" data-testid="website-fehler">
+          {error}
+        </p>
+      )}
+      {lesen && "leer" in lesen && (
+        <p role="status" className="rounded-xl bg-surface p-4 text-sm" data-testid="website-leer">
+          Auf der Startseite haben wir keine Adresse und keine Telefonnummer gefunden, die du noch nicht eingetragen hast. Oft stehen sie nur auf der Seite «Kontakt» oder im Impressum.
+        </p>
+      )}
+      {lesen && !("leer" in lesen) && (
+        <div className="grid gap-3 rounded-xl border border-line p-4" data-testid="website-vorschau">
+          <h4 className="font-heading text-base font-semibold">Das steht auf deiner Startseite</h4>
+          {lesen.ortHinweis && (
+            <p role="note" className="rounded-lg bg-surface p-3 text-sm" data-testid="website-ort">
+              {lesen.ortHinweis}
+            </p>
+          )}
+          {lesen.vorschlaege.length > 0 ? (
+            <>
+              <ul className="grid gap-2">
+                {lesen.vorschlaege.map((v) => (
+                  <li key={v.key}>
+                    <label className={chipClass}>
+                      <input type="checkbox" className="size-5 accent-ink" checked={chosen.has(v.key)} onChange={() => toggle(v.key)} />
+                      <span className="min-w-0 break-words">
+                        {v.label}: <strong className="font-medium">{v.wert}</strong>
+                        {v.vorhanden ? <span className="block text-sm text-muted-foreground">Bei dir steht schon eine Angabe. Sie wird ersetzt, wenn du dieses Feld wählst.</span> : null}
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-3">
+                <Button type="button" onClick={apply} disabled={chosen.size === 0}>
+                  Übernehmen
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setLesen(null)}>
+                  Verwerfen
+                </Button>
+              </div>
+            </>
+          ) : (
+            <Button type="button" variant="ghost" onClick={() => setLesen(null)} className="justify-self-start">
+              Schliessen
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -469,6 +598,8 @@ function VerzeichnisseFlow() {
             ? `Branche im Profil: ${stamm.branche.trim()}. Sie entscheidet nur, ob Tripadvisor in der Liste steht.`
             : "Im Profil steht keine Branche. Tripadvisor erscheint darum mit dem Zusatz «falls es zu deiner Branche passt»."}
         </p>
+
+        <WebsiteLesen stamm={stamm} input={input} disabled={off} onApply={(patch) => change(patch)} />
 
         <div className="grid gap-1.5">
           <Label htmlFor={FIELD_IDS.strasse}>Strasse und Nummer</Label>
