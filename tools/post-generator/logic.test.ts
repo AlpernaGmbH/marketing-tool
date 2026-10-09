@@ -8,6 +8,7 @@ import {
   EMPTY_FORM,
   EMPTY_STATE,
   FORMATE,
+  KATEGORIEN,
   KI_HINWEIS,
   MAX_ENTWUERFE,
   PLATTFORMEN,
@@ -30,6 +31,7 @@ import {
   inputProblem,
   isAnrede,
   isFormat,
+  isKategorie,
   isPlattform,
   isZiel,
   joinNamen,
@@ -48,6 +50,7 @@ import {
   toDocument,
   toForm,
   toInput,
+  kategorieLabel,
   zielLabel,
   type Entwurf,
   type FormValues,
@@ -72,6 +75,7 @@ const form: FormValues = {
   plattform: "instagram",
   format: "fachtipp",
   ziel: "kommentar",
+  kategorie: "",
   saeule: "Fassaden vorher und nachher",
   anrede: "du",
   emojis: false,
@@ -161,6 +165,36 @@ describe("post-generator: Auswahl aus dem Profil", () => {
     expect(resolveAnrede("", {})).toBe("du");
     expect(hatAnredeImProfil({ marke: { tonalitaet: { anrede: "sie" } } })).toBe(true);
     expect(hatAnredeImProfil({})).toBe(false);
+  });
+});
+
+describe("post-generator: Ziel und Kategorie", () => {
+  it("bietet zehn Ziele; die fünf alten Schlüssel bleiben gültig", () => {
+    expect(ZIELE).toHaveLength(10);
+    for (const alt of ["kommentar", "nachricht", "profil", "link", "speichern"]) expect(isZiel(alt), alt).toBe(true);
+    for (const neu of ["verkauf", "termin", "bewerbung", "anmeldung", "teilen"]) expect(isZiel(neu), neu).toBe(true);
+    expect(new Set(ZIELE.map((z) => z.key)).size).toBe(10);
+  });
+
+  it("schickt die Kategorie nur mit, wenn sie gewählt ist (ohne Angabe bleibt die Eingabe wie vorher)", () => {
+    expect(toInput(profil, form)).not.toHaveProperty("kategorie");
+    expect("kategorie" in toInput(profil, { ...form, kategorie: "" })).toBe(false);
+    expect(toInput(profil, { ...form, kategorie: "team" }).kategorie).toBe("team");
+    expect("kategorie" in toInput(profil, { ...form, kategorie: "werbung" as never })).toBe(false);
+    expect(postInput.safeParse(toInput(profil, { ...form, kategorie: "saison", ziel: "anmeldung" })).success).toBe(true);
+    expect(toForm({ ...input, kategorie: "tipp" }).kategorie).toBe("tipp");
+    expect(toForm(input).kategorie).toBe("");
+  });
+
+  it("nennt Ziel und Kategorie im CRM-Text und im Dokument", () => {
+    const mit: PostInput = { ...input, kategorie: "kulissen", ziel: "bewerbung" };
+    expect(eingabeText(mit)).toContain("Ziel der Aufforderung: Bewerbung");
+    expect(eingabeText(mit)).toContain("Kategorie: Hinter den Kulissen");
+    expect(eingabeText(input)).not.toContain("Kategorie:");
+    const facts = toDocument(output, mit).blocks.find((b) => b.type === "facts");
+    expect(facts?.type === "facts" && facts.items.map((i) => i.label)).toContain("Kategorie");
+    const ohne = toDocument(output, input).blocks.find((b) => b.type === "facts");
+    expect(ohne?.type === "facts" && ohne.items.map((i) => i.label)).not.toContain("Kategorie");
   });
 });
 
@@ -259,7 +293,7 @@ describe("post-generator: Eingabe", () => {
       "Branche: Malerei",
       "Plattform: Instagram",
       "Format: Fachtipp",
-      "Ziel der Aufforderung: Kommentar",
+      "Ziel der Aufforderung: Kommentieren",
       "Anrede: Du",
     ]);
     expect(text).toContain("Emojis: nicht erlaubt");
@@ -347,7 +381,7 @@ describe("post-generator: Dokument", () => {
         "Betrieb: Malerei Keller, Gossau",
         "Plattform: Instagram",
         "Format: Fachtipp",
-        "Ziel der Aufforderung: Kommentar",
+        "Ziel der Aufforderung: Kommentieren",
         "Anrede: Du",
       ]);
     }
@@ -499,14 +533,27 @@ describe("post-generator: Labels und Texte der Oberfläche", () => {
   it("kennt Plattformen, Formate, Ziele und Anreden mit Labels", () => {
     expect(PLATTFORMEN.map((p) => p.label)).toEqual(["Instagram", "LinkedIn", "Facebook", "Google-Beitrag"]);
     expect(FORMATE.map((f) => f.label)).toEqual(["Geschichte", "Liste", "Meinung", "Fachtipp"]);
-    expect(ZIELE.map((z) => z.label)).toEqual(["Kommentar", "Nachricht", "Profil besuchen", "Link", "Speichern"]);
+    expect(ZIELE.map((z) => z.label)).toEqual([
+      "Kommentieren",
+      "Direktnachricht",
+      "Follower gewinnen",
+      "Website-Besuche",
+      "Speichern",
+      "Verkauf",
+      "Termin",
+      "Bewerbung",
+      "Anmeldung",
+      "Teilen",
+    ]);
+    expect(KATEGORIEN.map((k) => k.label)).toEqual(["Angebot", "Team", "Kundenprojekt", "Hinter den Kulissen", "Frage", "Tipp", "Saison"]);
     expect(ANREDEN.map((a) => a.label)).toEqual(["Du", "Sie"]);
     expect(plattformLabel("google")).toBe("Google-Beitrag");
     expect(formatLabel("liste")).toBe("Liste");
-    expect(zielLabel("profil")).toBe("Profil besuchen");
+    expect(zielLabel("profil")).toBe("Follower gewinnen");
+    expect(kategorieLabel("kulissen")).toBe("Hinter den Kulissen");
     expect(anredeLabel("sie")).toBe("Sie");
-    expect(isPlattform("google") && isFormat("meinung") && isZiel("link") && isAnrede("du")).toBe(true);
-    expect(isPlattform("tiktok") || isFormat("reel") || isZiel("kaufen") || isAnrede("ihr") || isPlattform(undefined)).toBe(false);
+    expect(isPlattform("google") && isFormat("meinung") && isZiel("link") && isZiel("termin") && isKategorie("tipp") && isAnrede("du")).toBe(true);
+    expect(isPlattform("tiktok") || isFormat("reel") || isZiel("kaufen") || isKategorie("werbung") || isKategorie("") || isAnrede("ihr") || isPlattform(undefined)).toBe(false);
   });
 
   it("enthält in Labels, Hinweisen und Meldungen nichts von der Sperrliste und keine Stilverstösse", () => {
@@ -514,6 +561,7 @@ describe("post-generator: Labels und Texte der Oberfläche", () => {
       KI_HINWEIS,
       ...FORMATE.flatMap((f) => [f.label, f.hint]),
       ...ZIELE.flatMap((z) => [z.label, z.hint]),
+      ...KATEGORIEN.flatMap((k) => [k.label, k.hint]),
       ...PLATTFORMEN.map((p) => p.label),
       inputProblem({ firma: "" }, form)?.message ?? "",
       inputProblem({ firma: "x" }, { ...form, idee: "" })?.message ?? "",

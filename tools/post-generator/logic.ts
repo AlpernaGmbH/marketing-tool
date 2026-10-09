@@ -21,6 +21,7 @@ import {
   FORMAT_KEYS,
   LIMITS,
   PLATTFORM_KEYS,
+  KATEGORIE_KEYS,
   ZIEL_KEYS,
   postInput,
   postOutput,
@@ -29,8 +30,10 @@ import {
   type PlattformKey,
   type PostInput,
   type PostOutput,
+  type KategorieKey,
   type ZielKey,
 } from "./generator";
+import { KATEGORIEN, ZIELE, isKategorie, isZiel, kategorieLabel, zielLabel } from "./labels";
 
 // Post-Generator: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
 // Den Beitrag schreibt /api/generate über generator.ts; hier stehen Labels, Auswahl aus dem Profil, Eingabeprüfung,
@@ -49,6 +52,7 @@ export const MAX_ENTWUERFE = 10;
 /** Hashtags, die die Person selbst schreibt (gleiche Grenze wie im Caption-Baukasten). */
 export const HASHTAGS_MAX = 300;
 
+export { KATEGORIEN, ZIELE, isKategorie, isZiel, kategorieLabel, zielLabel };
 export { FOLD_NOTE, TEXTCHECK_KEY, TEXTCHECK_PATH, charCount, counterLabel, foldHint, foldInfo, splitAtFold, textcheckState };
 export type { Platform };
 
@@ -63,14 +67,6 @@ export const FORMATE: { key: FormatKey; label: string; hint: string }[] = [
   { key: "fachtipp", label: "Fachtipp", hint: "Ein Rat, den deine Kundschaft sofort umsetzen kann." },
 ];
 
-export const ZIELE: { key: ZielKey; label: string; hint: string }[] = [
-  { key: "kommentar", label: "Kommentar", hint: "Die Aufforderung lädt zu einem Kommentar ein." },
-  { key: "nachricht", label: "Nachricht", hint: "Die Aufforderung lädt zu einer Nachricht an euch ein." },
-  { key: "profil", label: "Profil besuchen", hint: "Die Aufforderung lädt ein, euer Profil anzusehen." },
-  { key: "link", label: "Link", hint: "An der Stelle steht der Platzhalter [Link]. Die Adresse setzt du selbst ein." },
-  { key: "speichern", label: "Speichern", hint: "Die Aufforderung lädt ein, den Beitrag zu speichern." },
-];
-
 export const ANREDEN: { key: AnredeKey; label: string }[] = [
   { key: "du", label: "Du" },
   { key: "sie", label: "Sie" },
@@ -78,12 +74,10 @@ export const ANREDEN: { key: AnredeKey; label: string }[] = [
 
 export const isPlattform = (v: unknown): v is PlattformKey => typeof v === "string" && (PLATTFORM_KEYS as readonly string[]).includes(v);
 export const isFormat = (v: unknown): v is FormatKey => typeof v === "string" && (FORMAT_KEYS as readonly string[]).includes(v);
-export const isZiel = (v: unknown): v is ZielKey => typeof v === "string" && (ZIEL_KEYS as readonly string[]).includes(v);
 export const isAnrede = (v: unknown): v is AnredeKey => typeof v === "string" && (ANREDE_KEYS as readonly string[]).includes(v);
 
 export const plattformLabel = (key: PlattformKey): string => PLATFORMS[key].label;
 export const formatLabel = (key: FormatKey): string => FORMATE.find((f) => f.key === key)?.label ?? key;
-export const zielLabel = (key: ZielKey): string => ZIELE.find((z) => z.key === key)?.label ?? key;
 export const anredeLabel = (key: AnredeKey): string => (key === "du" ? "Du" : "Sie");
 
 /** Hashtags gibt es nur auf Instagram. */
@@ -218,12 +212,14 @@ export type FormValues = {
   plattform: PlattformKey | "";
   format: FormatKey | "";
   ziel: ZielKey | "";
+  /** Leer: keine Angabe. */
+  kategorie: KategorieKey | "";
   saeule: string;
   anrede: AnredeKey | "";
   emojis: boolean;
 };
 
-export const EMPTY_FORM: FormValues = { idee: "", plattform: "instagram", format: "geschichte", ziel: "kommentar", saeule: "", anrede: "", emojis: false };
+export const EMPTY_FORM: FormValues = { idee: "", plattform: "instagram", format: "geschichte", ziel: "kommentar", kategorie: "", saeule: "", anrede: "", emojis: false };
 
 export type Problem = { message: string; fieldId: string };
 
@@ -253,6 +249,7 @@ export function toInput(fields: ProfileFields, form: FormValues): PostInput {
     plattform: isPlattform(form.plattform) ? form.plattform : "instagram",
     format: isFormat(form.format) ? form.format : "geschichte",
     ziel: isZiel(form.ziel) ? form.ziel : "kommentar",
+    ...(isKategorie(form.kategorie) ? { kategorie: form.kategorie } : {}),
     saeule: teile.saeulen.includes(saeule) ? saeule : "",
     anrede: resolveAnrede(form.anrede, fields),
     emojis: form.emojis === true,
@@ -266,7 +263,7 @@ export function toInput(fields: ProfileFields, form: FormValues): PostInput {
 
 /** Das Formular aus einer gespeicherten Eingabe, für «Angaben ändern». */
 export function toForm(input: PostInput): FormValues {
-  return { idee: input.idee, plattform: input.plattform, format: input.format, ziel: input.ziel, saeule: input.saeule, anrede: input.anrede, emojis: input.emojis };
+  return { idee: input.idee, plattform: input.plattform, format: input.format, ziel: input.ziel, kategorie: input.kategorie ?? "", saeule: input.saeule, anrede: input.anrede, emojis: input.emojis };
 }
 
 /** Die Idee aus einer gemerkten Beitragsidee (Titel und Beschrieb), auf die Grenze des Feldes gekürzt. */
@@ -288,6 +285,7 @@ export function eingabeText(input: PostInput): string {
     `Plattform: ${plattformLabel(input.plattform)}`,
     `Format: ${formatLabel(input.format)}`,
     `Ziel der Aufforderung: ${zielLabel(input.ziel)}`,
+    input.kategorie ? `Kategorie: ${kategorieLabel(input.kategorie)}` : "",
     `Anrede: ${anredeLabel(input.anrede)}`,
     `Emojis: ${input.emojis ? "erlaubt" : "nicht erlaubt"}`,
     input.saeule ? `Säule: ${input.saeule}` : "",
@@ -350,6 +348,7 @@ export function toDocument(output: PostOutput, input: PostInput, hashtags = ""):
         { label: "Plattform", value: plattform },
         { label: "Format", value: formatLabel(input.format) },
         { label: "Ziel der Aufforderung", value: zielLabel(input.ziel) },
+        ...(input.kategorie ? [{ label: "Kategorie", value: kategorieLabel(input.kategorie) }] : []),
         { label: "Anrede", value: anredeLabel(input.anrede) },
       ],
     },

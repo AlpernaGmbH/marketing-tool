@@ -11,8 +11,16 @@ export type PlattformKey = (typeof PLATTFORM_KEYS)[number];
 export const FORMAT_KEYS = ["geschichte", "liste", "meinung", "fachtipp"] as const;
 export type FormatKey = (typeof FORMAT_KEYS)[number];
 
-export const ZIEL_KEYS = ["kommentar", "nachricht", "profil", "link", "speichern"] as const;
+/**
+ * Ziel der Aufforderung. Die fünf ersten Schlüssel gab es vor dem 09.10.2026 und bleiben gültig (gespeicherte Entwürfe):
+ * «profil» heisst jetzt «Follower gewinnen», «link» «Website-Besuche». Neu: verkauf, termin, bewerbung, anmeldung, teilen.
+ */
+export const ZIEL_KEYS = ["kommentar", "nachricht", "profil", "link", "speichern", "verkauf", "termin", "bewerbung", "anmeldung", "teilen"] as const;
 export type ZielKey = (typeof ZIEL_KEYS)[number];
+
+/** Worum es im Beitrag geht. Optional: Ohne Angabe läuft der Aufruf wie vor dem 09.10.2026. */
+export const KATEGORIE_KEYS = ["angebot", "team", "kundenprojekt", "kulissen", "frage", "tipp", "saison"] as const;
+export type KategorieKey = (typeof KATEGORIE_KEYS)[number];
 
 export const ANREDE_KEYS = ["du", "sie"] as const;
 export type AnredeKey = (typeof ANREDE_KEYS)[number];
@@ -54,6 +62,7 @@ export const postInput = z.object({
   plattform: z.enum(PLATTFORM_KEYS),
   format: z.enum(FORMAT_KEYS),
   ziel: z.enum(ZIEL_KEYS),
+  kategorie: z.enum(KATEGORIE_KEYS).optional(),
   saeule: z.string().trim().max(LIMITS.saeule),
   anrede: z.enum(ANREDE_KEYS),
   emojis: z.boolean(),
@@ -158,7 +167,8 @@ const INSTRUCTION = `Schreib einen Beitrag für das Social-Media-Konto eines Sch
 - «format»: geschichte = eine kleine Szene aus dem Alltag mit Anfang, Wendung und Schluss. liste = drei bis fünf Punkte, jeder auf einer eigenen Zeile und mit «- » am Zeilenanfang. meinung = eine klare Haltung, begründet aus der Praxis des Betriebs. fachtipp = ein Rat, den die Kundschaft sofort umsetzen kann, mit dem Grund dahinter.
 - «hooks»: genau zwei verschiedene Varianten für den ersten Satz, je 10 bis 160 Zeichen. Die erste ist eine Frage, die zweite eine Aussage. Beide führen in denselben Hauptteil und sind ohne ihn verständlich. Der Hook nennt, worum es geht; er lockt nicht mit Versprechen.
 - «hauptteil»: 80 bis 1200 Zeichen ohne Hook und ohne Aufforderung. Die Absätze sind durch eine Leerzeile getrennt (im JSON zwei Zeilenumbrüche). Länge: bei instagram und facebook höchstens 900 Zeichen, bei linkedin und google höchstens 1200 Zeichen. Bei google keine Leerzeilen, nur einfache Zeilenumbrüche, und Hook, Hauptteil und Aufforderung zusammen höchstens 1500 Zeichen.
-- «cta»: eine Aufforderung am Ende, 10 bis 160 Zeichen, nach «ziel». kommentar = lädt zu einem Kommentar ein und stellt dafür eine konkrete Frage. nachricht = lädt ein, dem Betrieb eine Nachricht zu schreiben. profil = lädt ein, das Profil zu besuchen. link = verweist auf den Link; schreib dafür den Platzhalter [Link] und nie eine Adresse. speichern = lädt ein, den Beitrag zu speichern, damit man später darauf zurückkommt.
+- «cta»: eine Aufforderung am Ende, 10 bis 160 Zeichen, nach «ziel». kommentar = lädt zu einem Kommentar ein und stellt dafür eine konkrete Frage. nachricht = lädt ein, dem Betrieb eine Nachricht zu schreiben. profil = lädt ein, das Profil zu besuchen und ihm zu folgen. link = verweist auf den Link; schreib dafür den Platzhalter [Link] und nie eine Adresse. speichern = lädt ein, den Beitrag zu speichern, damit man später darauf zurückkommt. verkauf = lädt ein, das Angebot zu bestellen oder zu kaufen; nenne keinen Preis, wenn er nicht in den Angaben steht, und schreib für einen Link den Platzhalter [Link]. termin = lädt ein, einen Termin zu vereinbaren; für den Weg dorthin (Telefon, Nachricht, Link) gilt, was in den Angaben steht, sonst der Platzhalter [Link]. bewerbung = lädt ein, sich zu bewerben oder sich zu melden; keine Löhne und keine Anforderungen, die nicht in den Angaben stehen. anmeldung = lädt ein, sich anzumelden; Datum, Ort und Link nur aus den Angaben, sonst Platzhalter in eckigen Klammern. teilen = bittet darum, den Beitrag mit jemandem zu teilen, der ihn brauchen kann; ohne Druck und ohne Gegenleistung.
+- «kategorie» (falls vorhanden): worum es im Beitrag geht. angebot = eine Leistung oder ein Produkt wird vorgestellt. team = ein Mensch oder das Team steht im Mittelpunkt. kundenprojekt = ein abgeschlossenes Projekt oder eine Zusammenarbeit; nur Angaben aus der Idee, keine erfundenen Kundennamen. kulissen = ein Einblick in den Arbeitsalltag. frage = der Beitrag beantwortet eine Frage der Kundschaft oder stellt eine. tipp = ein praktischer Rat. saison = Bezug zu einer Jahreszeit oder einem Anlass. Die Kategorie bestimmt Blickwinkel und Auswahl der Details, nicht den Ton.
 - Anrede nach «anrede»: du = Du-Form (du, dir, dein), sie = Sie-Form (Sie, Ihnen, Ihr). Sie gilt für Hooks, Hauptteil und Aufforderung. Bei sie steht nirgends du, dich, dir oder dein.
 - Emojis nach «emojis»: false = kein Emoji und kein Smiley. true = höchstens drei im ganzen Beitrag, passend zum Inhalt, keines im Hook; die feste Regel «keine Emojis» gilt dann nicht.
 - Keine Hashtags und kein Zeichen #. Die Person ergänzt sie selbst.

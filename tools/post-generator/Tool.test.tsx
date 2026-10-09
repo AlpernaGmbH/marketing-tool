@@ -98,7 +98,7 @@ describe("Post-Generator im Browser", () => {
     expect(screen.getByLabelText("Säule")).toHaveValue("");
     expect(screen.getByLabelText("Emojis erlauben")).not.toBeChecked();
     expect(within(screen.getByLabelText("Plattform")).getAllByRole("option").map((o) => o.textContent)).toEqual(["Instagram", "LinkedIn", "Facebook", "Google-Beitrag"]);
-    expect(within(screen.getByLabelText("Ziel der Aufforderung")).getAllByRole("option").map((o) => o.textContent)).toEqual(["Kommentar", "Nachricht", "Profil besuchen", "Link", "Speichern"]);
+    expect(within(screen.getByLabelText("Ziel der Aufforderung")).getAllByRole("option").map((o) => o.textContent)).toEqual(["Kommentieren", "Direktnachricht", "Follower gewinnen", "Website-Besuche", "Speichern", "Verkauf", "Termin", "Bewerbung", "Anmeldung", "Teilen"]);
     expect(within(screen.getByLabelText("Säule")).getAllByRole("option").map((o) => o.textContent)).toEqual(["keine", "Team und Lehre"]);
     expect(screen.getByTestId("profil-hinweis")).toHaveTextContent("Aus deinem Profil geht mit: Positionierung, Werte und Tonalität.");
     expect(screen.getByRole("link", { name: "Bearbeiten" })).toHaveAttribute("href", "/profil");

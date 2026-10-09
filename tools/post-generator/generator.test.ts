@@ -75,6 +75,7 @@ describe("post-generator: Eingabeschema", () => {
     expect(postInput.safeParse({ ...input, plattform: "tiktok" }).success).toBe(false);
     expect(postInput.safeParse({ ...input, format: "reel" }).success).toBe(false);
     expect(postInput.safeParse({ ...input, ziel: "kaufen" }).success).toBe(false);
+    expect(postInput.safeParse({ ...input, kategorie: "werbung" }).success).toBe(false);
     expect(postInput.safeParse({ ...input, anrede: "ihr" }).success).toBe(false);
     expect(postInput.safeParse({ ...input, anrede: "" }).success).toBe(false);
     expect(postInput.safeParse({ ...input, emojis: "ja" }).success).toBe(false);
@@ -315,7 +316,7 @@ describe("post-generator: checkGenerated und Prompt", () => {
 
     const system = systemPrompt(postGenerator);
     expect(system).toContain("Form:");
-    for (const key of ["hooks", "hauptteil", "cta", "hinweis", "plattform", "format", "ziel", "anrede", "emojis", "vermeiden"]) expect(system).toContain(`«${key}»`);
+    for (const key of ["hooks", "hauptteil", "cta", "hinweis", "plattform", "format", "ziel", "kategorie", "anrede", "emojis", "vermeiden"]) expect(system).toContain(`«${key}»`);
     expect(system).not.toContain(input.betrieb);
     expect(system).not.toContain(input.idee);
     const prompt = postGenerator.prompt(input);
@@ -324,5 +325,34 @@ describe("post-generator: checkGenerated und Prompt", () => {
     expect(postGenerator.slug).toBe("post-generator");
     expect(postGenerator.maxTokens).toBe(1200);
     expect(postGenerator.temperature).toBe(0.6);
+  });
+});
+
+describe("post-generator: Regression zu Ziel und Kategorie (09.10.2026)", () => {
+  it("lässt die Eingabe ohne Kategorie unverändert: der Prompt hat kein Feld «kategorie»", () => {
+    const prompt = postGenerator.prompt(input);
+    expect(prompt).not.toContain("kategorie");
+    expect(postGenerator.prompt({ ...input, kategorie: "team" })).toContain("\"kategorie\":\"team\"");
+  });
+
+  it("behält die Aufträge der fünf alten Ziele wörtlich und beschreibt die fünf neuen", () => {
+    const system = systemPrompt(postGenerator);
+    for (const alt of [
+      "kommentar = lädt zu einem Kommentar ein und stellt dafür eine konkrete Frage.",
+      "nachricht = lädt ein, dem Betrieb eine Nachricht zu schreiben.",
+      "link = verweist auf den Link; schreib dafür den Platzhalter [Link] und nie eine Adresse.",
+      "speichern = lädt ein, den Beitrag zu speichern, damit man später darauf zurückkommt.",
+    ]) {
+      expect(system).toContain(alt);
+    }
+    for (const neu of ["verkauf = ", "termin = ", "bewerbung = ", "anmeldung = ", "teilen = "]) expect(system).toContain(neu);
+    for (const kat of ["angebot = ", "team = ", "kundenprojekt = ", "kulissen = ", "frage = ", "tipp = ", "saison = "]) expect(system).toContain(kat);
+  });
+
+  it("prüft einen Beitrag mit neuem Ziel und Kategorie mit denselben Regeln", () => {
+    const neu: PostInput = { ...input, ziel: "anmeldung", kategorie: "saison" };
+    expect(checkGenerated(postGenerator, output(), neu).ok).toBe(true);
+    expect(checkGenerated(postGenerator, output({ hauptteil: `${output().hauptteil}\n\nWir haben 99 Plätze.` }), neu)).toMatchObject({ ok: false });
+    expect(checkGenerated(postGenerator, output({ cta: "Melde dich unter https://example.com an." }), neu)).toMatchObject({ ok: false, reason: "link" });
   });
 });

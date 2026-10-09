@@ -31,6 +31,7 @@ import {
   STORAGE_KEY,
   TEXTCHECK_KEY,
   TEXTCHECK_PATH,
+  KATEGORIEN,
   ZIELE,
   addDraft,
   charCount,
@@ -48,6 +49,7 @@ import {
   isAnrede,
   isFormat,
   isPlattform,
+  isKategorie,
   isZiel,
   joinNamen,
   newDraft,
@@ -457,6 +459,27 @@ function PostFlow() {
                 </div>
 
                 <div className="grid gap-1.5">
+                  <Label htmlFor="pg-kategorie">Kategorie (freiwillig)</Label>
+                  <select
+                    id="pg-kategorie"
+                    className={selectClass}
+                    value={form.kategorie}
+                    onChange={(e) => patch({ kategorie: isKategorie(e.target.value) ? e.target.value : "" })}
+                    aria-describedby="pg-kategorie-help"
+                  >
+                    <option value="">Keine Angabe</option>
+                    {KATEGORIEN.map((k) => (
+                      <option key={k.key} value={k.key}>
+                        {k.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p id="pg-kategorie-help" className="text-sm text-muted-foreground">
+                    {KATEGORIEN.find((k) => k.key === form.kategorie)?.hint ?? "Sagt der KI, worum es im Beitrag geht."}
+                  </p>
+                </div>
+
+                <div className="grid gap-1.5">
                   <Label htmlFor="pg-anrede">Anrede</Label>
                   <select
                     id="pg-anrede"
@@ -515,7 +538,7 @@ function PostFlow() {
             </fieldset>
 
             <p className="text-sm text-muted-foreground">
-              Dafür gehen Betrieb, Branche, Ort, deine Idee und deine Auswahl (Plattform, Format, Ziel, Anrede, Emojis)
+              Dafür gehen Betrieb, Branche, Ort, deine Idee und deine Auswahl (Plattform, Format, Ziel, Kategorie, Anrede, Emojis)
               {namen.length > 0 ? `, dazu ${joinNamen(namen)} aus deinem Profil,` : ""} an unseren Server und von dort an unseren KI-Anbieter, nicht deine
               E-Mail-Adresse. Unser Server speichert die Angaben nicht. Deine Angaben und der Beitrag gehen mit deiner E-Mail-Adresse an Alperna, damit wir dir bei
               Fragen weiterhelfen können. Gib nichts Vertrauliches ein.
