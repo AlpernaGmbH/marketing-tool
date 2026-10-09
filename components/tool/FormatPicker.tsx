@@ -5,7 +5,8 @@ import { numberCH } from "@/lib/ch";
 
 // Auswahl der Bildformate (Charge C10a, 09.10.2026): Jedes Format ist eine Karte mit dem Seitenverhältnis als kleinem Rechteck, dem Namen und
 // den Pixelmassen; ein Klick wählt oder entfernt es. Darunter steht, falls nötig, die Vorschau-Wahl als Knöpfe (ein Klick statt eines Menüs).
-// Die Kästchen sind echte Checkboxen (Tastatur, Screenreader, Formular), die Karte ist ihr Label.
+// Die Kästchen sind echte Checkboxen (Tastatur, Screenreader, Formular); das unsichtbare Kästchen liegt über der ganzen Karte, damit ein Klick
+// (Maus, Finger, Browser-Test) es direkt trifft.
 
 export type PickerFormat = { key: string; label: string; width: number; height: number; detail?: string };
 
@@ -40,7 +41,7 @@ export function FormatCards({ formats, selected, onToggle, idPrefix, disabled, i
             <label
               htmlFor={id}
               className={cn(
-                "flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border border-line bg-paper p-3",
+                "group relative flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border border-line bg-paper p-3",
                 "has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
                 disabled && "cursor-not-allowed opacity-60",
               )}
@@ -48,7 +49,7 @@ export function FormatCards({ formats, selected, onToggle, idPrefix, disabled, i
               <input
                 id={id}
                 type="checkbox"
-                className="peer sr-only"
+                className="absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
                 checked={selected.includes(f.key)}
                 disabled={disabled}
                 onChange={(e) => onToggle(f.key, e.target.checked)}
@@ -57,7 +58,7 @@ export function FormatCards({ formats, selected, onToggle, idPrefix, disabled, i
                 aria-invalid={invalidKey === f.key ? true : undefined}
               />
               <span aria-hidden="true" className="grid size-12 shrink-0 place-items-center">
-                <span className="block rounded-[3px] border-2 border-ink bg-paper peer-checked:bg-ink" style={{ width: size.width, height: size.height }} />
+                <span className="block rounded-[3px] border-2 border-ink bg-paper group-has-[:checked]:bg-ink" style={{ width: size.width, height: size.height }} />
               </span>
               <span className="grid min-w-0 gap-0.5">
                 <span id={`${id}-name`} className="font-medium">

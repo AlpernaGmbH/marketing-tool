@@ -961,7 +961,7 @@ test.describe("Ideen aus deiner Website: leere Seite", () => {
     expect(calls).toEqual({ read: 1, generate: 0 });
     expect((await received(request)).find((l) => l.email === email && l.tool === "ideen-aus-website")).toBeUndefined();
     // Der Hinweis verschwindet, sobald die Person einen Kanal ändert.
-    await page.getByLabel("Newsletter").click();
+    await page.getByRole("checkbox", { name: "Newsletter" }).click();
     await expect(page.getByTestId("leere-seite")).toHaveCount(0);
   });
 });
@@ -1510,7 +1510,7 @@ test.describe("Welle 3 im Browser (Schweizer Praxis-Werkzeuge)", () => {
     await expect(page.getByTestId("ci-gruppe-block").first()).toBeVisible();
     await chips.getByRole("button", { name: /^Alle Formate \d+$/ }).click();
     await page.locator("#ci-gruppe").selectOption("keine");
-    await expect(page.getByRole("list", { name: "Ideen" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Ideen", exact: true })).toBeVisible();
     await page.getByTestId("ci-card").first().getByRole("button", { name: "Merken" }).click();
     await expect(page.getByTestId("ci-merk-count")).toContainText("gemerkt");
     await expect(page.getByTestId("ci-merk-count")).not.toContainText("Noch nichts");
