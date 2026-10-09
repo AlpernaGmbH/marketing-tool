@@ -112,6 +112,37 @@ describe("useGenerator", () => {
     expect(m.count("/api/generate")).toBe(2);
   });
 
+  it("zeigt während des Aufrufs die Ladeanzeige statt des Werkzeugs und danach das Werkzeug wieder", async () => {
+    writeLocal(LEAD_KEY, "anna@keller.ch");
+    let release: (r: Response) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (path: string) => {
+        if (path === "/api/generate") return new Promise<Response>((resolve) => (release = resolve));
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }),
+    );
+    const u = userEvent.setup();
+    renderProbe();
+    await u.click(await screen.findByRole("button", { name: "Entwurf" }));
+    expect(await screen.findByTestId("tool-loading")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Entwurf" })).not.toBeInTheDocument();
+    release(new Response(JSON.stringify({ ok: true, output: { titel: "Fassaden" } }), { status: 200 }));
+    await waitFor(() => expect(screen.queryByTestId("tool-loading")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Entwurf" })).toBeInTheDocument();
+    expect(screen.getByTestId("out")).toHaveTextContent("Fassaden");
+  });
+
+  it("beendet die Ladeanzeige auch bei einem Ausfall und zeigt die Fehlermeldung", async () => {
+    writeLocal(LEAD_KEY, "anna@keller.ch");
+    mockApi([{ status: 502, body: { error: "ai_failed" } }]);
+    const u = userEvent.setup();
+    renderProbe();
+    await u.click(await screen.findByRole("button", { name: "Entwurf" }));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByTestId("tool-loading")).not.toBeInTheDocument();
+  });
+
   it("meldet einen Ausfall ruhig und schickt nichts ins CRM", async () => {
     writeLocal(LEAD_KEY, "anna@keller.ch");
     const m = mockApi([{ status: 502, body: { error: "ai_failed" } }]);

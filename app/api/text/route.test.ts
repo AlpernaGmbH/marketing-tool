@@ -74,6 +74,26 @@ describe("POST /api/text", () => {
     expect(args.maxOutputTokens).toBeGreaterThan(100);
   });
 
+  it("gibt der KI eine Prüfung mit: leere, abgelehnte und unveränderte Antworten gehen als Hinweis zurück, brauchbare werden angenommen", async () => {
+    await call();
+    const { accept } = gen.fn.mock.calls[0][0] as { accept: (t: string) => true | string };
+    expect(accept("Wir streichen Wände und Fassaden in Gossau.\n\nTermine gibt es ab Montag.")).toBe(true);
+    expect(accept("Es tut mir leid, das kann ich nicht.")).toContain("Material");
+    expect(accept("   ")).toContain("leer");
+    expect(accept(TEXT)).toContain("identisch");
+  });
+
+  it("bucht die Kosten der Antwort und wechselt danach aufs Gratismodell", async () => {
+    gen.fn.mockImplementation(async (args: { onUsage?: (u: { costUsd: number }) => void }) => {
+      args.onUsage?.({ costUsd: 0.4 }); // 32 Rappen
+      return "Wir streichen Wände und Fassaden in Gossau.\n\nTermine gibt es ab Montag.";
+    });
+    expect((await call()).status).toBe(200);
+    expect((gen.fn.mock.calls[0][0] as { freeOnly: boolean }).freeOnly).toBe(false);
+    expect((await call()).status).toBe(200);
+    expect((gen.fn.mock.calls[1][0] as { freeOnly: boolean }).freeOnly).toBe(true);
+  });
+
   it("wandelt die Antwort in Schweizer Schreibweise um und warnt vor erfundenen Zahlen", async () => {
     gen.fn.mockResolvedValue('Wir streichen seit 25 Jahren in der Straße. Er sagte "gut" und das 5% mehr.');
     const data = await (await call()).json();

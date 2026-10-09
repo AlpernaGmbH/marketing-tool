@@ -1,5 +1,5 @@
 import { generateText, Output } from "ai";
-import { SYSTEM_PROMPT, einordnungSchema, userPrompt, type Fakten } from "@/lib/check/ai";
+import { SYSTEM_PROMPT, einordnungSchema, pruefeEinordnung, userPrompt, type Fakten } from "@/lib/check/ai";
 import { parseJsonObject } from "@/lib/generator";
 
 // Aufruf der KI. Drei Wege, gewählt mit AI_PROVIDER (siehe aiProvider):
@@ -281,6 +281,24 @@ export async function openrouterChat(args: ChatArgs, fetchImpl: typeof fetch = f
   return chatWithFallback(ep, args.freeOnly ? freeModelsOf(models) : models, args, key, fetchImpl);
 }
 
+const EINORDNUNG_HINTS: Record<string, string> = {
+  zahl: "In deiner Einordnung steht eine Zahl, die nicht in den Fakten vorkommt. Nenne nur Zahlen aus den Fakten.",
+  zu_kurz: "Ein Text deiner Einordnung ist zu kurz. Schreibe jede Aussage in ein bis zwei vollständigen Sätzen.",
+  zu_lang: "Ein Text deiner Einordnung ist zu lang. Fasse dich kürzer.",
+  schritt: "Nenne nur Schritte aus der Liste «schritte», jeden höchstens einmal, mit der Kennung als «schritt».",
+  stimme: "Ein Satz verletzt die Regeln zum Ton (keine Superlative, kein Druck, keine Floskeln). Formuliere ruhig und konkret.",
+  regel: "Ein Satz verletzt die Regeln zum Ton (keine Superlative, kein Druck, keine Floskeln). Formuliere ruhig und konkret.",
+};
+
+/** Prüft die Antwort der Einordnung schon beim Anbieter: Form und Regeln, damit ein zweiter Versuch möglich ist, bevor die Route ablehnt. */
+function acceptEinordnung(text: string, fakten: Fakten): true | string {
+  const value = parseJsonObject(text);
+  if (value === null) return "Antworte ausschliesslich mit einem JSON-Objekt in genau der verlangten Form.";
+  const checked = pruefeEinordnung(value, fakten);
+  if (checked.ok) return true;
+  return EINORDNUNG_HINTS[checked.reason] ?? "Antworte mit einem JSON-Objekt in genau der verlangten Form: zusammenfassung und prioritaeten mit schritt und text.";
+}
+
 export type GenerateRaw = (fakten: Fakten, opts?: AiCallOpts) => Promise<unknown>;
 
 /** Wahl des Budgets und Kostenmeldung eines Aufrufs; gilt nur für OpenRouter (die anderen Wege melden keine Kosten). */
@@ -292,7 +310,7 @@ export const generateRaw: GenerateRaw = async (fakten, opts) => {
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000, budgetMs: 50_000, ...opts, accept: (t) => parseJsonObject(t) !== null || "Antworte ausschliesslich mit einem JSON-Objekt in genau der verlangten Form." });
+    const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000, budgetMs: 50_000, ...opts, accept: (t) => acceptEinordnung(t, fakten) });
     const value = parseJsonObject(text); // geprüft wird danach in pruefeEinordnung
     if (value === null) throw new MistralError("AiBadJson");
     return value;

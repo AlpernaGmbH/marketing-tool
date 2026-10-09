@@ -22,6 +22,7 @@ describe("parseReadResponse", () => {
   it("übersetzt Statuscodes und nimmt die Meldung des Servers, wenn es eine gibt", () => {
     expect(parseReadResponse(403, { error: "gate" })).toMatchObject({ reason: "gate" });
     expect(parseReadResponse(429, {})).toMatchObject({ reason: "rate" });
+    expect(parseReadResponse(422, { error: "thin" })).toMatchObject({ reason: "thin", message: expect.stringContaining("kaum lesbarer Text") });
     expect(parseReadResponse(400, { error: "invalid", message: "Keine IP-Adresse." })).toEqual({ ok: false, reason: "invalid", message: "Keine IP-Adresse." });
     expect(parseReadResponse(400, { error: "blocked", message: "Intern." })).toMatchObject({ reason: "unreachable", message: "Intern." });
     expect(parseReadResponse(502, { error: "unreachable", message: "Fehler 503." })).toMatchObject({ reason: "unreachable", message: "Fehler 503." });

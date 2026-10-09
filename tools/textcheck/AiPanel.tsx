@@ -47,13 +47,18 @@ export function AiPanel({ source }: { source: string }) {
   async function run() {
     if (!(await ctx.ensureEmail())) return;
     setStatus({ kind: "loading" });
-    let outcome = await requestRewrite({ text: source, styleId: "pruefen", anrede: "wie-im-text" });
-    // Der Server kennt keine Adresse (Cookie fehlt): erst das Fenster, dann einmal wiederholen.
-    if (!outcome.ok && outcome.reason === "gate") {
-      if (!(await ctx.renewEmail())) return setStatus({ kind: "idle" });
-      outcome = await requestRewrite({ text: source, styleId: "pruefen", anrede: "wie-im-text" });
+    const stopLoading = ctx.startLoading(["Text lesen", "Fehler suchen", "Ergebnis ordnen"]);
+    try {
+      let outcome = await requestRewrite({ text: source, styleId: "pruefen", anrede: "wie-im-text" });
+      // Der Server kennt keine Adresse (Cookie fehlt): erst das Fenster, dann einmal wiederholen.
+      if (!outcome.ok && outcome.reason === "gate") {
+        if (!(await ctx.renewEmail())) return setStatus({ kind: "idle" });
+        outcome = await requestRewrite({ text: source, styleId: "pruefen", anrede: "wie-im-text" });
+      }
+      setStatus(outcome.ok ? { kind: "done", text: outcome.text } : { kind: "error", message: FAIL_MESSAGES[outcome.reason] });
+    } finally {
+      stopLoading();
     }
-    setStatus(outcome.ok ? { kind: "done", text: outcome.text } : { kind: "error", message: FAIL_MESSAGES[outcome.reason] });
   }
 
   const sections = status.kind === "done" ? parseCheckReply(status.text) : null;

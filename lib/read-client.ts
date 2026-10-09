@@ -2,13 +2,14 @@ import type { PageRead } from "@/lib/read";
 
 // Browser-Seite von /api/read. Wirft nie; jeder Fehler wird zu einem Grund mit einem ruhigen Satz.
 
-export type ReadFailReason = "gate" | "invalid" | "unreachable" | "rate" | "failed" | "network";
+export type ReadFailReason = "gate" | "invalid" | "unreachable" | "thin" | "rate" | "failed" | "network";
 export type ReadOutcome = { ok: true; page: PageRead } | { ok: false; reason: ReadFailReason; message: string };
 
 export const READ_FAIL_MESSAGES: Record<ReadFailReason, string> = {
   gate: "Wir brauchen deine E-Mail-Adresse, bevor wir deine Website lesen. Versuch es noch einmal.",
   invalid: "Bitte gib eine gültige Website-Adresse an.",
   unreachable: "Die Website konnte nicht geladen werden. Stimmt die Adresse?",
+  thin: "Auf der Startseite steht kaum lesbarer Text. Beschreibe deinen Betrieb in den Feldern selbst.",
   rate: "Das waren viele Abrufe in kurzer Zeit. Warte etwas und versuch es noch einmal.",
   failed: "Die Website konnte nicht gelesen werden. Versuch es später noch einmal.",
   network: "Die Verbindung hat nicht geklappt. Prüfe dein Netz und versuch es noch einmal.",
@@ -27,6 +28,7 @@ export function parseReadResponse(status: number, data: unknown): ReadOutcome {
   if (status >= 200 && status < 300 && d.ok === true && isPage(d.page)) return { ok: true, page: d.page };
   const fail = (reason: ReadFailReason): ReadOutcome => ({ ok: false, reason, message: message ?? READ_FAIL_MESSAGES[reason] });
   if (status === 403) return fail("gate");
+  if (status === 422 && d.error === "thin") return fail("thin");
   if (status === 429) return fail("rate");
   if (status === 400) return fail(d.error === "blocked" ? "unreachable" : "invalid");
   if (status === 502 && d.error === "unreachable") return fail("unreachable");

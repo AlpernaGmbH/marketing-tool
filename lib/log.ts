@@ -13,6 +13,7 @@ export type LogNote =
   | "lead_drained"
   | "honeypot"
   | "check_ok"
+  | "read_thin"
   | "check_error"
   | "check_blocked"
   | "gate_used"

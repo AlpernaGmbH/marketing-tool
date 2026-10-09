@@ -116,6 +116,8 @@ function PositionierungFlow() {
   const gen = useGenerator(positionierungGenerator, {
     eingabe: (i) => eingabeText(stripText(i)),
     ausgabe: (o) => (checkRef.current && angabenRef.current ? reportMarkdown(checkRef.current, o, angabenRef.current) : ""),
+    // Der Check steht schon, während der Entwurf entsteht: Das Werkzeug bleibt sichtbar und zeigt seine eigene Statusmeldung.
+    loading: false,
   });
 
   // Die volle Eingabe (mit Text) nur für «Entwurf noch einmal versuchen» in dieser Sitzung; im Speicher liegt sie ohne Text.

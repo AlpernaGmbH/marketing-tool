@@ -66,3 +66,27 @@ export function brandHits(body: string): BrandHit[] {
   }
   return out;
 }
+
+/**
+ * Zusätzliche Regeln nur für Texte, die die KI erzeugt (lib/generator.ts, findIssue). Sie gelten nicht für die Seitentexte unter content/,
+ * weil sie dort ein Fachwort sein können. Beschluss vom 09.10.2026 nach der Rückmeldung zur Medienmitteilung: Sätze, die den Zweck
+ * einer Sache beschreiben, statt etwas zu berichten («Die Rabattaktion soll die Sichtbarkeit erhöhen»), und Füllsätze ohne Aussage.
+ */
+export const GENERATED_RULES: BrandRule[] = [
+  hart(
+    /\b(?:soll(?:en|te)?|dient|dienen|zielt|will|wollen|möchte|möchten)\b[^.!?\n]{0,70}\b(?:sichtbarkeit|reichweite|bekanntheit|aufmerksamkeit|präsenz|wahrnehmung|image|kundenbindung|attraktivität)\b/i,
+    "Absichtssatz («soll die Sichtbarkeit erhöhen»): schreibe, was passiert, nicht wozu es dient",
+  ),
+  hart(
+    /\bziel (?:ist|war|der|des|von)\b[^.!?\n]{0,70}\b(?:sichtbarkeit|reichweite|bekanntheit|aufmerksamkeit|präsenz|wahrnehmung|image|kundenbindung|attraktivität)\b/i,
+    "Absichtssatz («Ziel ist mehr Reichweite»): schreibe, was passiert, nicht wozu es dient",
+  ),
+  hart(
+    /\b(?:um|damit)\b[^.!?\n]{0,50}\b(?:sichtbarkeit|reichweite|bekanntheit|aufmerksamkeit|präsenz)\b[^.!?\n]{0,30}\b(?:zu (?:erhöhen|steigern|stärken|verbessern|erzielen|gewinnen))\b/i,
+    "Zweckangabe («um die Sichtbarkeit zu erhöhen»): weglassen",
+  ),
+  hart(
+    /\bin der heutigen (?:zeit|welt|digitalen welt)\b|\bheutzutage\b|\bes ist kein geheimnis\b|\bnicht zuletzt\b|\bvon (?:grosser|besonderer|zentraler) bedeutung\b|\bspielt eine (?:wichtige|zentrale|grosse|entscheidende) rolle\b|\bsetzt (?:neue )?massstäbe\b/i,
+    "Füllsatz ohne Aussage («spielt eine wichtige Rolle», «heutzutage»): konkret sagen, was gemeint ist",
+  ),
+];

@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { BRAND_RULES } from "@/lib/brand-rules";
+import { BRAND_RULES, GENERATED_RULES } from "@/lib/brand-rules";
 import { typoCH } from "@/lib/ch";
 
 // Gemeinsamer Baustein für Werkzeuge der Klasse B (Generatoren, PLAN.md): Die KI bekommt die Angaben des Besuchers
@@ -147,6 +147,7 @@ export function findIssue(strings: string[], allowed: string, opts: { emoji?: bo
   const banned = opts.emoji ? BANNED.filter((b) => b.what !== "Emoji") : BANNED;
   for (const t of strings) {
     for (const rule of BRAND_RULES) if (rule.level === "hart" && rule.re.test(t)) return { reason: "stimme", what: rule.what };
+    for (const rule of GENERATED_RULES) if (rule.re.test(t)) return { reason: "stimme", what: rule.what };
     for (const { re, what } of banned) if (re.test(t)) return { reason: "regel", what };
     for (const l of linksIn(t)) if (!allowedLinks.has(l)) return { reason: "link", what: "Link oder Adresse" };
   }

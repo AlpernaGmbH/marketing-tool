@@ -5,7 +5,7 @@ import { budgetMode, defaultAiStore, limitsFromEnv, notifyCapacity, recordSpend,
 import { describeAiError, generateFreeText } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
 import { withinLimit } from "@/lib/ratelimit";
-import { buildSystemPrompt, buildUserPrompt, checkOutput, inputProblem, MAX_INPUT_CHARS } from "@/tools/text-umschreiber/logic";
+import { buildSystemPrompt, buildUserPrompt, checkOutput, inputProblem, MAX_INPUT_CHARS, outputHint } from "@/tools/text-umschreiber/logic";
 import { STYLE_IDS, getStyle } from "@/tools/text-umschreiber/styles";
 
 // Schreibt den Text des Besuchers im gewählten Stil neu (Text-Umschreiber) oder prüft ihn (Textcheck, Stil «pruefen»).
@@ -54,10 +54,15 @@ export async function POST(req: NextRequest) {
   const mode = await budgetMode(store, acchash, spendLimitsFromEnv());
   if (mode === "global") await notifyCapacity(store, limits, new Date(), fetch, process.env, "ki_budget");
   const spend = spendCollector();
+  // Eine leere, zu kurze, abgelehnte oder unveränderte Antwort geht mit einem Hinweis zurück an dasselbe Modell (zweiter Versuch), danach ans nächste.
+  const acceptText = (raw: string): true | string => {
+    const c = checkOutput(raw, text, style);
+    return c.ok ? true : outputHint(c.reason, style);
+  };
 
   let checked;
   try {
-    const raw = await generateFreeText({ system: buildSystemPrompt(style, anrede), prompt: buildUserPrompt(text), maxOutputTokens: style.maxTokens, freeOnly: mode !== "paid", onUsage: spend.onUsage });
+    const raw = await generateFreeText({ system: buildSystemPrompt(style, anrede), prompt: buildUserPrompt(text), maxOutputTokens: style.maxTokens, freeOnly: mode !== "paid", onUsage: spend.onUsage, accept: acceptText });
     checked = checkOutput(raw, text, style);
   } catch (error) {
     await recordSpend(store, acchash, spend.total());

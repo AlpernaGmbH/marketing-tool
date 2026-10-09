@@ -6,13 +6,13 @@ const limit = vi.hoisted(() => ({ allow: true }));
 const read = vi.hoisted(() => ({ fn: vi.fn() }));
 
 vi.mock("@/lib/ratelimit", () => ({ withinLimit: async () => limit.allow }));
-vi.mock("@/lib/read", () => ({ readPage: (...a: unknown[]) => read.fn(...a) }));
+vi.mock("@/lib/read", async (orig) => ({ ...(await orig<typeof import("@/lib/read")>()), readPage: (...a: unknown[]) => read.fn(...a) }));
 
 import { POST } from "@/app/api/read/route";
 
 const COOKIE = gateCookie("anna@keller.ch");
 const IP = "198.51.100.44";
-const PAGE = { url: "https://geheim-keller.ch/", host: "geheim-keller.ch", title: "Malerei Keller", description: "", headings: ["Wir streichen"], text: "Seit Jahren in Gossau.", truncated: false };
+const PAGE = { url: "https://geheim-keller.ch/", host: "geheim-keller.ch", title: "Malerei Keller", description: "", headings: ["Wir streichen"], text: "Seit Jahren in Gossau. ".repeat(10), truncated: false };
 const call = (body: unknown = { website: "geheim-keller.ch" }, cookie: string | null = COOKIE) => POST(post("/api/read", body, { ip: IP, cookie: cookie ?? undefined }));
 let logs: string[];
 
@@ -32,6 +32,16 @@ describe("POST /api/read", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, page: PAGE });
     expect(read.fn).toHaveBeenCalledWith("geheim-keller.ch");
+  });
+  it("meldet 422, wenn die Startseite kaum lesbaren Text hat (JavaScript oder Cookie-Wand), statt Scheinwerte zu liefern", async () => {
+    read.fn.mockResolvedValue({ ...PAGE, text: "Wir nutzen Cookies." });
+    const res = await call();
+    expect(res.status).toBe(422);
+    const data = await res.json();
+    expect(data.error).toBe("thin");
+    expect(data.message).toContain("Beschreibe deinen Betrieb");
+    expect(logs.join("\n")).toContain("read_thin");
+    expect(logs.join("\n")).not.toContain("Cookies");
   });
   it("verlangt eine gültige Adresse (400) und ruft dann nichts ab", async () => {
     for (const bad of [{}, { website: "" }, { website: "ftp://keller.ch" }, { website: "http://127.0.0.1" }, "kein json"]) {

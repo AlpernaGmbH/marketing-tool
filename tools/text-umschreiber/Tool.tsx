@@ -93,6 +93,7 @@ function RewriteFlow() {
 
   async function rewrite(input: string, styleId: string, anrede: Anrede) {
     setBusy(true);
+    const stopLoading = ctx.startLoading(["Text lesen", "Neu schreiben", "Fassung kontrollieren"]);
     try {
       let outcome = await requestRewrite({ text: input, styleId, anrede });
       // Der Server kennt keine Adresse (Cookie fehlt): erst das Fenster, dann einmal wiederholen.
@@ -108,6 +109,7 @@ function RewriteFlow() {
       set({ ...current, text: input, result: outcome.text, warnings: outcome.warnings });
       void ctx.sendResult({ eingabe: `Stil: ${getStyle(styleId)?.label ?? styleId}\nAnrede: ${anrede}\n\n${input}`, ausgabe: outcome.text });
     } finally {
+      stopLoading();
       setBusy(false);
     }
   }

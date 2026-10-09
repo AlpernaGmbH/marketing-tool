@@ -30,6 +30,8 @@ export async function fetchEinordnung(result: CheckResult, fetchImpl: typeof fet
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ result }),
       credentials: "same-origin",
+      // Die Route braucht höchstens 45 Sekunden; ohne Grenze bliebe «wird geschrieben» bei einem hängenden Aufruf ewig stehen.
+      signal: AbortSignal.timeout(50_000),
     });
   } catch {
     return { ok: false, reason: "failed" };

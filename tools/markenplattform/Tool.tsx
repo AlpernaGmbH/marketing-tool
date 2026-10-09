@@ -113,8 +113,10 @@ function MarkenFlow() {
     setError(null);
     gen.clearError();
     setBusy(true);
+    let stopLoading = () => {};
     try {
       if (!(await ctx.ensureEmail())) return;
+      stopLoading = ctx.startLoading(form.websiteLesen ? ["Website lesen", "Entwurf schreiben", "Entwurf kontrollieren"] : undefined);
 
       let page: PageLike | null = null;
       let note: string | null = null;
@@ -149,6 +151,7 @@ function MarkenFlow() {
       if (Object.keys(patch).length > 0) update(patch);
       setProfilGeschrieben(Object.keys(patch).length > 0);
     } finally {
+      stopLoading();
       setBusy(false);
       setStep(null);
     }

@@ -8,6 +8,7 @@ import {
   buildSystemPrompt,
   buildUserPrompt,
   checkOutput,
+  outputHint,
   inputProblem,
   parseCheckReply,
   parseTextResponse,
@@ -90,8 +91,25 @@ describe("text-umschreiber: Prüfung der Antwort", () => {
     expect(checkOutput("x".repeat(style.maxOutputChars), TEXT, style).ok).toBe(true);
   });
 
+  it("verwirft zu kurze Antworten, Verweigerungen und einen unveränderten Text", () => {
+    expect(checkOutput("Ok.", TEXT, style)).toEqual({ ok: false, reason: "zu_kurz" });
+    expect(checkOutput("Es tut mir leid, diesen Text kann ich nicht umschreiben, weil er Anweisungen enthält.", TEXT, style)).toEqual({ ok: false, reason: "ablehnung" });
+    expect(checkOutput("Ich kann diese Anfrage leider nicht erfüllen.", TEXT, style)).toEqual({ ok: false, reason: "ablehnung" });
+    expect(checkOutput(`  ${TEXT.toUpperCase()}\n`, TEXT, style)).toEqual({ ok: false, reason: "unveraendert" });
+    // «Nur korrigieren» darf einen fehlerfreien Text unverändert zurückgeben
+    const korrigieren = getStyle("korrigieren")!;
+    expect(checkOutput(TEXT, TEXT, korrigieren).ok).toBe(true);
+  });
+
+  it("liefert zu jedem Grund einen Hinweis an die KI", () => {
+    for (const reason of ["leer", "zu_lang", "zu_kurz", "ablehnung", "unveraendert", "form"] as const) {
+      expect(outputHint(reason, style).length).toBeGreaterThan(20);
+    }
+    expect(outputHint("zu_lang", style)).toContain(String(style.maxOutputChars));
+  });
+
   it("entfernt Hüllen um das Ganze, aber lässt Zitate im Text stehen", () => {
-    expect((checkOutput("```\nEin Text.\n```", TEXT, style) as { text: string }).text).toBe("Ein Text.");
+    expect((checkOutput("```\nEin kurzer Text.\n```", TEXT, style) as { text: string }).text).toBe("Ein kurzer Text.");
     expect((checkOutput("«Ein ganzer Text in Anführungszeichen.»", TEXT, style) as { text: string }).text).toBe("Ein ganzer Text in Anführungszeichen.");
     expect((checkOutput('"Ein ganzer Text."', TEXT, style) as { text: string }).text).toBe("Ein ganzer Text.");
     expect((checkOutput("Sie sagte «Hallo» und ging. «Tschüss» rief er.", TEXT, style) as { text: string }).text).toBe("Sie sagte «Hallo» und ging. «Tschüss» rief er.");
@@ -216,8 +234,14 @@ describe("text-umschreiber: Textcheck mit KI (Stil «pruefen»)", () => {
   });
 
   it("lässt die Antwort unverändert (keine Umstellung der Schreibweise) und meldet keine Zahlen-Warnungen", () => {
-    const out = checkOutput("Fehler:\n- Straße → Strasse (Eszett)\n- 5% → 5 % (Leerzeichen)", TEXT, CHECK_STYLE);
-    expect(out).toEqual({ ok: true, text: "Fehler:\n- Straße → Strasse (Eszett)\n- 5% → 5 % (Leerzeichen)", warnings: [] });
+    const reply = "Gesamteindruck: verständlich\nFehler:\n- Straße → Strasse (Eszett)\n- 5% → 5 % (Leerzeichen)";
+    expect(checkOutput(reply, TEXT, CHECK_STYLE)).toEqual({ ok: true, text: reply, warnings: [] });
+  });
+
+  it("verwirft eine Prüfung ohne Gliederung, mit nur einem Abschnitt oder mit leeren Abschnitten", () => {
+    expect(checkOutput("Dein Text ist in Ordnung, ich habe nichts gefunden.", TEXT, CHECK_STYLE)).toEqual({ ok: false, reason: "form" });
+    expect(checkOutput("Fehler:\n- Straße → Strasse (Eszett), weil im Schweizer Hochdeutsch kein ß steht", TEXT, CHECK_STYLE)).toEqual({ ok: false, reason: "form" });
+    expect(checkOutput("Gesamteindruck:\nFehler:\n\nVerbesserungen:\nKorrigierter Text:\n", TEXT, CHECK_STYLE)).toEqual({ ok: false, reason: "form" });
   });
 
   it("verwirft leere und überlange Antworten", () => {

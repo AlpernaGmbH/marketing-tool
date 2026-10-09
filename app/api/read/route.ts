@@ -4,7 +4,7 @@ import { clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
 import { readJson, respond } from "@/lib/api";
 import { normalizeUrl } from "@/lib/check/analyze";
 import { CheckError } from "@/lib/check/types";
-import { readPage } from "@/lib/read";
+import { MIN_READ_CHARS, readPage } from "@/lib/read";
 import { withinLimit } from "@/lib/ratelimit";
 
 // Liest den Text der Startseite des Besuchers (lib/read.ts) für Werkzeuge, die daraus einen Entwurf machen.
@@ -39,6 +39,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const page = await readPage(body.data.website);
+    if (page.text.length < MIN_READ_CHARS) {
+      return respond(
+        ROUTE,
+        422,
+        { error: "thin", message: "Auf der Startseite steht kaum lesbarer Text. Oft lädt die Seite ihren Inhalt erst im Browser. Beschreibe deinen Betrieb in den Feldern selbst." },
+        "read_thin",
+      );
+    }
     return respond(ROUTE, 200, { ok: true, page }, "read_ok");
   } catch (e) {
     if (e instanceof CheckError) {

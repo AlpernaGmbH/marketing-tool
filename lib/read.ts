@@ -10,6 +10,11 @@ import { CheckError } from "@/lib/check/types";
 /** Mehr Text braucht kein Generator; hält den Prompt und die Kosten klein. */
 export const READ_MAX_CHARS = 8_000;
 const MAX_HEADINGS = 20;
+/**
+ * Weniger lesbarer Text als das ist keine Grundlage für einen Entwurf: Die Seite lädt ihren Inhalt erst per JavaScript oder
+ * versteckt ihn hinter einer Cookie-Wand. Die KI würde sonst aus Titel und Beschreibung Scheinwerte schreiben.
+ */
+export const MIN_READ_CHARS = 150;
 
 export type PageRead = {
   url: string;

@@ -10,6 +10,10 @@ type Options<I, O> = {
   eingabe: (input: I) => string;
   /** Der Entwurf als lesbarer Text fürs CRM (zum Beispiel toMarkdown(toDocument(output))). */
   ausgabe: (output: O) => string;
+  /** Schritte der Ladeanzeige; ohne Angabe gelten «Angaben prüfen», «Entwurf schreiben», «Entwurf kontrollieren». */
+  loadingSteps?: string[];
+  /** false: keine Ladeanzeige; das Werkzeug zeigt beim Warten schon etwas (zum Beispiel einen Check vor dem Entwurf). */
+  loading?: boolean;
 };
 
 /**
@@ -26,8 +30,10 @@ export function useGenerator<I, O>(def: GeneratorDef<I, O>, opts: Options<I, O>)
     async (input: I): Promise<O | null> => {
       setError(null);
       setBusy(true);
+      let stopLoading = () => {};
       try {
         if (!(await ctx.ensureEmail())) return null;
+        if (opts.loading !== false) stopLoading = ctx.startLoading(opts.loadingSteps);
         let outcome = await requestGenerate(def, input);
         // Der Server kennt keine Adresse (Cookie fehlt): erst das Fenster, dann einmal wiederholen.
         if (!outcome.ok && outcome.reason === "gate") {
@@ -41,6 +47,7 @@ export function useGenerator<I, O>(def: GeneratorDef<I, O>, opts: Options<I, O>)
         void ctx.sendResult({ eingabe: opts.eingabe(input), ausgabe: opts.ausgabe(outcome.output) });
         return outcome.output;
       } finally {
+        stopLoading();
         setBusy(false);
       }
     },

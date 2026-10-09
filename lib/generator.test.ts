@@ -143,4 +143,18 @@ describe("findIssue", () => {
     expect(checkGenerated(def, { titel: "Fassaden in Gossau!", punkte: ["a"] }, input)).toEqual({ ok: false, reason: "regel", detail: "Ausrufezeichen" });
     expect(checkGenerated(def, { titel: "Fassaden in Gossau", punkte: ["a"] }, input)).toMatchObject({ ok: true });
   });
+
+  it("lehnt Absichtssätze und Füllsätze ab, die nichts berichten (Rückmeldung zur Medienmitteilung, 09.10.2026)", () => {
+    const meta = [
+      "Die Rabattaktion soll die Sichtbarkeit der Malerei Keller erhöhen.",
+      "Der Anlass dient dazu, die Bekanntheit im Dorf zu stärken.",
+      "Ziel ist mehr Reichweite für den neuen Auftritt.",
+      "Mit dem Inserat zielt die Garage auf mehr Aufmerksamkeit.",
+      "Um die Sichtbarkeit weiter zu erhöhen, startet die Aktion am Montag.",
+      "Heutzutage spielt eine gute Beratung eine wichtige Rolle.",
+    ];
+    for (const t of meta) expect(findIssue([t], ""), t).toMatchObject({ reason: "stimme" });
+    expect(findIssue(["Die Rabattaktion läuft vom 3. bis 17. November in Gossau."], "")).toBeNull();
+    expect(findIssue(["Hans Keller berät jeden Samstagvormittag, ohne Termin."], "")).toBeNull();
+  });
 });

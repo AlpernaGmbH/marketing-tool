@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { LeadGate } from "@/components/tool/LeadGate";
 import { ProfileBanner } from "@/components/tool/ProfileBanner";
+import { DEFAULT_LOADING_STEPS, ToolLoading } from "@/components/tool/ToolLoading";
 import { LEAD_KEY, sendResult as sendResultApi } from "@/lib/access-client";
 import { removeLocal, writeLocal } from "@/lib/storage";
 import { useLocalRaw } from "@/lib/use-local";
@@ -30,6 +31,11 @@ type ToolContextValue = {
   guardDownload: (action: () => void | Promise<void>) => void;
   /** Öffnet das Fenster, um die Adresse zu ändern. */
   changeEmail: () => void;
+  /**
+   * Zeigt die Ladeanzeige statt des Werkzeugs (die Eingaben bleiben erhalten) und gibt die Funktion zurück, die sie wieder beendet.
+   * Läuft schon eine Anzeige, gilt die erste; die zweite Beendigung tut nichts. Immer im `finally` beenden.
+   */
+  startLoading: (steps?: string[]) => () => void;
 };
 
 const ToolContext = createContext<ToolContextValue | null>(null);
@@ -106,9 +112,24 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
 
   const changeEmail = useCallback(() => void openGate(), [openGate]);
 
+  const [loading, setLoading] = useState<string[] | null>(null);
+  const loadingId = useRef<number | null>(null);
+  const loadingSeq = useRef(0);
+  const startLoading = useCallback((steps?: string[]) => {
+    if (loadingId.current !== null) return () => {};
+    const id = ++loadingSeq.current;
+    loadingId.current = id;
+    setLoading(steps && steps.length >= 2 ? steps : DEFAULT_LOADING_STEPS);
+    return () => {
+      if (loadingId.current !== id) return;
+      loadingId.current = null;
+      setLoading(null);
+    };
+  }, []);
+
   const value = useMemo<ToolContextValue>(
-    () => ({ slug, email, ensureEmail, renewEmail, sendResult, guardDownload, changeEmail }),
-    [slug, email, ensureEmail, renewEmail, sendResult, guardDownload, changeEmail],
+    () => ({ slug, email, ensureEmail, renewEmail, sendResult, guardDownload, changeEmail, startLoading }),
+    [slug, email, ensureEmail, renewEmail, sendResult, guardDownload, changeEmail, startLoading],
   );
 
   return (
@@ -131,7 +152,11 @@ export function ToolShell({ slug, name, usesProfile = false, children }: Props) 
           </span>
         </div>
         {usesProfile && <ProfileBanner />}
-        <div className="p-5 md:p-8">{children}</div>
+        <div className="p-5 md:p-8">
+          {loading && <ToolLoading steps={loading} />}
+          {/* Beim Laden nur ausgeblendet, nicht entfernt: Eingaben und Zwischenstand bleiben erhalten. */}
+          <div hidden={loading !== null}>{children}</div>
+        </div>
       </section>
       <LeadGate
         open={gateOpen}

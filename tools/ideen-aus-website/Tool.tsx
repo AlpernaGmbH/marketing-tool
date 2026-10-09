@@ -75,8 +75,10 @@ function IdeenFlow() {
     setError(null);
     gen.clearError();
     setBusy(true);
+    let stopLoading = () => {};
     try {
       if (!(await ctx.ensureEmail())) return;
+      stopLoading = ctx.startLoading(["Website lesen", "Ideen schreiben", "Ideen kontrollieren"]);
 
       setStep("lesen");
       let read = await readWebsite(website);
@@ -99,6 +101,7 @@ function IdeenFlow() {
       shouldFocus.current = true;
       set({ ...savedRef.current, v: 1, website, kanaele: input.kanaele, page: pageSummary(read.page), output });
     } finally {
+      stopLoading();
       setBusy(false);
       setStep(null);
     }
