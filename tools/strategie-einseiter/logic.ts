@@ -194,9 +194,11 @@ function reifegradKurz(reifegradRaw: unknown, checkRaw: unknown): ReifegradKurz 
   const saved = parseQuestionnaireState(reifegradRaw);
   if (saved.phase !== "result") return null;
   const result = evaluate(saved.answers, checkInfo(parseCheckState(checkRaw)));
-  let best = result.dimensionen[0];
-  let worst = result.dimensionen[0];
-  for (const d of result.dimensionen) {
+  // Dimensionen ohne Wert (kein Website-Scan) zählen nicht.
+  const bewertet = result.dimensionen.filter((d): d is typeof d & { score: number; stufe: NonNullable<typeof d.stufe> } => d.score !== null && d.stufe !== null);
+  let best = bewertet[0];
+  let worst = bewertet[0];
+  for (const d of bewertet) {
     if (d.score > best.score) best = d;
     if (d.score < worst.score) worst = d;
   }
@@ -371,7 +373,7 @@ const oder = (value: string, werkzeugName: string): string => value || offen(wer
 
 function reifegradText(r: ReifegradKurz): string {
   const gesamt = `${r.gesamt} von 100, Stufe «${r.stufe}»`;
-  if (r.staerkste.name === r.schwaechste.name) return `${gesamt}; alle fünf Dimensionen liegen bei ${r.staerkste.score} von 100`;
+  if (r.staerkste.name === r.schwaechste.name) return `${gesamt}; alle bewerteten Dimensionen liegen bei ${r.staerkste.score} von 100`;
   return `${gesamt}; stärkste Dimension «${r.staerkste.name}» (${r.staerkste.score}), schwächste «${r.schwaechste.name}» (${r.schwaechste.score})`;
 }
 

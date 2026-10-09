@@ -847,21 +847,39 @@ test.describe("Welle 1 im Browser", () => {
     await expect(page.getByRole("region", { name: "Dein Newsletter-Check" })).toBeVisible();
   });
 
-  test("Reifegrad-Check: zehn Fragen, Fenster vor dem Ergebnis, Reifegrad mit Dimensionen, Lead mit Fragen und Antworten", async ({ page, request }) => {
+  test("Reifegrad-Check: Website-Scan, sechs Fragen, Reifegrad mit fünf Dimensionen, Lead mit Fragen und Antworten", async ({ page, request }) => {
+    const sample = await sampleResult();
+    const checked: string[] = [];
+    await page.route("**/api/check", (route) => {
+      const body = JSON.parse(route.request().postData() ?? "{}") as { website: string };
+      checked.push(body.website);
+      const events = [
+        { type: "step", id: "fetch", state: "done" },
+        { type: "result", result: sample },
+      ];
+      return route.fulfill({ status: 200, contentType: "application/x-ndjson", body: events.map((e) => JSON.stringify(e)).join("\n") + "\n" });
+    });
+    const email = await knownEmail(page);
     await page.goto("/tools/reifegrad-check");
+    await expect(page.getByRole("button", { name: "Website prüfen" })).toBeEnabled();
+    await page.getByLabel("Firma", { exact: true }).fill("Malerei Keller");
+    await page.getByLabel("Website", { exact: true }).fill("malerei-keller.ch");
+    await page.getByRole("button", { name: "Website prüfen" }).click();
+    await expect(page.getByTestId("scan-stand")).toContainText("Marketing-Check");
+    expect(checked).toHaveLength(1);
+
     await page.getByRole("button", { name: "Starten" }).click();
-    for (let i = 0; i < 10; i++) {
-      await expect(page.getByText(`Frage ${i + 1} von 10`)).toBeVisible();
-      const radios = page.getByRole("radio");
-      if ((await radios.count()) > 0) await radios.last().check();
-      else await page.getByRole("checkbox").first().check();
+    for (let i = 0; i < 6; i++) {
+      await expect(page.getByText(`Frage ${i + 1} von 6`)).toBeVisible();
+      await page.getByRole("radio").last().check();
       await page.getByRole("button", { name: /^(Weiter|Zur Zusammenfassung)$/ }).click();
     }
     await expect(page.getByRole("heading", { name: "Zusammenfassung" })).toBeVisible();
     await page.getByRole("button", { name: "Ergebnis anzeigen" }).click();
-    const email = await giveEmail(page);
-    await expect(page.getByRole("region", { name: "Dein Marketing-Reifegrad" })).toBeVisible();
-    await expect(page.getByRole("meter").first()).toBeVisible();
+    const card = page.getByRole("region", { name: "Dein Marketing-Reifegrad" });
+    await expect(card).toBeVisible();
+    await expect(card.getByRole("meter").first()).toBeVisible();
+    await expect(card.getByTestId("visual-radar").getByRole("listitem")).toHaveCount(5);
     await expect.poll(async () => (await received(request)).find((l) => l.email === email)?.tool).toBe("reifegrad-check");
     const got = (await received(request)).find((l) => l.email === email)!;
     expect(got.eingabe).toContain("Sind deine Marketingziele schriftlich festgehalten?");

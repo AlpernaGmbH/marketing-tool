@@ -205,8 +205,8 @@ const SWOT = {
   },
 };
 
-/** Rechenbeispiel aus specs/reifegrad-check.md: Strategie 33, Auftritt 67, Inhalte 67, Kundenkontakt 33, Steuerung 22. */
-const KELLER: Answers = { ziele: "kopf", zielgruppe: "grob", verantwortung: "unter2", website: "jahr", google: "bestaetigt", social: "monatlich", bewertungen: "manchmal", kontakt: "gelegentlich", messung: ["anfragen"], budget: "keins" };
+/** Rechenbeispiel aus specs/reifegrad-check.md (ohne Website-Scan): Strategie 33, Kundenkontakt 33, Steuerung 17; Auftritt und Inhalte nicht bewertet. */
+const KELLER: Answers = { ziele: "kopf", zielgruppe: "grob", verantwortung: "unter2", bewertungen: "manchmal", kontakt: "gelegentlich", budget: "keins" };
 const REIFEGRAD = { v: 1, phase: "result", step: 10, answers: KELLER };
 
 const CHECK = {
@@ -215,7 +215,22 @@ const CHECK = {
   step: 0,
   answers: {},
   form: { industry: "craft", socials: {} },
-  result: { v: 1, score: 38, company: "Malerei Keller", url: "https://www.malerei-keller.ch", checkedAt: "2026-10-03T09:00:00.000Z", categories: [], facts: {}, massnahmen: [] },
+  result: {
+    v: 1,
+    score: 38,
+    company: "Malerei Keller",
+    url: "https://www.malerei-keller.ch",
+    checkedAt: "2026-10-03T09:00:00.000Z",
+    // Website 60, Google-Profil 50, Social Media 40, keine Web-Analyse (Website-Scan des Reifegrad-Checks)
+    categories: [
+      { id: "seo", score: 0.6, items: [] },
+      { id: "gbp", score: 0.5, verified: false, items: [] },
+      { id: "social", score: 0.4, items: [] },
+      { id: "sea", score: 0.4, items: [{ id: "sea.analytics", ok: false }] },
+    ],
+    facts: {},
+    massnahmen: [],
+  },
 };
 
 const BUDGET = {
@@ -344,10 +359,11 @@ describe("strategie-einseiter: collect", () => {
     expect(lage.einSatz).toBe(SWOT.output.einSatz);
     expect(lage.folgerungen).toHaveLength(3);
     expect(lage.check).toEqual({ score: 38, host: "malerei-keller.ch", datum: "03.10.2026" });
-    expect(lage.reifegrad?.gesamt).toBe(42);
+    // Strategie 33, Auftritt 56, Inhalte 40, Kundenkontakt 33, Steuerung 11: (33 + 56 + 40 + 33 + 11) ÷ 5 = 35
+    expect(lage.reifegrad?.gesamt).toBe(35);
     expect(lage.reifegrad?.stufe).toBe("Aufbau");
-    expect(lage.reifegrad?.staerkste.name).toBe("Inhalte");
-    expect(lage.reifegrad?.schwaechste).toMatchObject({ name: "Steuerung", score: 22, stufe: "Anfang" });
+    expect(lage.reifegrad?.staerkste.name).toBe("Auftritt");
+    expect(lage.reifegrad?.schwaechste).toMatchObject({ name: "Steuerung", score: 11, stufe: "Anfang" });
     expect(lage.reifegrad?.schwaechste.schritte).toHaveLength(2);
   });
 
@@ -418,16 +434,17 @@ describe("strategie-einseiter: collect", () => {
     expect(e.bausteine.find((b) => b.key === "zielgruppe")?.quellen).toEqual([QUELLE_PROFIL]);
   });
 
-  it("Lage: Reifegrad ohne Check rechnet nur mit der Selbstangabe (Auftritt 67 gewinnt den Gleichstand mit Inhalte), alle gleich: stärkste gleich schwächste", () => {
+  it("Lage: Reifegrad ohne Scan bewertet nur drei Dimensionen (Strategie gewinnt den Gleichstand mit Kundenkontakt), alle gleich: stärkste gleich schwächste", () => {
     const nurReifegrad = collect(reader({ [toolStateKey(REIFEGRAD_SLUG)]: REIFEGRAD }), {});
     const r = inhaltOf(nurReifegrad, "lage").reifegrad;
-    expect(r?.gesamt).toBe(44);
-    expect(r?.staerkste).toMatchObject({ name: "Auftritt", score: 67 });
+    // (33 + 33 + 17) ÷ 3 = 27,7 → 28
+    expect(r?.gesamt).toBe(28);
+    expect(r?.staerkste).toMatchObject({ name: "Strategie", score: 33 });
     expect(r?.schwaechste.name).toBe("Steuerung");
     expect(inhaltOf(nurReifegrad, "lage").check).toBeNull();
     expect(nurReifegrad.vorhanden).toBe(1);
 
-    const alleTief: Answers = { ziele: "keine", zielgruppe: "nein", verantwortung: "niemand", website: "keine", google: "keins", social: "nie", bewertungen: "nie", kontakt: "keiner", messung: ["keine"], budget: "keins" };
+    const alleTief: Answers = { ziele: "keine", zielgruppe: "nein", verantwortung: "niemand", bewertungen: "nie", kontakt: "keiner", budget: "keins" };
     const gleich = collect(reader({ [toolStateKey(REIFEGRAD_SLUG)]: { v: 1, phase: "result", step: 10, answers: alleTief } }), {});
     const g = inhaltOf(gleich, "lage").reifegrad;
     expect(g?.staerkste.name).toBe(g?.schwaechste.name);
@@ -531,7 +548,7 @@ describe("strategie-einseiter: toDocument", () => {
     expect(md).toContain("Säule Fassaden vorher und nachher (35 % der Beiträge)");
     expect(md).toContain("Kanäle: Instagram, Google-Beitrag");
     expect(md).toContain("Ruth Hungerbühler: Ruth Hungerbühler, zwischen 45 und 60");
-    expect(md).toContain("42 von 100, Stufe «Aufbau»; stärkste Dimension «Inhalte» (67), schwächste «Steuerung» (22)");
+    expect(md).toContain("35 von 100, Stufe «Aufbau»; stärkste Dimension «Auftritt» (56), schwächste «Steuerung» (11)");
     expect(md).toContain("38 von 100 (malerei-keller.ch, geprüft am 03.10.2026)");
     const table = doc.blocks.find((b) => b.type === "table") as { header: string[]; rows: string[][] };
     expect(table.header).toEqual(["Massnahme", "Woher", "Aufwand"]);
@@ -554,9 +571,9 @@ describe("strategie-einseiter: toDocument", () => {
   });
 
   it("Reifegrad bei Gleichstand als ein Satz", () => {
-    const alleTief: Answers = { ziele: "keine", zielgruppe: "nein", verantwortung: "niemand", website: "keine", google: "keins", social: "nie", bewertungen: "nie", kontakt: "keiner", messung: ["keine"], budget: "keins" };
+    const alleTief: Answers = { ziele: "keine", zielgruppe: "nein", verantwortung: "niemand", bewertungen: "nie", kontakt: "keiner", budget: "keins" };
     const e = collect(reader({ [toolStateKey(REIFEGRAD_SLUG)]: { v: 1, phase: "result", step: 10, answers: alleTief } }), {});
-    expect(textOf(e)).toContain("0 von 100, Stufe «Anfang»; alle fünf Dimensionen liegen bei 0 von 100");
+    expect(textOf(e)).toContain("0 von 100, Stufe «Anfang»; alle bewerteten Dimensionen liegen bei 0 von 100");
   });
 });
 

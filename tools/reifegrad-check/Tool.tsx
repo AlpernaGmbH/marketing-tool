@@ -15,6 +15,7 @@ import { useProfile } from "@/lib/use-profile";
 import { SLUG as CHECK_SLUG, parseCheckState } from "@/tools/digitaler-auftritt-check/logic";
 import { RICHTWERT_HINWEIS, STUFE_AB, checkInfo, evaluate, pitchFor, questions, resultText, toDocument, visualBlocks, type Reifegrad } from "./logic";
 import config from "./tool.config";
+import { WebsiteScan } from "./WebsiteScan";
 
 const CHECK_PATH = `/tools/${CHECK_SLUG}`;
 
@@ -37,12 +38,14 @@ function Result({ result }: { result: Reifegrad }) {
       <p className="text-sm">
         {result.check ? (
           <>
-            Dein <CheckLink />
-            {result.check.checkedAt ? ` vom ${dateCH(result.check.checkedAt)}` : ""} ({result.check.score} von 100) zählt in «Auftritt» zur Hälfte mit.
+            Auftritt, Inhalte und eine Frage in Steuerung kommen aus deinem <CheckLink />
+            {result.check.checkedAt ? ` vom ${dateCH(result.check.checkedAt)}` : ""} ({result.check.score} von 100).
+            {!result.check.gbpGeprueft ? " Das Google-Profil ist nicht über Google bestätigt, sein Wert ist eine Annahme aus dem Link auf deiner Website." : ""}
           </>
         ) : (
           <>
-            In «Auftritt» zählt nur deine Selbstangabe. Lass den <CheckLink /> laufen; beim nächsten Durchlauf zählt sein Ergebnis zur Hälfte mit.
+            {result.nichtBewertet.join(" und ")} {result.nichtBewertet.length === 1 ? "ist" : "sind"} nicht bewertet, weil kein Website-Scan vorliegt. Starte ihn über
+            «Neu beginnen» auf der Startseite dieses Werkzeugs oder lass den <CheckLink /> laufen; beim nächsten Durchlauf zählt sein Ergebnis.
           </>
         )}
       </p>
@@ -56,21 +59,15 @@ function Intro({ checkDate }: { checkDate: string | null }) {
   return (
     <>
       <p>
-        Zehn Fragen zu Zielen, Auftritt, Beiträgen, Kundenkontakt und Steuerung, alles Selbstangaben. Das dauert etwa fünf Minuten. Du bekommst einen
-        Marketing-Reifegrad von 0 bis 100, fünf Dimensionen mit Stufe und je zwei nächste Schritte, bei der schwächsten Dimension beginnend.
+        Wie gut ist dein Marketing aufgestellt? Sechs Fragen zu Zielen, Kundenkontakt und Steuerung, dazu ein Scan deiner Website für Auftritt und Inhalte. Das dauert etwa
+        drei Minuten. Du bekommst einen Marketing-Reifegrad von 0 bis 100, bis zu fünf Dimensionen mit Stufe und je zwei nächste Schritte, bei der schwächsten Dimension
+        beginnend.
       </p>
       <p>
-        {checkDate ? (
-          <>
-            Dein <CheckLink /> vom {checkDate} zählt in der Dimension «Auftritt» zur Hälfte mit.
-          </>
-        ) : (
-          <>
-            Tipp: Lass zuerst den <CheckLink /> laufen. Sein Ergebnis zählt dann in der Dimension «Auftritt» zur Hälfte mit.
-          </>
-        )}{" "}
-        Das Ergebnis geht zusammen mit deinen Antworten und deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können.
+        {checkDate ? <>Dein Scan vom {checkDate} ist gespeichert.</> : <>Ohne Scan sind Auftritt und Inhalte nicht bewertet.</>} Das Ergebnis geht zusammen mit deinen
+        Antworten und deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können.
       </p>
+      <WebsiteScan />
     </>
   );
 }

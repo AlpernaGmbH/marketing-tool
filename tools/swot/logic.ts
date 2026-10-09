@@ -74,24 +74,28 @@ export function faktenAusCheck(saved: SavedCheck): Fakt[] {
   return out;
 }
 
+const ZAHLWORT: Record<number, string> = { 3: "drei", 4: "vier", 5: "fünf" };
+
 /**
  * Fakten aus dem Reifegrad-Check: stärkste Dimension als Stärke, schwächste als Schwäche. Gerechnet wie im Werkzeug selbst
- * (evaluate mit dem Marketing-Check zur Hälfte in «Auftritt»). Liegen alle Dimensionen gleichauf, gibt es einen Fakt.
+ * (evaluate mit dem gespeicherten Website-Scan); Dimensionen ohne Wert (kein Scan) zählen nicht. Liegen alle bewerteten
+ * Dimensionen gleichauf, gibt es einen Fakt.
  */
 export function faktenAusReifegrad(raw: unknown, check: CheckInfo | null): Fakt[] {
   const saved = parseQuestionnaireState(raw);
   if (saved.phase !== "result") return [];
   const result = evaluate(saved.answers, check);
-  let best = result.dimensionen[0];
-  let worst = result.dimensionen[0];
-  for (const d of result.dimensionen) {
+  const bewertet = result.dimensionen.filter((d): d is typeof d & { score: number; stufe: NonNullable<typeof d.stufe> } => d.score !== null && d.stufe !== null);
+  let best = bewertet[0];
+  let worst = bewertet[0];
+  for (const d of bewertet) {
     if (d.score > best.score) best = d;
     if (d.score < worst.score) worst = d;
   }
   if (best.score === worst.score) {
     return [
       {
-        text: `Reifegrad: alle fünf Dimensionen liegen bei ${best.score} von 100 (Stufe «${result.stufe}»)`,
+        text: `Reifegrad: alle ${ZAHLWORT[bewertet.length] ?? bewertet.length} Dimensionen liegen bei ${best.score} von 100 (Stufe «${result.stufe}»)`,
         quelle: QUELLE_REIFEGRAD,
         feld: best.score >= REIFEGRAD_MITTE ? "staerken" : "schwaechen",
       },

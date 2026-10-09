@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Answers } from "@/components/tool/questionnaire";
 import { sampleResult } from "@/lib/check/fixtures";
 import { toMarkdown } from "@/lib/export/model";
-import { questions } from "@/tools/reifegrad-check/logic";
+import { questions, type CheckInfo } from "@/tools/reifegrad-check/logic";
 import { MAX_FAKTEN, MAX_FAKT_CHARS, MAX_FELD_CHARS, MAX_ZIEL_CHARS, type SwotInput, type SwotOutput } from "./generator";
 import {
   CHECK_SCHWACH,
@@ -65,26 +65,21 @@ const cat = (title: string, score: number, weight = 10): Cat => ({ id: title.toL
 /** Alle Fragen des Reifegrad-Checks mit der Antwort an Position `index` (0 = tiefste, 3 = beste Stufe). */
 function allAt(index: number): Answers {
   const out: Answers = {};
-  for (const q of questions) {
-    if (q.type === "single") out[q.id] = q.options[Math.min(index, q.options.length - 1)].value;
-    else if (q.type === "multi") out[q.id] = index === 0 ? ["keine"] : q.options.filter((o) => o.value !== "keine").slice(0, index).map((o) => o.value);
-  }
+  for (const q of questions) if (q.type === "single") out[q.id] = q.options[Math.min(index, q.options.length - 1)].value;
   return out;
 }
 
-/** Rechenbeispiel aus specs/reifegrad-check.md: Strategie 33, Auftritt 67, Inhalte 67, Kundenkontakt 33, Steuerung 22. */
+/** Rechenbeispiel aus specs/reifegrad-check.md (ohne Website-Scan): Strategie 33, Kundenkontakt 33, Steuerung 17; Auftritt und Inhalte nicht bewertet. */
 const KELLER: Answers = {
   ziele: "kopf",
   zielgruppe: "grob",
   verantwortung: "unter2",
-  website: "jahr",
-  google: "bestaetigt",
-  social: "monatlich",
   bewertungen: "manchmal",
   kontakt: "gelegentlich",
-  messung: ["anfragen"],
   budget: "keins",
 };
+/** Website-Scan dazu: Website 60, Google-Profil 50, Social Media 40, keine Web-Analyse. */
+const SCAN: CheckInfo = { score: 38, checkedAt: "2026-10-03T09:00:00.000Z", seo: 60, gbp: 50, gbpGeprueft: false, social: 40, analytics: false };
 
 const reifegradState = (answers: Answers, phase = "result") => ({ v: 1, phase, step: 10, answers });
 
@@ -203,33 +198,35 @@ describe("swot: Fakten aus dem Marketing-Check", () => {
 });
 
 describe("swot: Fakten aus dem Reifegrad-Check", () => {
-  it("nennt die stärkste und die schwächste Dimension, ohne Check mit den Selbstangaben", () => {
+  it("nennt die stärkste und die schwächste bewertete Dimension; ohne Scan zählen Auftritt und Inhalte nicht", () => {
     const fakten = faktenAusReifegrad(reifegradState(KELLER), null);
+    // Strategie und Kundenkontakt liegen bei 33; bei Gleichstand gewinnt die erste in der Reihenfolge der Dimensionen.
     expect(fakten).toEqual([
-      { text: "Reifegrad: «Auftritt» ist die stärkste Dimension (67 von 100, Stufe «Routine»)", quelle: QUELLE_REIFEGRAD, feld: "staerken" },
-      { text: "Reifegrad: «Steuerung» ist die schwächste Dimension (22 von 100, Stufe «Anfang»)", quelle: QUELLE_REIFEGRAD, feld: "schwaechen" },
+      { text: "Reifegrad: «Strategie» ist die stärkste Dimension (33 von 100, Stufe «Aufbau»)", quelle: QUELLE_REIFEGRAD, feld: "staerken" },
+      { text: "Reifegrad: «Steuerung» ist die schwächste Dimension (17 von 100, Stufe «Anfang»)", quelle: QUELLE_REIFEGRAD, feld: "schwaechen" },
     ]);
   });
-  it("rechnet den Marketing-Check wie das Werkzeug selbst zur Hälfte in «Auftritt» ein", () => {
-    // Auftritt: (67 + 38) ÷ 2 = 52,5 → 53; damit ist «Inhalte» mit 67 die stärkste Dimension.
-    const fakten = faktenAusReifegrad(reifegradState(KELLER), { score: 38, checkedAt: "2026-10-03T09:00:00.000Z" });
-    expect(fakten[0].text).toBe("Reifegrad: «Inhalte» ist die stärkste Dimension (67 von 100, Stufe «Routine»)");
-    expect(fakten[1].text).toBe("Reifegrad: «Steuerung» ist die schwächste Dimension (22 von 100, Stufe «Anfang»)");
+  it("rechnet den Website-Scan wie das Werkzeug selbst ein: Auftritt (56) wird die stärkste Dimension, Steuerung (11) die schwächste", () => {
+    const fakten = faktenAusReifegrad(reifegradState(KELLER), SCAN);
+    expect(fakten[0].text).toBe("Reifegrad: «Auftritt» ist die stärkste Dimension (56 von 100, Stufe «Routine»)");
+    expect(fakten[1].text).toBe("Reifegrad: «Steuerung» ist die schwächste Dimension (11 von 100, Stufe «Anfang»)");
   });
-  it("gibt bei Gleichstand aller Dimensionen einen Fakt, unten als Schwäche, oben als Stärke", () => {
+  it("gibt bei Gleichstand aller bewerteten Dimensionen einen Fakt, unten als Schwäche, oben als Stärke", () => {
     expect(faktenAusReifegrad(reifegradState(allAt(0)), null)).toEqual([
-      { text: "Reifegrad: alle fünf Dimensionen liegen bei 0 von 100 (Stufe «Anfang»)", quelle: QUELLE_REIFEGRAD, feld: "schwaechen" },
+      { text: "Reifegrad: alle drei Dimensionen liegen bei 0 von 100 (Stufe «Anfang»)", quelle: QUELLE_REIFEGRAD, feld: "schwaechen" },
     ]);
     expect(faktenAusReifegrad(reifegradState(allAt(3)), null)).toEqual([
-      { text: "Reifegrad: alle fünf Dimensionen liegen bei 100 von 100 (Stufe «Fortgeschritten»)", quelle: QUELLE_REIFEGRAD, feld: "staerken" },
+      { text: "Reifegrad: alle drei Dimensionen liegen bei 100 von 100 (Stufe «Fortgeschritten»)", quelle: QUELLE_REIFEGRAD, feld: "staerken" },
     ]);
+    const voll: CheckInfo = { score: 100, checkedAt: "", seo: 100, gbp: 100, gbpGeprueft: true, social: 100, analytics: true };
+    expect(faktenAusReifegrad(reifegradState(allAt(3)), voll)[0].text).toBe("Reifegrad: alle fünf Dimensionen liegen bei 100 von 100 (Stufe «Fortgeschritten»)");
   });
   it("liefert nichts, solange der Fragebogen nicht beim Ergebnis ist oder der Stand kaputt ist", () => {
     expect(faktenAusReifegrad(reifegradState(KELLER, "questions"), null)).toEqual([]);
     expect(faktenAusReifegrad(reifegradState(KELLER, "summary"), null)).toEqual([]);
     expect(faktenAusReifegrad(null, null)).toEqual([]);
     expect(faktenAusReifegrad("result", null)).toEqual([]);
-    expect(faktenAusReifegrad({ phase: "result", answers: "kaputt" }, null)).toHaveLength(1); // leere Antworten: alles bei 0
+    expect(faktenAusReifegrad({ phase: "result", answers: "kaputt" }, null)).toHaveLength(1); // leere Antworten: alle bewerteten Dimensionen bei 0
   });
 });
 
@@ -263,8 +260,8 @@ describe("swot: faktenAus (beide Stände zusammen)", () => {
     expect(nurReifegrad.hatCheck).toBe(false);
     expect(nurReifegrad.hatReifegrad).toBe(true);
     expect(nurReifegrad.fakten.map((f) => f.text)).toEqual([
-      "Reifegrad: «Auftritt» ist die stärkste Dimension (67 von 100, Stufe «Routine»)",
-      "Reifegrad: «Steuerung» ist die schwächste Dimension (22 von 100, Stufe «Anfang»)",
+      "Reifegrad: «Strategie» ist die stärkste Dimension (33 von 100, Stufe «Aufbau»)",
+      "Reifegrad: «Steuerung» ist die schwächste Dimension (17 von 100, Stufe «Anfang»)",
     ]);
 
     const beide = faktenAus(check, reifegradState(KELLER));
@@ -272,9 +269,9 @@ describe("swot: faktenAus (beide Stände zusammen)", () => {
     expect(beide.fakten.map((f) => f.text)).toEqual([
       "Bereich «Website und SEO» ist stark (80 von 100)",
       "Bereich «Google-Business-Profil» ist schwach (20 von 100)",
-      // Mit dem Check (38) fällt «Auftritt» auf 53, «Inhalte» (67) wird die stärkste Dimension.
-      "Reifegrad: «Inhalte» ist die stärkste Dimension (67 von 100, Stufe «Routine»)",
-      "Reifegrad: «Steuerung» ist die schwächste Dimension (22 von 100, Stufe «Anfang»)",
+      // Die Kategorien dieses Checks tragen nicht die Kennungen des echten Checks: Der Scan liefert keine Teilwerte, es bleiben die drei Dimensionen mit Fragen.
+      "Reifegrad: «Strategie» ist die stärkste Dimension (33 von 100, Stufe «Aufbau»)",
+      "Reifegrad: «Steuerung» ist die schwächste Dimension (17 von 100, Stufe «Anfang»)",
     ]);
 
     const echt = faktenAus(checkState((await sampleResult()).categories, { score: 38 }), reifegradState(KELLER));
