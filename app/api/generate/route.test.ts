@@ -17,6 +17,13 @@ class MemoryAi implements AiStore {
   async decr(key: string) {
     this.counters.set(key, (this.counters.get(key) ?? 0) - 1);
   }
+  async add(key: string, amount: number) {
+    this.counters.set(key, (this.counters.get(key) ?? 0) + amount);
+    return this.counters.get(key)!;
+  }
+  async read(key: string) {
+    return this.counters.get(key) ?? 0;
+  }
   async getCache() {
     return null;
   }
@@ -71,6 +78,32 @@ describe("POST /api/generate", () => {
     expect(args.system).not.toContain("Malerei Keller"); // Eingaben nur in der Nutzernachricht
     expect(args.prompt).toBe("Betrieb: Malerei Keller");
     expect(args.maxOutputTokens).toBe(300);
+  });
+
+  it("bucht die Kosten der Antworten auf die Adresse und wechselt danach aufs Gratismodell", async () => {
+    gen.fn.mockImplementation(async (args: { onUsage?: (u: { costUsd: number }) => void }) => {
+      args.onUsage?.({ costUsd: 0.2 });
+      args.onUsage?.({ costUsd: 0.2 }); // zwei Versuche, 0.40 USD = 32 Rappen
+      return { titel: "Fassaden in Gossau", punkte: ["Termine ab [Datum]"] };
+    });
+    expect((await call()).status).toBe(200);
+    expect((gen.fn.mock.calls[0][0] as { freeOnly: boolean }).freeOnly).toBe(false);
+    const micro = [...ai.counters.entries()].filter(([k]) => k.startsWith("aicost:")).map(([, v]) => v);
+    expect(micro).toEqual([400_000, 400_000]); // global und Adresse
+    expect((await call()).status).toBe(200);
+    expect((gen.fn.mock.calls[1][0] as { freeOnly: boolean }).freeOnly).toBe(true); // 32 Rappen sind über der Grenze von 30
+    // eine andere Adresse bleibt bezahlt
+    expect((await call(body(), gateCookie("bea@muster.ch"))).status).toBe(200);
+    expect((gen.fn.mock.calls[2][0] as { freeOnly: boolean }).freeOnly).toBe(false);
+  });
+
+  it("bucht auch die Kosten eines Aufrufs, der keinen Entwurf liefert", async () => {
+    gen.fn.mockImplementation(async (args: { onUsage?: (u: { costUsd: number }) => void }) => {
+      args.onUsage?.({ costUsd: 0.01 });
+      throw new Error("AiBadJson");
+    });
+    expect((await call()).status).toBe(502);
+    expect([...ai.counters.entries()].find(([k]) => k.startsWith("aicost:global:"))?.[1]).toBe(10_000);
   });
 
   it("verlangt ein bekanntes Werkzeug und gültige Eingaben", async () => {

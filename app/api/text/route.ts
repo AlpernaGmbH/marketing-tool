@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
-import { defaultAiStore, limitsFromEnv, notifyCapacity, releaseSlot, takeSlot } from "@/lib/ai-quota";
+import { accountHash, clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
+import { budgetMode, defaultAiStore, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot } from "@/lib/ai-quota";
 import { describeAiError, generateFreeText } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
 import { withinLimit } from "@/lib/ratelimit";
@@ -39,7 +39,9 @@ export async function POST(req: NextRequest) {
   const hash = ipHash(clientIp(req.headers), secret);
   if (!(await withinLimit("text", 30, "1 h", hash))) return respond(ROUTE, 429, { error: "rate_limited" }, "rate_limited");
 
-  if (!readGateCookie(req, secret)) return respond(ROUTE, 403, { error: "gate" }, "gate_used");
+  const gate = readGateCookie(req, secret);
+  if (!gate) return respond(ROUTE, 403, { error: "gate" }, "gate_used");
+  const acchash = accountHash(gate.email, secret);
 
   const store = defaultAiStore();
   const limits = limitsFromEnv();
@@ -48,15 +50,21 @@ export async function POST(req: NextRequest) {
     await notifyCapacity(store, limits);
     return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity");
   }
+  // Tagesbudget: Ist es aufgebraucht, antworten nur kostenlose Modelle (lib/ai-quota.ts).
+  const mode = await budgetMode(store, acchash, spendLimitsFromEnv());
+  if (mode === "global") await notifyCapacity(store, limits, new Date(), fetch, process.env, "ki_budget");
+  const spend = spendCollector();
 
   let checked;
   try {
-    const raw = await generateFreeText({ system: buildSystemPrompt(style, anrede), prompt: buildUserPrompt(text), maxOutputTokens: style.maxTokens });
+    const raw = await generateFreeText({ system: buildSystemPrompt(style, anrede), prompt: buildUserPrompt(text), maxOutputTokens: style.maxTokens, freeOnly: mode !== "paid", onUsage: spend.onUsage });
     checked = checkOutput(raw, text, style);
   } catch (error) {
+    await recordSpend(store, acchash, spend.total());
     await releaseSlot(store, null, new Date(), "text"); // ohne Text kein verbrauchter Platz
     return respond(ROUTE, 502, { error: "ai_failed" }, "ai_failed", describeAiError(error));
   }
+  await recordSpend(store, acchash, spend.total());
   if (!checked.ok) {
     await releaseSlot(store, null, new Date(), "text");
     return respond(ROUTE, 502, { error: "ai_rejected" }, "ai_failed", `rejected:${checked.reason}`);

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_AI_MODELS, DEFAULT_MISTRAL_MODELS, DEFAULT_OPENROUTER_MODELS, MistralError, aiProvider, describeAiError, mistralChat, mistralKey, mistralModelsFromEnv, openrouterChat, openrouterModelsFromEnv, usesMistral, usesOpenrouter } from "@/lib/ai";
-import { generateJson, modelsFromEnv } from "@/lib/ai";
+import { freeModelsOf, generateJson, modelsFromEnv, type AiUsage } from "@/lib/ai";
 
 describe("modelsFromEnv", () => {
   it("nimmt ohne Angabe den Standard (nur Mistral)", () => {
@@ -298,5 +298,60 @@ describe("generateJson über OpenRouter", () => {
     vi.stubEnv("OPENROUTER_MODELS", "a/erstes,b/zweites");
     vi.stubGlobal("fetch", vi.fn(async () => ok("Nur Text, kein Objekt.")));
     await expect(generateJson({ system: "s", prompt: "p", maxOutputTokens: 100 })).rejects.toMatchObject({ name: "AiBadJson" });
+  });
+});
+
+describe("Kosten, Abschnitt der Antwort und Gratisweg bei OpenRouter", () => {
+  const ARGS = { system: "Regeln", prompt: "Ausgangstext", maxTokens: 300, temperature: 0.4, timeoutMs: 5_000 };
+  const ENV = { OPENROUTER_API_KEY: "or-key", OPENROUTER_MODELS: "anthropic/claude-haiku-5.5,a/zweites,b/frei:free" };
+  const reply = (content: string, extra: Record<string, unknown> = {}, finish: string | undefined = "stop") =>
+    new Response(JSON.stringify({ choices: [{ message: { content }, finish_reason: finish }], ...extra }), { status: 200, headers: { "content-type": "application/json" } });
+  const asFetch = (fn: ReturnType<typeof vi.fn>) => fn as unknown as typeof fetch;
+  const bodyOf = (fn: ReturnType<typeof vi.fn>, n = 0) => JSON.parse((fn.mock.calls[n] as unknown as [string, RequestInit])[1].body as string);
+
+  it("meldet die Kosten jeder Antwort, auch einer später abgelehnten, und fragt sie mit usage.include an", async () => {
+    const usages: AiUsage[] = [];
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(reply("kein json", { usage: { cost: 0.0061 } }))
+      .mockResolvedValueOnce(reply('{"a": 1}', { usage: { cost: 0.0058 } }));
+    const accept = (t: string) => (t.startsWith("{") ? (true as const) : "Nur JSON.");
+    await openrouterChat({ ...ARGS, accept, onUsage: (u) => usages.push(u) }, asFetch(fetchImpl), ENV);
+    expect(usages).toEqual([
+      { model: "anthropic/claude-haiku-5.5", costUsd: 0.0061, free: false },
+      { model: "anthropic/claude-haiku-5.5", costUsd: 0.0058, free: false },
+    ]);
+    expect(bodyOf(fetchImpl).usage).toEqual({ include: true });
+  });
+
+  it("meldet 0 Dollar bei Gratismodellen und bei Antworten ohne Kostenangabe", async () => {
+    const usages: AiUsage[] = [];
+    const fetchImpl = vi.fn(async () => reply("Text"));
+    await openrouterChat({ ...ARGS, freeOnly: true, onUsage: (u) => usages.push(u) }, asFetch(fetchImpl), ENV);
+    expect(usages).toEqual([{ model: "b/frei:free", costUsd: 0, free: true }]);
+  });
+
+  it("nimmt mit freeOnly nur kostenlose Modelle der Liste, ohne solche die Standardliste der Gratismodelle", async () => {
+    const fetchImpl = vi.fn(async () => reply("Text"));
+    await openrouterChat({ ...ARGS, freeOnly: true }, asFetch(fetchImpl), ENV);
+    expect(bodyOf(fetchImpl).model).toBe("b/frei:free");
+    expect(freeModelsOf(["anthropic/claude-haiku-5.5", "a/zweites"])).toEqual(DEFAULT_OPENROUTER_MODELS);
+    expect(freeModelsOf(["x/y", "z/w:free"])).toEqual(["z/w:free"]);
+    const noFree = vi.fn(async () => reply("Text"));
+    await openrouterChat({ ...ARGS, freeOnly: true }, asFetch(noFree), { OPENROUTER_API_KEY: "k", OPENROUTER_MODELS: "x/y" });
+    expect(bodyOf(noFree).model).toBe(DEFAULT_OPENROUTER_MODELS[0]);
+  });
+
+  it("zeigt eine an der Ausgabegrenze abgeschnittene Antwort nie, sondern verlangt eine kürzere", async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(reply("Der Text bricht mitten im Sa", {}, "length")).mockResolvedValueOnce(reply("Der vollständige Text."));
+    expect(await openrouterChat(ARGS, asFetch(fetchImpl), ENV)).toBe("Der vollständige Text.");
+    expect(bodyOf(fetchImpl, 1).model).toBe("anthropic/claude-haiku-5.5"); // zweiter Versuch beim selben Modell
+    expect(bodyOf(fetchImpl, 1).messages[3].content).toContain("abgeschnitten");
+  });
+
+  it("wirft, wenn jedes Modell die Antwort abschneidet", async () => {
+    const fetchImpl = vi.fn(async () => reply("Abgeschnitten", {}, "length"));
+    await expect(openrouterChat(ARGS, asFetch(fetchImpl), ENV)).rejects.toMatchObject({ name: "AiBadJson" });
+    expect(fetchImpl).toHaveBeenCalledTimes(6); // 3 Modelle zu je 2 Versuchen
   });
 });

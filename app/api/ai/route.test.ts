@@ -24,6 +24,13 @@ class MemoryAi implements AiStore {
     if (this.failing) throw new Error("redis down");
     this.counters.set(key, (this.counters.get(key) ?? 0) - 1);
   }
+  async add(key: string, amount: number) {
+    this.counters.set(key, (this.counters.get(key) ?? 0) + amount);
+    return this.counters.get(key)!;
+  }
+  async read(key: string) {
+    return this.counters.get(key) ?? 0;
+  }
   async getCache(h: string) {
     if (this.failing) throw new Error("redis down");
     return this.cache.get(h) ?? null;

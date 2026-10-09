@@ -138,7 +138,20 @@ type ChatArgs = {
   accept?: (text: string) => true | string;
   /** Gesamte Zeit für alle Versuche und Modelle in Millisekunden (Standard: unbegrenzt). Ein Versuch beginnt nur, wenn mehr als 5 Sekunden bleiben. */
   budgetMs?: number;
+  /** Nur kostenlose Modelle («:free») verwenden: gilt, wenn das Tagesbudget der Adresse oder das globale Budget aufgebraucht ist (lib/ai-quota.ts). */
+  freeOnly?: boolean;
+  /** Wird nach jeder Antwort des Anbieters mit den Kosten aufgerufen, auch wenn die Antwort danach abgelehnt wird (bezahlt ist bezahlt). */
+  onUsage?: (usage: AiUsage) => void;
 };
+
+/** Kosten einer Antwort laut Anbieter (OpenRouter meldet `usage.cost` in US-Dollar; kostenlose Modelle melden 0). */
+export type AiUsage = { model: string; costUsd: number; free: boolean };
+
+/** Nur die kostenlosen Einträge der Liste; ohne einen solchen gilt die Standardliste der Gratismodelle. */
+export function freeModelsOf(list: string[]): string[] {
+  const free = list.filter((m) => m.endsWith(":free"));
+  return free.length > 0 ? free : DEFAULT_OPENROUTER_MODELS;
+}
 
 /** Frühere Nachrichten eines zweiten Versuchs: die abgelehnte Antwort und die Rückmeldung. */
 type History = { role: "assistant" | "user"; content: string }[];
@@ -165,7 +178,9 @@ type Endpoint = {
   fatal: (status: number) => boolean;
 };
 
-async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string, fetchImpl: typeof fetch, history: History = [], timeoutMs: number = args.timeoutMs): Promise<string> {
+type ChatReply = { text: string; /** true, wenn der Anbieter wegen der Ausgabegrenze abgebrochen hat (finish_reason «length»). */ truncated: boolean };
+
+async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string, fetchImpl: typeof fetch, history: History = [], timeoutMs: number = args.timeoutMs): Promise<ChatReply> {
   let res: Response;
   try {
     res = await fetchImpl(ep.url, {
@@ -195,10 +210,17 @@ async function chatOnce(ep: Endpoint, model: string, args: ChatArgs, key: string
   } catch {
     throw new MistralError(`${ep.label}BadResponse`);
   }
-  const text = contentText((data as { choices?: Array<{ message?: { content?: unknown } }> })?.choices?.[0]?.message?.content).trim();
+  const body = data as { choices?: Array<{ message?: { content?: unknown }; finish_reason?: unknown }>; usage?: { cost?: unknown } };
+  // Die Kosten zählen, sobald der Anbieter geantwortet hat, auch wenn die Antwort danach abgelehnt wird.
+  const cost = typeof body?.usage?.cost === "number" && Number.isFinite(body.usage.cost) && body.usage.cost > 0 ? body.usage.cost : 0;
+  args.onUsage?.({ model, costUsd: cost, free: model.endsWith(":free") });
+  const text = contentText(body?.choices?.[0]?.message?.content).trim();
   if (!text) throw new MistralError(`${ep.label}EmptyError`);
-  return text;
+  return { text, truncated: body?.choices?.[0]?.finish_reason === "length" };
 }
+
+/** Rückmeldung an das Modell, wenn seine Antwort an der Ausgabegrenze abgeschnitten wurde. */
+const TRUNCATED_HINT = "Deine Antwort wurde abgeschnitten, weil sie zu lang war. Fasse dich kürzer und liefere die vollständige Antwort in der verlangten Form.";
 
 /**
  * Eine Anfrage mit Rückfall auf das nächste Modell der Liste, wenn das erste ausfiel, zu langsam oder leer war (siehe `fatal`).
@@ -213,8 +235,9 @@ async function chatWithFallback(ep: Endpoint, models: string[], args: ChatArgs, 
       const left = deadline - Date.now();
       if (left < MIN_ATTEMPT_MS) throw last ?? new MistralError(`${ep.label}Timeout`);
       try {
-        const text = await chatOnce(ep, model, args, key, fetchImpl, history, Math.min(args.timeoutMs, left));
-        const verdict = args.accept ? args.accept(text) : true;
+        const { text, truncated } = await chatOnce(ep, model, args, key, fetchImpl, history, Math.min(args.timeoutMs, left));
+        // Eine abgeschnittene Antwort ist nie vollständig, auch wenn sie sonst lesbar aussieht (Freitext ohne `accept`).
+        const verdict = truncated ? TRUNCATED_HINT : args.accept ? args.accept(text) : true;
         if (verdict === true) return text;
         last = new MistralError("AiBadJson");
         history = [
@@ -253,19 +276,23 @@ export async function mistralChat(args: ChatArgs, fetchImpl: typeof fetch = fetc
 export async function openrouterChat(args: ChatArgs, fetchImpl: typeof fetch = fetch, env: Record<string, string | undefined> = process.env): Promise<string> {
   const key = openrouterKey(env);
   if (!key) throw new MistralError("OpenRouterNoKey");
-  const ep: Endpoint = { label: "OpenRouter", url: OPENROUTER_URL, jsonMode: false, extra: { reasoning: { enabled: false } }, fatal: (status) => status === 401 };
-  return chatWithFallback(ep, openrouterModelsFromEnv(env.OPENROUTER_MODELS), args, key, fetchImpl);
+  const ep: Endpoint = { label: "OpenRouter", url: OPENROUTER_URL, jsonMode: false, extra: { reasoning: { enabled: false }, usage: { include: true } }, fatal: (status) => status === 401 };
+  const models = openrouterModelsFromEnv(env.OPENROUTER_MODELS);
+  return chatWithFallback(ep, args.freeOnly ? freeModelsOf(models) : models, args, key, fetchImpl);
 }
 
-export type GenerateRaw = (fakten: Fakten) => Promise<unknown>;
+export type GenerateRaw = (fakten: Fakten, opts?: AiCallOpts) => Promise<unknown>;
+
+/** Wahl des Budgets und Kostenmeldung eines Aufrufs; gilt nur für OpenRouter (die anderen Wege melden keine Kosten). */
+export type AiCallOpts = Pick<ChatArgs, "freeOnly" | "onUsage">;
 
 const EINORDNUNG_FORM = `Antworte ausschliesslich mit einem JSON-Objekt in genau dieser Form: {"zusammenfassung": "…", "prioritaeten": [{"schritt": "id aus schritte", "text": "…"}]}.`;
 
-export const generateRaw: GenerateRaw = async (fakten) => {
+export const generateRaw: GenerateRaw = async (fakten, opts) => {
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000, budgetMs: 50_000, accept: (t) => parseJsonObject(t) !== null || "Antworte ausschliesslich mit einem JSON-Objekt in genau der verlangten Form." });
+    const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000, budgetMs: 50_000, ...opts, accept: (t) => parseJsonObject(t) !== null || "Antworte ausschliesslich mit einem JSON-Objekt in genau der verlangten Form." });
     const value = parseJsonObject(text); // geprüft wird danach in pruefeEinordnung
     if (value === null) throw new MistralError("AiBadJson");
     return value;
@@ -302,14 +329,14 @@ export type GenerateJson = (args: {
   temperature?: number;
   /** Prüft das gelesene Objekt. `true`: angenommen; ein Text: abgelehnt, er geht als Rückmeldung an dasselbe Modell (zweiter Versuch), danach gilt das nächste Modell. Nur bei OpenRouter und Mistral. */
   accept?: (value: unknown) => true | string;
-}) => Promise<unknown>;
+} & AiCallOpts) => Promise<unknown>;
 
-export const generateJson: GenerateJson = async ({ system, prompt, maxOutputTokens, temperature = 0.4, accept }) => {
+export const generateJson: GenerateJson = async ({ system, prompt, maxOutputTokens, temperature = 0.4, accept, freeOnly, onUsage }) => {
   let text: string;
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000, budgetMs: 52_000, accept: (t) => {
+    text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000, budgetMs: 52_000, freeOnly, onUsage, accept: (t) => {
       const v = parseJsonObject(t);
       return v === null ? "Antworte ausschliesslich mit einem JSON-Objekt in genau der verlangten Form." : accept ? accept(v) : true;
     } });
@@ -333,13 +360,19 @@ export const generateJson: GenerateJson = async ({ system, prompt, maxOutputToke
 };
 
 /** Freier Text statt strukturierter Ausgabe: für Text-Umschreiber und Textcheck. Gleicher Weg wie die Einordnung (Mistral direkt oder Gateway). */
-export type GenerateFreeText = (args: { system: string; prompt: string; maxOutputTokens: number }) => Promise<string>;
+export type GenerateFreeText = (args: {
+  system: string;
+  prompt: string;
+  maxOutputTokens: number;
+  /** Prüft die Antwort. `true`: angenommen; ein Text: abgelehnt, er geht als Rückmeldung an dasselbe Modell (zweiter Versuch). Nur bei OpenRouter und Mistral. */
+  accept?: (text: string) => true | string;
+} & AiCallOpts) => Promise<string>;
 
-export const generateFreeText: GenerateFreeText = async ({ system, prompt, maxOutputTokens }) => {
+export const generateFreeText: GenerateFreeText = async ({ system, prompt, maxOutputTokens, accept, freeOnly, onUsage }) => {
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    return chat({ system, prompt, maxTokens: maxOutputTokens, temperature: 0.5, timeoutMs: 30_000 });
+    return chat({ system, prompt, maxTokens: maxOutputTokens, temperature: 0.5, timeoutMs: 30_000, budgetMs: 40_000, accept, freeOnly, onUsage });
   }
   const [model, ...fallbacks] = modelsFromEnv();
   const { text } = await generateText({

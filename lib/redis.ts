@@ -19,8 +19,12 @@ export const keys = {
   ai: (acchash: string, day: string) => `ai:${acchash}:${day}`,
   lookup: (iphash: string, day: string) => `lookup:${iphash}:${day}`,
   aiGlobal: (day: string) => `ai:global:${day}`,
+  /** Ausgaben der KI je Person (HMAC der Adresse) und Tag in Millionstel US-Dollar, aus `usage.cost` der Antworten. */
+  aiCost: (acchash: string, day: string) => `aicost:${acchash}:${day}`,
+  /** Ausgaben der KI aller Besucher an einem Tag in Millionstel US-Dollar. */
+  aiCostGlobal: (day: string) => `aicost:global:${day}`,
   /** Marke «Tagesgrenze der KI heute gemeldet», damit die Mail nur einmal am Tag rausgeht. */
-  aiAlert: (day: string) => `ai:alert:${day}`,
+  aiAlert: (day: string, kind = "limit") => `ai:alert:${kind}:${day}`,
   /** Zwischenspeicher der KI-Einordnung je Ergebnis (Hash der Signatur), 24 Stunden. */
   aiCache: (hash: string) => `aicache:${hash}`,
   leadQueue: "lead_queue",

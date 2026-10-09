@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { accountHash, clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
-import { cacheHash, defaultAiStore, limitsFromEnv, notifyCapacity, releaseSlot, takeSlot } from "@/lib/ai-quota";
+import { budgetMode, cacheHash, defaultAiStore, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot } from "@/lib/ai-quota";
 import { describeAiError, generateRaw } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
 import { buildFakten, pruefeEinordnung } from "@/lib/check/ai";
@@ -69,13 +69,18 @@ export async function POST(req: NextRequest) {
   }
 
   const fakten = buildFakten(result);
+  const mode = await budgetMode(store, acchash, spendLimitsFromEnv());
+  if (mode === "global") await notifyCapacity(store, limits, new Date(), fetch, process.env, "ki_budget");
+  const spend = spendCollector();
   let checked;
   try {
-    checked = pruefeEinordnung(await generateRaw(fakten), fakten);
+    checked = pruefeEinordnung(await generateRaw(fakten, { freeOnly: mode !== "paid", onUsage: spend.onUsage }), fakten);
   } catch (error) {
+    await recordSpend(store, acchash, spend.total());
     await releaseSlot(store, acchash); // ohne Einordnung kein verbrauchter Platz
     return respond(ROUTE, 502, { error: "ai_failed" }, "ai_failed", describeAiError(error));
   }
+  await recordSpend(store, acchash, spend.total());
   if (!checked.ok) {
     await releaseSlot(store, acchash);
     return respond(ROUTE, 502, { error: "ai_rejected" }, "ai_failed", `rejected:${checked.reason}`);

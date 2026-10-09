@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { limitsFromEnv, notifyCapacity, releaseSlot, takeSlot, type AiStore, type Limits } from "@/lib/ai-quota";
+import { RP_PER_USD, budgetMode, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot, type AiStore, type Limits } from "@/lib/ai-quota";
 
 class Memory implements AiStore {
   counters = new Map<string, number>();
@@ -11,6 +11,13 @@ class Memory implements AiStore {
   }
   async decr(key: string) {
     this.counters.set(key, (this.counters.get(key) ?? 0) - 1);
+  }
+  async add(key: string, amount: number) {
+    this.counters.set(key, (this.counters.get(key) ?? 0) + amount);
+    return this.counters.get(key)!;
+  }
+  async read(key: string) {
+    return this.counters.get(key) ?? 0;
   }
   async getCache() {
     return null;
@@ -27,8 +34,8 @@ describe("limitsFromEnv", () => {
     expect(limitsFromEnv({ AI_ACCOUNT_DAILY: "2", AI_DAILY_CAP: "50" })).toEqual({ perAccount: 2, global: 50 });
     expect(limitsFromEnv({ AI_DAILY_CAP: "viele" }).global).toBe(2000);
   });
-  it("setzt mit OpenRouter (50 Gratis-Anfragen am Tag) die Grenze auf 40, sofern nichts anderes steht", () => {
-    expect(limitsFromEnv({ OPENROUTER_API_KEY: "k" }).global).toBe(40);
+  it("setzt mit OpenRouter (1'000 Anfragen am Tag mit gekauftem Guthaben) die Grenze auf 1000, sofern nichts anderes steht", () => {
+    expect(limitsFromEnv({ OPENROUTER_API_KEY: "k" }).global).toBe(1000);
     expect(limitsFromEnv({ OPENROUTER_API_KEY: "k", AI_DAILY_CAP: "900" }).global).toBe(900);
     expect(limitsFromEnv({ OPENROUTER_API_KEY: "k", AI_PROVIDER: "gateway" }).global).toBe(2000);
   });
@@ -132,5 +139,55 @@ describe("notifyCapacity", () => {
     });
     expect(await notifyCapacity(new Memory(), limits, NOW, asFetch(broken), ENV)).toBe(false);
     expect(fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe("Tagesbudget in Rappen", () => {
+  const LIMITS = { perAddressRp: 30, globalRp: 500 };
+  const usd = (rp: number) => rp / RP_PER_USD;
+
+  it("liest Standard 30 Rappen je Adresse und CHF 5.- global, überschreibbar mit AI_ADDRESS_DAILY_RP und AI_GLOBAL_DAILY_RP", () => {
+    expect(spendLimitsFromEnv({})).toEqual({ perAddressRp: 30, globalRp: 500 });
+    expect(spendLimitsFromEnv({ AI_ADDRESS_DAILY_RP: "10", AI_GLOBAL_DAILY_RP: "200" })).toEqual({ perAddressRp: 10, globalRp: 200 });
+    expect(spendLimitsFromEnv({ AI_ADDRESS_DAILY_RP: "viel" }).perAddressRp).toBe(30);
+  });
+
+  it("antwortet bezahlt, bis eine Adresse 30 Rappen verbraucht hat, dann nur noch kostenlos; andere Adressen bleiben bezahlt", async () => {
+    const store = new Memory();
+    expect(await budgetMode(store, "a", LIMITS, NOW)).toBe("paid");
+    await recordSpend(store, "a", usd(29), NOW);
+    expect(await budgetMode(store, "a", LIMITS, NOW)).toBe("paid");
+    await recordSpend(store, "a", usd(1), NOW);
+    expect(await budgetMode(store, "a", LIMITS, NOW)).toBe("address");
+    expect(await budgetMode(store, "b", LIMITS, NOW)).toBe("paid");
+    // am nächsten Tag ist wieder alles bezahlt
+    expect(await budgetMode(store, "a", LIMITS, new Date("2026-10-05T10:00:00Z"))).toBe("paid");
+  });
+
+  it("schaltet alle auf kostenlos, wenn das globale Budget erreicht ist", async () => {
+    const store = new Memory();
+    for (const who of ["a", "b", "c", "d"]) await recordSpend(store, who, usd(125), NOW);
+    expect(await budgetMode(store, "e", LIMITS, NOW)).toBe("global");
+  });
+
+  it("ignoriert Kosten von 0 und negative, ohne Redis und bei einem Ausfall gilt bezahlt", async () => {
+    const store = new Memory();
+    await recordSpend(store, "a", 0, NOW);
+    await recordSpend(store, "a", -1, NOW);
+    expect(store.counters.size).toBe(0);
+    expect(await budgetMode(null, "a", LIMITS, NOW)).toBe("paid");
+    await recordSpend(null, "a", 1, NOW); // wirft nicht
+    store.failing = true;
+    store.read = async () => {
+      throw new Error("redis down");
+    };
+    expect(await budgetMode(store, "a", LIMITS, NOW)).toBe("paid");
+  });
+
+  it("zählt mehrere Antworten eines Aufrufs zusammen", () => {
+    const c = spendCollector();
+    c.onUsage({ costUsd: 0.004 });
+    c.onUsage({ costUsd: 0.006 });
+    expect(c.total()).toBeCloseTo(0.01, 6);
   });
 });

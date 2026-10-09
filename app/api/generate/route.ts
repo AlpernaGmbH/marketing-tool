@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
-import { defaultAiStore, limitsFromEnv, notifyCapacity, releaseSlot, takeSlot } from "@/lib/ai-quota";
+import { accountHash, clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
+import { budgetMode, defaultAiStore, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot } from "@/lib/ai-quota";
 import { describeAiError, generateJson } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
 import { checkGenerated, repairHint, systemPrompt } from "@/lib/generator";
@@ -41,7 +41,9 @@ export async function POST(req: NextRequest) {
   const hash = ipHash(clientIp(req.headers), secret);
   if (!(await withinLimit("generate", 20, "1 h", hash))) return respond(ROUTE, 429, { error: "rate_limited" }, "rate_limited");
 
-  if (!readGateCookie(req, secret)) return respond(ROUTE, 403, { error: "gate" }, "gate_used");
+  const gate = readGateCookie(req, secret);
+  if (!gate) return respond(ROUTE, 403, { error: "gate" }, "gate_used");
+  const acchash = accountHash(gate.email, secret);
 
   const store = defaultAiStore();
   const limits = limitsFromEnv();
@@ -50,6 +52,10 @@ export async function POST(req: NextRequest) {
     await notifyCapacity(store, limits);
     return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity");
   }
+  // Tagesbudget: Ist es aufgebraucht, antworten nur kostenlose Modelle (lib/ai-quota.ts).
+  const mode = await budgetMode(store, acchash, spendLimitsFromEnv());
+  if (mode === "global") await notifyCapacity(store, limits, new Date(), fetch, process.env, "ki_budget");
+  const spend = spendCollector();
 
   // Besteht der Entwurf die Prüfung nicht, bekommt dasselbe Modell die Rückmeldung und einen zweiten Versuch, danach antwortet das nächste Modell
   // der Liste (lib/ai.ts); der Grund der letzten Ablehnung bleibt für die Fehlermeldung.
@@ -63,13 +69,15 @@ export async function POST(req: NextRequest) {
   };
   let raw: unknown;
   try {
-    raw = await generateJson({ system: systemPrompt(def), prompt: def.prompt(input.data), maxOutputTokens: def.maxTokens, temperature: def.temperature, accept });
+    raw = await generateJson({ system: systemPrompt(def), prompt: def.prompt(input.data), maxOutputTokens: def.maxTokens, temperature: def.temperature, accept, freeOnly: mode !== "paid", onUsage: spend.onUsage });
   } catch (error) {
+    await recordSpend(store, acchash, spend.total()); // bezahlte Versuche zählen auch ohne Entwurf
     await releaseSlot(store, null, new Date(), "text"); // ohne Entwurf kein verbrauchter Platz
     const kind = describeAiError(error);
     if (kind === "AiBadJson" && lastReason) return respond(ROUTE, 502, { error: "ai_rejected", detail: lastReason, ...(lastRule ? { rule: lastRule } : {}) }, "ai_failed", `rejected:${lastReason}${lastRule ? `:${lastRule}` : ""}`);
     return respond(ROUTE, 502, { error: "ai_failed", detail: kind }, "ai_failed", kind);
   }
+  await recordSpend(store, acchash, spend.total());
   const checked = checkGenerated(def, raw, input.data);
   if (!checked.ok) {
     await releaseSlot(store, null, new Date(), "text");
