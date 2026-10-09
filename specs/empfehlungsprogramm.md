@@ -49,6 +49,14 @@ Bei einem Verein heissen die Bezeichnungen anders (`begriffe(true)`): Jahresbeit
 14. **Dateinamen**: `empfehlungsprogramm-<firma>.pdf`, `empfehlungsprogramm-<firma>.docx`, `empfehlungskarte-a6-<firma>.pdf` (`safeFilename`).
 15. **Stand** (`mt:empfehlungsprogramm`): `{ v: 1, phase: "edit" | "result", form: { kundenwert, marge, anreiz, beide, kanal, nummer, anrede } }`. `parseState` liefert bei kaputten Daten den leeren Stand, säubert Typen, kürzt Texte und setzt «result» nur mit gültigen Angaben. `lib/progress.ts` erkennt `phase: "result"` als erledigt.
 
+## Rechenmodell (09.10.2026)
+Im Ergebnis zeigt der Abschnitt «Was es dir bringt» (`modellBlocks`, `modell` in `logic.ts`), was ein Programm bringt. Neues freiwilliges Feld «Kundinnen und Kunden pro Jahr» (Verein: «Mitglieder insgesamt»), ganze Zahl von 1 bis 100'000; leer rechnet das Modell mit einem Beispiel von 100 und sagt das.
+- Umsatz und Deckungsbeitrag über `JAHRE` = 3 Jahre (Kundenwert mal 3, Deckungsbeitrag mal 3). Richtwert von Alperna, keine Statistik.
+- Kosten des Anreizes = Mitte der Spanne je Person, bei «beide Seiten» für beide Seiten. Ohne Betrag (nichts Materielles, zu klein): 0 und der Satz «Der Anreiz kostet kein Geld, nur etwas Zeit.»
+- Netto je gewonnene Person = Deckungsbeitrag über drei Jahre minus Kosten des Anreizes. Zurückverdient nach aufgerundet (Kosten geteilt durch Deckungsbeitrag je Monat) Monaten, mindestens 1.
+- Drei Szenarien (`SZENARIEN`): 2, 5 und 10 % der Kundschaft bringen pro Jahr eine neue Person, Richtwerte von Alperna zum Durchspielen, keine Prognose. Neue Personen = Erwartungswert (Bruchteile mit einer Dezimalstelle), Ergebnis = neue Personen mal Netto, in ganzen Franken.
+- Am Bildschirm: Kennzahl-Kachel und Balken (`DocView`), in Datei und Kopie nach dem Ablauf (damit Anreiz und Ablauf in den ersten 1'900 Zeichen fürs CRM stehen).
+
 ## Ausgaben
 - `ResultCard` «Dein Empfehlungsprogramm»: Anreiz-Kasten (Spanne gross, Begründung, Richtwert-Hinweis; bei «nichts Materielles» die drei Formen), «Ablauf in fünf Schritten» (`ol`, aria-label «Mechanik»), «Textvorlagen» mit Umschalter Du/Sie (aria-pressed) und den Knöpfen «Bitte um Empfehlung kopieren», «Nachricht an Empfohlene kopieren», «Dank kopieren», «Karte A6 zum Drucken» mit QR-Vorschau und Hinweis zum Ziel, «Hinweise», «Einseiter und Karte» mit «Einseiter kopieren», «Einseiter (PDF)», «Word», «Karte A6 (PDF)»; Knöpfe «Angaben ändern» und «Neu beginnen».
 - Kopierbar ohne Adresse: Vorlagen und Einseiter als Markdown. Dateien erst mit Adresse (`guardDownload`).

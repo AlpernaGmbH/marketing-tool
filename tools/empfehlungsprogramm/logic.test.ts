@@ -44,6 +44,14 @@ import {
   parseState,
   programm,
   rechne,
+  modell,
+  modellBlocks,
+  kundschaftOf,
+  kundschaftProblem,
+  personenText,
+  BEISPIEL_KUNDSCHAFT,
+  JAHRE,
+  SZENARIEN,
   reportMarkdown,
   richtwertHinweis,
   roundTo,
@@ -63,7 +71,7 @@ const KELLER: Kontext = { verein: false, firma: "Malerei Keller, Gossau", websit
 const FC: Kontext = { verein: true, firma: "FC Trogen", website: "fc-trogen.ch" };
 const NUMMER = "079 123 45 67";
 
-const FORM: FormFields = { kundenwert: "3000", marge: "25", anreiz: "gutschein", beide: true, kanal: "karte", nummer: NUMMER, anrede: "du" };
+const FORM: FormFields = { kundenwert: "3000", marge: "25", kundschaft: "", anreiz: "gutschein", beide: true, kanal: "karte", nummer: NUMMER, anrede: "du" };
 const form = (patch: Partial<FormFields> = {}): FormFields => ({ ...FORM, ...patch });
 
 const rechnung = (patch: Partial<FormFields> = {}): Rechnung => {
@@ -525,6 +533,7 @@ describe("empfehlungsprogramm: Einseiter", () => {
     expect(headings).toEqual([
       "Anreiz",
       "Ablauf in fünf Schritten",
+      "Was es dir bringt",
       "Textvorlagen (Du)",
       "Bitte um Empfehlung nach dem Auftrag",
       "Nachricht an die empfohlene Person",
@@ -559,8 +568,9 @@ describe("empfehlungsprogramm: Einseiter", () => {
     expect(md).toContain("- Dank von Hand:");
     expect(md).toContain("- Nennung im Newsletter, nur mit dem Einverständnis der Person.");
     expect(md).toContain("- Einladung zu einem Anlass im Betrieb.");
-    expect(md).not.toContain("Richtwert von Alperna");
+    expect(md).not.toContain("des Deckungsbeitrags ist eine Einschätzung");
     expect(md).not.toMatch(/je CHF|Mitte der Spanne/);
+    expect(md).toContain("Der Anreiz kostet kein Geld, nur etwas Zeit.");
     calm(md);
   });
 
@@ -614,6 +624,7 @@ describe("empfehlungsprogramm: Einseiter", () => {
       "Website: malerei-keller.ch",
       "Kundenwert pro Jahr: CHF 3'000.-",
       "Marge: 25 %",
+      "Kundschaft pro Jahr: keine Angabe (Beispiel mit 100)",
       "Anreiz: Gutschein",
       "Beide Seiten belohnen: ja",
       "Kanal: Karte beim Auftrag",
@@ -717,3 +728,116 @@ describe("empfehlungsprogramm: Konfiguration und Seitentext", () => {
 function chfText(n: number): string {
   return `CHF ${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "'")}.-`;
 }
+
+describe("empfehlungsprogramm: Rechenmodell", () => {
+  // Kundenwert 3000, Marge 25 %: Deckungsbeitrag 750 im Jahr; beide Seiten: Spanne CHF 40.- bis 75.- je Seite, Mitte 55 (je Seite).
+  const r = rechnung();
+
+  it("rechnet Kundenwert und Deckungsbeitrag über drei Jahre und zieht den Anreiz beider Seiten ab", () => {
+    const m = modell(r, 120);
+    expect(JAHRE).toBe(3);
+    expect(m.umsatz).toBe(9000);
+    expect(m.deckungsbeitrag).toBe(2250);
+    expect(r.mitte).not.toBeNull();
+    expect(m.kosten).toBe((r.mitte as number) * 2);
+    expect(m.netto).toBe(m.deckungsbeitrag - m.kosten);
+    expect(m.beispiel).toBe(false);
+    expect(m.kundschaft).toBe(120);
+  });
+
+  it("nennt, nach wie vielen Monaten der Anreiz zurückverdient ist (aufgerundet, mindestens ein Monat)", () => {
+    const m = modell(r, 100);
+    // 110 Franken Anreiz, 750 / 12 = 62.50 Deckungsbeitrag im Monat: 110 / 62.5 = 1.76 → 2 Monate
+    expect(m.monate).toBe(Math.ceil((m.kosten * 12) / 750));
+    expect(m.monate).toBeGreaterThanOrEqual(1);
+    const klein = modell(rechnung({ kundenwert: "10000", marge: "50", beide: false }), 100);
+    expect(klein.monate).toBeGreaterThanOrEqual(1);
+  });
+
+  it("hat drei Szenarien, die mit dem Anteil der Kundschaft wachsen; das Ergebnis ist Deckungsbeitrag minus Anreize", () => {
+    expect(SZENARIEN.map((s) => s.prozent)).toEqual([2, 5, 10]);
+    const m = modell(r, 100);
+    expect(m.szenarien.map((s) => s.neu)).toEqual([2, 5, 10]);
+    for (const s of m.szenarien) {
+      expect(s.ergebnis).toBe(s.deckungsbeitrag - s.anreize);
+    }
+    expect(m.szenarien[0].ergebnis).toBeLessThan(m.szenarien[1].ergebnis);
+    expect(m.szenarien[1].ergebnis).toBeLessThan(m.szenarien[2].ergebnis);
+  });
+
+  it("rechnet mit Bruchteilen von Personen als Erwartungswert und zeigt sie mit einer Dezimalstelle", () => {
+    const m = modell(r, 20);
+    expect(m.szenarien[0].neu).toBe(0.4);
+    expect(personenText(0.4)).toBe("0,4");
+    expect(personenText(5)).toBe("5");
+  });
+
+  it("ohne Zahl der Kundschaft gilt das Beispiel mit 100, und das steht so im Text", () => {
+    const m = modell(r, null);
+    expect(m.beispiel).toBe(true);
+    expect(m.kundschaft).toBe(BEISPIEL_KUNDSCHAFT);
+    const blocks = modellBlocks(r, null);
+    const bars = blocks.find((b) => b.type === "bars");
+    expect(bars?.type === "bars" && bars.title).toContain("Beispiel mit 100 Kundinnen und Kunden");
+    expect(JSON.stringify(blocks)).toContain("Gib deine Zahl an");
+    const mit = modellBlocks(r, 120);
+    expect(JSON.stringify(mit)).not.toContain("Beispiel mit");
+    expect(JSON.stringify(mit)).toContain("bei 120 Kundinnen und Kunden");
+  });
+
+  it("ohne Betrag (nichts Materielles oder zu klein) kostet der Anreiz nichts und es gibt keine Zeit zum Zurückverdienen", () => {
+    const ideell = modell(rechnung({ anreiz: "ideell" }), 100);
+    expect(ideell.kosten).toBe(0);
+    expect(ideell.monate).toBeNull();
+    expect(ideell.netto).toBe(ideell.deckungsbeitrag);
+    const klein = modell(rechnung({ kundenwert: "100", marge: "20", beide: true }), 100);
+    expect(klein.kosten).toBe(0);
+    expect(klein.monate).toBeNull();
+  });
+
+  it("nennt die Annahmen als Richtwert von Alperna, nie als Prognose, und braucht für Vereine die Begriffe des Vereins", () => {
+    const text = JSON.stringify(modellBlocks(r, 100));
+    expect(text).toContain("Richtwert von Alperna, keine Statistik");
+    expect(text).toContain("keine Prognose");
+    const verein = JSON.stringify(modellBlocks(r, 100, true));
+    expect(verein).toContain("Mitglied");
+    expect(verein).not.toContain("Kundin");
+    calm(JSON.parse(text).flatMap((b: { text?: string; note?: string; title?: string }) => [b.text, b.note, b.title].filter(Boolean) as string[]).join("\n"));
+  });
+
+  it("prüft die freiwillige Zahl: leer ist in Ordnung, sonst eine ganze Zahl in den Grenzen", () => {
+    expect(kundschaftProblem("")).toBeNull();
+    expect(kundschaftProblem("   ")).toBeNull();
+    expect(kundschaftProblem("120")).toBeNull();
+    expect(kundschaftProblem("1'200")).toBeNull();
+    expect(kundschaftProblem("12,5")).toMatch(/ganze Zahl/);
+    expect(kundschaftProblem("viele")).toMatch(/ganze Zahl/);
+    expect(kundschaftProblem("0")).toMatch(/zwischen 1 und 100'000/);
+    expect(kundschaftProblem("100001")).toMatch(/zwischen 1 und 100'000/);
+    expect(kundschaftOf({ kundschaft: "120" })).toBe(120);
+    expect(kundschaftOf({ kundschaft: "" })).toBeNull();
+    expect(kundschaftOf({ kundschaft: "abc" })).toBeNull();
+  });
+
+  it("das Formular meldet eine ungültige Zahl der Kundschaft, ein leeres Feld nicht", () => {
+    expect(formIssue(form({ kundschaft: "abc" }), KELLER)).toMatchObject({ feld: "kundschaft" });
+    expect(formIssue(form({ kundschaft: "" }), KELLER)).toBeNull();
+  });
+
+  it("der gespeicherte Stand trägt die Zahl, auch aus älteren Ständen ohne das Feld", () => {
+    expect(parseState({ v: 1, phase: "edit", form: { ...FORM, kundschaft: "120" } }).form.kundschaft).toBe("120");
+    const alt: Record<string, unknown> = { ...FORM };
+    delete alt.kundschaft;
+    expect(parseState({ v: 1, phase: "result", form: alt }).form.kundschaft).toBe("");
+    expect(parseState({ v: 1, phase: "result", form: alt }).phase).toBe("result");
+  });
+
+  it("das Dokument enthält die drei Szenarien, auch in der Datei (Markdown)", () => {
+    const md = reportMarkdown(programm(form({ kundschaft: "120" }), KELLER, "du")!);
+    expect(md).toContain("Was es dir bringt");
+    expect(md).toMatch(/Vorsichtig: 2 % empfehlen/);
+    expect(md).toMatch(/Realistisch: 5 % empfehlen/);
+    expect(md).toMatch(/Mutig: 10 % empfehlen/);
+    expect(md).toContain("zurückverdient");
+  });
+});

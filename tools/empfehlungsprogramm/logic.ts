@@ -23,6 +23,8 @@ export const RUNDEN = 5;
 export const LIMITS = {
   kundenwert: { min: 10, max: 1_000_000 },
   marge: { min: 1, max: 90 },
+  /** Kundschaft pro Jahr, freiwillig: ohne Angabe rechnet das Modell mit einem Beispiel. */
+  kundschaft: { min: 1, max: 100_000 },
 } as const;
 export const MAX_NUMMER = 40;
 const MAX_ZAHL = 20;
@@ -46,6 +48,13 @@ export type Begriffe = {
   margeHilfe: string;
   anredeLegende: string;
   anredeHilfe: string;
+  /** Feld «Kundschaft pro Jahr». */
+  kundschaftFeld: string;
+  kundschaftHilfe: string;
+  /** «neue Kundinnen und Kunden» im Modell. */
+  neu: string;
+  /** «Kundin» im Satz «Eine gewonnene … bringt dir». */
+  gewonnen: string;
 };
 
 export function begriffe(verein: boolean): Begriffe {
@@ -59,6 +68,10 @@ export function begriffe(verein: boolean): Begriffe {
         margeHilfe: "Der Anteil des Jahresbeitrags, der nach den direkten Kosten pro Mitglied bleibt, in Prozent.",
         anredeLegende: "Anrede deiner Mitglieder",
         anredeHilfe: "Gilt für Karte und Vorlagen. Umschalten kannst du im Ergebnis.",
+        kundschaftFeld: "Mitglieder insgesamt (freiwillig)",
+        kundschaftHilfe: "Damit rechnen wir drei Szenarien. Ohne Angabe rechnen wir mit 100 Mitgliedern als Beispiel.",
+        neu: "neue Mitglieder",
+        gewonnen: "gewonnenes Mitglied",
       }
     : {
         betrieb: "Betrieb",
@@ -69,6 +82,10 @@ export function begriffe(verein: boolean): Begriffe {
         margeHilfe: "Der Anteil des Kundenwerts, der nach den direkten Kosten bleibt, in Prozent.",
         anredeLegende: "Anrede deiner Kundschaft",
         anredeHilfe: "Gilt für Karte und Vorlagen. Umschalten kannst du im Ergebnis.",
+        kundschaftFeld: "Kundinnen und Kunden pro Jahr (freiwillig)",
+        kundschaftHilfe: "Damit rechnen wir drei Szenarien. Ohne Angabe rechnen wir mit 100 Kundinnen und Kunden als Beispiel.",
+        neu: "neue Kundinnen und Kunden",
+        gewonnen: "gewonnene Kundin",
       };
 }
 
@@ -119,6 +136,7 @@ export const brauchtNummer = (kanal: KanalKey | ""): boolean => kanal !== "" && 
 export type FormFields = {
   kundenwert: string;
   marge: string;
+  kundschaft: string;
   anreiz: AnreizKey | "";
   beide: boolean;
   kanal: KanalKey | "";
@@ -126,9 +144,9 @@ export type FormFields = {
   anrede: Anrede | "";
 };
 
-export const EMPTY_FORM: FormFields = { kundenwert: "", marge: "", anreiz: "", beide: false, kanal: "", nummer: "", anrede: "" };
+export const EMPTY_FORM: FormFields = { kundenwert: "", marge: "", kundschaft: "", anreiz: "", beide: false, kanal: "", nummer: "", anrede: "" };
 
-export type FeldKey = "firma" | "kundenwert" | "marge" | "anreiz" | "kanal" | "nummer" | "anrede";
+export type FeldKey = "firma" | "kundenwert" | "marge" | "kundschaft" | "anreiz" | "kanal" | "nummer" | "anrede";
 export type Issue = { feld: FeldKey; text: string };
 
 /**
@@ -160,6 +178,20 @@ export function margeProblem(raw: string): string | null {
   return null;
 }
 
+/** Die Zahl der Kundschaft ist freiwillig; wenn sie dasteht, muss sie eine ganze Zahl in den Grenzen sein. */
+export function kundschaftProblem(raw: string): string | null {
+  if (!(raw ?? "").trim()) return null;
+  const n = parseNumber(raw);
+  if (n === null || !Number.isInteger(n)) return "Gib die Zahl als ganze Zahl in Ziffern an, zum Beispiel 120.";
+  if (n < LIMITS.kundschaft.min || n > LIMITS.kundschaft.max) return `Die Zahl liegt zwischen ${LIMITS.kundschaft.min} und ${LIMITS.kundschaft.max.toLocaleString("en-US").replace(/,/g, "'")}.`;
+  return null;
+}
+
+/** Die Zahl der Kundschaft; null, wenn leer oder ungültig (dann gilt das Beispiel). */
+export function kundschaftOf(form: Pick<FormFields, "kundschaft">): number | null {
+  return kundschaftProblem(form.kundschaft) === null ? parseNumber(form.kundschaft) : null;
+}
+
 /** Die Nummer ist freiwillig, aber wenn sie bei WhatsApp oder Karte steht, muss sie eine Schweizer Nummer sein. */
 export function nummerProblem(form: Pick<FormFields, "kanal" | "nummer">): string | null {
   if (!brauchtNummer(form.kanal) || !form.nummer.trim()) return null;
@@ -172,6 +204,8 @@ export function feldIssue(form: FormFields, verein = false): Issue | null {
   if (k) return { feld: "kundenwert", text: k };
   const m = margeProblem(form.marge);
   if (m) return { feld: "marge", text: m };
+  const ks = kundschaftProblem(form.kundschaft);
+  if (ks) return { feld: "kundschaft", text: ks };
   if (!isAnreizKey(form.anreiz)) return { feld: "anreiz", text: "Wähle, was die Person als Dank bekommt." };
   if (!isKanalKey(form.kanal)) return { feld: "kanal", text: "Wähle, wie du um Empfehlungen bittest." };
   const n = nummerProblem(form);
@@ -261,6 +295,100 @@ export function rechne(input: Eingabe): Rechnung {
   const gesamt: Range = { min: Math.max(roundTo(rawMin), RUNDEN), max: roundTo(rawMax) };
   const mitte = Math.min(Math.max(roundTo((proSeite.min + proSeite.max) / 2), proSeite.min), proSeite.max);
   return { ...base, wirksam: input.anreiz, gesamt, proSeite, mitte };
+}
+
+// ---- Rechenmodell: was ein Empfehlungsprogramm bringt ---------------------------------------------
+
+/** Dauer einer Kundenbeziehung im Modell, in Jahren. Richtwert von Alperna, keine Statistik. */
+export const JAHRE = 3;
+/** Beispielgrösse, wenn die Person keine Zahl angibt. */
+export const BEISPIEL_KUNDSCHAFT = 100;
+/**
+ * Drei Szenarien: Anteil der Kundschaft, der pro Jahr eine neue Person bringt, die tatsächlich Kundschaft wird. Richtwerte von Alperna zum
+ * Durchspielen, keine Statistik und keine Prognose.
+ */
+export const SZENARIEN = [
+  { key: "vorsichtig", label: "Vorsichtig", prozent: 2 },
+  { key: "realistisch", label: "Realistisch", prozent: 5 },
+  { key: "mutig", label: "Mutig", prozent: 10 },
+] as const;
+
+export type SzenarioKey = (typeof SZENARIEN)[number]["key"];
+export type Szenario = { key: SzenarioKey; label: string; prozent: number; neu: number; anreize: number; deckungsbeitrag: number; ergebnis: number };
+
+export type Modell = {
+  jahre: number;
+  /** Umsatz einer gewonnenen Person in drei Jahren (Kundenwert mal Jahre). */
+  umsatz: number;
+  /** Deckungsbeitrag einer gewonnenen Person in drei Jahren. */
+  deckungsbeitrag: number;
+  /** Was der Anreiz für eine erfolgreiche Empfehlung kostet (alle Seiten zusammen, Mitte der Spanne); 0 ohne Betrag. */
+  kosten: number;
+  /** Deckungsbeitrag abzüglich Anreiz. */
+  netto: number;
+  /** Nach wie vielen Monaten der Anreiz aus dem Deckungsbeitrag zurückverdient ist; null ohne Betrag. */
+  monate: number | null;
+  kundschaft: number;
+  /** true: Die Person hat keine Zahl angegeben, das Modell rechnet mit dem Beispiel. */
+  beispiel: boolean;
+  szenarien: Szenario[];
+};
+
+/** Rechnet in ganzen Franken und lässt Bruchteile von Personen stehen (Erwartungswert, keine Zählung). */
+export function modell(r: Rechnung, kundschaft: number | null): Modell {
+  const beispiel = kundschaft === null;
+  const k = kundschaft ?? BEISPIEL_KUNDSCHAFT;
+  const umsatz = round2(r.kundenwert * JAHRE);
+  const deckungsbeitrag = round2(r.deckungsbeitrag * JAHRE);
+  const kosten = r.mitte !== null && r.wirksam !== "ideell" ? round2(r.mitte * (r.beide ? 2 : 1)) : 0;
+  const netto = round2(deckungsbeitrag - kosten);
+  const monate = kosten > 0 && r.deckungsbeitrag > 0 ? Math.max(1, Math.ceil(kosten / (r.deckungsbeitrag / 12))) : null;
+  const szenarien = SZENARIEN.map((s): Szenario => {
+    const neu = (k * s.prozent) / 100;
+    return {
+      key: s.key,
+      label: s.label,
+      prozent: s.prozent,
+      neu: Math.round(neu * 10) / 10,
+      anreize: Math.round(neu * kosten),
+      deckungsbeitrag: Math.round(neu * deckungsbeitrag),
+      ergebnis: Math.round(neu * netto),
+    };
+  });
+  return { jahre: JAHRE, umsatz, deckungsbeitrag, kosten, netto, monate, kundschaft: k, beispiel, szenarien };
+}
+
+/** «2» oder «0,4»: Personen mit einer Stelle nach dem Komma, wenn sie keine ganze Zahl sind. */
+export function personenText(n: number): string {
+  return Number.isInteger(n) ? String(n) : String(n).replace(".", ",");
+}
+
+/** Das Modell als Bausteine für Bildschirm und Dokument: Kennzahl, drei Szenarien als Balken, Annahmen. */
+export function modellBlocks(r: Rechnung, kundschaft: number | null, verein = false): DocBlock[] {
+  const b = begriffe(verein);
+  const m = modell(r, kundschaft);
+  const note =
+    m.kosten > 0
+      ? `Deckungsbeitrag in ${m.jahre} Jahren ${chf(m.deckungsbeitrag)}, abzüglich ${chf(m.kosten)} Anreiz${m.monate !== null ? `. Der Anreiz ist nach ${m.monate} ${m.monate === 1 ? "Monat" : "Monaten"} zurückverdient.` : "."}`
+      : `Deckungsbeitrag in ${m.jahre} Jahren ${chf(m.deckungsbeitrag)}. Der Anreiz kostet kein Geld, nur etwas Zeit.`;
+  return [
+    { type: "heading", level: 1, text: "Was es dir bringt" },
+    { type: "stat", label: `Eine ${b.gewonnen} bringt dir netto`, value: chf(m.netto), band: `in ${m.jahre} Jahren`, note },
+    {
+      type: "bars",
+      title: `Drei Szenarien für ein Jahr, ${m.beispiel ? `Beispiel mit ${m.kundschaft} ${verein ? "Mitgliedern" : "Kundinnen und Kunden"}` : `bei ${m.kundschaft} ${verein ? "Mitgliedern" : "Kundinnen und Kunden"}`}`,
+      unit: "CHF",
+      items: m.szenarien.map((s) => ({
+        label: `${s.label}: ${s.prozent} % empfehlen`,
+        value: Math.max(0, s.ergebnis),
+        note: `${personenText(s.neu)} ${b.neu}, Anreize ${chf(s.anreize)}, Deckungsbeitrag in ${m.jahre} Jahren ${chf(s.deckungsbeitrag)}`,
+      })),
+    },
+    {
+      type: "paragraph",
+      text: `${RICHTWERT_NOTE}: ${m.jahre} Jahre Beziehung und ${SZENARIEN.map((s) => `${s.prozent} %`).join(", ")} der ${verein ? "Mitglieder" : "Kundschaft"}, die pro Jahr jemanden bringen, sind Annahmen zum Durchspielen, keine Prognose.${m.beispiel ? " Gib deine Zahl an, dann rechnet das Werkzeug mit ihr." : ""}`,
+    },
+  ];
 }
 
 export function spanneText(r: Range): string {
@@ -635,9 +763,11 @@ export function toDocument(o: DocInput): DocumentModel {
   if (r.wirksam === "ideell") blocks.push({ type: "list", items: anerkennung(k.verein) });
   const richtwert = richtwertHinweis(r);
   if (richtwert) blocks.push({ type: "paragraph", text: richtwert });
+  // In der Datei steht das Modell nach dem Ablauf: Der Server kürzt die Ausgabe fürs CRM auf 1'900 Zeichen, Anreiz und Ablauf müssen davor stehen.
   blocks.push(
     { type: "heading", level: 1, text: "Ablauf in fünf Schritten" },
     { type: "list", ordered: true, items: mechanikItems({ kanal, beide: r.beide, verein: k.verein }) },
+    ...modellBlocks(r, kundschaftOf(form), k.verein),
     { type: "heading", level: 1, text: `Textvorlagen (${anredeLabel(o.anrede)})` },
     { type: "paragraph", text: `Ersetze ${PLATZHALTER_HAND} vor dem Versand${r.mitte !== null ? ` und prüfe den Betrag (Mitte der Spanne: ${chf(r.mitte)})` : ""}.` },
   );
@@ -679,6 +809,7 @@ export function eingabeText(form: FormFields, kontext: Pick<Kontext, "verein" | 
     `Website: ${kontext.website.trim() || "keine Angabe"}`,
     `${b.wert}: ${kw !== null ? chf(kw) : form.kundenwert.trim() || "keine Angabe"}`,
     `Marge: ${marge !== null ? pctCH(marge) : form.marge.trim() || "keine Angabe"}`,
+    `Kundschaft pro Jahr: ${form.kundschaft.trim() || "keine Angabe (Beispiel mit 100)"}`,
     `Anreiz: ${isAnreizKey(form.anreiz) ? anreizLabel(form.anreiz, kontext.verein) : "keine Angabe"}`,
     `Beide Seiten belohnen: ${form.beide ? "ja" : "nein"}`,
     `Kanal: ${isKanalKey(form.kanal) ? kanalLabel(form.kanal, kontext.verein) : "keine Angabe"}`,
@@ -707,6 +838,7 @@ export function parseState(raw: unknown): EmpfehlungState {
   const form: FormFields = {
     kundenwert: clip(f.kundenwert, MAX_ZAHL),
     marge: clip(f.marge, MAX_ZAHL),
+    kundschaft: clip(f.kundschaft, MAX_ZAHL),
     anreiz: isAnreizKey(f.anreiz) ? f.anreiz : "",
     beide: f.beide === true,
     kanal: isKanalKey(f.kanal) ? f.kanal : "",

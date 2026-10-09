@@ -5,7 +5,7 @@ export default defineTool({
   name: "Empfehlungsprogramm-Designer",
   category: "strategie",
   audience: "beide",
-  tagline: "Anreiz, Ablauf in fünf Schritten und drei Textvorlagen, damit zufriedene Kundschaft dich weiterempfiehlt.",
+  tagline: "Was dir eine Empfehlung bringt, welcher Anreiz sich lohnt, dazu Ablauf und Vorlagen für zufriedene Kundschaft.",
   keyword: "Empfehlungsprogramm",
   related: ["bewertungs-kit", "whatsapp-link", "sponsoring-dossier"],
   needsServer: false,

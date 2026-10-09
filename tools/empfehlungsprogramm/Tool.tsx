@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CopyButton } from "@/components/tool/CopyButton";
 import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
+import { DocView } from "@/components/tool/DocView";
 import { ResultCard } from "@/components/tool/ResultCard";
 import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { toMarkdown, type DocumentModel } from "@/lib/export/model";
 import { useLocalJson } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
 import {
+  modellBlocks,
   ANREDEN,
   ANREIZ_KEYS,
   EMPTY_STATE,
@@ -43,6 +45,7 @@ import {
   kartenFilename,
   kartenInhalt,
   kontextOf,
+  kundschaftOf,
   mechanik,
   parseNumber,
   parseState,
@@ -71,6 +74,7 @@ const FIELD_ID: Record<FeldKey, string> = {
   firma: "ep-firma",
   kundenwert: "ep-kundenwert",
   marge: "ep-marge",
+  kundschaft: "ep-kundschaft",
   anreiz: "ep-anreiz",
   kanal: "ep-kanal",
   nummer: "ep-nummer",
@@ -206,6 +210,10 @@ function ResultView({
             {richtwert}
           </p>
         )}
+      </section>
+
+      <section aria-label="Was es dir bringt" className="grid gap-3" data-testid="modell">
+        <DocView blocks={modellBlocks(r, kundschaftOf(form), verein).filter((b) => b.type !== "heading")} />
       </section>
 
       <section aria-label="Ablauf in fünf Schritten" className="grid gap-3">
@@ -486,6 +494,24 @@ function EmpfehlungFlow() {
             </p>
             <p id="ep-db" aria-live="polite" className="mono text-sm" data-testid="ep-db">
               {db !== null ? `Deckungsbeitrag: ${chf(db)} pro Jahr.` : "Der Deckungsbeitrag erscheint, sobald beide Zahlen da sind."}
+            </p>
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="ep-kundschaft">{b.kundschaftFeld}</Label>
+            <Input
+              id="ep-kundschaft"
+              type="number"
+              inputMode="numeric"
+              min={LIMITS.kundschaft.min}
+              max={LIMITS.kundschaft.max}
+              step={1}
+              value={form.kundschaft}
+              onChange={(e) => edit({ kundschaft: e.target.value })}
+              aria-describedby="ep-kundschaft-help ep-error"
+            />
+            <p id="ep-kundschaft-help" className="text-sm text-muted-foreground">
+              {b.kundschaftHilfe}
             </p>
           </div>
 

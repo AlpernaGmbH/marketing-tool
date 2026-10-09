@@ -161,6 +161,13 @@ describe("Empfehlungsprogramm im Browser", () => {
     expect(within(card).getByTestId("anreiz-spanne")).toHaveTextContent("CHF 40.- bis CHF 75.- je Seite");
     expect(within(card).getByTestId("anreiz-kasten")).toHaveTextContent("Deckungsbeitrag");
     expect(within(card).getByTestId("anreiz-richtwert")).toHaveTextContent("Richtwert von Alperna, keine Statistik");
+    // Rechenmodell: ohne Zahl der Kundschaft ein Beispiel mit 100, drei Szenarien, Zurückverdient-Zeit
+    const modell = within(card).getByTestId("modell");
+    expect(modell).toHaveTextContent("Eine gewonnene Kundin bringt dir netto");
+    expect(modell).toHaveTextContent("Beispiel mit 100 Kundinnen und Kunden");
+    for (const label of ["Vorsichtig: 2 % empfehlen", "Realistisch: 5 % empfehlen", "Mutig: 10 % empfehlen"]) expect(modell).toHaveTextContent(label);
+    expect(modell).toHaveTextContent("zurückverdient");
+    expect(modell).toHaveTextContent("Richtwert von Alperna, keine Statistik");
     const mechanik = within(card).getByRole("list", { name: "Mechanik" });
     expect(within(mechanik).getAllByRole("listitem")).toHaveLength(5);
     expect(mechanik).toHaveTextContent("Auftrag abgeschlossen.");
@@ -190,6 +197,7 @@ describe("Empfehlungsprogramm im Browser", () => {
       "Website: malerei-keller.ch",
       "Kundenwert pro Jahr: CHF 3'000.-",
       "Marge: 25 %",
+      "Kundschaft pro Jahr: keine Angabe (Beispiel mit 100)",
       "Anreiz: Gutschein",
       "Beide Seiten belohnen: ja",
       "Kanal: Karte beim Auftrag",
