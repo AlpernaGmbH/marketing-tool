@@ -65,7 +65,10 @@ export const SPAMWOERTER_META = spamData.meta;
 
 // ---- Typen -----------------------------------------------------------------------------------------
 
-export type NewsletterInput = { betreff: string; absender: string; text: string };
+/** Was der Besucher eingefügt hat: nur den Text der Mail oder den HTML-Quelltext aus dem Versandprogramm. Ohne Angabe erkennt das Werkzeug es selbst. */
+export type Modus = "text" | "html";
+
+export type NewsletterInput = { betreff: string; absender: string; text: string; modus?: Modus };
 
 export const GROUPS = ["betreff", "absender", "anrede", "ziel", "abmeldung", "adresse", "bilder", "spam", "sprache", "laenge"] as const;
 export type Group = (typeof GROUPS)[number];
@@ -149,9 +152,9 @@ function stripHead(html: string): string {
 }
 
 /** Sichtbarer Text; bei HTML werden Blockgrenzen zu Zeilenumbrüchen, damit Sätze und Zeilen erhalten bleiben. */
-export function toPlainText(input: string): { text: string; html: boolean } {
+export function toPlainText(input: string, modus?: Modus): { text: string; html: boolean } {
   const normalized = input.replace(/\r\n?/g, "\n");
-  if (!isHtml(normalized)) return { text: normalized, html: false };
+  if (modus === "text" || (modus === undefined && !isHtml(normalized))) return { text: normalized, html: false };
   const marked = stripHead(normalized).replace(BLOCK_TAG_RE, (m) => `${SENTINEL}${m}`);
   const text = textOf(marked)
     .split(SENTINEL)
@@ -319,9 +322,9 @@ export function spamHits(text: string): SpamHit[] {
 // ---- Prüfung ---------------------------------------------------------------------------------------
 
 /** Meldet, warum ein Newsletter nicht geprüft werden kann. null: in Ordnung. */
-export function inputProblem(text: string): string | null {
+export function inputProblem(text: string, modus?: Modus): string | null {
   if (text.length > MAX_CHARS) return `Der Text ist zu lang. Es sind höchstens ${MAX_CHARS.toLocaleString("en-US").replace(/,/g, "'")} Zeichen möglich.`;
-  const { text: plain, html } = toPlainText(text);
+  const { text: plain, html } = toPlainText(text, modus);
   if (!hasWords(plain)) {
     return html ? "Aus dem HTML liess sich kein Text lesen. Füge den Newsletter als reinen Text ein." : "Füge zuerst den Text deines Newsletters ein.";
   }
@@ -334,7 +337,7 @@ export function analyzeNewsletter(input: NewsletterInput): NewsletterReport {
   const betreff = flat(input.betreff ?? "");
   const absender = flat(input.absender ?? "");
   const raw = (input.text ?? "").slice(0, MAX_CHARS);
-  const { text: plain, html } = toPlainText(raw);
+  const { text: plain, html } = toPlainText(raw, input.modus);
   const tc: TextReport = analyzeText(plain);
   const words = tc.words;
   const checks: Check[] = [];
@@ -725,8 +728,8 @@ export function reportMarkdown(report: NewsletterReport): string {
 
 // ---- Gespeicherter Stand ---------------------------------------------------------------------------
 
-export type NewsletterState = { v: 1; phase: "edit" | "result"; betreff: string; absender: string; text: string };
-export const EMPTY_STATE: NewsletterState = { v: 1, phase: "edit", betreff: "", absender: "", text: "" };
+export type NewsletterState = { v: 1; phase: "edit" | "result"; betreff: string; absender: string; text: string; modus: Modus };
+export const EMPTY_STATE: NewsletterState = { v: 1, phase: "edit", betreff: "", absender: "", text: "", modus: "text" };
 
 /** Liest den gespeicherten Stand; bei kaputten Daten gilt der leere Stand. */
 export function parseNewsletterState(raw: unknown): NewsletterState {
@@ -734,9 +737,12 @@ export function parseNewsletterState(raw: unknown): NewsletterState {
   const r = raw as Partial<NewsletterState>;
   if (r.v !== 1 || typeof r.text !== "string") return EMPTY_STATE;
   const text = r.text.slice(0, MAX_CHARS);
+  // Ältere Stände kennen die Wahl noch nicht: HTML bleibt HTML, alles andere ist Text.
+  const modus: Modus = r.modus === "html" || r.modus === "text" ? r.modus : isHtml(text) ? "html" : "text";
   return {
     v: 1,
-    phase: r.phase === "result" && inputProblem(text) === null ? "result" : "edit",
+    modus,
+    phase: r.phase === "result" && inputProblem(text, modus) === null ? "result" : "edit",
     betreff: typeof r.betreff === "string" ? r.betreff.slice(0, 300) : "",
     absender: typeof r.absender === "string" ? r.absender.slice(0, 120) : "",
     text,

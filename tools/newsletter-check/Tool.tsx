@@ -22,10 +22,12 @@ import {
   findingsOf,
   groupTitle,
   inputProblem,
+  isHtml,
   parseNewsletterState,
   reportMarkdown,
   toDocument,
   type Check,
+  type Modus,
   type NewsletterReport,
   type NewsletterState,
 } from "./logic";
@@ -38,7 +40,7 @@ function Intro() {
   return (
     <>
       <p>
-        Füge den Text deines Newsletters ein, als reiner Text oder als HTML-Quelltext aus deinem Versandprogramm, dazu Betreff und Absendername. Der
+        Füge den Text deines Newsletters ein, dazu Betreff und Absendername. Reiner Text genügt; mit dem HTML-Quelltext aus deinem Versandprogramm prüfen wir zusätzlich Bilder und Linktexte. Der
         Newsletter-Check prüft Betreff, Absender, Anrede, Ziel und Links, Abmeldemöglichkeit, Postadresse, Bilder (bei HTML), Spam-Signale, Sprache und Länge.
         Du bekommst eine Punktzahl von 0 bis 100 und je Fund einen Hinweis, was du änderst.
       </p>
@@ -186,7 +188,7 @@ function ResultView({
   );
 }
 
-type Draft = Pick<NewsletterState, "betreff" | "absender" | "text">;
+type Draft = Pick<NewsletterState, "betreff" | "absender" | "text" | "modus">;
 
 function NewsletterFlow() {
   const ctx = useToolContext();
@@ -194,7 +196,7 @@ function NewsletterFlow() {
 
   // Der Entwurf lebt in den Feldern, der Speicher folgt mit etwas Verzögerung (nicht bei jedem Tastendruck).
   const [draft, setDraft] = useState<Draft | null>(null);
-  const form: Draft = draft ?? { betreff: saved.betreff, absender: saved.absender, text: saved.text };
+  const form: Draft = draft ?? { betreff: saved.betreff, absender: saved.absender, text: saved.text, modus: saved.modus };
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -209,7 +211,7 @@ function NewsletterFlow() {
   useEffect(() => {
     if (draft === null) return;
     const s = savedRef.current;
-    if (draft.text === s.text && draft.betreff === s.betreff && draft.absender === s.absender) return;
+    if (draft.text === s.text && draft.betreff === s.betreff && draft.absender === s.absender && draft.modus === s.modus) return;
     const timer = setTimeout(() => set({ ...savedRef.current, ...draft }), 500);
     return () => clearTimeout(timer);
   }, [draft, set]);
@@ -222,8 +224,8 @@ function NewsletterFlow() {
   }, [saved.phase]);
 
   const report = useMemo(
-    () => (saved.phase === "result" ? analyzeNewsletter({ betreff: saved.betreff, absender: saved.absender, text: saved.text }) : null),
-    [saved.phase, saved.betreff, saved.absender, saved.text],
+    () => (saved.phase === "result" ? analyzeNewsletter({ betreff: saved.betreff, absender: saved.absender, text: saved.text, modus: saved.modus }) : null),
+    [saved.phase, saved.betreff, saved.absender, saved.text, saved.modus],
   );
 
   const edit = (patch: Partial<Draft>) => {
@@ -232,14 +234,14 @@ function NewsletterFlow() {
   };
 
   async function start() {
-    const problem = inputProblem(form.text);
+    const problem = inputProblem(form.text, form.modus);
     if (problem) return setError(problem);
     setError(null);
     setBusy(true);
     try {
       if (!(await ctx.ensureEmail())) return;
       shouldFocus.current = "heading";
-      const next: NewsletterState = { v: 1, phase: "result", betreff: form.betreff.trim(), absender: form.absender.trim(), text: form.text };
+      const next: NewsletterState = { v: 1, phase: "result", betreff: form.betreff.trim(), absender: form.absender.trim(), text: form.text, modus: form.modus };
       set(next);
       setDraft(null);
       void ctx.sendResult({
@@ -264,7 +266,7 @@ function NewsletterFlow() {
           shouldFocus.current = "area";
           setError(null);
           setDraft(null);
-          set({ v: 1, phase: "edit", betreff: "", absender: "", text: "" });
+          set({ v: 1, phase: "edit", betreff: "", absender: "", text: "", modus: "text" });
         }}
       />
     );
@@ -320,8 +322,33 @@ function NewsletterFlow() {
         </div>
       </div>
 
+      <fieldset className="grid gap-2" disabled={!ready}>
+        <legend className="mb-1 text-sm font-medium">Was fügst du ein?</legend>
+        <div role="radiogroup" aria-label="Was fügst du ein?" className="inline-flex w-fit rounded-full border border-line bg-paper p-1" data-testid="nc-modus">
+          {(
+            [
+              ["text", "Nur den Text"],
+              ["html", "HTML-Quelltext"],
+            ] as [Modus, string][]
+          ).map(([value, label]) => (
+            <label
+              key={value}
+              className={`cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${form.modus === value ? "bg-ink text-page" : "hover:bg-surface"}`}
+            >
+              <input type="radio" name="nc-modus" value={value} checked={form.modus === value} onChange={() => edit({ modus: value })} className="sr-only" />
+              {label}
+            </label>
+          ))}
+        </div>
+        <p id="nc-modus-help" className="max-w-[60ch] text-sm text-muted-foreground">
+          {form.modus === "text"
+            ? "Kopiere den Text der Mail, so wie er im Postfach steht. Bilder und Linktexte lassen sich nur mit HTML prüfen, alles andere läuft auch so."
+            : "Der Quelltext aus deinem Versandprogramm («HTML anzeigen» oder «Exportieren»). Damit prüfen wir auch Bilder, Linktexte und den Abmeldelink."}
+        </p>
+      </fieldset>
+
       <div className="grid gap-2">
-        <Label htmlFor="nc-text">Dein Newsletter</Label>
+        <Label htmlFor="nc-text">{form.modus === "text" ? "Text deines Newsletters" : "HTML deines Newsletters"}</Label>
         <Textarea
           id="nc-text"
           ref={areaRef}
@@ -336,8 +363,17 @@ function NewsletterFlow() {
           disabled={!ready}
         />
         <p id="nc-count" className="mono text-sm text-muted-foreground">
-          {fmt(form.text.length)} von {MAX_LABEL} Zeichen. Reiner Text oder HTML-Quelltext.
+          {fmt(form.text.length)} von {MAX_LABEL} Zeichen.
         </p>
+        {form.modus === "text" && isHtml(form.text) && (
+          <p role="status" className="text-sm" data-testid="nc-html-hint">
+            Das sieht nach HTML aus.{" "}
+            <button type="button" className="underline underline-offset-4" onClick={() => edit({ modus: "html" })}>
+              Als HTML prüfen
+            </button>
+            , dann zählen auch Bilder und Links.
+          </p>
+        )}
       </div>
 
       <p id="nc-error" role="alert" className="min-h-6 text-destructive">
@@ -353,7 +389,7 @@ function NewsletterFlow() {
           variant="outline"
           disabled={!ready}
           onClick={() => {
-            setDraft({ ...SAMPLE });
+            setDraft({ ...SAMPLE, modus: "text" });
             setError(null);
           }}
         >

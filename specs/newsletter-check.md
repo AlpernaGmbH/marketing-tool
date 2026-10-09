@@ -18,6 +18,9 @@ Verwandte Tools: textcheck, text-umschreiber, digitaler-auftritt-check
 | Absendername | text (einzeilig) | nein | gespeicherter Stand | höchstens 120 Zeichen | «So, wie er im Postfach steht. Leer lassen, wenn er im Text steht.» |
 | Dein Newsletter | text (mehrzeilig) | ja | gespeicherter Stand | mindestens ein Wort im sichtbaren Text; höchstens 20'000 Zeichen (`maxLength` und `inputProblem`); HTML ohne lesbaren Text wird mit eigener Meldung abgelehnt | Zähler «n von 20'000 Zeichen. Reiner Text oder HTML-Quelltext.»; Knopf «Beispiel einfügen» (Malerei Keller, Gossau) |
 
+## Modus (09.10.2026)
+Über dem Textfeld wählt der Besucher «Nur den Text» (Standard) oder «HTML-Quelltext» (`modus` im Stand `mt:newsletter-check`, Typ `Modus`). «text» liest nie HTML (Bilder und Linktexte nicht prüfbar, Linkziele nur als Adressen im Text), «html» liest den Eingabetext immer als HTML. Ohne Angabe (`modus` fehlt, ältere Stände, Aufrufe der Logik) erkennt `isHtml` es selbst. Sieht der Text nach HTML aus, während «Nur den Text» gewählt ist, bietet das Werkzeug «Als HTML prüfen» an.
+
 ## Logik
 Alle Regeln in `tools/newsletter-check/logic.ts`. Jeder Prüfpunkt hat ein Gewicht `w` und einen Anteil `pass` zwischen 0 und 1; erfüllt heisst `pass = 1`. Punktzahl = runden(100 × Σ(w × pass) / Σ w). Prüfpunkte, die nicht anwendbar sind (Bilder ohne HTML), fehlen in Zähler und Nenner. Dadurch ist die Punktzahl monoton: ein zusätzlicher Fund senkt sie oder hält sie (Test).
 

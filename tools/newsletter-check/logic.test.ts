@@ -303,7 +303,7 @@ describe("newsletter-check: Eingabe, Stand, Bericht", () => {
     expect(parseNewsletterState("x")).toEqual(EMPTY_STATE);
     expect(parseNewsletterState({ v: 2, text: "x" })).toEqual(EMPTY_STATE);
     expect(parseNewsletterState({ v: 1, text: 5 })).toEqual(EMPTY_STATE);
-    expect(parseNewsletterState({ v: 1, phase: "result", betreff: 7, absender: null, text: "Ein Satz." })).toEqual({ v: 1, phase: "result", betreff: "", absender: "", text: "Ein Satz." });
+    expect(parseNewsletterState({ v: 1, phase: "result", betreff: 7, absender: null, text: "Ein Satz." })).toEqual({ v: 1, phase: "result", betreff: "", absender: "", text: "Ein Satz.", modus: "text" });
     expect(parseNewsletterState({ v: 1, phase: "result", text: "   " }).phase).toBe("edit");
     expect(parseNewsletterState({ v: 1, phase: "edit", text: "wort ".repeat(10000) }).text.length).toBe(MAX_CHARS);
   });
@@ -339,5 +339,49 @@ describe("newsletter-check: Eingabe, Stand, Bericht", () => {
     expect(checkOf(SAMPLE, "spam").detail).toMatch(/^5 Muster/);
     expect(checkOf(SAMPLE, "sprache-floskeln").detail).toMatch(/^2 Floskeln/);
     expect(checkOf(SAMPLE, "laenge-saetze").examples[0]).toMatch(/^41 Wörter/);
+  });
+});
+
+describe("newsletter-check: Nur Text oder HTML-Quelltext", () => {
+  const mitTags = "<p>Hallo Frau Keller</p><p>Mehr: <a href=\"https://malerei-keller.ch/aktion\">hier</a></p><img src=\"a.png\" alt=\"\">";
+
+  it("ohne Angabe erkennt das Werkzeug HTML selbst, wie bisher", () => {
+    expect(analyzeNewsletter({ betreff: "", absender: "", text: mitTags }).html).toBe(true);
+    expect(analyzeNewsletter({ betreff: "", absender: "", text: "Ein Satz ohne Tags." }).html).toBe(false);
+  });
+
+  it("«text» liest nie HTML: Bilder sind nicht prüfbar, die Tags bleiben im Text", () => {
+    const r = analyzeNewsletter({ betreff: "", absender: "", text: mitTags, modus: "text" });
+    expect(r.html).toBe(false);
+    expect(r.images).toBeNull();
+    expect(r.plain).toContain("<p>");
+  });
+
+  it("«html» liest Quelltext als HTML und zählt die Bilder", () => {
+    const r = analyzeNewsletter({ betreff: "", absender: "", text: mitTags, modus: "html" });
+    expect(r.html).toBe(true);
+    expect(r.images).toBe(1);
+    expect(r.plain).not.toContain("<p>");
+  });
+
+  it("«html» auf reinem Text: kein Absturz, Text bleibt lesbar", () => {
+    const r = analyzeNewsletter({ betreff: "", absender: "", text: "Ein Satz ohne Tags.", modus: "html" });
+    expect(r.html).toBe(true);
+    expect(r.plain).toContain("Ein Satz ohne Tags.");
+    expect(r.score).toBeGreaterThanOrEqual(0);
+    expect(r.score).toBeLessThanOrEqual(100);
+  });
+
+  it("die Eingabeprüfung folgt der Wahl", () => {
+    expect(inputProblem("<p> </p>", "html")).toMatch(/kein Text/);
+    expect(inputProblem("<p> </p>", "text")).toBeNull();
+    expect(inputProblem("   ", "text")).toMatch(/Füge zuerst/);
+  });
+
+  it("ältere Stände ohne Wahl: HTML bleibt HTML, alles andere ist Text; die Wahl wird gelesen", () => {
+    expect(parseNewsletterState({ v: 1, phase: "edit", text: mitTags }).modus).toBe("html");
+    expect(parseNewsletterState({ v: 1, phase: "edit", text: "Ein Satz." }).modus).toBe("text");
+    expect(parseNewsletterState({ v: 1, phase: "edit", text: mitTags, modus: "text" }).modus).toBe("text");
+    expect(parseNewsletterState({ v: 1, phase: "edit", text: "x", modus: "kaputt" }).modus).toBe("text");
   });
 });
