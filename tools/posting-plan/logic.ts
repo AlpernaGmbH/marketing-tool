@@ -464,7 +464,10 @@ export function rasterTage(plan: Plan): Tag[] {
   return TAGE.filter((t) => used.has(t));
 }
 
-/** Wochenansicht: vier Zeilen (Wochen), Spalten sind die Wochentage; in jeder Zelle stehen Kanal und Format, am Produktionstag zuerst «Produktion». */
+/**
+ * Wochenansicht (Kalenderansicht des Plans): vier Zeilen (Wochen), Spalten sind die Wochentage; in jeder Zelle steht je Beitrag eine Zeile
+ * «Kanal, Format: Säule», am Produktionstag zuerst «Produktion». So sieht man auf einen Blick, was wann erscheint und worüber.
+ */
 export function wochenraster(plan: Plan): Extract<DocBlock, { type: "grid" }> {
   const tage = rasterTage(plan);
   return {
@@ -474,7 +477,7 @@ export function wochenraster(plan: Plan): Extract<DocBlock, { type: "grid" }> {
     rows: plan.wochen.map((w) => ({
       label: `Woche ${w.nummer}`,
       cells: tage.map((t) =>
-        [t === plan.input.produktionstag ? "Produktion" : "", ...w.beitraege.filter((b) => b.tag === t).map((b) => `${kanalKurz(b.kanal)}, ${formatLabel(b.format)}`)].filter(Boolean).join("\n"),
+        [t === plan.input.produktionstag ? "Produktion" : "", ...w.beitraege.filter((b) => b.tag === t).map((b) => `${kanalKurz(b.kanal)}, ${formatLabel(b.format)}: ${b.saeule}`)].filter(Boolean).join("\n"),
       ),
     })),
   };

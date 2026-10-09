@@ -69,3 +69,6 @@ Mindestens 26 Fälle in logic.test.ts (58 sind es): Formate je Fähigkeit, Aufwa
 
 ## Nicht Teil dieses Tools
 Kein Server, keine KI, keine Texte zu den Beiträgen (das macht caption-baukasten), keine Anlässe und Feiertage (das macht feiertagskalender), keine Messung von Reichweite oder Wirkung, keine Zahlen zur idealen Posting-Häufigkeit oder zu den besten Uhrzeiten. Kein Schreiben ins Profil. Keine Kalenderdatei (nur CSV).
+
+## Kalenderansicht (Stand 09.10.2026, Charge C5)
+Das Wochenraster aus dem Pilot (P1c) ist die Kalenderansicht des Plans: vier Zeilen (Wochen), Spalten sind die Wochentage, an denen etwas passiert oder produziert wird. Neu in jeder Zelle: je Beitrag eine Zeile «Kanal, Format: Säule» statt nur «Kanal, Format», damit man auf einen Blick sieht, wann was erscheint und worüber. Am Produktionstag steht zuerst «Produktion». Das Raster steht am Bildschirm, in PDF, Word und Markdown (als Tabelle). Eine Ansicht mit echten Daten gibt es nicht: Der Plan kennt kein Startdatum, die Wochen sind «Woche 1 bis 4».

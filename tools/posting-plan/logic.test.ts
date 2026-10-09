@@ -27,7 +27,9 @@ import {
   formFromInput,
   hoursText,
   inputFromForm,
+  formatLabel,
   kanaeleVomProfil,
+  kanalKurz,
   kanalMeldung,
   kontrolle,
   ohneFormatHinweis,
@@ -674,6 +676,10 @@ describe("posting-plan: Wochenansicht und Hinweis auf Alperna", () => {
     expect(total).toBe(plan.wochen.reduce((n, w) => n + w.beitraege.length, 0));
     const pi = tage.indexOf(plan.input.produktionstag);
     for (const r of raster.rows) expect(r.cells[pi].split("\n")[0]).toBe("Produktion");
+    // Jede Zeile nennt Kanal, Format und Säule: «Instagram, Karussell: Fassaden»
+    const beispiel = plan.wochen[0].beitraege[0];
+    const zeile = `${kanalKurz(beispiel.kanal)}, ${formatLabel(beispiel.format)}: ${beispiel.saeule}`;
+    expect(raster.rows[0].cells.flatMap((c) => c.split("\n"))).toContain(zeile);
   });
 
   it("legt das Raster ins Dokument und macht daraus in der Datei eine Tabelle", () => {
