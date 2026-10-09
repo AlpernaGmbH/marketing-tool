@@ -286,7 +286,7 @@ export type WerkzeugLink = { slug: string; name: string };
 
 const L = {
   bewertungsKit: { slug: "bewertungs-kit", name: "Bewertungs-Kit für Google" },
-  gbpFeiertage: { slug: "gbp-feiertage", name: "Feiertagsplaner für das Google-Unternehmensprofil" },
+  gbpFeiertage: { slug: "gbp-feiertage", name: "Öffnungszeiten an Feiertagen" },
   whatsappLink: { slug: "whatsapp-link", name: "WhatsApp-Link mit QR" },
   qrSet: { slug: "qr-set", name: "QR-Set für Flyer und Aufkleber" },
   contentSaeulen: { slug: "inhalte-saeulen", name: "Themensäulen" },

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CopyButton } from "@/components/tool/CopyButton";
+import { DocView } from "@/components/tool/DocView";
 import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { ResultCard } from "@/components/tool/ResultCard";
 import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
@@ -48,6 +49,7 @@ import {
   ruleFor,
   ruleProblem,
   sourcesFor,
+  weekGrid,
   yearOptions,
   type DayHours,
   type GfState,
@@ -408,6 +410,10 @@ function ResultView({
           {noListMessage(kanton)} {NATIONAL_NOTE}
         </p>
       )}
+
+      <div data-testid="woche">
+        <DocView blocks={[weekGrid(state.zeiten)]} />
+      </div>
 
       {hasEntries ? (
         <ol aria-label="Sonderöffnungszeiten" className="mono grid gap-2 rounded-xl border border-line p-4 text-sm md:text-base" data-testid="sonderzeiten">

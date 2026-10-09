@@ -1,9 +1,9 @@
 {
   "meta": {
-    "source": "Kantonale Ruhetags- und Feiertagsregelungen der 18 Kantone unter «quellen» (Gesetzessammlungen und Seiten der Kantone, am 05.10.2026 geöffnet). Für Neujahr, Auffahrt und Weihnachtstag in allen Kantonen: Bundesamt für Justiz, «Gesetzliche Feiertage und Tage, die in der Schweiz wie gesetzliche Feiertage behandelt werden», Stand 1. Januar 2011 (Vorbemerkung 2). Für den Bundesfeiertag: SECO, «Freizeit und Feiertage».",
+    "source": "Kantonale Ruhetags- und Feiertagsregelungen der 26 Kantone unter «quellen» (Gesetzessammlungen und Seiten der Kantone, am 05.10.2026 und am 09.10.2026 geöffnet). Für Neujahr, Auffahrt und Weihnachtstag in allen Kantonen: Bundesamt für Justiz, «Gesetzliche Feiertage und Tage, die in der Schweiz wie gesetzliche Feiertage behandelt werden», Stand 1. Januar 2011 (Vorbemerkung 2). Für den Bundesfeiertag: SECO, «Freizeit und Feiertage».",
     "url": "https://www.bj.admin.ch/dam/de/sd-web/MW4dthCLc4Nv/kant-feiertage.pdf",
-    "asOf": "2026-10-05",
-    "note": "Belegt sind AG, AI, AR, BE, BL, BS, GL, GR, LU, NW, OW, SG, SH, SZ, TG, UR, ZG und ZH, je mit der Quelle unter «quellen». Für FR, GE, JU, NE, SO, TI, VD und VS fehlt eine geöffnete Quelle: Das Werkzeug zeigt dort nur Neujahr, Auffahrt, den 1. August und Weihnachten und sagt, dass die Liste nicht geprüft ist. «gesetzlich» heisst: Die Quelle nennt den Tag als Feiertag oder öffentlichen Ruhetag des Kantons. «ortsueblich» heisst: Der Tag gilt nur in Teilen des Kantons (Bezirk, Gemeinde, innerer Landesteil). Bewegliche Tage stehen als Abstand zum Ostersonntag (Karfreitag -2, Ostermontag +1, Auffahrt +39, Pfingstmontag +50, Fronleichnam +60); das Datum berechnet logic.ts mit der Gauss-Osterformel. Feste Daten kirchlicher Feiertage nennen NW und OW in ihren Gesetzen (Josefstag 19. März, Maria Himmelfahrt 15. August, Bruderklausenfest 25. September, Allerheiligen 1. November, Maria Empfängnis 8. Dezember); für die übrigen Kantone stammen die Daten (Berchtoldstag 2. Januar, Dreikönigstag 6. Januar, Josefstag 19. März, Maria Himmelfahrt 15. August, Mauritiustag 22. September, Allerheiligen 1. November, Maria Empfängnis 8. Dezember) aus dem Verzeichnis des Bundesamts für Justiz. Der Tag der Näfelser Fahrt (GL) steht nur für 2026 und 2027 auf gl.ch. Das Verzeichnis des Bundesamts für Justiz (Stand 1. Januar 2011) dient der Berechnung von Fristen und ist laut den Hinweisen des Bundesamts (Stand 17.12.2012) keine allgemeine Liste der Ruhe- oder Feiertage der Kantone; dafür gelten die Regelungen der Kantone. Es dient hier nur für Neujahr, Auffahrt und Weihnachtstag in den nicht belegten Kantonen und als Quelle fester Daten. Nicht aufgenommen, weil nicht im Ruhetagsrecht des Kantons genannt oder ohne Datum in der Quelle: Sechseläuten, Knabenschiessen und Fasnachtsmontag (ZH, lokal), Berchtoldstag in ZH, SH, SG, GL, AI, LU, OW, NW und ZG, Ostermontag, Pfingstmontag und Stephanstag in NW, OW und ZG sowie Gemeindefeiertage und Patroziniumsfeste."
+    "asOf": "2026-10-09",
+    "note": "Belegt sind alle 26 Kantone, je mit der Quelle unter «quellen» (AG, AI, AR, BE, BL, BS, GL, GR, LU, NW, OW, SG, SH, SZ, TG, UR, ZG und ZH am 05.10.2026, FR, GE, JU, NE, SO, TI, VD und VS am 09.10.2026). «gesetzlich» heisst: Die Quelle nennt den Tag als Feiertag oder öffentlichen Ruhetag des Kantons. «ortsueblich» heisst: Der Tag gilt nur in Teilen des Kantons (Bezirk, Gemeinde, innerer Landesteil). Bewegliche Tage stehen als Abstand zum Ostersonntag (Karfreitag -2, Ostermontag +1, Auffahrt +39, Pfingstmontag +50, Fronleichnam +60); das Datum berechnet logic.ts mit der Gauss-Osterformel. Feste Daten kirchlicher Feiertage nennen NW und OW in ihren Gesetzen (Josefstag 19. März, Maria Himmelfahrt 15. August, Bruderklausenfest 25. September, Allerheiligen 1. November, Maria Empfängnis 8. Dezember); für die übrigen Kantone stammen die Daten (Berchtoldstag 2. Januar, Dreikönigstag 6. Januar, Josefstag 19. März, Maria Himmelfahrt 15. August, Mauritiustag 22. September, Allerheiligen 1. November, Maria Empfängnis 8. Dezember) aus dem Verzeichnis des Bundesamts für Justiz. Der Tag der Näfelser Fahrt (GL) steht nur für 2026 und 2027 auf gl.ch. Das Verzeichnis des Bundesamts für Justiz (Stand 1. Januar 2011) dient der Berechnung von Fristen und ist laut den Hinweisen des Bundesamts (Stand 17.12.2012) keine allgemeine Liste der Ruhe- oder Feiertage der Kantone; dafür gelten die Regelungen der Kantone. Es dient hier nur für Neujahr, Auffahrt und Weihnachtstag in den nicht belegten Kantonen und als Quelle fester Daten. Nicht aufgenommen, weil nicht im Ruhetagsrecht des Kantons genannt oder ohne Datum in der Quelle: Sechseläuten, Knabenschiessen und Fasnachtsmontag (ZH, lokal), Berchtoldstag in ZH, SH, SG, GL, AI, LU, OW, NW und ZG, Ostermontag, Pfingstmontag und Stephanstag in NW, OW und ZG sowie Gemeindefeiertage und Patroziniumsfeste. Besonderheiten: FR führt beide Listen (Gemeinden mit katholischer und mit reformierter Mehrheit), SO nennt den Bezirk Bucheggberg und den 1. Mai ab 12 Uhr. Der Genfer Bettag (GE) und der Bettagsmontag (VD) stehen als feste Daten für 2026 und 2027 (Genfer Bettag: Donnerstag nach dem ersten Sonntag im September; Bettagsmontag: Montag nach dem dritten Sonntag im September, so in den Seiten der Kantone). Nicht aufgenommen: Ostermontag und Pfingstmontag in NE (nur Ladenschluss), Berchtoldstag und Stephanstag in NE (nur wenn Neujahr oder Weihnachten auf einen Sonntag fällt), Ostern und Pfingsten (Sonntage), der 26. Dezember in VD (nur Verwaltung)."
   },
   "jahre": [
     2026,
@@ -57,6 +57,30 @@
       "url": "https://www.bs.ch/themen/arbeit-und-steuern/feiertage-im-kanton-basel-stadt",
       "stand": "Seite geändert am 28.07.2026"
     },
+    "FR": {
+      "titel": "Gesetz über die Beschäftigung und den Arbeitsmarkt (BAMG, SGF 866.1.1), Art. 49: Feiertage",
+      "url": "https://bdlf.fr.ch/app/de/texts_of_law/866.1.1",
+      "stand": "aktuelle Fassung seit 01.01.2020, am 09.10.2026 geöffnet",
+      "weitere": [
+        {
+          "titel": "Kanton Freiburg, Amt für den Arbeitsmarkt: Feiertage (Listen der katholischen und reformierten Gemeinden, Daten 2026 und 2027)",
+          "url": "https://www.fr.ch/de/arbeit-und-unternehmen/arbeitnehmer/feiertage",
+          "stand": "Seite vom 06.07.2026 (letzte Änderung), am 09.10.2026 geöffnet"
+        }
+      ]
+    },
+    "GE": {
+      "titel": "Loi sur les jours fériés (LJF, rs J 1 45), Art. 1",
+      "url": "https://silgeneve.ch/legis/data/rsg_j1_45.htm",
+      "stand": "Fassung mit letzter Änderung vom 01.01.1991, am 09.10.2026 geöffnet",
+      "weitere": [
+        {
+          "titel": "République et canton de Genève: Jours fériés officiels (Daten 2026 bis 2029)",
+          "url": "https://www.ge.ch/vacances-scolaires-jours-feries/jours-feries-officiels",
+          "stand": "letzte Aktualisierung 29.04.2026, am 09.10.2026 geöffnet"
+        }
+      ]
+    },
     "GL": {
       "titel": "Gesetz über die öffentlichen Ruhetage (GS IX B/21/1), allgemeine Feiertage",
       "url": "https://gesetze.gl.ch/app/de/texts_of_law/IX%20B%2F21%2F1",
@@ -74,10 +98,34 @@
       "url": "https://www.gr-lex.gr.ch/app/de/texts_of_law/520.100",
       "stand": "Stand 01.01.2016 laut Seite"
     },
+    "JU": {
+      "titel": "Loi sur les jours fériés officiels et le repos dominical (RSJU 555.1), Art. 3 und 4",
+      "url": "https://rsju.jura.ch/fr/viewdocument.html?idn=20105&id=38948",
+      "stand": "Fassung seit 01.01.2023, am 09.10.2026 geöffnet",
+      "weitere": [
+        {
+          "titel": "République et Canton du Jura, Service de l'économie et de l'emploi: Jours fériés officiels (Kalender 2026 und 2027)",
+          "url": "https://www.jura.ch/fr/Autorites/Administration/DES/Economie-et-Emploi-SEE/Documentations-formulaires-et-bases-legales/Documentations-formulaires-et-bases-legales/Jours-feries-officiels-dans-le-Canton-du-Jura.html",
+          "stand": "Kalender 2026 und 2027, am 09.10.2026 geöffnet"
+        }
+      ]
+    },
     "LU": {
       "titel": "Gesetz über die Ruhetage und die Öffnungs- und Schliessungszeiten der Verkaufsgeschäfte (SRL 855), § 1a",
       "url": "https://srl.lu.ch/app/de/texts_of_law/855",
       "stand": "Stand 27.09.2026 laut Seite"
+    },
+    "NE": {
+      "titel": "Loi sur le dimanche et les jours fériés (RSN 941.02), Art. 3",
+      "url": "https://rsn.ne.ch/DATA/program/books/rsne/pdf/94102.pdf",
+      "stand": "Stand 1. Januar 2010 (Art. 3 in dieser Fassung), am 09.10.2026 geöffnet",
+      "weitere": [
+        {
+          "titel": "République et canton de Neuchâtel: Jours fériés officiels (Tabellen 2026 und 2027, nennt auch den 1. August)",
+          "url": "https://www.ne.ch/themes/economie-et-emploi/jours-feries-officiels",
+          "stand": "Seite zuletzt geändert 16.02.2026, am 09.10.2026 geöffnet"
+        }
+      ]
     },
     "NW": {
       "titel": "Gesetz über die öffentlichen Ruhetage (NG 921.1), Art. 2",
@@ -99,6 +147,23 @@
       "url": "https://rechtsbuch.sh.ch/app/de/texts_of_law/900.200",
       "stand": "Stand 01.01.2007 laut Seite"
     },
+    "SO": {
+      "titel": "Gesetz über die öffentlichen Ruhetage (Ruhetagsgesetz, BGS 512.41), § 2",
+      "url": "https://bgs.so.ch/app/de/texts_of_law/512.41",
+      "stand": "in Kraft seit 01.09.2014, am 09.10.2026 geöffnet",
+      "weitere": [
+        {
+          "titel": "Kanton Solothurn: Gesetzliche Feiertage (Tabelle 2026, Daten der kirchlichen Feiertage)",
+          "url": "https://so.ch/allgemeine-informationen/gesetzliche-feiertage/",
+          "stand": "Seite ohne Datum, am 09.10.2026 geöffnet"
+        },
+        {
+          "titel": "Kanton Solothurn, Arbeitsinspektorat: Feiertage im Kanton Solothurn (Bezirk Bucheggberg und übriger Kanton)",
+          "url": "https://so.ch/verwaltung/volkswirtschaftsdepartement/amt-fuer-wirtschaft-und-arbeit/arbeitsbedingungen/arbeitsinspektorat/feiertage/",
+          "stand": "Seite ohne Datum, am 09.10.2026 geöffnet"
+        }
+      ]
+    },
     "SZ": {
       "titel": "Kanton Schwyz, Feiertagsregelung (Merkblatt)",
       "url": "https://www.sz.ch/public/upload/assets/36693/Feiertagsregelung_Kanton_Schwyz.pdf?fp=3",
@@ -109,10 +174,32 @@
       "url": "https://www.rechtsbuch.tg.ch/app/de/texts_of_law/822.9/versions/2949",
       "stand": "Stand 01.01.2026 laut Seite"
     },
+    "TI": {
+      "titel": "Legge concernente i giorni festivi ufficiali nel Cantone Ticino (RL 843.200), Art. 1",
+      "url": "https://www3.ti.ch/CAN/RLeggi/public/index.php/raccolta-leggi/legge/num/568",
+      "stand": "in Kraft seit 09.02.2010, am 09.10.2026 geöffnet",
+      "weitere": [
+        {
+          "titel": "Repubblica e Cantone Ticino, Ufficio dell'ispettorato del lavoro: Giorni festivi in Ticino (Daten 2026 und 2027)",
+          "url": "https://www4.ti.ch/dfe/de/uil/legge-lavoro/giorni-festivi-in-ticino-1",
+          "stand": "Seite ohne Datum, am 09.10.2026 geöffnet"
+        }
+      ]
+    },
     "UR": {
       "titel": "Gesetz über den Ladenschluss und die Sonntagsruhe (RB 70.1421)",
       "url": "https://rechtsbuch.ur.ch/app/de/texts_of_law/70.1421",
       "stand": "Gesetz in Kraft seit 01.01.2003 laut Seite"
+    },
+    "VD": {
+      "titel": "Loi sur l'emploi (LEmp, BLV 822.11), Art. 47 Abs. 1: Jours fériés",
+      "url": "https://prestations.vd.ch/pub/blv-publication/actes/consolide/822.11?id=c3ef83f5-e736-490d-90a7-1753b31d5ef3",
+      "stand": "konsolidierte Fassung, gültig seit 01.04.2012, am 09.10.2026 geöffnet"
+    },
+    "VS": {
+      "titel": "Verordnung zum kantonalen Arbeitsgesetz (VEkArG, SGS 822.100), Art. 7 Abs. 1: Feiertage",
+      "url": "https://lex.vs.ch/app/de/texts_of_law/822.100",
+      "stand": "in Kraft seit 01.10.2016, am 09.10.2026 geöffnet"
     },
     "ZG": {
       "titel": "Ruhetags- und Ladenöffnungsgesetz (BGS 942.31), § 1",
@@ -128,13 +215,21 @@
   "hinweise": {
     "AG": "Im Aargau hängen die Feiertage vom Bezirk und teilweise von der Gemeinde ab. Für den ganzen Kanton gelten Neujahr, Karfreitag, Auffahrt, der 1. August und Weihnachten. Die übrigen Tage sind als «ortsüblich» aufgeführt, mit den Bezirken, in denen sie gelten. Sie stehen zuerst auf «nicht eintragen».",
     "AI": "Der Mauritiustag gilt nur im inneren Landesteil. Maria Himmelfahrt, Allerheiligen und Maria Empfängnis führt das Ruhetagsgesetz als lokale Feiertage.",
+    "FR": "Freiburg kennt zwei Listen. In den Gemeinden mit mehrheitlich katholischer Bevölkerung gelten Fronleichnam, Maria Himmelfahrt, Allerheiligen und Maria Empfängnis, in den reformierten Gemeinden stattdessen Berchtoldstag, Ostermontag, Pfingstmontag und Stephanstag. Der Arbeitsort bestimmt den Anspruch. Die reformierten Tage stehen zuerst auf «nicht eintragen»; wähle sie, wenn dein Betrieb in einer reformierten Gemeinde liegt.",
+    "GE": "Fällt ein Feiertag auf einen Sonntag, ist der Folgetag für Betriebe ausserhalb des Arbeitsgesetzes ebenfalls Feiertag (2027 betrifft das den 1. August). Der Genfer Bettag steht für 2026 und 2027 als Datum im Datensatz.",
     "GR": "Die Gemeinden können weitere konfessionelle Feiertage als lokale Ruhetage bezeichnen. Frag bei deiner Gemeinde nach.",
+    "JU": "Ostern und Pfingsten stehen nicht in der Liste, weil sie ohnehin Sonntage sind. Der 23. Juni heisst im Gesetz nur «le 23 juin».",
     "LU": "Einzelne Gemeinden erklären zusätzlich den Josefstag oder das Patroziniumsfest ihrer Kirchgemeinde zum öffentlichen Ruhetag. Frag bei deiner Gemeinde nach.",
+    "NE": "Berchtoldstag und Stephanstag gelten nur, wenn Neujahr oder Weihnachten auf einen Sonntag fällt; das ist 2026 und 2027 nicht der Fall. Ostermontag, Pfingstmontag und der Bettagsmontag sind laut Ladenöffnungsgesetz Ladenschlusstage für Läden, aber keine Feiertage. Der 1. März 2026 fällt auf einen Sonntag.",
     "NW": "Die politischen Gemeinden können weitere Feiertage in einem Reglement bezeichnen. Frag bei deiner Gemeinde nach.",
     "OW": "Die Einwohnergemeinden können einen Lokalfeiertag festlegen. Frag bei deiner Gemeinde nach.",
     "SH": "Das Ruhetagsgesetz nennt den Berchtoldstag (2. Januar) nicht. Ob du an diesem Tag schliesst, entscheidest du.",
+    "SO": "Der 1. Mai gilt erst ab 12 Uhr. Fronleichnam, Maria Himmelfahrt und Allerheiligen gelten nicht im Bezirk Bucheggberg. Die Gemeinden können weitere Ruhetage festlegen. Frag bei deiner Gemeinde nach.",
     "SZ": "Einzelne Gemeinden und der Bezirk Einsiedeln kennen weitere Feiertage (zum Beispiel Antoniustag in Rothenthurm oder Meinradstag in Einsiedeln). Frag bei deiner Gemeinde nach.",
+    "TI": "Das Gesetz nennt 15 Tage. Karfreitag gehört nicht dazu.",
     "UR": "Die Gemeinden können weitere Feiertage für ihr Gebiet bezeichnen. Frag bei deiner Gemeinde nach.",
+    "VD": "Das Gesetz nennt neun Tage. Der 26. Dezember steht nicht in der Liste; er ist nur für die kantonale Verwaltung ein freier Tag.",
+    "VS": "Die Liste nennt acht Tage. Karfreitag, Ostermontag und Pfingstmontag stehen nicht darin.",
     "ZH": "Lokale Tage wie Sechseläuten, Fasnachtsmontag, Knabenschiessen oder Berchtoldstag sind laut Kanton keine gesetzlichen Feiertage. Ob du an diesen Tagen schliesst, entscheidest du."
   },
   "feiertage": [
@@ -172,7 +267,9 @@
       "datum": "fix:01-02",
       "kantone": [
         "BE",
-        "TG"
+        "JU",
+        "TG",
+        "VD"
       ],
       "art": "gesetzlich"
     },
@@ -192,6 +289,7 @@
       "datum": "fix:01-06",
       "kantone": [
         "SZ",
+        "TI",
         "UR"
       ],
       "art": "gesetzlich"
@@ -203,7 +301,9 @@
       "kantone": [
         "NW",
         "SZ",
-        "UR"
+        "TI",
+        "UR",
+        "VS"
       ],
       "art": "gesetzlich"
     },
@@ -218,16 +318,22 @@
         "BE",
         "BL",
         "BS",
+        "FR",
+        "GE",
         "GL",
         "GR",
+        "JU",
         "LU",
+        "NE",
         "NW",
         "OW",
         "SG",
         "SH",
+        "SO",
         "SZ",
         "TG",
         "UR",
+        "VD",
         "ZG",
         "ZH"
       ],
@@ -261,13 +367,17 @@
         "BE",
         "BL",
         "BS",
+        "GE",
         "GL",
         "GR",
+        "JU",
         "SG",
         "SH",
         "SZ",
         "TG",
+        "TI",
         "UR",
+        "VD",
         "ZH"
       ],
       "art": "gesetzlich"
@@ -289,8 +399,11 @@
       "kantone": [
         "BL",
         "BS",
+        "JU",
+        "NE",
         "SH",
         "TG",
+        "TI",
         "ZH"
       ],
       "art": "gesetzlich"
@@ -305,13 +418,17 @@
         "BE",
         "BL",
         "BS",
+        "GE",
         "GL",
         "GR",
+        "JU",
         "SG",
         "SH",
         "SZ",
         "TG",
+        "TI",
         "UR",
+        "VD",
         "ZH"
       ],
       "art": "gesetzlich"
@@ -332,11 +449,14 @@
       "datum": "ostern:+60",
       "kantone": [
         "AI",
+        "JU",
         "LU",
         "NW",
         "OW",
         "SZ",
+        "TI",
         "UR",
+        "VS",
         "ZG"
       ],
       "art": "gesetzlich"
@@ -357,11 +477,14 @@
       "datum": "fix:08-15",
       "kantone": [
         "AI",
+        "JU",
         "LU",
         "NW",
         "OW",
         "SZ",
+        "TI",
         "UR",
+        "VS",
         "ZG"
       ],
       "art": "gesetzlich"
@@ -402,12 +525,15 @@
       "kantone": [
         "AI",
         "GL",
+        "JU",
         "LU",
         "NW",
         "OW",
         "SG",
         "SZ",
+        "TI",
         "UR",
+        "VS",
         "ZG"
       ],
       "art": "gesetzlich"
@@ -432,7 +558,9 @@
         "NW",
         "OW",
         "SZ",
+        "TI",
         "UR",
+        "VS",
         "ZG"
       ],
       "art": "gesetzlich"
@@ -462,6 +590,7 @@
         "SH",
         "SZ",
         "TG",
+        "TI",
         "UR",
         "ZH"
       ],
@@ -497,6 +626,203 @@
       ],
       "art": "ortsueblich",
       "hinweis": "Gilt nur in den Bezirken Aarau, Brugg, Kulm, Lenzburg, Zofingen, Baden, Bremgarten und Zurzach sowie in den Gemeinden Kaiseraugst, Magden, Möhlin, Olsberg, Rheinfelden, Wallbach, Zeiningen und Zuzgen."
+    },
+    {
+      "id": "fronleichnam",
+      "name": "Fronleichnam",
+      "datum": "ostern:+60",
+      "kantone": [
+        "FR"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Gilt in den Gemeinden mit mehrheitlich römisch-katholischer Bevölkerung, also überall ausser in den reformierten Gemeinden (Courgevaux, Fräschels, Greng, Kerzers, Meyriez, Muntelier, Murten, Ried bei Kerzers, Ulmiz, Mont-Vully sowie Flamatt und Sensebrügg (Gemeinde Wünnewil-Flamatt))."
+    },
+    {
+      "id": "maria-himmelfahrt",
+      "name": "Maria Himmelfahrt",
+      "datum": "fix:08-15",
+      "kantone": [
+        "FR"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Gilt in den Gemeinden mit mehrheitlich römisch-katholischer Bevölkerung, also überall ausser in den reformierten Gemeinden (Courgevaux, Fräschels, Greng, Kerzers, Meyriez, Muntelier, Murten, Ried bei Kerzers, Ulmiz, Mont-Vully sowie Flamatt und Sensebrügg (Gemeinde Wünnewil-Flamatt))."
+    },
+    {
+      "id": "allerheiligen",
+      "name": "Allerheiligen",
+      "datum": "fix:11-01",
+      "kantone": [
+        "FR"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Gilt in den Gemeinden mit mehrheitlich römisch-katholischer Bevölkerung, also überall ausser in den reformierten Gemeinden (Courgevaux, Fräschels, Greng, Kerzers, Meyriez, Muntelier, Murten, Ried bei Kerzers, Ulmiz, Mont-Vully sowie Flamatt und Sensebrügg (Gemeinde Wünnewil-Flamatt))."
+    },
+    {
+      "id": "maria-empfaengnis",
+      "name": "Maria Empfängnis",
+      "datum": "fix:12-08",
+      "kantone": [
+        "FR"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Gilt in den Gemeinden mit mehrheitlich römisch-katholischer Bevölkerung, also überall ausser in den reformierten Gemeinden (Courgevaux, Fräschels, Greng, Kerzers, Meyriez, Muntelier, Murten, Ried bei Kerzers, Ulmiz, Mont-Vully sowie Flamatt und Sensebrügg (Gemeinde Wünnewil-Flamatt))."
+    },
+    {
+      "id": "berchtoldstag",
+      "name": "Berchtoldstag",
+      "datum": "fix:01-02",
+      "kantone": [
+        "FR"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Gemeinden mit mehrheitlich evangelisch-reformierter Bevölkerung: Courgevaux, Fräschels, Greng, Kerzers, Meyriez, Muntelier, Murten, Ried bei Kerzers, Ulmiz, Mont-Vully sowie Flamatt und Sensebrügg (Gemeinde Wünnewil-Flamatt). Im übrigen Kanton ist dieser Tag ein normaler Arbeitstag, den der Betrieb freiwillig frei geben kann."
+    },
+    {
+      "id": "ostermontag",
+      "name": "Ostermontag",
+      "datum": "ostern:+1",
+      "kantone": [
+        "FR"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Gemeinden mit mehrheitlich evangelisch-reformierter Bevölkerung: Courgevaux, Fräschels, Greng, Kerzers, Meyriez, Muntelier, Murten, Ried bei Kerzers, Ulmiz, Mont-Vully sowie Flamatt und Sensebrügg (Gemeinde Wünnewil-Flamatt). Im übrigen Kanton ist dieser Tag ein normaler Arbeitstag, den der Betrieb freiwillig frei geben kann."
+    },
+    {
+      "id": "pfingstmontag",
+      "name": "Pfingstmontag",
+      "datum": "ostern:+50",
+      "kantone": [
+        "FR"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Gemeinden mit mehrheitlich evangelisch-reformierter Bevölkerung: Courgevaux, Fräschels, Greng, Kerzers, Meyriez, Muntelier, Murten, Ried bei Kerzers, Ulmiz, Mont-Vully sowie Flamatt und Sensebrügg (Gemeinde Wünnewil-Flamatt). Im übrigen Kanton ist dieser Tag ein normaler Arbeitstag, den der Betrieb freiwillig frei geben kann."
+    },
+    {
+      "id": "stephanstag",
+      "name": "Stephanstag",
+      "datum": "fix:12-26",
+      "kantone": [
+        "FR"
+      ],
+      "art": "ortsueblich",
+      "hinweis": "Gilt nur in den Gemeinden mit mehrheitlich evangelisch-reformierter Bevölkerung: Courgevaux, Fräschels, Greng, Kerzers, Meyriez, Muntelier, Murten, Ried bei Kerzers, Ulmiz, Mont-Vully sowie Flamatt und Sensebrügg (Gemeinde Wünnewil-Flamatt). Im übrigen Kanton ist dieser Tag ein normaler Arbeitstag, den der Betrieb freiwillig frei geben kann."
+    },
+    {
+      "id": "fronleichnam",
+      "name": "Fronleichnam",
+      "datum": "ostern:+60",
+      "kantone": [
+        "SO"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Gilt nicht im Bezirk Bucheggberg."
+    },
+    {
+      "id": "maria-himmelfahrt",
+      "name": "Maria Himmelfahrt",
+      "datum": "fix:08-15",
+      "kantone": [
+        "SO"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Gilt nicht im Bezirk Bucheggberg."
+    },
+    {
+      "id": "allerheiligen",
+      "name": "Allerheiligen",
+      "datum": "fix:11-01",
+      "kantone": [
+        "SO"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Gilt nicht im Bezirk Bucheggberg."
+    },
+    {
+      "id": "tag-der-arbeit",
+      "name": "Tag der Arbeit",
+      "datum": "fix:05-01",
+      "kantone": [
+        "SO"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Gilt erst ab 12.00 Uhr."
+    },
+    {
+      "id": "republik-ne",
+      "name": "Jahrestag der Republik (1. März)",
+      "datum": "fix:03-01",
+      "kantone": [
+        "NE"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "plebiszit-ju",
+      "name": "Plebiszit-Gedenktag (23. Juni)",
+      "datum": "fix:06-23",
+      "kantone": [
+        "JU"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Das Gesetz nennt nur das Datum, die Bezeichnung stammt aus dem Kalender des Kantons Jura."
+    },
+    {
+      "id": "peter-paul",
+      "name": "Peter und Paul",
+      "datum": "fix:06-29",
+      "kantone": [
+        "TI"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "restauration-ge",
+      "name": "Wiederherstellung der Republik (31. Dezember)",
+      "datum": "fix:12-31",
+      "kantone": [
+        "GE"
+      ],
+      "art": "gesetzlich"
+    },
+    {
+      "id": "genfer-bettag",
+      "name": "Genfer Bettag",
+      "datum": "fix-jahr:2026-09-10",
+      "kantone": [
+        "GE"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Der Genfer Bettag ist der Donnerstag nach dem ersten Sonntag im September."
+    },
+    {
+      "id": "genfer-bettag",
+      "name": "Genfer Bettag",
+      "datum": "fix-jahr:2027-09-09",
+      "kantone": [
+        "GE"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Der Genfer Bettag ist der Donnerstag nach dem ersten Sonntag im September."
+    },
+    {
+      "id": "bettagsmontag",
+      "name": "Bettagsmontag",
+      "datum": "fix-jahr:2026-09-21",
+      "kantone": [
+        "VD"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Der Bettagsmontag ist der Montag nach dem dritten Sonntag im September."
+    },
+    {
+      "id": "bettagsmontag",
+      "name": "Bettagsmontag",
+      "datum": "fix-jahr:2027-09-20",
+      "kantone": [
+        "VD"
+      ],
+      "art": "gesetzlich",
+      "hinweis": "Der Bettagsmontag ist der Montag nach dem dritten Sonntag im September."
     }
   ]
 }

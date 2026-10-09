@@ -2,11 +2,11 @@ import { defineTool } from "@/lib/define-tool";
 
 export default defineTool({
   slug: "gbp-feiertage",
-  name: "Feiertagsplaner für das Google-Unternehmensprofil",
+  name: "Öffnungszeiten an Feiertagen",
   category: "praktisches",
   audience: "beide",
   tagline: "Sonderöffnungszeiten für alle Feiertage deines Kantons: zum Abtippen, als Kalender mit Erinnerung und als CSV.",
-  keyword: "Feiertagsplaner",
+  keyword: "Öffnungszeiten an Feiertagen",
   related: ["bewertungs-kit", "qr-set", "digitaler-auftritt-check"],
   needsServer: false,
   usesProfile: ["firma", "kanton"],

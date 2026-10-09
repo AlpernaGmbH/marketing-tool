@@ -245,7 +245,7 @@ export type Werkzeug = { slug: string; name: string };
 /** Die Werkzeuge, auf die der Weg verweist. Namen wie in der tool.config.ts des jeweiligen Werkzeugs (der Test prüft es). */
 export const WERKZEUGE: Record<string, Werkzeug> = {
   "inhalte-saeulen": { slug: "inhalte-saeulen", name: "Themensäulen" },
-  "gbp-feiertage": { slug: "gbp-feiertage", name: "Feiertagsplaner für das Google-Unternehmensprofil" },
+  "gbp-feiertage": { slug: "gbp-feiertage", name: "Öffnungszeiten an Feiertagen" },
   textcheck: { slug: "textcheck", name: "Textcheck" },
   "bewertungs-kit": { slug: "bewertungs-kit", name: "Bewertungs-Kit für Google" },
   "whatsapp-link": { slug: "whatsapp-link", name: "WhatsApp-Link mit QR" },

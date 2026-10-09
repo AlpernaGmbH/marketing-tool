@@ -52,6 +52,7 @@ import {
   ruleProblem,
   sourcesFor,
   toIso,
+  weekGrid,
   weekdayIndex,
   windowsOf,
   windowsText,
@@ -223,7 +224,7 @@ describe("gbp-feiertage: Datensatz data/feiertage.json", () => {
 
   it("belegt jeden Kanton mit einer https-Quelle und Stand, und jede Quelle gehört zu einem Kanton", () => {
     const covered = checkedCantons(data);
-    expect(covered).toEqual(["AG", "AI", "AR", "BE", "BL", "BS", "GL", "GR", "LU", "NW", "OW", "SG", "SH", "SZ", "TG", "UR", "ZG", "ZH"]);
+    expect(covered).toEqual(["AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR", "JU", "LU", "NE", "NW", "OW", "SG", "SH", "SO", "SZ", "TG", "TI", "UR", "VD", "VS", "ZG", "ZH"]);
     expect(Object.keys(data.quellen).sort()).toEqual([...covered].sort());
     for (const k of covered) {
       const q = data.quellen[k];
@@ -286,7 +287,7 @@ describe("gbp-feiertage: Datensatz data/feiertage.json", () => {
   });
 });
 
-describe("gbp-feiertage: Gegenprobe der Tage je Kanton gegen die Quellen vom 05.10.2026", () => {
+describe("gbp-feiertage: Gegenprobe der Tage je Kanton gegen die Quellen vom 05.10. und 09.10.2026", () => {
   // Diese Tabelle wurde von Hand aus den Seiten unter data/feiertage.json «quellen» übertragen (Gesetze und Merkblätter der Kantone).
   // Ändert jemand den Datensatz, muss er hier bewusst nachziehen und die Quelle erneut öffnen.
   const base = ["auffahrt", "bundesfeier", "neujahr", "weihnachten"];
@@ -311,6 +312,16 @@ describe("gbp-feiertage: Gegenprobe der Tage je Kanton gegen die Quellen vom 05.
     UR: [...base, ...alle, "dreikoenig", "josefstag", ...katholisch],
     ZG: [...base, "karfreitag", ...katholisch],
     ZH: [...base, ...alle, "tag-der-arbeit"],
+    // 09.10.2026: FR (BAMG Art. 49, katholische und reformierte Gemeinden), GE (LJF Art. 1), JU (RSJU 555.1 Art. 3), NE (RSN 941.02 Art. 3 und ne.ch),
+    // SO (RTG § 2), TI (RL 843.200 Art. 1), VD (LEmp Art. 47), VS (VEkArG Art. 7)
+    FR: [...base, "karfreitag", ...katholisch, "berchtoldstag", "ostermontag", "pfingstmontag", "stephanstag"],
+    GE: [...base, "karfreitag", "ostermontag", "pfingstmontag", "genfer-bettag", "restauration-ge"],
+    JU: [...base, "berchtoldstag", "karfreitag", "ostermontag", "tag-der-arbeit", "pfingstmontag", "fronleichnam", "plebiszit-ju", "maria-himmelfahrt", "allerheiligen"],
+    NE: [...base, "republik-ne", "karfreitag", "tag-der-arbeit"],
+    SO: [...base, "karfreitag", "tag-der-arbeit", "fronleichnam", "maria-himmelfahrt", "allerheiligen"],
+    TI: [...base, "dreikoenig", "josefstag", "ostermontag", "tag-der-arbeit", "pfingstmontag", "fronleichnam", "peter-paul", "maria-himmelfahrt", "allerheiligen", "maria-empfaengnis", "stephanstag"],
+    VD: [...base, "berchtoldstag", "karfreitag", "ostermontag", "pfingstmontag", "bettagsmontag"],
+    VS: [...base, "josefstag", "fronleichnam", "maria-himmelfahrt", "allerheiligen", "maria-empfaengnis"],
   };
 
   it("nennt je Kanton genau die Tage, die die Quelle nennt (2026 und 2027)", () => {
@@ -328,9 +339,9 @@ describe("gbp-feiertage: Gegenprobe der Tage je Kanton gegen die Quellen vom 05.
     for (const h of list.filter((x) => x.art === "ortsueblich")) expect(h.hinweis, h.id).toMatch(/Bezirk|Gemeinde/);
   });
 
-  it("kennt den Berchtoldstag nur in Bern, Thurgau und (ortsüblich) im Aargau", () => {
+  it("kennt den Berchtoldstag in Bern, Thurgau, Jura und der Waadt, ortsüblich im Aargau und in Freiburg (reformierte Gemeinden)", () => {
     const withBerchtold = KANTONE.map(([k]) => k as string).filter((k) => holidaysFor(k, 2026, data).some((h) => h.id === "berchtoldstag"));
-    expect(withBerchtold).toEqual(["AG", "BE", "TG"]);
+    expect(withBerchtold).toEqual(["AG", "BE", "FR", "JU", "TG", "VD"]);
   });
 
   it("gibt Glarus eine zweite Quelle mit der Seite zur Näfelser Fahrt und verlangt dafür eine https-Adresse", () => {
@@ -454,15 +465,55 @@ describe("gbp-feiertage: Feiertage je Kanton", () => {
     expect(h?.hinweis).toMatch(/drei Ruhetage/);
   });
 
-  it("zeigt für Kantone ohne Quelle nur die eidgenössischen Tage und sagt, dass die Liste nicht geprüft ist", () => {
-    for (const code of ["VD", "FR", "TI", "GE", "XX"]) {
-      expect(isChecked(code, data)).toBe(false);
-      expect(holidaysFor(code, 2026, data).map((h) => h.id)).toEqual(["neujahr", "auffahrt", "bundesfeier", "weihnachten"]);
-    }
+  it("zeigt für einen Kanton ohne Quelle nur die eidgenössischen Tage und sagt, dass die Liste nicht geprüft ist", () => {
+    // Alle 26 Kantone sind belegt; der Rückfall gilt für einen unbekannten Code und für einen Datensatz, dem eine Quelle fehlt.
+    expect(isChecked("XX", data)).toBe(false);
+    expect(holidaysFor("XX", 2026, data).map((h) => h.id)).toEqual(["neujahr", "auffahrt", "bundesfeier", "weihnachten"]);
+    expect(isChecked("ZH", mini)).toBe(false);
+    expect(holidaysFor("ZH", 2026, mini).map((h) => h.id)).toEqual(["neujahr"]);
     expect(noListMessage("VD")).toBe("Für Waadt haben wir noch keine geprüfte Liste. Prüfe die Feiertage bei deinem Kanton.");
     expect(noListMessage("FR")).toBe("Für Freiburg haben wir noch keine geprüfte Liste. Prüfe die Feiertage bei deinem Kanton.");
-    expect(sourcesFor("VD", data).kanton).toBeNull();
-    expect(sourcesFor("VD", data).bund.length).toBeGreaterThan(0);
+    expect(sourcesFor("ZH", mini).kanton).toBeNull();
+    expect(sourcesFor("XX", data).bund.length).toBeGreaterThan(0);
+  });
+
+  it("belegt die acht Kantone vom 09.10.2026 mit Tagen, Daten und Hinweisen aus den Quellen", () => {
+    const by = (k: string, y = 2026) => Object.fromEntries(holidaysFor(k, y, data).map((h) => [h.id, h]));
+    // GE: Genfer Bettag = Donnerstag nach dem ersten Sonntag im September
+    expect(by("GE")["genfer-bettag"].date).toBe("2026-09-10");
+    expect(by("GE", 2027)["genfer-bettag"].date).toBe("2027-09-09");
+    expect(by("GE")["restauration-ge"].date).toBe("2026-12-31");
+    // VD: Bettagsmontag = Montag nach dem dritten Sonntag im September
+    expect(by("VD").bettagsmontag.date).toBe("2026-09-21");
+    expect(by("VD", 2027).bettagsmontag.date).toBe("2027-09-20");
+    // JU, TI, NE: eigene Tage mit festem Datum
+    expect(by("JU")["plebiszit-ju"].date).toBe("2026-06-23");
+    expect(by("TI")["peter-paul"].date).toBe("2026-06-29");
+    expect(by("NE")["republik-ne"].date).toBe("2026-03-01");
+    expect(by("NE")["republik-ne"].weekday).toBe(6); // Sonntag
+    // TI hat keinen Karfreitag, VS keinen Ostermontag
+    expect(by("TI").karfreitag).toBeUndefined();
+    expect(by("VS").ostermontag).toBeUndefined();
+    // FR: katholische Tage gesetzlich mit Hinweis, reformierte Tage ortsüblich mit der Liste der Gemeinden
+    const fr = by("FR");
+    for (const id of ["fronleichnam", "maria-himmelfahrt", "allerheiligen", "maria-empfaengnis"]) {
+      expect(fr[id].art, id).toBe("gesetzlich");
+      expect(fr[id].hinweis, id).toContain("römisch-katholisch");
+    }
+    for (const id of ["berchtoldstag", "ostermontag", "pfingstmontag", "stephanstag"]) {
+      expect(fr[id].art, id).toBe("ortsueblich");
+      expect(fr[id].hinweis, id).toContain("Murten");
+    }
+    // SO: 1. Mai ab 12 Uhr, kirchliche Tage nicht im Bucheggberg
+    const so = by("SO");
+    expect(so["tag-der-arbeit"].hinweis).toBe("Gilt erst ab 12.00 Uhr.");
+    for (const id of ["fronleichnam", "maria-himmelfahrt", "allerheiligen"]) expect(so[id].hinweis, id).toBe("Gilt nicht im Bezirk Bucheggberg.");
+    // jeder der acht Kantone hat eine Quelle mit https-Adresse, Stand vom 09.10.2026 und einen Hinweis
+    for (const k of ["FR", "GE", "JU", "NE", "SO", "TI", "VD", "VS"]) {
+      expect(data.quellen[k].url.startsWith("https://"), k).toBe(true);
+      expect(data.quellen[k].stand, k).toContain("09.10.2026");
+      expect(data.hinweise?.[k]?.length, k).toBeGreaterThan(20);
+    }
   });
 
   it("filtert nach Kanton aus einem Testdatensatz und überspringt Angaben, die für das Jahr nicht gelten", () => {
@@ -516,6 +567,21 @@ describe("gbp-feiertage: Öffnungszeiten", () => {
     expect(windowsOf({ offen: true, f1: { von: "12:00", bis: "08:00" }, f2: { von: "13:00", bis: "17:00" } })).toEqual([{ von: "13:00", bis: "17:00" }]);
     expect(windowsText([])).toBe("geschlossen");
     expect(windowsText([{ von: "09:00", bis: "12:00" }])).toBe("09:00 bis 12:00");
+  });
+
+  it("zeigt die normale Woche als Raster mit sieben Zeilen und dem Wort «geschlossen»", () => {
+    const g = weekGrid(defaultHours());
+    expect(g.type).toBe("grid");
+    if (g.type !== "grid") return;
+    expect(g.columns).toEqual(["Zeitfenster 1", "Zeitfenster 2"]);
+    expect(g.rows).toHaveLength(7);
+    expect(g.rows[0]).toEqual({ label: "Montag", cells: ["08:00 bis 12:00", "13:30 bis 17:30"] });
+    expect(g.rows[5]).toEqual({ label: "Samstag", cells: ["geschlossen"] });
+    expect(g.rows[SUNDAY]).toEqual({ label: "Sonntag", cells: ["geschlossen"] });
+    const half = defaultHours();
+    half[1] = { offen: true, f1: { von: "09:00", bis: "12:00" }, f2: { von: "", bis: "" } };
+    const grid = weekGrid(half);
+    expect(grid.type === "grid" && grid.rows[1]).toEqual({ label: "Dienstag", cells: ["09:00 bis 12:00"] });
   });
 
   it("meldet fehlerhafte Zeiten mit dem Wochentag", () => {

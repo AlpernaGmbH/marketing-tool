@@ -1,7 +1,7 @@
 ---
-title: "Feiertagsplaner Schweiz: Sonderzeiten fürs Google-Profil"
+title: "Öffnungszeiten Schweiz: Feiertage fürs Google-Profil"
 description: "Sonderöffnungszeiten für alle Feiertage deines Kantons: Liste zum Abtippen ins Google-Unternehmensprofil, Kalender mit Erinnerung und CSV. Ohne Konto."
-h1: "Feiertagsplaner für Schweizer KMU"
+h1: "Öffnungszeiten an Feiertagen für Schweizer KMU"
 tagline: "Sonderöffnungszeiten für alle Feiertage deines Kantons: zum Abtippen, als Kalender mit Erinnerung und als CSV."
 beispielFirma: "Malerei Keller, Gossau"
 kurz:
@@ -14,7 +14,7 @@ ablauf:
   - "Liste abtippen, Kalender laden"
 ---
 ## Warum das wichtig ist
-Das Google-Unternehmensprofil zeigt deine normalen Öffnungszeiten, bis du Sonderzeiten einträgst. Der Feiertagsplaner erstellt dafür die Liste «Feiertage Öffnungszeiten»: eine Zeile je Feiertag deines Kantons.
+Das Google-Unternehmensprofil zeigt deine normalen Öffnungszeiten, bis du Sonderzeiten einträgst. Dieses Werkzeug erstellt dafür die Liste «Feiertage Öffnungszeiten»: eine Zeile je Feiertag deines Kantons, dazu deine Woche als Raster.
 
 - **Jeder Kanton anders:** Allerheiligen steht in St. Gallen im Ruhetagsgesetz, der 1. Mai in Zürich und im Thurgau, der Josefstag in Schwyz und Uri (Quelle: kantonale Ruhetagsgesetze, Stand 05.10.2026).
 - **Beweglich:** Karfreitag, Ostermontag, Auffahrt und Pfingstmontag wandern mit Ostern.
@@ -41,7 +41,7 @@ Das Google-Unternehmensprofil zeigt deine normalen Öffnungszeiten, bis du Sonde
 => Gleich unten: die fertige Liste der Malerei Keller.
 
 ## Beispiel
-Malerei Keller, Gossau (Kanton St. Gallen), nutzt den Feiertagsplaner für 2027. Sie arbeitet Montag bis Freitag von 08:00 bis 12:00 und von 13:30 bis 17:30. Sie schliesst an den Feiertagen und öffnet an Allerheiligen am Vormittag.
+Malerei Keller, Gossau (Kanton St. Gallen), legt die Öffnungszeiten an Feiertagen für 2027 fest. Sie arbeitet Montag bis Freitag von 08:00 bis 12:00 und von 13:30 bis 17:30. Sie schliesst an den Feiertagen und öffnet an Allerheiligen am Vormittag.
 
 > **Sonderöffnungszeiten St. Gallen (SG) 2027**
 >

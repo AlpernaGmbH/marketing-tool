@@ -70,15 +70,15 @@ describe("Feiertagsplaner: Formular", () => {
     expect(screen.queryByRole("region", { name: "Deine Sonderöffnungszeiten" })).not.toBeInTheDocument();
   });
 
-  it("sagt bei einem Kanton ohne geprüfte Liste, dass sie fehlt, und zeigt nur die eidgenössischen Tage", () => {
+  it("zeigt für Freiburg die geprüfte Liste mit den Tagen beider Gemeindearten, ohne den Hinweis «keine Liste»", () => {
     profile({ kanton: "FR" });
     render(<Tool />);
-    expect(screen.getByTestId("keine-liste")).toHaveTextContent("Für Freiburg haben wir noch keine geprüfte Liste. Prüfe die Feiertage bei deinem Kanton.");
+    expect(screen.queryByTestId("keine-liste")).not.toBeInTheDocument();
     const names = within(screen.getByRole("list", { name: "Feiertage" }))
       .getAllByRole("listitem")
       .map((li) => li.querySelector("span")?.textContent ?? "");
-    expect(names).toHaveLength(4);
-    expect(names.join(" ")).toMatch(/Neujahrstag.*Auffahrt.*Bundesfeiertag.*Weihnachtstag/);
+    expect(names.join(" ")).toMatch(/Neujahrstag.*Karfreitag.*Auffahrt.*Fronleichnam.*Bundesfeiertag.*Allerheiligen.*Maria Empfängnis.*Weihnachtstag/);
+    for (const name of ["Berchtoldstag", "Ostermontag", "Pfingstmontag", "Stephanstag"]) expect(names.join(" ")).toContain(name);
   });
 
   it("zeigt Felder für Sonderzeiten erst bei der Regel «Sonderzeiten»", async () => {
@@ -211,19 +211,28 @@ describe("Feiertagsplaner: Ergebnis", () => {
     expect(downloadBytes).not.toHaveBeenCalled();
   });
 
-  it("schreibt für einen Kanton ohne Liste nur die eidgenössischen Tage und den Hinweis", async () => {
+  it("schreibt für die Waadt die neun Tage des Gesetzes, die auf Arbeitstage fallen, und nennt den Samstag-Feiertag extra", async () => {
     profile({ kanton: "VD" });
     writeLocal(LEAD_KEY, "anna@keller.ch");
     render(<Tool />);
     const user = userEvent.setup();
     await createList(user, "2026");
     const card = await screen.findByRole("region", { name: "Deine Sonderöffnungszeiten" });
-    expect(within(card).getByTestId("keine-liste")).toHaveTextContent("Für Waadt haben wir noch keine geprüfte Liste.");
+    expect(within(card).queryByTestId("keine-liste")).not.toBeInTheDocument();
     const lines = within(within(card).getByRole("list", { name: "Sonderöffnungszeiten" }))
       .getAllByRole("listitem")
       .map((li) => li.textContent);
     // Der 1. August 2026 fällt auf einen Samstag, an dem sonst geschlossen ist: nichts einzutragen.
-    expect(lines).toEqual(["Do 01.01.2026, Neujahrstag: geschlossen", "Do 14.05.2026, Auffahrt: geschlossen", "Fr 25.12.2026, Weihnachtstag: geschlossen"]);
+    expect(lines).toEqual([
+      "Do 01.01.2026, Neujahrstag: geschlossen",
+      "Fr 02.01.2026, Berchtoldstag: geschlossen",
+      "Fr 03.04.2026, Karfreitag: geschlossen",
+      "Mo 06.04.2026, Ostermontag: geschlossen",
+      "Do 14.05.2026, Auffahrt: geschlossen",
+      "Mo 25.05.2026, Pfingstmontag: geschlossen",
+      "Mo 21.09.2026, Bettagsmontag: geschlossen",
+      "Fr 25.12.2026, Weihnachtstag: geschlossen",
+    ]);
     expect(within(card).getByRole("list", { name: "Tage ohne Eintrag" })).toHaveTextContent("Sa 01.08.2026, Bundesfeiertag");
   });
 

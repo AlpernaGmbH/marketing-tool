@@ -1,9 +1,9 @@
 import { z } from "zod";
 import feiertageJson from "@/data/feiertage.json";
 import { KANTONE } from "@/lib/ch";
-import { safeFilename } from "@/lib/export/model";
+import { safeFilename, type DocBlock } from "@/lib/export/model";
 
-// Feiertagsplaner für das Google-Unternehmensprofil: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
+// Öffnungszeiten an Feiertagen fürs Google-Unternehmensprofil: reine Funktionen, kein React, kein DOM, kein fetch (CLAUDE.md, Harte Regel 3).
 // Aus Kanton, Jahr, normalen Öffnungszeiten und einer Regel je Feiertag entstehen die Zeilen zum Abtippen, ein Kalender (.ics)
 // und eine CSV. Die Feiertage je Kanton stehen in data/feiertage.json, jeder Kanton mit eigener Quelle; bewegliche Tage rechnet
 // easterSunday(). Datumsrechnung nur mit UTC-Teilen und als JJJJ-MM-TT, nie über die lokale Zeitzone. Spec: specs/gbp-feiertage.md
@@ -274,6 +274,19 @@ export function windowsOf(day: DayHours): Window[] {
 /** «geschlossen» oder «08:00 bis 12:00 und 13:30 bis 17:30». */
 export function windowsText(ws: Window[]): string {
   return ws.length === 0 ? "geschlossen" : ws.map((w) => `${w.von} bis ${w.bis}`).join(" und ");
+}
+
+/** Die normale Woche als Raster: je Tag die beiden Zeitfenster, geschlossene Tage mit dem Wort «geschlossen». */
+export function weekGrid(hours: WeekHours): DocBlock {
+  return {
+    type: "grid",
+    title: "Deine normale Woche",
+    columns: ["Zeitfenster 1", "Zeitfenster 2"],
+    rows: hours.map((d, i) => {
+      const ws = windowsOf(d);
+      return { label: WEEKDAYS[i], cells: ws.length === 0 ? ["geschlossen"] : ws.map((w) => `${w.von} bis ${w.bis}`) };
+    }),
+  };
 }
 
 /** Meldung zur ersten fehlerhaften Angabe der Öffnungszeiten; null, wenn alles passt. */

@@ -1,4 +1,4 @@
-# Feiertagsplaner für das Google-Unternehmensprofil (gbp-feiertage)
+# Öffnungszeiten an Feiertagen (gbp-feiertage)
 
 Klasse C (Rechner und Formular mit Datensatz, alles im Browser), Stand 05.10.2026. Kein Server, keine KI, kein Netz (`needsServer: false`). Keine neuen Bibliotheken. Zugang v3: E-Mail-Fenster vor dem Ergebnis, Ergebnis mit Eingabe und Ausgabe ins CRM, Downloads über `guardDownload`.
 
@@ -6,7 +6,7 @@ Klasse C (Rechner und Formular mit Datensatz, alles im Browser), Stand 05.10.202
 Für KMU und Vereine mit Google-Unternehmensprofil: in rund drei Minuten die Liste der Sonderöffnungszeiten für alle Feiertage des eigenen Kantons, zum Abtippen ins Profil, dazu ein Kalender (.ics) mit Erinnerung zehn Tage vorher und eine CSV, ohne Konto.
 
 ## Kategorie und Verknüpfung
-Kategorie: schweiz (vierter Schritt im Pfad «Schweiz»), Zielgruppe: beide
+Kategorie: praktisches (seit 09.10.2026, vorher «Schweiz»), Zielgruppe: beide
 Liest aus Profil: firma, kanton (beides über `ProfileFieldsForm`, nichts davon wird erneut gefragt, Harte Regel 10)
 Schreibt ins Profil: nichts ausser dem, was das Formular selbst als Profilfeld bearbeitet (Firma, Kanton). «Angaben ändern» setzt den Kanton des Ergebnisses ins Profil, wenn er dort leer ist.
 Verwandte Tools: bewertungs-kit, qr-set, digitaler-auftritt-check
@@ -73,7 +73,7 @@ Alle Regeln in `tools/gbp-feiertage/logic.ts` (rein, ohne React, DOM und Netz). 
 11. **Stand** `mt:gbp-feiertage`, `parseState`: `{ v: 1, phase: "edit" | "result", kanton, jahr, zeiten, regeln }`. Kaputte Daten → leerer Stand; kaputte Tage und Regeln werden einzeln ersetzt; «result» nur mit bekanntem Kanton, Jahr und stimmigen Zeiten. `lib/progress.ts` erkennt `phase: "result"` als erledigt.
 
 ## Ausgaben
-- Ergebnis (nach dem E-Mail-Fenster): `ResultCard` «Deine Sonderöffnungszeiten» mit Kopfzeile «<Kanton> (<Code>), <Jahr>, <Firma>. n Einträge zum Abtippen.»; Liste zum Abtippen (`ol`, aria-label «Sonderöffnungszeiten», data-testid `sonderzeiten`); bei nicht belegtem Kanton der Kasten (data-testid `keine-liste`) mit dem Satz «Für <Kanton> haben wir noch keine geprüfte Liste. Prüfe die Feiertage bei deinem Kanton.» und «Angezeigt sind nur Neujahr, Auffahrt, der 1. August und Weihnachten.»; Abschnitt «Nichts einzutragen» (`ul` aria-label «Tage ohne Eintrag») und «Gilt in diesem Jahr nicht» (aria-label «Entfallene Tage») nur, wenn es solche Tage gibt.
+- Ergebnis (nach dem E-Mail-Fenster): `ResultCard` «Deine Sonderöffnungszeiten» mit Kopfzeile «<Kanton> (<Code>), <Jahr>, <Firma>. n Einträge zum Abtippen.»; vor der Liste das Raster «Deine normale Woche» (`weekGrid`, DocBlock `grid`, data-testid `woche`: je Wochentag die beiden Zeitfenster, geschlossene Tage mit «geschlossen»; seit 09.10.2026, damit der Besucher seine Eingabe im Ergebnis wiedererkennt); Liste zum Abtippen (`ol`, aria-label «Sonderöffnungszeiten», data-testid `sonderzeiten`); bei nicht belegtem Kanton der Kasten (data-testid `keine-liste`) mit dem Satz «Für <Kanton> haben wir noch keine geprüfte Liste. Prüfe die Feiertage bei deinem Kanton.» und «Angezeigt sind nur Neujahr, Auffahrt, der 1. August und Weihnachten.»; Abschnitt «Nichts einzutragen» (`ul` aria-label «Tage ohne Eintrag») und «Gilt in diesem Jahr nicht» (aria-label «Entfallene Tage») nur, wenn es solche Tage gibt.
 - Kasten «So trägst du die Zeiten ein» (drei Sätze, Wortlaut nach der Hilfeseite von Google «Spezielle Öffnungszeiten festlegen», Link `https://support.google.com/business/answer/6303076?hl=de`, am 05.10.2026 geöffnet: «Profil bearbeiten», «Öffnungszeiten», neben «Spezielle Öffnungszeiten» «Bearbeiten», Datum wählen, geschlossen oder Zeiten, speichern).
 - Kasten «Gesetzlich und ortsüblich»: die Tage nach `art`, der Hinweis des Kantons, die Quellen mit Link und Stand (Kanton, Bund), Stand der Daten (`meta.asOf`), der Satz «Die Liste ersetzt keine Auskunft deines Kantons oder deiner Gemeinde. Prüfe die Tage, bevor du sie einträgst.»
 - Knöpfe: «Liste kopieren» (nur die Zeilen zum Abtippen), «Kalender (.ics) herunterladen» (primär), «CSV herunterladen», «Angaben ändern», «Neu beginnen». Beide Downloads über `ctx.guardDownload` und `downloadBytes`, gesperrt, wenn es keine Einträge gibt; Meldung in `role="status"`, Fehler in `role="alert"`. Dateinamen `sonderoeffnungszeiten-<kanton>-<jahr>.ics` bzw. `.csv`.
