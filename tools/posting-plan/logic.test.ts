@@ -36,6 +36,9 @@ import {
   productionBlock,
   saeulenAusProfil,
   toCsv,
+  pitchFor,
+  rasterTage,
+  wochenraster,
   toDocument,
   validate,
   verfuegbar,
@@ -634,5 +637,45 @@ describe("posting-plan: gespeicherter Stand", () => {
     const again = parseState(JSON.parse(JSON.stringify(s)));
     expect(again).toEqual(s);
     expect(again.phase).toBe("result");
+  });
+});
+
+describe("posting-plan: Wochenansicht und Hinweis auf Alperna", () => {
+  it("zeigt die vier Wochen als Raster mit den Tagen, an denen etwas passiert, und der Produktion", () => {
+    const plan = buildPlan(keller);
+    const raster = wochenraster(plan);
+    expect(raster.rows.map((r) => r.label)).toEqual(["Woche 1", "Woche 2", "Woche 3", "Woche 4"]);
+    const tage = rasterTage(plan);
+    expect(tage).toContain(plan.input.produktionstag);
+    expect(raster.columns).toEqual(tage.map((t) => t.slice(0, 2)));
+    // Jeder Beitrag steht genau einmal im Raster, am richtigen Tag
+    const total = raster.rows.reduce((n, r) => n + r.cells.flatMap((c) => c.split("\n")).filter((l) => l && l !== "Produktion").length, 0);
+    expect(total).toBe(plan.wochen.reduce((n, w) => n + w.beitraege.length, 0));
+    const pi = tage.indexOf(plan.input.produktionstag);
+    for (const r of raster.rows) expect(r.cells[pi].split("\n")[0]).toBe("Produktion");
+  });
+
+  it("legt das Raster ins Dokument und macht daraus in der Datei eine Tabelle", () => {
+    const doc = toDocument(buildPlan(keller));
+    expect(doc.blocks.some((b) => b.type === "grid")).toBe(true);
+    expect(doc.blocks.some((b) => b.type === "split")).toBe(buildPlan(keller).saeulen.length > 1);
+    const md = toMarkdown(doc);
+    expect(md).toContain("Die vier Wochen im Überblick");
+    expect(md).toContain("| Woche 1 |");
+    expect(md).not.toContain("\n;"); // Zeilenumbrüche der Zellen sind in der Datei Semikolon
+  });
+
+  it("nennt Alperna mit dem Aufwand aus dem Plan, ohne Preis", () => {
+    const plan = buildPlan(keller);
+    const spec = pitchFor(plan)!;
+    expect(spec.baustein).toBe("Social Media");
+    expect(spec.satz).toMatch(/^Dein Plan hat \d+ Beiträge in vier Wochen und braucht rund [\d,.]+ Stunden pro Woche\.$/);
+    expect(spec.satz).not.toMatch(/CHF|Gratis|garantiert/);
+  });
+
+  it("sagt nichts, wenn der Plan keinen Beitrag hat", () => {
+    const leer = buildPlan({ ...keller, stunden: PLANUNG });
+    expect(leer.wochen.every((w) => w.beitraege.length === 0)).toBe(true);
+    expect(pitchFor(leer)).toBeNull();
   });
 });

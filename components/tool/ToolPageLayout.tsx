@@ -3,9 +3,11 @@ import { FaqList } from "@/components/site/FaqList";
 import { Html } from "@/components/site/Html";
 import { PageH1 } from "@/components/site/PageH1";
 import { AlpernaPitch } from "@/components/tool/AlpernaPitch";
+import { PitchProvider } from "@/components/tool/pitch-context";
 import { RelatedTools } from "@/components/tool/RelatedTools";
 import { minutesLabel } from "@/lib/ch";
 import { SECTION_TITLES, faqToHtml, markdownToHtml, type ParsedToolContent } from "@/lib/content";
+import { loadBausteine, usable } from "@/lib/pitch";
 import { CATEGORY_LABELS, type ToolConfig } from "@/lib/registry";
 
 type Props = {
@@ -25,6 +27,15 @@ export async function ToolPageLayout({ config, content, children }: Props) {
     markdownToHtml(sections.beispiel ?? ""),
     faqToHtml(faq),
   ]);
+
+  const bausteine = loadBausteine();
+  const pitch = {
+    toolName: config.name,
+    toolSlug: config.slug,
+    bausteine: (bausteine?.items ?? []).filter((b) => usable(b.text)).map((b) => ({ name: b.name, text: b.text })),
+    whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
+    erstgespraechUrl: process.env.NEXT_PUBLIC_ERSTGESPRAECH_URL,
+  };
 
   return (
     <article>
@@ -46,7 +57,9 @@ export async function ToolPageLayout({ config, content, children }: Props) {
         </p>
       </header>
 
-      <div className="container-page mt-6 md:mt-8">{children}</div>
+      <div className="container-page mt-6 md:mt-8">
+        <PitchProvider data={pitch}>{children}</PitchProvider>
+      </div>
 
       <div className="container-page">
         {(fm.kurz?.length === 3 || fm.ablauf?.length === 3) && (

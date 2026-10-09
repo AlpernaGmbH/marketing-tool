@@ -6,6 +6,7 @@ import { DocView } from "@/components/tool/DocView";
 import { DocumentExport } from "@/components/tool/DocumentExport";
 import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { ResultCard } from "@/components/tool/ResultCard";
+import { ResultPitch } from "@/components/tool/ResultPitch";
 import { ToolShell, useToolContext } from "@/components/tool/ToolShell";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,6 +39,7 @@ import {
   kanaeleVomProfil,
   ohneFormatHinweis,
   parseState,
+  pitchFor,
   saeulenAusProfil,
   toCsv,
   toDocument,
@@ -122,6 +124,7 @@ function ResultView({
       <div data-testid="pp-plan">
         <DocView blocks={doc.blocks} />
       </div>
+      <ResultPitch spec={pitchFor(plan)} />
       <p role="alert" className="min-h-6 text-sm text-destructive">
         {error}
       </p>

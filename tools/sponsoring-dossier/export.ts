@@ -1,6 +1,6 @@
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
-import { FOOTER_TEXT, type DocBlock, type DocumentModel } from "@/lib/export/model";
+import { FOOTER_TEXT, flattenBlocks, type BasicBlock, type DocumentModel } from "@/lib/export/model";
 import { wrapLines, type PdfFonts } from "@/lib/export/pdf";
 import { parseHex } from "@/tools/bewertungs-kit/logic";
 import { HAKEN, INK, normFarbe, textOn } from "./logic";
@@ -112,7 +112,7 @@ class Layout {
     this.newPage();
   }
 
-  private block(b: DocBlock, keepNext = 0): void {
+  private block(b: BasicBlock, keepNext = 0): void {
     switch (b.type) {
       case "heading": {
         const size = b.level === 1 ? 17 : b.level === 2 ? 13.5 : 11.5;
@@ -226,7 +226,7 @@ class Layout {
   }
 
   /** Höhe, die der Anfang eines Blocks mindestens braucht; eine Überschrift bleibt damit nie allein am Seitenende. */
-  private firstChunk(b: DocBlock | undefined): number {
+  private firstChunk(b: BasicBlock | undefined): number {
     if (!b) return 0;
     switch (b.type) {
       case "table":
@@ -243,7 +243,7 @@ class Layout {
   }
 
   /** Zeichnet alle Blöcke. */
-  render(blocks: DocBlock[]): void {
+  render(blocks: BasicBlock[]): void {
     blocks.forEach((b, i) => this.block(b, this.firstChunk(blocks[i + 1])));
   }
 
@@ -292,7 +292,7 @@ export async function buildDossierPdf(model: DocumentModel, farbe: string, fonts
   );
   const layout = new Layout(doc, pen, model, hex);
   layout.cover();
-  layout.render(model.blocks);
+  layout.render(flattenBlocks(model.blocks));
   layout.decorate();
   return doc.save();
 }

@@ -225,10 +225,12 @@ Tokens in app/globals.css: --page #F3F1EC (Seitenhintergrund, Papier), --paper
 #FFFDF8 (Karten, Felder), --surface #EAE7E0, --ink #0F0F0E (Text), --muted
 #65645F, --line (Ink mit 14 % Deckkraft), --navy #111A28 und --navy-2 #26324A
 (alperna.ch), --yellow #FFD700 (Gold, alperna.ch).
-Gold nur für den Kreis im primären Knopf, die eine Markierung pro Seite
-(`mark-yellow`: Serif kursiv mit goldenem Balken), Punkte vor Beschriftungen
-und Fokus auf Dunkel. Navy nur für den Footer, die Logo-Kachel und Zustände.
-Nie Gold als Textfarbe auf hellem Grund (Kontrast).
+Gold (Lockerung vom 09.10.2026, Entscheid Alperna: «sehr visuell»): der Kreis im
+primären Knopf, die eine Markierung pro Seite (`mark-yellow`: Serif kursiv mit
+goldenem Balken), Punkte vor Beschriftungen, Fokus auf Dunkel, der Hauptknopf auf
+dunklen Flächen (ResultPitch) und die eine Hervorhebung in einem Diagramm (zum
+Beispiel die schwächste Dimension, mit dunklem Rand). Navy nur für den Footer,
+die Logo-Kachel und Zustände. Nie Gold als Textfarbe auf hellem Grund (Kontrast).
 Typografie: Geist für Text und Titel (Titel Gewicht 500, Laufweite -0.035 bis
 -0.04em), Instrument Serif kursiv für Betonungen (`em`), Geist Mono für
 Zahlen und kleine Beschriftungen (Klasse `eyebrow`: Grossbuchstaben, goldener
@@ -240,9 +242,17 @@ mit 14 px Radius. Keine Verläufe, keine Schatten über 4 px.
 Logo: Bildmarke von alperna.ch, nachgezeichnet (`public/brand/alperna-mark.svg`:
 Gold auf Navy-Kachel; `alperna-mark-gold.svg` für dunkle Flächen), Wortmarke
 klein geschrieben «alperna».
-Bildsprache: keine Stockfotos. Nur Fotos aus assets/photos; gibt es keine,
-keine Bilder. Höhenlinien (SVG, 4 % Deckkraft) als Hintergrundmotiv auf
-Startseite und Kategorieseiten.
+Bildsprache (gelockert am 09.10.2026): Ein Ergebnis zeigt zuerst ein Bild, dann
+Text: Kennzahl-Kachel, Balken, Ring, Raster, Karten, Folien (`DocBlock`-Bausteine
+`stat`, `bars`, `steps`, `cards`, `split`, `grid`, `slides` in lib/export/model.ts,
+Darstellung in components/tool/visual.tsx und DocView). Diagramme sind reines SVG und
+CSS, keine Diagramm-Bibliothek, mit Textalternative (role, aria-valuetext) und
+gleichem Inhalt in PDF, Word und Markdown (`flattenBlocks`). Ein Alperna-Hinweis im
+Ergebnis (ResultPitch) ist eine dunkle Karte, aus dem Ergebnis hergeleitet, ohne
+Preis. Keine Stockfotos. Fotos nur von Alperna (assets/photos), nur auf Startseite,
+Kategorie-Köpfen und im Pitch, nie als Füllbild in einem Ergebnis; Ordner und Rechte
+sind noch zu klären, bis dahin keine Fotos. Höhenlinien (SVG) als Hintergrundmotiv
+mit 4 % Deckkraft auf Startseite und Kategorieseiten, bis 7 % auf Kennzahl-Kacheln.
 Ton: ruhig, konkret, belegbar. Keine Ausrufezeichen, keine Emojis, keine
 Superlative, kein «jetzt», «nur noch», «garantiert», «Nr. 1». Kurze Sätze.
 Alperna-Stimme und Sperrliste: docs/MARKE.md und lib/brand-rules.ts (aus den

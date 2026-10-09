@@ -1,5 +1,6 @@
 import { numberCH } from "@/lib/ch";
 import { safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
+import type { PitchSpec } from "@/lib/pitch";
 import type { Profile } from "@/lib/profile";
 import { CSV_BOM, csvCell, kanaeleAusProfil, kanaeleVorschlag, normalizeKanaele, type KanalKey } from "@/tools/content-kalender/logic";
 
@@ -457,6 +458,36 @@ export const csvFilename = (firma?: string): string => `${documentFilename(firma
 
 const KONTROLLE_OK = "Jede Woche liegt im Budget, jede Säule kommt gleich oft vor (±1).";
 
+/** Wochentage im Raster: die mit einem Beitrag und der Produktionstag, in der Reihenfolge der Woche. */
+export function rasterTage(plan: Plan): Tag[] {
+  const used = new Set<Tag>([plan.input.produktionstag, ...plan.wochen.flatMap((w) => w.beitraege.map((b) => b.tag))]);
+  return TAGE.filter((t) => used.has(t));
+}
+
+/** Wochenansicht: vier Zeilen (Wochen), Spalten sind die Wochentage; in jeder Zelle stehen Kanal und Format, am Produktionstag zuerst «Produktion». */
+export function wochenraster(plan: Plan): Extract<DocBlock, { type: "grid" }> {
+  const tage = rasterTage(plan);
+  return {
+    type: "grid",
+    title: "Die vier Wochen im Überblick",
+    columns: tage.map((t) => t.slice(0, 2)),
+    rows: plan.wochen.map((w) => ({
+      label: `Woche ${w.nummer}`,
+      cells: tage.map((t) =>
+        [t === plan.input.produktionstag ? "Produktion" : "", ...w.beitraege.filter((b) => b.tag === t).map((b) => `${kanalKurz(b.kanal)}, ${formatLabel(b.format)}`)].filter(Boolean).join("\n"),
+      ),
+    })),
+  };
+}
+
+/** Hinweis auf Alperna aus dem Plan: Aufwand pro Woche und Zahl der Beiträge. Ohne Beiträge kein Hinweis. */
+export function pitchFor(plan: Plan): PitchSpec | null {
+  const n = plan.wochen.reduce((s, w) => s + w.beitraege.length, 0);
+  if (n === 0) return null;
+  const pro = plan.wochen.reduce((s, w) => s + w.aufwand + PLANUNG, 0) / plan.wochen.length;
+  return { baustein: "Social Media", satz: `Dein Plan hat ${countText(n)} in vier Wochen und braucht rund ${hoursText(pro)} pro Woche.` };
+}
+
 /** Plan als Dokument für Bildschirm, PDF, Word und Markdown: Überblick, Zu beachten, vier Wochen, Produktionsblock, Annahmen, Hinweise. */
 export function toDocument(plan: Plan, firma?: string): DocumentModel {
   const { input } = plan;
@@ -482,6 +513,11 @@ export function toDocument(plan: Plan, firma?: string): DocumentModel {
       ],
     },
   ];
+  // Bildschirm: Wochenansicht und Verteilung der Säulen. In PDF, Word und Markdown werden sie zu Tabellen.
+  if (plan.wochen.some((w) => w.beitraege.length > 0)) blocks.push(wochenraster(plan));
+  if (plan.saeulen.length > 1 && plan.saeulen.some((s) => s.anzahl > 0)) {
+    blocks.push({ type: "split", title: "Verteilung auf die Säulen", items: plan.saeulen.map((s) => ({ label: s.name, value: s.anzahl })) });
+  }
   if (plan.kontrollen.length > 0) {
     blocks.push({ type: "heading", level: 2, text: "Zu beachten" }, { type: "list", items: plan.kontrollen });
   }

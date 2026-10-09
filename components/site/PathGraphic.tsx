@@ -68,7 +68,7 @@ export function PathGraphic({ steps }: Props) {
       </svg>
       )}
 
-      <ol className="mt-4 grid gap-2">
+      <ol className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2">
         {steps.map((s, i) => {
           const isDone = ready && done.has(s.slug);
           const isNext = ready && summary.next === s.slug;
@@ -76,10 +76,10 @@ export function PathGraphic({ steps }: Props) {
             <li key={s.slug}>
               <Link
                 href={`/tools/${s.slug}`}
-                className="flex items-baseline gap-3 rounded-xl border border-line bg-paper px-4 py-3 hover:border-ink"
+                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl border border-line bg-paper px-4 py-3 hover:border-ink"
               >
                 <span className="w-6 shrink-0 font-heading font-semibold">{i + 1}</span>
-                <span className="flex-1 font-medium">{s.name}</span>
+                <span className="min-w-0 flex-1 font-medium">{s.name}</span>
                 <span className="text-sm text-muted-foreground">{s.minutes}</span>
                 {isDone && <span className="rounded-full bg-yellow px-2 py-0.5 text-sm font-medium text-ink">Erledigt</span>}
                 {isNext && !isDone && <span className="rounded-full border border-ink px-2 py-0.5 text-sm font-medium">Als Nächstes</span>}

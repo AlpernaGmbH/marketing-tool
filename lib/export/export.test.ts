@@ -5,7 +5,7 @@ import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import { describe, expect, it, vi } from "vitest";
 import { buildDocx } from "@/lib/export/docx";
 import { FONT_PATHS, loadPdfFonts } from "@/lib/export/fonts";
-import { safeFilename, toMarkdown, type DocumentModel } from "@/lib/export/model";
+import { flattenBlocks, safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
 import { buildPdf, wrapLines, type PdfFonts } from "@/lib/export/pdf";
 import { PDFDocument as PD, PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
@@ -227,3 +227,43 @@ describe("Randfälle aus dem Review", () => {
   });
 });
 
+
+describe("Bildschirm-Bausteine in den Dateien", () => {
+  const visual: DocBlock[] = [
+    { type: "stat", label: "Marketing-Reife", value: "72", of: "100", band: "Solide Basis", note: "Es fehlt das Messen." },
+    { type: "bars", title: "Dimensionen", unit: "%", items: [{ label: "Website", value: 80.5, note: "gut" }, { label: "Social Media", value: 40 }] },
+    { type: "steps", title: "Nächste Schritte", items: [{ title: "Profil prüfen", text: "Lies es laut." }, { title: "Plan machen", text: "Wähle Tage." }] },
+    { type: "cards", title: "Ideen", items: [{ title: "Team", text: "Ein Foto.", tag: "Reel" }, { title: "Baustelle" }] },
+    { type: "split", title: "Themen", items: [{ label: "Wissen", value: 60 }, { label: "Team", value: 40 }] },
+    { type: "grid", title: "Woche", columns: ["Mo", "Di"], rows: [{ label: "Morgen", cells: ["Beitrag"] }] },
+    { type: "slides", title: "Folien", items: [{ title: "Eins", text: "a", tag: "Heute" }] },
+    { type: "paragraph", text: "Normaler Absatz." },
+  ];
+
+  it("flattenBlocks macht aus jedem Baustein Grundbausteine und lässt Grundbausteine unverändert", () => {
+    const flat = flattenBlocks(visual);
+    expect(flat.every((b) => ["heading", "paragraph", "list", "table", "facts"].includes(b.type))).toBe(true);
+    expect(flat[0]).toEqual({ type: "paragraph", text: "Marketing-Reife: 72 von 100 (Solide Basis). Es fehlt das Messen." });
+    expect(flat).toContainEqual({ type: "table", header: ["", "Anteil"], rows: [["Website", "80,5 %, gut"], ["Social Media", "40 %"]], widths: [2, 1] });
+    expect(flat).toContainEqual({ type: "list", ordered: true, items: ["Profil prüfen: Lies es laut.", "Plan machen: Wähle Tage."] });
+    expect(flat).toContainEqual({ type: "list", items: ["Team (Reel): Ein Foto.", "Baustelle"] });
+    expect(flat).toContainEqual({ type: "table", header: ["", "Mo", "Di"], rows: [["Morgen", "Beitrag", ""]] });
+    expect(flat.at(-1)).toEqual({ type: "paragraph", text: "Normaler Absatz." });
+    const basic: DocBlock[] = [{ type: "heading", level: 1, text: "A" }, { type: "facts", items: [{ label: "x", value: "y" }] }];
+    expect(flattenBlocks(basic)).toEqual(basic);
+  });
+
+  it("Markdown, PDF und Word enthalten den Inhalt der Bausteine", async () => {
+    const m = model({ blocks: visual });
+    const md = toMarkdown(m);
+    expect(md).toContain("Marketing-Reife: 72 von 100 (Solide Basis).");
+    expect(md).toContain("| Website | 80,5 % |".replace(" % |", " %, gut |"));
+    expect(md).toContain("1. Profil prüfen: Lies es laut.");
+    expect(md).toContain("- Team (Reel): Ein Foto.");
+    const pdf = await PDFDocument.load(await buildPdf(m, fonts));
+    expect(pdf.getPageCount()).toBeGreaterThanOrEqual(1);
+    const zip = await JSZip.loadAsync(await buildDocx(m));
+    const xml = await zip.file("word/document.xml")!.async("string");
+    for (const text of ["Solide Basis", "Profil prüfen", "Baustelle", "Wissen", "Beitrag"]) expect(xml).toContain(text);
+  });
+});

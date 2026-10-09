@@ -86,8 +86,10 @@ describe("Reifegrad-Check im Browser", () => {
     expect(within(card).getByText(/\(38 von 100\) zählt in «Auftritt» zur Hälfte mit/)).toBeInTheDocument();
     expect(within(card).getByRole("meter", { name: "Steuerung" })).toHaveAttribute("aria-valuenow", "22");
     // Schwächste Dimension zuerst
-    const steps = within(card).getAllByRole("listitem").filter((li) => /^\d+\./.test(li.textContent ?? ""));
-    expect(steps[0]).toHaveTextContent("Steuerung");
+    const folien = within(within(card).getByRole("region", { name: /Nächste Schritte/ })).getAllByRole("listitem");
+    expect(folien.length).toBeGreaterThanOrEqual(5);
+    expect(folien[0]).toHaveTextContent("Schritt 1");
+    expect(folien[0]).toHaveTextContent("Steuerung");
     expect(within(card).getByRole("button", { name: "Text kopieren" })).toBeInTheDocument();
     expect(within(card).getByRole("button", { name: "PDF herunterladen" })).toBeInTheDocument();
 

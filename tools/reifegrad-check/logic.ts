@@ -1,6 +1,7 @@
 import { formatAnswer, type AnswerValue, type Answers, type Question } from "@/components/tool/questionnaire";
 import { dateCH } from "@/lib/ch";
 import { toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
+import type { PitchSpec } from "@/lib/pitch";
 import { GROESSEN } from "@/lib/profile";
 
 // Reine Funktionen: kein React, kein DOM. Spec: specs/reifegrad-check.md
@@ -420,6 +421,51 @@ export function toDocument(result: Reifegrad): DocumentModel {
     filename: "reifegrad-check",
     blocks,
   };
+}
+
+/** Das Ergebnis für den Bildschirm: grosse Zahl, fünf Balken, die nächsten Schritte als Folien. Die Datei (PDF, Word) bekommt dieselben Inhalte als Tabelle und Liste. */
+export function visualBlocks(result: Reifegrad): DocBlock[] {
+  // Die schwächste Dimension (bei Gleichstand die erste in der Reihenfolge der Werkzeuge) ist golden: Dort fängt der erste Schritt an.
+  const schwach = result.dimensionen.length > 0 ? [...result.dimensionen].sort((a, b) => a.score - b.score)[0].id : null;
+  return [
+    { type: "stat", label: "Reifegrad gesamt", value: String(result.gesamt), of: "100", band: `Stufe «${result.stufe}»` },
+    {
+      type: "bars",
+      title: "Fünf Dimensionen",
+      max: 100,
+      items: result.dimensionen.map((d) => ({
+        label: d.name,
+        value: d.score,
+        highlight: d.id === schwach,
+        note: `Stufe «${d.stufe}»${d.check !== null ? `, Selbstangabe ${d.selbst}, Marketing-Check ${d.check}` : ""}`,
+      })),
+    },
+    {
+      type: "slides",
+      title: "Nächste Schritte, bei der schwächsten Dimension beginnend",
+      items: result.schritte.map((s, i) => ({ title: s.name, text: s.text, tag: `Schritt ${i + 1}` })),
+    },
+  ];
+}
+
+/** Baustein, der zur Dimension passt, in der Alperna etwas übernehmen kann (Auftritt, Inhalte, Kundenkontakt). */
+const BAUSTEIN_JE_DIMENSION: Partial<Record<DimensionId, PitchSpec["baustein"]>> = {
+  auftritt: "Website",
+  inhalte: "Social Media",
+  kundenkontakt: "Google Business Profil",
+};
+
+/** Bis zu dieser Punktzahl sieht Alperna in einer Dimension etwas zu tun; ab «Fortgeschritten» gibt es nichts zu sagen. */
+export const PITCH_BIS = STUFE_AB.Fortgeschritten;
+
+/** Hinweis auf Alperna aus dem Ergebnis: die schwächste Dimension, in der Alperna arbeitet. Ohne solche Dimension unter «Fortgeschritten» kein Hinweis. */
+export function pitchFor(result: Reifegrad): PitchSpec | null {
+  const kandidaten = result.dimensionen
+    .filter((d) => BAUSTEIN_JE_DIMENSION[d.id] && d.score < PITCH_BIS)
+    .sort((a, b) => a.score - b.score);
+  const d = kandidaten[0];
+  if (!d) return null;
+  return { baustein: BAUSTEIN_JE_DIMENSION[d.id]!, satz: `Am meisten Luft hat bei dir «${d.name}»: ${d.score} von 100.` };
 }
 
 /** Ausgabe fürs CRM (Zugang v3): Markdown des Dokuments; Gesamt und Dimensionen stehen oben. */

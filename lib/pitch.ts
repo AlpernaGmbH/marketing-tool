@@ -18,6 +18,12 @@ export type BausteinName = (typeof BAUSTEIN_NAMES)[number];
 
 export type Baustein = { name: BausteinName; text: string; beweis: string };
 
+/**
+ * Was ein Werkzeug aus seinem Ergebnis über Alperna sagt (components/tool/ResultPitch.tsx): `satz` stammt aus dem Ergebnis, `baustein` wählt
+ * den Text aus dieser Datei. Das Werkzeug berechnet beides in seiner logic.ts, mit Test, und nennt nie einen Preis.
+ */
+export type PitchSpec = { baustein: BausteinName; satz: string };
+
 export type Bausteine = {
   einstiegsangebot: string;
   items: Baustein[];

@@ -3,7 +3,7 @@ import path from "node:path";
 import matter from "gray-matter";
 import { describe, expect, it } from "vitest";
 import { brandHits } from "@/lib/brand-rules";
-import { toMarkdown, type DocBlock } from "@/lib/export/model";
+import { flattenBlocks, toMarkdown, type DocBlock } from "@/lib/export/model";
 import {
   BASIS_REIHENFOLGE,
   EMPTY_STATE,
@@ -95,7 +95,7 @@ const keys = (list: { key: KanalKey }[]): KanalKey[] => list.map((k) => k.key);
 const rolleOf = (a: Auswertung, key: KanalKey): Rolle => a.kanaele.find((k) => k.key === key)?.rolle as Rolle;
 
 function blockText(blocks: DocBlock[]): string[] {
-  return blocks.flatMap((b): string[] => {
+  return flattenBlocks(blocks).flatMap((b): string[] => {
     switch (b.type) {
       case "heading":
       case "paragraph":

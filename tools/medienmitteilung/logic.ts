@@ -1,6 +1,6 @@
 import { brandHits } from "@/lib/brand-rules";
 import { KANTONE } from "@/lib/ch";
-import { safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
+import { flattenBlocks, safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
 import type { Profile } from "@/lib/profile";
 import { z } from "zod";
 import {
@@ -285,7 +285,7 @@ export function viewBlocks(doc: DocumentModel): DocBlock[] {
 export function toPlainText(doc: DocumentModel): string {
   const parts: string[] = [];
   if (doc.subtitle) parts.push(doc.subtitle);
-  for (const b of doc.blocks) {
+  for (const b of flattenBlocks(doc.blocks)) {
     switch (b.type) {
       case "heading":
       case "paragraph":

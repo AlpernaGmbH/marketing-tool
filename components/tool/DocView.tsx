@@ -1,3 +1,4 @@
+import { VisualBlockView } from "@/components/tool/visual";
 import type { DocBlock } from "@/lib/export/model";
 
 type Props = {
@@ -83,6 +84,8 @@ export function DocView({ blocks, baseLevel = 4 }: Props) {
                 ))}
               </dl>
             );
+          default:
+            return <VisualBlockView key={i} block={b} />;
         }
       })}
     </div>

@@ -15,7 +15,9 @@ import {
   questions,
   resultText,
   stufe,
+  pitchFor,
   toDocument,
+  visualBlocks,
   type DimensionId,
 } from "./logic";
 
@@ -249,5 +251,46 @@ describe("reifegrad-check: Dokument und CRM-Text", () => {
         expect(t).not.toMatch(/\s[,.;:?]/);
       }
     }
+  });
+});
+
+describe("reifegrad-check: Bildschirm und Hinweis auf Alperna", () => {
+  it("zeigt Gesamt, fünf Balken und die Schritte als Folien, in der Reihenfolge der schwächsten Dimension", () => {
+    const r = evaluate(KELLER, KELLER_CHECK);
+    const blocks = visualBlocks(r);
+    expect(blocks.map((b) => b.type)).toEqual(["stat", "bars", "slides"]);
+    expect(blocks[0]).toMatchObject({ type: "stat", value: "42", of: "100", band: "Stufe «Aufbau»" });
+    const bars = blocks[1] as Extract<(typeof blocks)[number], { type: "bars" }>;
+    expect(bars.items.map((i) => i.label)).toEqual(DIMENSIONS.map((d) => d.name));
+    expect(bars.items.find((i) => i.label === "Auftritt")).toMatchObject({ value: 53, note: "Stufe «Routine», Selbstangabe 67, Marketing-Check 38" });
+    // genau eine Dimension ist hervorgehoben: die schwächste, mit der auch die Schritte beginnen
+    expect(bars.items.filter((i) => i.highlight).map((i) => i.label)).toEqual(["Steuerung"]);
+    const slides = blocks[2] as Extract<(typeof blocks)[number], { type: "slides" }>;
+    expect(slides.items).toHaveLength(r.schritte.length);
+    expect(slides.items[0]).toMatchObject({ title: "Steuerung", tag: "Schritt 1" });
+  });
+
+  it("nennt Alperna in der schwächsten Dimension, in der Alperna arbeitet, mit dem passenden Baustein", () => {
+    // Auftritt tief, alles andere hoch: Website
+    const auftritt = evaluate({ ...allAt(3), website: questions.find((q) => q.id === "website")!.type === "single" ? (questions.find((q) => q.id === "website") as { options: { value: string }[] }).options[0].value : "" });
+    expect(dim(auftritt, "auftritt").score).toBeLessThan(dim(auftritt, "inhalte").score);
+    expect(pitchFor(auftritt)).toEqual({ baustein: "Website", satz: `Am meisten Luft hat bei dir «Auftritt»: ${dim(auftritt, "auftritt").score} von 100.` });
+  });
+
+  it("wählt die schwächste von Auftritt, Inhalte und Kundenkontakt; Strategie und Steuerung zählen nicht", () => {
+    const tief = evaluate(allAt(0)); // alles tief
+    const spec = pitchFor(tief)!;
+    expect(["Website", "Social Media", "Google Business Profil"]).toContain(spec.baustein);
+    expect(spec.satz).toMatch(/^Am meisten Luft hat bei dir «(Auftritt|Inhalte|Kundenkontakt)»: \d+ von 100\.$/);
+    expect(spec.satz).not.toMatch(/Strategie|Steuerung/);
+  });
+
+  it("sagt nichts, wenn alle drei Dimensionen schon «Fortgeschritten» sind", () => {
+    expect(pitchFor(evaluate(allAt(3)))).toBeNull();
+  });
+
+  it("nennt weder Preise noch Versprechen im Satz", () => {
+    const spec = pitchFor(evaluate(KELLER))!;
+    expect(spec.satz).not.toMatch(/CHF|garantiert|Gratis/i);
   });
 });

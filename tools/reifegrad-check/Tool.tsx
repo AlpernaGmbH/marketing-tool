@@ -3,17 +3,17 @@
 import Link from "next/link";
 import { useCallback, useMemo } from "react";
 import { DocumentExport } from "@/components/tool/DocumentExport";
+import { DocView } from "@/components/tool/DocView";
 import { QuestionnaireEngine } from "@/components/tool/QuestionnaireEngine";
 import { ResultCard } from "@/components/tool/ResultCard";
-import { ScoreBadge } from "@/components/tool/ScoreBadge";
+import { ResultPitch } from "@/components/tool/ResultPitch";
 import { ToolShell } from "@/components/tool/ToolShell";
 import { prefillFromProfile, type Answers } from "@/components/tool/questionnaire";
 import { dateCH } from "@/lib/ch";
-import { scoreBand } from "@/lib/score";
 import { useLocalJson } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
 import { SLUG as CHECK_SLUG, parseCheckState } from "@/tools/digitaler-auftritt-check/logic";
-import { RICHTWERT_HINWEIS, STUFE_AB, checkInfo, evaluate, questions, resultText, toDocument, type DimensionResult, type Reifegrad } from "./logic";
+import { RICHTWERT_HINWEIS, STUFE_AB, checkInfo, evaluate, pitchFor, questions, resultText, toDocument, visualBlocks, type Reifegrad } from "./logic";
 import config from "./tool.config";
 
 const CHECK_PATH = `/tools/${CHECK_SLUG}`;
@@ -26,36 +26,10 @@ function CheckLink() {
   );
 }
 
-function DimensionRow({ d }: { d: DimensionResult }) {
-  const band = scoreBand(d.score / 100);
-  return (
-    <li className="grid gap-1.5 border-b border-line pb-3 last:border-b-0">
-      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
-        <span className="font-heading font-semibold">{d.name}</span>
-        <span className="text-sm text-muted-foreground">
-          {d.score} von 100, Stufe «{d.stufe}»
-          {d.check !== null && ` (Selbstangabe ${d.selbst}, Marketing-Check ${d.check})`}
-        </span>
-      </div>
-      <span
-        role="meter"
-        aria-label={d.name}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={d.score}
-        aria-valuetext={`${d.score} von 100, Stufe ${d.stufe}`}
-        className="block h-2 w-full overflow-hidden rounded-full bg-line"
-      >
-        <span className={`block h-full ${band.key === "hoch" ? "bg-ink" : band.key === "mittel" ? "bg-brand" : "bg-yellow"}`} style={{ width: `${d.score}%` }} />
-      </span>
-    </li>
-  );
-}
-
 function Result({ result }: { result: Reifegrad }) {
   return (
     <ResultCard title="Dein Marketing-Reifegrad" actions={<DocumentExport model={toDocument(result)} />}>
-      <ScoreBadge score={result.gesamt} label={`Reifegrad gesamt, Stufe «${result.stufe}»`} />
+      <DocView blocks={visualBlocks(result)} />
       <p className="text-sm text-muted-foreground">
         {RICHTWERT_HINWEIS} Stufen: bis {STUFE_AB.Aufbau - 1} Anfang, ab {STUFE_AB.Aufbau} Aufbau, ab {STUFE_AB.Routine} Routine, ab {STUFE_AB.Fortgeschritten}{" "}
         Fortgeschritten.
@@ -72,37 +46,8 @@ function Result({ result }: { result: Reifegrad }) {
           </>
         )}
       </p>
-
-      <section aria-labelledby="rg-dimensionen" className="grid gap-3">
-        <h4 id="rg-dimensionen" className="font-heading text-lg font-semibold">
-          Fünf Dimensionen
-        </h4>
-        <ul className="grid gap-3">
-          {result.dimensionen.map((d) => (
-            <DimensionRow key={d.id} d={d} />
-          ))}
-        </ul>
-      </section>
-
-      <section aria-labelledby="rg-schritte" className="grid gap-3">
-        <h4 id="rg-schritte" className="font-heading text-lg font-semibold">
-          Nächste Schritte, bei der schwächsten Dimension beginnend
-        </h4>
-        <ol className="grid gap-3">
-          {result.schritte.map((s, i) => (
-            <li key={`${s.dimension}-${i}`} className="grid grid-cols-[2rem_1fr] gap-x-2 border-b border-line pb-3 last:border-b-0">
-              <span className="font-heading font-semibold">{i + 1}.</span>
-              <span>
-                <span className="block text-sm text-muted-foreground">{s.name}</span>
-                {s.text}
-              </span>
-            </li>
-          ))}
-        </ol>
-        <p className="text-sm text-muted-foreground">
-          Bei Vereinen gilt dasselbe sinngemäss: Kundschaft sind Mitglieder, Publikum und Sponsoren, Aufträge sind Anlässe und Beitritte.
-        </p>
-      </section>
+      <p className="text-sm text-muted-foreground">Bei Vereinen gilt dasselbe sinngemäss: Kundschaft sind Mitglieder, Publikum und Sponsoren, Aufträge sind Anlässe und Beitritte.</p>
+      <ResultPitch spec={pitchFor(result)} />
     </ResultCard>
   );
 }

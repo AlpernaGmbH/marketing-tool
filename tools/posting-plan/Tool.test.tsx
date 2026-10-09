@@ -72,7 +72,12 @@ describe("posting-plan: Werkzeug im Browser", () => {
 
     const card = await screen.findByRole("region", { name: "Dein Posting-Plan" });
     const plan = within(card).getByTestId("pp-plan");
-    expect(within(plan).getAllByRole("table")).toHaveLength(5); // vier Wochen und die Annahmen
+    expect(within(plan).getAllByRole("table")).toHaveLength(6); // Wochenansicht, vier Wochen und die Annahmen
+    const raster = within(plan).getByTestId("visual-grid");
+    expect(within(raster).getByRole("heading", { name: "Die vier Wochen im Überblick" })).toBeInTheDocument();
+    expect(within(raster).getAllByRole("rowheader").map((r) => r.textContent)).toEqual(["Woche 1", "Woche 2", "Woche 3", "Woche 4"]);
+    expect(within(raster).getAllByText("Produktion").length).toBe(4); // an jedem Produktionstag
+    expect(within(card).queryByTestId("result-pitch")).not.toBeInTheDocument(); // ohne Anbieter (Test) kein Hinweis
     expect(plan).toHaveTextContent("3 pro Woche, 12 in vier Wochen");
     expect(plan).toHaveTextContent("Montag: 1,25 Stunden für 3 Beiträge am Stück");
     expect(plan).toHaveTextContent("Der Aufwand je Format ist eine Annahme von Alperna, keine Statistik.");

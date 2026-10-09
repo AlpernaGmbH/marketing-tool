@@ -1,6 +1,6 @@
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
-import { FOOTER_TEXT, type DocBlock, type DocumentModel } from "@/lib/export/model";
+import { FOOTER_TEXT, flattenBlocks, type BasicBlock, type DocumentModel } from "@/lib/export/model";
 
 // PDF im Browser (und in Tests unter Node): A4 hoch, auf Wunsch quer (`landscape: true` im Modell), Geist für Titel und Text.
 // Die Schriften werden eingebettet; fehlende Zeichen werden ersetzt statt als Kästchen gedruckt.
@@ -161,7 +161,7 @@ class Layout {
     this.cur.y -= 8;
   }
 
-  block(b: DocBlock) {
+  block(b: BasicBlock) {
     switch (b.type) {
       case "heading": {
         const size = b.level === 1 ? 18 : b.level === 2 ? 14 : 11.5;
@@ -328,7 +328,7 @@ export async function buildPdf(model: PdfModel, fonts: PdfFonts): Promise<Uint8A
   );
   const layout = new Layout(doc, f, model, size);
   layout.title();
-  for (const b of model.blocks) layout.block(b);
+  for (const b of flattenBlocks(model.blocks)) layout.block(b);
   decorate(layout.pages, f, model, size);
   return doc.save();
 }

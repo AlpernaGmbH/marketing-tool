@@ -16,7 +16,7 @@ import {
   WidthType,
   type FileChild,
 } from "docx";
-import { FOOTER_TEXT, type DocBlock, type DocumentModel } from "@/lib/export/model";
+import { FOOTER_TEXT, flattenBlocks, type BasicBlock, type DocumentModel } from "@/lib/export/model";
 
 // Word-Dokument. Die Schrift heisst Geist; ohne Installation nimmt Word eine Ersatzschrift.
 const BODY = "Geist";
@@ -60,7 +60,7 @@ function table(header: string[], rows: string[][], widths: number[] | undefined,
   return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [...headRow, ...bodyRows] });
 }
 
-function block(b: DocBlock): FileChild[] {
+function block(b: BasicBlock): FileChild[] {
   switch (b.type) {
     case "heading":
       return [
@@ -132,7 +132,7 @@ export function buildDocxDocument(model: DocumentModel): Document {
         children: [
           new Paragraph({ heading: HeadingLevel.TITLE, spacing: { after: 80 }, children: runs(model.title, { bold: true, font: HEAD, size: 48 }) }),
           ...(model.subtitle ? [new Paragraph({ spacing: { after: 240 }, children: runs(model.subtitle, { size: 22, color: MUTED }) })] : []),
-          ...model.blocks.flatMap(block),
+          ...flattenBlocks(model.blocks).flatMap(block),
         ],
       },
     ],
