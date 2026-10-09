@@ -1,9 +1,9 @@
 {
   "meta": {
-    "source": "Wikipedia (Osterdatum, Schmutziger Donnerstag, Fastnacht, Black Friday, Valentinstag, Silvester, Nikolaustag), feiertage.ch, Präsenz Schweiz (EDA), ferienwiki.ch (Muttertag), männer.ch (Vätertag), baslerfasnacht.info, Stadt St.Gallen, Appenzellerland Tourismus, St. Galler Tagblatt (Fasnacht Ostschweiz), OLMA Messen St. Gallen, familienleben.ch (Samichlaus), Blick (Adventsfenster); Vorschläge und Zuordnungen: Alperna",
+    "source": "Wikipedia (Osterdatum, Schmutziger Donnerstag, Fastnacht, Black Friday, Valentinstag, Silvester, Nikolaustag), feiertage.ch, Präsenz Schweiz (EDA), ferienwiki.ch (Muttertag), männer.ch (Vätertag), baslerfasnacht.info, Stadt St.Gallen, Appenzellerland Tourismus, St. Galler Tagblatt (Fasnacht Ostschweiz, Räbeliechtli-Umzug Rheintal), OLMA Messen St. Gallen, familienleben.ch (Samichlaus), Blick (Adventsfenster), Stadt Zürich und sechselaeuten.ch (Sechseläuten), Migros Famigros (Halloween), Basel Life, Karussell Baden und Stadtpolizei St.Gallen (Räbeliechtli); Vorschläge und Zuordnungen: Alperna",
     "url": "https://feiertage.ch/bundesfeiertag",
-    "asOf": "2026-10-05",
-    "note": "Alle verlinkten Seiten am 05.10.2026 geöffnet. Daten und Regeln stammen von dort: Ostern (erster Sonntag nach dem ersten Frühlingsvollmond), Schmutziger Donnerstag (52 Tage vor Ostersonntag, Fasnacht bis Fasnachtsdienstag, 47 Tage vor Ostersonntag), Basler Fasnacht (Montag nach Aschermittwoch, drei Tage), Muttertag (zweiter Sonntag im Mai), Schweizer Vätertag (erster Sonntag im Juni), Black Friday (Freitag nach dem vierten Donnerstag im November), Samichlaus (6. Dezember), Adventsfenster (ab 1. Dezember jeden Abend ein Fenster, hier 1. bis 24. Dezember), OLMA 2026 (8. bis 18. Oktober) und OLMA 2027 (14. bis 24. Oktober) laut Olma Messen St. Gallen. Schulbeginn leitet das Werkzeug aus den Sommerferien in schulferien.json ab (Tag nach dem Ende). Fasnacht erscheint nur in Kantonen, für die eine geöffnete Seite sie belegt: St. Gallen (Stadt St.Gallen), Appenzell Innerrhoden (Appenzellerland Tourismus), Thurgau (St. Galler Tagblatt), Luzern, Schwyz und die Innerschweiz (Wikipedia). Für alle anderen Kantone fehlt eine geöffnete Quelle; dort trägst du die Fasnacht als eigenen Termin ein. Die Zuordnung der übrigen Anlässe zu Branchen und alle Vorschläge sind redaktionelle Texte von Alperna, keine Statistik. Fehlt eine Region oder Branche, gilt «alle». Schreibweise von datum: fix:MM-TT oder fix:MM-TT/MM-TT (mehrere Tage), ostern:N oder ostern:N..M (Tage ab Ostersonntag), regel:<name> (2-sonntag-mai, 1-sonntag-juni, black-friday, schulbeginn), fix-jahr:JJJJ-MM-TT oder fix-jahr:JJJJ-MM-TT/JJJJ-MM-TT (nur in diesem Jahr); mehrere Angaben als Liste.",
+    "asOf": "2026-10-09",
+    "note": "Alle verlinkten Seiten am 05.10.2026 geöffnet. Daten und Regeln stammen von dort: Ostern (erster Sonntag nach dem ersten Frühlingsvollmond), Schmutziger Donnerstag (52 Tage vor Ostersonntag, Fasnacht bis Fasnachtsdienstag, 47 Tage vor Ostersonntag), Basler Fasnacht (Montag nach Aschermittwoch, drei Tage), Muttertag (zweiter Sonntag im Mai), Schweizer Vätertag (erster Sonntag im Juni), Black Friday (Freitag nach dem vierten Donnerstag im November), Samichlaus (6. Dezember), Adventsfenster (ab 1. Dezember jeden Abend ein Fenster, hier 1. bis 24. Dezember), OLMA 2026 (8. bis 18. Oktober) und OLMA 2027 (14. bis 24. Oktober) laut Olma Messen St. Gallen. Sechseläuten (Stadt Zürich): dritter Montag im April, fällt er auf den Ostermontag, der vierte (Stadtratsbeschluss Nr. 1214 vom 13. Juni 1952). Halloween: 31. Oktober (Migros Famigros). Räbeliechtli: Umzüge im November, oft um den Martinstag (11. November), das genaue Datum legt jede Gemeinde fest; belegt für AG, AR, AI, BL, BS, SG, TG und ZH (Basel Life, Karussell Baden, Stadtpolizei St.Gallen, Famigros, Appenzell24, St. Galler Tagblatt). Sechseläuten (Stadt Zürich): dritter Montag im April, fällt er auf den Ostermontag, der vierte (Stadtratsbeschluss Nr. 1214 vom 13. Juni 1952). Halloween: 31. Oktober (Migros Famigros). Räbeliechtli: Umzüge im November, oft um den Martinstag (11. November), das genaue Datum legt jede Gemeinde fest; belegt für AG, AR, AI, BL, BS, SG, TG und ZH (Basel Life, Karussell Baden, Stadtpolizei St.Gallen, Famigros, Appenzell24, St. Galler Tagblatt). Schulbeginn leitet das Werkzeug aus den Sommerferien in schulferien.json ab (Tag nach dem Ende). Fasnacht erscheint nur in Kantonen, für die eine geöffnete Seite sie belegt: St. Gallen (Stadt St.Gallen), Appenzell Innerrhoden (Appenzellerland Tourismus), Thurgau (St. Galler Tagblatt), Luzern, Schwyz und die Innerschweiz (Wikipedia). Für alle anderen Kantone fehlt eine geöffnete Quelle; dort trägst du die Fasnacht als eigenen Termin ein. Die Zuordnung der übrigen Anlässe zu Branchen und alle Vorschläge sind redaktionelle Texte von Alperna, keine Statistik. Jeder Vorschlag hat drei Varianten mit je einem Format, einer Bildidee und einem Hook; Zeiten wie «15 Sekunden» oder «20 Sekunden» beschreiben die Länge eines Kurzvideos, nicht eine Messung. Jeder Vorschlag hat drei Varianten mit je einem Format, einer Bildidee und einem Hook; Zeiten wie «15 Sekunden» oder «20 Sekunden» beschreiben die Länge eines Kurzvideos, nicht eine Messung. Fehlt eine Region oder Branche, gilt «alle». Schreibweise von datum: fix:MM-TT oder fix:MM-TT/MM-TT (mehrere Tage), ostern:N oder ostern:N..M (Tage ab Ostersonntag), regel:<name> (2-sonntag-mai, 1-sonntag-juni, black-friday, schulbeginn, sechselaeuten), fix-jahr:JJJJ-MM-TT oder fix-jahr:JJJJ-MM-TT/JJJJ-MM-TT (nur in diesem Jahr); mehrere Angaben als Liste.",
     "links": [
       {
         "label": "Feiertage der Schweiz (feiertage.ch)",
@@ -80,62 +80,1905 @@
       {
         "label": "Fastnacht (Wikipedia)",
         "url": "https://de.wikipedia.org/wiki/Fastnacht"
+      },
+      {
+        "label": "Sechseläuten (Stadt Zürich)",
+        "url": "https://www.stadt-zuerich.ch/de/stadtleben/stadtportraet/zuerichs-geschichte/stadtarchiv/wissensportal/zuercher-sechselaeuten.html"
+      },
+      {
+        "label": "Sechseläuten (sechselaeuten.ch)",
+        "url": "https://www.sechselaeuten.ch/"
+      },
+      {
+        "label": "Halloween (Migros Famigros)",
+        "url": "https://www.migros.ch/de/content/famigros-warum-feiern-wir-halloween"
+      },
+      {
+        "label": "Räbeliechtli-Umzug (Basel Life)",
+        "url": "https://www.basellife.com/event/rabeliechtli-umzug-turnip-lantern-procession/"
+      },
+      {
+        "label": "Räbeliechtli-Umzug Baden (Karussell Baden)",
+        "url": "https://www.karussell-baden.ch/angebote/event/96/raebeliechtli-umzug/"
+      },
+      {
+        "label": "Räbeliechtli in St.Gallen (Stadtpolizei St.Gallen)",
+        "url": "https://www.facebook.com/StapoSG/photos/jedes-jahr-im-november-gehen-kinder-in-ihrem-quartier-auf-den-r%C3%A4beliechtli-umzug/2237937932934738/?locale=de_DE"
+      },
+      {
+        "label": "Räbeliechtli im Thurgau (Famigros)",
+        "url": "https://famigros.migros.ch/de/ausfluege-und-freizeit/ausflugsziele/tags/raebeliechtliumzug/thurgau"
+      },
+      {
+        "label": "Räbeliechtli in Reute AR (Appenzell24)",
+        "url": "https://appenzell24.ch/news/raebeliechtliumzug-in-reute/"
+      },
+      {
+        "label": "Räbeliechtli im Rheintal (St. Galler Tagblatt)",
+        "url": "https://www.tagblatt.ch/ostschweiz/rheintal/raebeliechtli-umzug-des-familienforums-ld.218399"
       }
     ]
   },
   "anlaesse": [
-    {"id": "neujahr", "name": "Neujahr", "datum": "fix:01-01", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Guter Start ins neue Jahr", "format": "Foto mit kurzem Text", "hook": "Ein neues Jahr beginnt. Wir sind ab dem ersten Werktag wieder für dich da."}},
-    {"id": "neujahr", "name": "Neujahr", "datum": "fix:01-01", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Neujahrsgruss mit Öffnungszeiten", "format": "Foto mit kurzem Text", "hook": "Auf ein gutes neues Jahr. Ab wann bei uns wieder aufgetischt wird, steht hier."}},
-    {"id": "valentinstag", "name": "Valentinstag", "datum": "fix:02-14", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Eine kleine Aufmerksamkeit", "format": "Foto mit kurzem Text", "hook": "Zum Valentinstag eine kleine Geste für alle, die dir wichtig sind."}},
-    {"id": "valentinstag", "name": "Valentinstag", "datum": "fix:02-14", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Tisch für zwei", "format": "Foto mit kurzem Text", "hook": "Am Valentinstag decken wir den Tisch für zwei. Reserviere früh, die Plätze sind begrenzt."}},
-    {"id": "valentinstag", "name": "Valentinstag", "datum": "fix:02-14", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Geschenkidee zum Valentinstag", "format": "Karussell mit Produktbildern", "hook": "Noch keine Idee für den Valentinstag? Wir haben ein paar kleine Geschenke für dich zusammengestellt."}},
-    {"id": "valentinstag", "name": "Valentinstag", "datum": "fix:02-14", "region": "alle", "branchen": ["dienstleistung"], "vorschlag": {"titel": "Gutschein zum Verschenken", "format": "Foto mit kurzem Text", "hook": "Zeit verschenken: Unseren Gutschein gibt es auch zum Valentinstag."}},
-    {"id": "fasnacht", "name": "Fasnacht", "datum": "ostern:-52..-47", "region": ["LU", "UR", "SZ", "OW", "NW", "ZG", "SG", "AI", "TG"], "branchen": "alle", "vorschlag": {"titel": "Fasnacht in der Region", "format": "Foto mit kurzem Text", "hook": "Fasnachtszeit: Bei uns gelten in diesen Tagen angepasste Öffnungszeiten."}},
-    {"id": "fasnacht", "name": "Fasnacht", "datum": "ostern:-52..-47", "region": ["LU", "UR", "SZ", "OW", "NW", "ZG", "SG", "AI", "TG"], "branchen": ["gastronomie"], "vorschlag": {"titel": "Fasnachtsspezialität", "format": "Foto mit kurzem Text", "hook": "Zur Fasnacht gibt es bei uns, was nach dem Umzug gut tut: warm, deftig und schnell serviert."}},
-    {"id": "fasnacht", "name": "Fasnacht", "datum": "ostern:-52..-47", "region": ["LU", "UR", "SZ", "OW", "NW", "ZG", "SG", "AI", "TG"], "branchen": ["verein"], "vorschlag": {"titel": "Wir sind an der Fasnacht dabei", "format": "Foto vom Umzug oder Anlass", "hook": "Treffpunkt, Zeit und Ort: So findest du uns an der Fasnacht."}},
-    {"id": "basler-fasnacht", "name": "Basler Fasnacht", "datum": "ostern:-41..-39", "region": ["BS", "BL"], "branchen": "alle", "vorschlag": {"titel": "Basler Fasnacht", "format": "Foto mit kurzem Text", "hook": "Der Morgenstreich bringt die Stadt in Bewegung. Unsere Öffnungszeiten für die drei Tage findest du hier."}},
-    {"id": "basler-fasnacht", "name": "Basler Fasnacht", "datum": "ostern:-41..-39", "region": ["BS", "BL"], "branchen": ["gastronomie"], "vorschlag": {"titel": "Mehlsuppe und Käsewähe", "format": "Foto mit kurzem Text", "hook": "Nach dem Cortège wärmt eine Mehlsuppe. Wir haben für dich geöffnet."}},
-    {"id": "ostern", "name": "Ostern", "datum": "ostern:0", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Frohe Ostern", "format": "Foto mit kurzem Text", "hook": "Wir wünschen dir ruhige Ostertage. Wann wir wieder für dich da sind, steht hier."}},
-    {"id": "ostern", "name": "Ostern", "datum": "ostern:0", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Osterbrunch oder Ostermenü", "format": "Foto mit kurzem Text", "hook": "Zu Ostern decken wir für deine Familie. Reservieren geht am einfachsten per Anruf."}},
-    {"id": "ostern", "name": "Ostern", "datum": "ostern:0", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Geschenke zu Ostern", "format": "Karussell mit Produktbildern", "hook": "Kleine Osterfreuden für Gross und Klein, frisch eingetroffen."}},
-    {"id": "ostern", "name": "Ostern", "datum": "ostern:0", "region": "alle", "branchen": ["handwerk"], "vorschlag": {"titel": "Frühling im Haus", "format": "Vorher-Nachher-Bilder", "hook": "Mit dem Frühling kommt die Lust auf frische Wände und einen aufgeräumten Garten. Wir beraten dich gern vor Ort."}},
-    {"id": "ostern", "name": "Ostern", "datum": "ostern:0", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Ostergruss des Vereins", "format": "Foto mit kurzem Text", "hook": "Der Vorstand wünscht allen Mitgliedern schöne Ostertage."}},
-    {"id": "muttertag", "name": "Muttertag", "datum": "regel:2-sonntag-mai", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Danke an alle Mütter", "format": "Foto mit kurzem Text", "hook": "Zum Muttertag sagen wir Danke an alle, die für andere da sind."}},
-    {"id": "muttertag", "name": "Muttertag", "datum": "regel:2-sonntag-mai", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Muttertagsbrunch", "format": "Foto mit kurzem Text", "hook": "Am Muttertag lädt unsere Küche zum Brunch ein. Ein Platz für Mama ist schnell reserviert."}},
-    {"id": "muttertag", "name": "Muttertag", "datum": "regel:2-sonntag-mai", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Geschenkidee für Mama", "format": "Karussell mit Produktbildern", "hook": "Du suchst noch ein Geschenk für Mama? Hier sind unsere Ideen."}},
-    {"id": "muttertag", "name": "Muttertag", "datum": "regel:2-sonntag-mai", "region": "alle", "branchen": ["dienstleistung"], "vorschlag": {"titel": "Gutschein für Mama", "format": "Foto mit kurzem Text", "hook": "Zeit für sich selbst: Unser Gutschein ist ein Geschenk, das bleibt."}},
-    {"id": "vatertag", "name": "Schweizer Vätertag", "datum": "regel:1-sonntag-juni", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Danke an die Väter", "format": "Foto mit kurzem Text", "hook": "Am Schweizer Vätertag ein Dank an alle Väter, die für ihre Kinder da sind."}},
-    {"id": "vatertag", "name": "Schweizer Vätertag", "datum": "regel:1-sonntag-juni", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Vätertag bei uns", "format": "Foto mit kurzem Text", "hook": "Väter und Kinder sind am Vätertag bei uns willkommen."}},
-    {"id": "vatertag", "name": "Schweizer Vätertag", "datum": "regel:1-sonntag-juni", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Vätertag im Verein", "format": "Foto vom letzten Anlass", "hook": "Väter und Kinder sind bei uns willkommen. Mach mit bei unserem nächsten Anlass."}},
-    {"id": "schulbeginn", "name": "Schulbeginn", "datum": "regel:schulbeginn", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Zurück im Alltag", "format": "Foto mit kurzem Text", "hook": "Die Sommerferien sind vorbei, der Alltag kommt zurück. Wir sind wie gewohnt für dich da."}},
-    {"id": "schulbeginn", "name": "Schulbeginn", "datum": "regel:schulbeginn", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Alles für den Schulstart", "format": "Karussell mit Produktbildern", "hook": "Der Schulstart naht: Hier findest du, was Kinder in der Schule brauchen."}},
-    {"id": "schulbeginn", "name": "Schulbeginn", "datum": "regel:schulbeginn", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Neue Mitglieder zum Schuljahr", "format": "Foto mit kurzem Text", "hook": "Mit dem neuen Schuljahr starten auch unsere Trainings wieder. Schnuppern ist jederzeit möglich."}},
-    {"id": "bundesfeier", "name": "Bundesfeier", "datum": "fix:08-01", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Schöne Bundesfeier", "format": "Foto mit kurzem Text", "hook": "Wir wünschen dir einen schönen Nationalfeiertag."}},
-    {"id": "bundesfeier", "name": "Bundesfeier", "datum": "fix:08-01", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Brunch zum Nationalfeiertag", "format": "Foto mit kurzem Text", "hook": "Am Nationalfeiertag servieren wir Brunch mit Zutaten aus der Region."}},
-    {"id": "bundesfeier", "name": "Bundesfeier", "datum": "fix:08-01", "region": "alle", "branchen": ["handwerk"], "vorschlag": {"titel": "Sommerpause und Erreichbarkeit", "format": "Foto mit kurzem Text", "hook": "Wir sind in der Sommerpause. Im Notfall erreichst du uns unter der bekannten Nummer."}},
-    {"id": "bundesfeier", "name": "Bundesfeier", "datum": "fix:08-01", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Bundesfeier im Dorf", "format": "Foto mit kurzem Text", "hook": "Der Verein ist an der Bundesfeier dabei. Hier findest du uns."}},
-    {"id": "olma", "name": "OLMA St. Gallen", "datum": ["fix-jahr:2026-10-08/2026-10-18", "fix-jahr:2027-10-14/2027-10-24"], "region": ["SG", "AR", "AI", "TG"], "branchen": "alle", "vorschlag": {"titel": "OLMA-Zeit in der Region", "format": "Foto mit kurzem Text", "hook": "Die OLMA bringt Leben nach St. Gallen. Wir sind in diesen Tagen auch für dich da."}},
-    {"id": "olma", "name": "OLMA St. Gallen", "datum": ["fix-jahr:2026-10-08/2026-10-18", "fix-jahr:2027-10-14/2027-10-24"], "region": ["SG", "AR", "AI", "TG"], "branchen": ["gastronomie"], "vorschlag": {"titel": "Vor oder nach der OLMA", "format": "Foto mit kurzem Text", "hook": "Nach dem Rundgang über das Messegelände ist bei uns ein Tisch für dich frei."}},
-    {"id": "olma", "name": "OLMA St. Gallen", "datum": ["fix-jahr:2026-10-08/2026-10-18", "fix-jahr:2027-10-14/2027-10-24"], "region": ["SG", "AR", "AI", "TG"], "branchen": ["detailhandel"], "vorschlag": {"titel": "Regionale Ideen zur OLMA", "format": "Karussell mit Produktbildern", "hook": "Aus der Region für die Region: Das haben wir zur OLMA für dich ausgesucht."}},
-    {"id": "samichlaus", "name": "Samichlaus", "datum": "fix:12-06", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Samichlaus-Gruss", "format": "Foto mit kurzem Text", "hook": "Zum Samichlaus ein Dankeschön an alle, die uns das ganze Jahr treu geblieben sind."}},
-    {"id": "samichlaus", "name": "Samichlaus", "datum": "fix:12-06", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Süsses zum Samichlaus", "format": "Foto mit kurzem Text", "hook": "Nüsse, Mandarinen und Lebkuchen: Zum Samichlaus gibt es bei uns eine kleine Überraschung."}},
-    {"id": "samichlaus", "name": "Samichlaus", "datum": "fix:12-06", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Kleine Geschenke für den Chlaussack", "format": "Karussell mit Produktbildern", "hook": "Für den Chlaussack: kleine Dinge, die Freude machen."}},
-    {"id": "samichlaus", "name": "Samichlaus", "datum": "fix:12-06", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Chlausabend", "format": "Foto mit kurzem Text", "hook": "Der Samichlaus besucht unseren Verein. Schau vorbei und bring die Kinder mit."}},
-    {"id": "adventsfenster", "name": "Adventsfenster", "datum": "fix:12-01/12-24", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Unser Adventsfenster", "format": "Foto des Fensters", "hook": "Jeden Abend öffnet sich im Dorf ein neues Fenster. Schau bei uns vorbei, wenn wir an der Reihe sind."}},
-    {"id": "adventsfenster", "name": "Adventsfenster", "datum": "fix:12-01/12-24", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Schaufenster im Advent", "format": "Foto des Schaufensters", "hook": "Unser Schaufenster leuchtet im Advent. Komm auf einem Abendspaziergang vorbei."}},
-    {"id": "adventsfenster", "name": "Adventsfenster", "datum": "fix:12-01/12-24", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Adventsfenster des Vereins", "format": "Foto des Fensters", "hook": "Der Verein gestaltet ein Fenster im Quartier. Wir laden dich zum Apéro ein."}},
-    {"id": "black-friday", "name": "Black Friday", "datum": "regel:black-friday", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Aktion zum Black Friday", "format": "Karussell mit Produktbildern", "hook": "Zum Black Friday gibt es bei uns eine Auswahl zu besonderen Preisen. Hier siehst du, was dabei ist."}},
-    {"id": "black-friday", "name": "Black Friday", "datum": "regel:black-friday", "region": "alle", "branchen": ["dienstleistung"], "vorschlag": {"titel": "Black Friday mit Gutschein", "format": "Foto mit kurzem Text", "hook": "Zum Black Friday schenken wir dir etwas dazu, wenn du einen Gutschein kaufst."}},
-    {"id": "black-friday", "name": "Black Friday", "datum": "regel:black-friday", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Gutscheine für Geniesser", "format": "Foto mit kurzem Text", "hook": "Zum Black Friday gibt es bei uns Gutscheine zum Verschenken. Eine Idee für Weihnachten."}},
-    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Frohe Weihnachten", "format": "Foto mit kurzem Text", "hook": "Wir wünschen dir frohe Weihnachten und ruhige Tage mit den Menschen, die dir wichtig sind."}},
-    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Weihnachtsmenü und Öffnungszeiten", "format": "Foto mit kurzem Text", "hook": "Über die Festtage kochen wir für dich. Unser Menü und die Öffnungszeiten findest du hier."}},
-    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": ["detailhandel"], "vorschlag": {"titel": "Letzte Geschenkideen", "format": "Karussell mit Produktbildern", "hook": "Ein Geschenk fehlt noch? Wir helfen dir bei der Auswahl."}},
-    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": ["handwerk"], "vorschlag": {"titel": "Betriebsferien über die Festtage", "format": "Foto mit kurzem Text", "hook": "Über die Festtage ist unser Betrieb geschlossen. Im Notfall erreichst du uns unter der bekannten Nummer."}},
-    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": ["dienstleistung"], "vorschlag": {"titel": "Gutschein als Geschenk", "format": "Foto mit kurzem Text", "hook": "Zeit ist ein Geschenk, das bleibt. Unseren Gutschein bekommst du auch kurzfristig."}},
-    {"id": "weihnachten", "name": "Weihnachten", "datum": "fix:12-25", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Weihnachtsgruss des Vereins", "format": "Foto mit kurzem Text", "hook": "Der Vorstand dankt allen Mitgliedern für das Jahr und wünscht frohe Festtage."}},
-    {"id": "jahresende", "name": "Jahresende", "datum": "fix:12-31", "region": "alle", "branchen": "alle", "vorschlag": {"titel": "Danke für das Jahr", "format": "Rückblick mit Fotos", "hook": "Ein Jahr geht zu Ende. Danke für dein Vertrauen und die vielen guten Gespräche."}},
-    {"id": "jahresende", "name": "Jahresende", "datum": "fix:12-31", "region": "alle", "branchen": ["gastronomie"], "vorschlag": {"titel": "Silvester bei uns", "format": "Foto mit kurzem Text", "hook": "Zum Jahresende feiern wir gemeinsam. Plätze reservierst du bei uns."}},
-    {"id": "jahresende", "name": "Jahresende", "datum": "fix:12-31", "region": "alle", "branchen": ["handwerk"], "vorschlag": {"titel": "Jahresrückblick auf Projekte", "format": "Fotos der Projekte", "hook": "Das waren unsere Projekte in diesem Jahr: vom Wohnzimmer bis zur Fassade."}},
-    {"id": "jahresende", "name": "Jahresende", "datum": "fix:12-31", "region": "alle", "branchen": ["verein"], "vorschlag": {"titel": "Jahresrückblick des Vereins", "format": "Rückblick mit Fotos", "hook": "Das war unser Vereinsjahr: Anlässe, Erfolge und Gesichter."}}
+    {
+      "id": "neujahr",
+      "name": "Neujahr",
+      "datum": "fix:01-01",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Guter Start ins neue Jahr",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Eingang oder Team im Winterlicht, ein Satz im Bild",
+            "hook": "Ein neues Jahr beginnt. Ab dem ersten Werktag sind wir wieder für dich da. Was steht bei dir dieses Jahr an?"
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Drei Bilder: ein Projekt vom letzten Jahr, ein Moment im Team, ein Ausblick",
+            "hook": "Drei Dinge nehmen wir aus dem letzten Jahr mit. Und eine Sache machen wir dieses Jahr anders."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Bild vom Arbeitsplatz mit Umfrage-Sticker",
+            "hook": "Wir planen unser Jahr. Welches Thema soll bei uns mehr Platz bekommen?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "neujahr",
+      "name": "Neujahr",
+      "datum": "fix:01-01",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Neujahrsgruss mit Öffnungszeiten",
+        "varianten": [
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text, als Google-Beitrag oder Facebook-Beitrag",
+            "hook": "Zum Jahresstart sind wir ab dem ersten Werktag wieder zu den gewohnten Zeiten für dich da. Einen Tisch reservierst du telefonisch oder online."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Küche am ersten Morgen, das erste Gericht des Jahres",
+            "hook": "Der erste Teller im neuen Jahr. Wir starten in der Küche."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Die drei beliebtesten Gerichte des letzten Jahres",
+            "hook": "Eure Lieblinge aus dem letzten Jahr, in drei Tellern. Welches wünschst du dir wieder?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "valentinstag",
+      "name": "Valentinstag",
+      "datum": "fix:02-14",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Eine kleine Aufmerksamkeit",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Kleines Geschenk oder Blume auf dem Arbeitsplatz",
+            "hook": "Am 14. Februar geht es um Kleinigkeiten. Wem machst du heute eine kleine Aufmerksamkeit?"
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Herz aus Betriebsmaterial, Umfrage «Blumen oder Schokolade?»",
+            "hook": "Blumen oder Schokolade? Sag uns, was dir lieber ist."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Hände, die eine Karte schreiben, 15 Sekunden",
+            "hook": "Eine handgeschriebene Karte kostet wenig und bleibt. Wir haben heute eine geschrieben."
+          }
+        ]
+      }
+    },
+    {
+      "id": "valentinstag",
+      "name": "Valentinstag",
+      "datum": "fix:02-14",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Tisch für zwei",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Gedeckter Tisch für zwei mit Kerze",
+            "hook": "Tisch für zwei am 14. Februar. Wir reservieren dir gern einen Platz, telefonisch oder online."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Dessert wird von Hand fertig angerichtet, Nahaufnahme",
+            "hook": "Das Dessert für zwei richten wir bei uns von Hand an."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Menükarte für den Abend",
+            "hook": "Was gehört für dich auf einen Valentinsabend: ein Dreigänger oder ein einfacher Znacht zu zweit?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "valentinstag",
+      "name": "Valentinstag",
+      "datum": "fix:02-14",
+      "region": "alle",
+      "branchen": [
+        "detailhandel"
+      ],
+      "vorschlag": {
+        "titel": "Geschenkidee zum Valentinstag",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Drei Geschenke aus dem Sortiment: klein, mittel, besonders",
+            "hook": "Drei Ideen für den 14. Februar, von klein bis besonders."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Ein Geschenk wird verpackt, 15 Sekunden",
+            "hook": "So verpacken wir ein Geschenk, wenn es schnell gehen muss und trotzdem schön aussehen soll."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Zwei Produkte nebeneinander, Umfrage",
+            "hook": "Welches Geschenk würde dich mehr freuen? Stimm ab, wir packen es gern für dich ein."
+          }
+        ]
+      }
+    },
+    {
+      "id": "valentinstag",
+      "name": "Valentinstag",
+      "datum": "fix:02-14",
+      "region": "alle",
+      "branchen": [
+        "dienstleistung"
+      ],
+      "vorschlag": {
+        "titel": "Gutschein zum Verschenken",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Gutscheinkarte mit Schleife",
+            "hook": "Zeit verschenken: Unseren Gutschein gibt es auch zum Valentinstag. Frag bei uns nach."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Foto aus dem Alltag der Dienstleistung",
+            "hook": "Was wäre dein Wunsch für einen freien Nachmittag? Wir haben den passenden Gutschein."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text, als Google-Beitrag",
+            "hook": "Der Gutschein zum Valentinstag: per Post, zum Abholen oder als Datei. Schreib uns, wir helfen dir bei der Wahl."
+          }
+        ]
+      }
+    },
+    {
+      "id": "fasnacht",
+      "name": "Fasnacht",
+      "datum": "ostern:-52..-47",
+      "region": [
+        "LU",
+        "UR",
+        "SZ",
+        "OW",
+        "NW",
+        "ZG",
+        "SG",
+        "AI",
+        "TG"
+      ],
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Fasnacht in der Region",
+        "varianten": [
+          {
+            "format": "Reel",
+            "bildidee": "Kostüme im Betrieb, Konfetti, 15 Sekunden",
+            "hook": "Die fünfte Jahreszeit ist da. Bei uns ist verkleidet erscheinen ausdrücklich erlaubt."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Team in Kostümen oder Dekoration im Eingang",
+            "hook": "Welches Kostüm trägst du dieses Jahr? Wir verraten unseres, wenn du deins verrätst."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text zu den Öffnungszeiten an den Fasnachtstagen",
+            "hook": "Während der Fasnacht gelten bei uns angepasste Öffnungszeiten. Hier siehst du, wann wir für dich da sind."
+          }
+        ]
+      }
+    },
+    {
+      "id": "fasnacht",
+      "name": "Fasnacht",
+      "datum": "ostern:-52..-47",
+      "region": [
+        "LU",
+        "UR",
+        "SZ",
+        "OW",
+        "NW",
+        "ZG",
+        "SG",
+        "AI",
+        "TG"
+      ],
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Fasnachtsspezialität",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Fasnachtschüechli oder andere Spezialität auf einem Holzbrett",
+            "hook": "Fasnachtschüechli aus unserer Küche: ab heute bei uns, solange die Fasnacht dauert."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Teig wird ausgezogen und frittiert",
+            "hook": "So entstehen Fasnachtschüechli bei uns, vom Teig bis zum Puderzucker."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Zwei Spezialitäten, Umfrage",
+            "hook": "Chüechli oder Berliner? Du entscheidest, was morgen früh in der Vitrine liegt."
+          }
+        ]
+      }
+    },
+    {
+      "id": "fasnacht",
+      "name": "Fasnacht",
+      "datum": "ostern:-52..-47",
+      "region": [
+        "LU",
+        "UR",
+        "SZ",
+        "OW",
+        "NW",
+        "ZG",
+        "SG",
+        "AI",
+        "TG"
+      ],
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Wir sind an der Fasnacht dabei",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Gruppenfoto, Wagen, Kostüme, Treffpunkt",
+            "hook": "Wir sind am Umzug dabei. Programm, Treffpunkt und Uhrzeit auf einen Blick."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Basteln am Wagen, eine Woche vor dem Umzug",
+            "hook": "So sieht unser Wagen eine Woche vor dem Umzug aus. Es fehlt noch einiges."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Foto der Gruppe",
+            "hook": "Wer macht dieses Jahr mit? Wir suchen Hände fürs Aufbauen und Gesichter fürs Foto."
+          }
+        ]
+      }
+    },
+    {
+      "id": "basler-fasnacht",
+      "name": "Basler Fasnacht",
+      "datum": "ostern:-41..-39",
+      "region": [
+        "BS",
+        "BL"
+      ],
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Basler Fasnacht",
+        "varianten": [
+          {
+            "format": "Reel",
+            "bildidee": "Laternen im Dunkeln vor dem Morgestraich, 15 Sekunden",
+            "hook": "Um vier Uhr gehen die Lichter aus. Der Morgestraich beginnt am Montag nach Aschermittwoch."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Laterne im Schaufenster oder Eingang",
+            "hook": "Drei Tage Fasnacht in Basel. Welche Laterne gefällt dir dieses Jahr am besten?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text zu den Öffnungszeiten an den drei Tagen",
+            "hook": "Während der Basler Fasnacht haben wir angepasste Öffnungszeiten. Hier siehst du sie für alle drei Tage."
+          }
+        ]
+      }
+    },
+    {
+      "id": "basler-fasnacht",
+      "name": "Basler Fasnacht",
+      "datum": "ostern:-41..-39",
+      "region": [
+        "BS",
+        "BL"
+      ],
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Mehlsuppe und Käsewähe",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Mehlsuppe im Teller, daneben eine Käsewähe",
+            "hook": "Mehlsuppe und Käsewähe gehören zur Fasnacht. Bei uns kannst du beides geniessen."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Die Mehlsuppe wird gerührt, Dampf steigt auf",
+            "hook": "Die Mehlsuppe braucht Geduld. Wir haben ihr die Zeit gegeben."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Zwei Teller, Umfrage",
+            "hook": "Mehlsuppe oder Käsewähe? Sag uns, was du zuerst bestellst."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sechselaeuten",
+      "name": "Sechseläuten",
+      "datum": "regel:sechselaeuten",
+      "region": [
+        "ZH"
+      ],
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Sechseläuten in Zürich",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Frühlingsbild aus dem Betrieb, ein Satz zum Böögg",
+            "hook": "Heute brennt in Zürich der Böögg. Wie lange braucht er dieses Jahr?"
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Böögg-Motiv, Umfrage zur Brenndauer",
+            "hook": "Tipp ab: Brennt der Böögg schnell oder langsam? Wir zählen die Stimmen aus."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text zu den Öffnungszeiten am Sechseläuten-Montag",
+            "hook": "Am Sechseläuten-Montag gelten bei uns angepasste Öffnungszeiten. Hier siehst du, wann wir für dich da sind."
+          }
+        ]
+      },
+      "hinweis": "Das Sechseläuten findet am dritten Montag im April statt, fällt dieser auf den Ostermontag, am vierten (Stadt Zürich)."
+    },
+    {
+      "id": "sechselaeuten",
+      "name": "Sechseläuten",
+      "datum": "regel:sechselaeuten",
+      "region": [
+        "ZH"
+      ],
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Sechseläuten bei uns am Tisch",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Bratwurst mit Senf und Brot auf einem Teller",
+            "hook": "Zum Sechseläuten gibt es bei uns eine Bratwurst, bevor der Böögg brennt. Reservieren geht telefonisch."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Rost, Bratwurst wird gewendet, 15 Sekunden",
+            "hook": "Bratwurst vom Rost, wie sie zum Sechseläuten gehört."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Terrasse oder Gaststube mit Frühlingslicht",
+            "hook": "Wo schaust du den Böögg am liebsten an: auf dem Platz, vom Fenster aus oder im Radio?"
+          }
+        ]
+      },
+      "hinweis": "Das Sechseläuten findet am dritten Montag im April statt, fällt dieser auf den Ostermontag, am vierten (Stadt Zürich)."
+    },
+    {
+      "id": "ostern",
+      "name": "Ostern",
+      "datum": "ostern:0",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Frohe Ostern",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Osterdekoration im Betrieb, ein Satz im Bild",
+            "hook": "Wir wünschen dir frohe Ostern. Was machst du an den freien Tagen?"
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Ei-Motiv, Umfrage",
+            "hook": "Eier suchen oder ausschlafen? Sag uns, wie dein Ostermorgen aussieht."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text zu den Öffnungszeiten über Ostern",
+            "hook": "Über Ostern gelten bei uns besondere Öffnungszeiten. Hier siehst du, wann wir für dich da sind."
+          }
+        ]
+      }
+    },
+    {
+      "id": "ostern",
+      "name": "Ostern",
+      "datum": "ostern:0",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Osterbrunch oder Ostermenü",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Brunchtisch mit Osterzopf",
+            "hook": "Der Osterbrunch am Sonntag. Wir freuen uns auf dich. Reservieren geht telefonisch oder online."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Osterzopf wird geflochten",
+            "hook": "So flechten wir den Osterzopf: von Hand, Strang für Strang."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Das Ostermenü, Gang für Gang",
+            "hook": "Unser Ostermenü in Bildern. Vom ersten Gang bis zum Dessert."
+          }
+        ]
+      }
+    },
+    {
+      "id": "ostern",
+      "name": "Ostern",
+      "datum": "ostern:0",
+      "region": "alle",
+      "branchen": [
+        "detailhandel"
+      ],
+      "vorschlag": {
+        "titel": "Geschenke zu Ostern",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Produkte im Osternest dekoriert",
+            "hook": "Fünf Ideen fürs Osternest, die nicht nur aus Schokolade bestehen."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Ein Osternest wird gepackt",
+            "hook": "So packen wir ein Osternest: erst die Unterlage, dann die Überraschung."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Zwei Nester, Umfrage",
+            "hook": "Welches Nest würdest du verschenken? Stimm ab, wir packen es dir gern ein."
+          }
+        ]
+      }
+    },
+    {
+      "id": "ostern",
+      "name": "Ostern",
+      "datum": "ostern:0",
+      "region": "alle",
+      "branchen": [
+        "handwerk"
+      ],
+      "vorschlag": {
+        "titel": "Frühling im Haus",
+        "varianten": [
+          {
+            "format": "Vorher-nachher",
+            "bildidee": "Ein Raum vorher und nachher, zum Beispiel frisch gestrichen",
+            "hook": "Der Frühling beginnt im Haus. Dieses Zimmer hat in einer Woche ein neues Gesicht bekommen."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Zeitraffer der Arbeit",
+            "hook": "Vom ersten Strich bis zum fertigen Raum in 20 Sekunden."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Frühlingsbild von einem Objekt",
+            "hook": "Was steht bei dir zuhause im Frühling an: Fenster, Fassade oder Garten?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ostern",
+      "name": "Ostern",
+      "datum": "ostern:0",
+      "region": "alle",
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Ostergruss des Vereins",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Gruppenbild",
+            "hook": "Wir wünschen dir und deiner Familie frohe Ostern. Welche Tradition gehört bei euch dazu?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text mit den nächsten Terminen",
+            "hook": "Frohe Ostern von uns allen. Unsere nächsten Termine nach den Feiertagen findest du hier."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Zwei Ideen für den nächsten Anlass",
+            "hook": "Welchen Anlass wünschst du dir im Frühling? Du hast die Wahl."
+          }
+        ]
+      }
+    },
+    {
+      "id": "muttertag",
+      "name": "Muttertag",
+      "datum": "regel:2-sonntag-mai",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Danke an alle Mütter",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Blumen im Betrieb",
+            "hook": "Danke an alle Mütter. Was hat dir deine Mutter mitgegeben, das du bis heute brauchst?"
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Kurze Szenen: das Team sagt je einen Satz Dank",
+            "hook": "Ein Satz an die Mütter in unserem Team und in unserer Kundschaft: Danke."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Anruf, Besuch oder Brief?»",
+            "hook": "Wie sagst du Danke am Muttertag: Anruf, Besuch oder Brief?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "muttertag",
+      "name": "Muttertag",
+      "datum": "regel:2-sonntag-mai",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Muttertagsbrunch",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Brunchtisch mit Blumen",
+            "hook": "Muttertagsbrunch am zweiten Sonntag im Mai. Reservieren geht telefonisch oder online."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Tisch, Buffet, Dessert",
+            "hook": "Das erwartet deine Mutter bei uns: ein Brunch, Gang für Gang."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Eine Blume wird auf einen Teller gelegt",
+            "hook": "Zum Brunch gibt es bei uns für jede Mutter eine Blume."
+          }
+        ]
+      }
+    },
+    {
+      "id": "muttertag",
+      "name": "Muttertag",
+      "datum": "regel:2-sonntag-mai",
+      "region": "alle",
+      "branchen": [
+        "detailhandel"
+      ],
+      "vorschlag": {
+        "titel": "Geschenkidee für Mama",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Geschenke nach Typ: Genuss, Pflege, Dekoration",
+            "hook": "Geschenkideen für Mama, sortiert nach Typ: für die Geniesserin, die Gärtnerin und die Leserin."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Ein Geschenk wird verpackt",
+            "hook": "Wir verpacken dein Geschenk für Mama. Die Karte schreibst du."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Zwei Produkte, Umfrage",
+            "hook": "Welches Geschenk würde deine Mutter wählen? Stimm ab."
+          }
+        ]
+      }
+    },
+    {
+      "id": "muttertag",
+      "name": "Muttertag",
+      "datum": "regel:2-sonntag-mai",
+      "region": "alle",
+      "branchen": [
+        "dienstleistung"
+      ],
+      "vorschlag": {
+        "titel": "Gutschein für Mama",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Gutscheinkarte mit Blume",
+            "hook": "Der Gutschein für Mama: eine Stunde, die ihr allein gehört."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Bild aus dem Behandlungsraum oder vom Arbeitsplatz",
+            "hook": "Wann hat deine Mutter zuletzt etwas nur für sich getan?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text, als Google-Beitrag",
+            "hook": "Zum Muttertag schenken: Gutscheine bestellst du bei uns telefonisch oder per Nachricht."
+          }
+        ]
+      }
+    },
+    {
+      "id": "vatertag",
+      "name": "Schweizer Vätertag",
+      "datum": "regel:1-sonntag-juni",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Danke an die Väter",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Werkzeug oder Alltagsgegenstand, der an einen Vater erinnert",
+            "hook": "Am Vätertag sagen wir Danke an alle Väter. Was hat dir dein Vater beigebracht?"
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Wanderung, Grill oder Sofa?»",
+            "hook": "Wie verbringt dein Vater den Vätertag am liebsten: Wanderung, Grill oder Sofa?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Kein Bild nötig, nur Text",
+            "hook": "Der Schweizer Vätertag ist am ersten Sonntag im Juni. Danke an alle Väter in unserer Kundschaft und in unserem Team."
+          }
+        ]
+      }
+    },
+    {
+      "id": "vatertag",
+      "name": "Schweizer Vätertag",
+      "datum": "regel:1-sonntag-juni",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Vätertag bei uns",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Grillteller mit einem kühlen Getränk",
+            "hook": "Vätertag bei uns: ein Teller, ein Glas, ein ruhiger Sonntag. Reservieren geht telefonisch oder online."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Grill und Anrichten, 15 Sekunden",
+            "hook": "Was gehört auf einen Vätertags-Teller? Wir zeigen unseren Vorschlag."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Terrasse oder Garten",
+            "hook": "Wo isst dein Vater am liebsten: im Garten, auf der Terrasse oder am Stammtisch?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "vatertag",
+      "name": "Schweizer Vätertag",
+      "datum": "regel:1-sonntag-juni",
+      "region": "alle",
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Vätertag im Verein",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Fotos vom Anlass im letzten Jahr",
+            "hook": "Bilder vom letzten Vätertag bei uns."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Gruppenfoto",
+            "hook": "Bring deinen Vater, deinen Sohn oder dein Götti mit. Was möchtest du mit ihm bei uns machen?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text als Einladung",
+            "hook": "Am Vätertag laden wir Väter und Kinder ein. Treffpunkt, Zeit und Anmeldung findest du hier."
+          }
+        ]
+      }
+    },
+    {
+      "id": "schulbeginn",
+      "name": "Schulbeginn",
+      "datum": "regel:schulbeginn",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Zurück im Alltag",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Eingang oder Arbeitsplatz im Morgenlicht",
+            "hook": "Die Schule beginnt wieder, der Alltag auch. Wie sieht dein erster Montag nach den Ferien aus?"
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Kaffee oder Tee?»",
+            "hook": "Der erste Morgen nach den Ferien: Kaffee oder Tee?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text zur Erreichbarkeit",
+            "hook": "Nach der Sommerpause sind wir wieder zu den gewohnten Zeiten für dich da."
+          }
+        ]
+      }
+    },
+    {
+      "id": "schulbeginn",
+      "name": "Schulbeginn",
+      "datum": "regel:schulbeginn",
+      "region": "alle",
+      "branchen": [
+        "detailhandel"
+      ],
+      "vorschlag": {
+        "titel": "Alles für den Schulstart",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Etui, Hefte, Znünibox nebeneinander",
+            "hook": "Die Liste für den Schulstart: was Kinder brauchen und was warten kann."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Ein Schulthek wird gepackt",
+            "hook": "So packst du den Schulthek in drei Handgriffen richtig."
+          },
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Produkte für den Schulstart auf einem Tisch",
+            "hook": "Schulstart bei uns: Hefte, Etuis und Znünibox an einem Ort."
+          }
+        ]
+      }
+    },
+    {
+      "id": "schulbeginn",
+      "name": "Schulbeginn",
+      "datum": "regel:schulbeginn",
+      "region": "alle",
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Neue Mitglieder zum Schuljahr",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Kinder beim Training oder an der Probe",
+            "hook": "Mit dem Schuljahr starten auch wir wieder. Wen nimmst du zum Schnuppern mit?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text mit Zeiten",
+            "hook": "Schnuppern ist möglich. Zeiten und Treffpunkt stehen hier."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Eine Trainingsszene, 15 Sekunden",
+            "hook": "So sieht eine Stunde bei uns aus, in 15 Sekunden."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bundesfeier",
+      "name": "Bundesfeier",
+      "datum": "fix:08-01",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Schöne Bundesfeier",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Fahne oder Lampions am Eingang",
+            "hook": "Wir wünschen dir eine schöne Bundesfeier. Wo feierst du am 1. August?"
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Feuerwerk, Höhenfeuer oder Brunch?»",
+            "hook": "Feuerwerk, Höhenfeuer oder Brunch auf dem Bauernhof: Wie feierst du?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text zu den Öffnungszeiten",
+            "hook": "Am 1. August gelten bei uns angepasste Öffnungszeiten. Hier siehst du, wann wir für dich da sind."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bundesfeier",
+      "name": "Bundesfeier",
+      "datum": "fix:08-01",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Brunch zum Nationalfeiertag",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Brunchtisch mit Zopf und Rösti",
+            "hook": "Brunch am 1. August: regional, mit Zopf und Rösti. Reservieren geht telefonisch oder online."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Rösti wird gewendet",
+            "hook": "Rösti zum 1. August. So wenden wir sie bei uns."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Produkte mit Herkunftsort",
+            "hook": "Was auf deinem Teller liegt und woher es kommt: unser Brunch zum 1. August."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bundesfeier",
+      "name": "Bundesfeier",
+      "datum": "fix:08-01",
+      "region": "alle",
+      "branchen": [
+        "handwerk"
+      ],
+      "vorschlag": {
+        "titel": "Sommerpause und Erreichbarkeit",
+        "varianten": [
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Kein Bild nötig, nur Text",
+            "hook": "Rund um den 1. August sind wir eingeschränkt erreichbar. Bei Notfällen hilft dir unsere Pikett-Nummer."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Baustelle bei Sonnenuntergang",
+            "hook": "Schöne Bundesfeier. Welches Projekt soll bei dir im Spätsommer starten?"
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Clips der Projekte aus dem ersten Halbjahr",
+            "hook": "Ein halbes Jahr in 20 Sekunden: Das haben wir bis zur Sommerpause gebaut."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bundesfeier",
+      "name": "Bundesfeier",
+      "datum": "fix:08-01",
+      "region": "alle",
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Bundesfeier im Dorf",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Festplatz, Programm, Feuer",
+            "hook": "Die Bundesfeier im Dorf: Programm, Festplatz und Mithilfe auf einen Blick."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Lampions oder Festbänke",
+            "hook": "Wer hilft beim Aufbau mit? Wir suchen am Vorabend noch Hände."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Kommst du?»",
+            "hook": "Kommst du zur Bundesfeier im Dorf? Sag uns Bescheid, damit wir Brot und Würste planen können."
+          }
+        ]
+      }
+    },
+    {
+      "id": "olma",
+      "name": "OLMA St. Gallen",
+      "datum": [
+        "fix-jahr:2026-10-08/2026-10-18",
+        "fix-jahr:2027-10-14/2027-10-24"
+      ],
+      "region": [
+        "SG",
+        "AR",
+        "AI",
+        "TG"
+      ],
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "OLMA-Zeit in der Region",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Schaufenster oder Eingang im Herbstlicht",
+            "hook": "Die OLMA ist in der Stadt. Wohin gehst du zuerst?"
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage zur Bratwurst",
+            "hook": "OLMA-Bratwurst: mit Senf oder ohne? Wir sind gespannt."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text zur Anreise",
+            "hook": "Während der OLMA ist in der Stadt mehr los. Plane für den Besuch bei uns etwas mehr Zeit für die Anreise ein."
+          }
+        ]
+      }
+    },
+    {
+      "id": "olma",
+      "name": "OLMA St. Gallen",
+      "datum": [
+        "fix-jahr:2026-10-08/2026-10-18",
+        "fix-jahr:2027-10-14/2027-10-24"
+      ],
+      "region": [
+        "SG",
+        "AR",
+        "AI",
+        "TG"
+      ],
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Vor oder nach der OLMA",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Gedeckter Tisch mit einem warmen Gericht",
+            "hook": "Vor oder nach der OLMA: bei uns gibt es einen Platz und etwas Warmes. Reservieren geht telefonisch."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Küche, ein Menü wird vorbereitet",
+            "hook": "Vor dem Messebesuch stärken: So bereiten wir unser OLMA-Menü vor."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Ein Teller aus der Region",
+            "hook": "Was isst du an der OLMA zuerst: Bratwurst, Käse oder etwas Süsses?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "olma",
+      "name": "OLMA St. Gallen",
+      "datum": [
+        "fix-jahr:2026-10-08/2026-10-18",
+        "fix-jahr:2027-10-14/2027-10-24"
+      ],
+      "region": [
+        "SG",
+        "AR",
+        "AI",
+        "TG"
+      ],
+      "branchen": [
+        "detailhandel"
+      ],
+      "vorschlag": {
+        "titel": "Regionale Ideen zur OLMA",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Drei regionale Produkte",
+            "hook": "Regional mitnehmen: drei Dinge aus der Ostschweiz, die du bei uns findest."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Schaufenster wird eingerichtet",
+            "hook": "So bereiten wir unser Schaufenster für die OLMA-Wochen vor."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Zwei Produkte, Umfrage",
+            "hook": "Welches Mitbringsel nimmst du von der OLMA mit nach Hause?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "halloween",
+      "name": "Halloween",
+      "datum": "fix:10-31",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Halloween im Betrieb",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Geschnitzter Kürbis im Eingang",
+            "hook": "Halloween bei uns: Der Kürbis steht schon am Eingang. Welches Gesicht hättest du ihm gegeben?"
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Kürbis wird geschnitzt, Zeitraffer",
+            "hook": "Ein Kürbis, ein Messer und etwas Geduld: So entsteht unser Eingangswächter."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Süss oder sauer?»",
+            "hook": "Süss oder sauer? Sag uns, was in deine Halloween-Tüte kommt."
+          }
+        ]
+      }
+    },
+    {
+      "id": "halloween",
+      "name": "Halloween",
+      "datum": "fix:10-31",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Halloween auf dem Teller",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Kürbissuppe im Teller, Kürbis als Dekoration",
+            "hook": "Kürbissuppe zu Halloween: heiss, mit gerösteten Kürbiskernen. Reservieren geht telefonisch oder online."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Suppe wird püriert und angerichtet",
+            "hook": "Von der Kürbis-Ernte bis zum Teller: So entsteht unsere Suppe."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Dekorierter Tisch in Orange und Schwarz",
+            "hook": "Gruseln mit Genuss: Welches Gericht würdest du an Halloween bestellen?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "halloween",
+      "name": "Halloween",
+      "datum": "fix:10-31",
+      "region": "alle",
+      "branchen": [
+        "detailhandel"
+      ],
+      "vorschlag": {
+        "titel": "Halloween im Laden",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Kostüme und Dekoration im Sortiment",
+            "hook": "Drei Ideen für Halloween: Kostüm, Dekoration und etwas Süsses."
+          },
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Süssigkeiten in der Auslage",
+            "hook": "Süsses oder Saures: Wir haben die Auswahl für die Haustür-Runde."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Zwei Kostüme, Umfrage",
+            "hook": "Welches Kostüm gefällt dir besser? Stimm ab."
+          }
+        ]
+      }
+    },
+    {
+      "id": "halloween",
+      "name": "Halloween",
+      "datum": "fix:10-31",
+      "region": "alle",
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Halloween im Verein",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Programm und Treffpunkt auf Bildern",
+            "hook": "Unser Halloween-Umzug: Programm, Treffpunkt und was die Kinder mitbringen sollen."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Kürbis oder Dekoration im Vereinslokal",
+            "hook": "Wer hilft beim Schnitzen? Wir suchen Hände und Ideen."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text mit der Einladung",
+            "hook": "Wir laden Kinder und Eltern zu Halloween ein. Zeit und Treffpunkt stehen hier."
+          }
+        ]
+      }
+    },
+    {
+      "id": "raebeliechtli",
+      "name": "Räbeliechtli",
+      "datum": "fix:11-11",
+      "region": [
+        "AG",
+        "AR",
+        "AI",
+        "BL",
+        "BS",
+        "SG",
+        "TG",
+        "ZH"
+      ],
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Räbeliechtli-Zeit",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Geschnitzte Räbe mit Kerze im Dunkeln",
+            "hook": "Im November leuchten die Räben. Welches Gesicht hat deine?"
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Eine Räbe wird ausgehöhlt und beleuchtet",
+            "hook": "So schnitzt du eine Räbe in vier Schritten."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text zum Umzug in der Gemeinde",
+            "hook": "Der Räbeliechtli-Umzug findet in unserer Gemeinde im November statt. Datum und Route findest du auf der Seite der Gemeinde."
+          }
+        ]
+      },
+      "hinweis": "Das Datum legt jede Gemeinde selbst fest. Der 11. November (Martinstag) ist ein Richtwert; die Umzüge finden im November statt."
+    },
+    {
+      "id": "raebeliechtli",
+      "name": "Räbeliechtli",
+      "datum": "fix:11-11",
+      "region": [
+        "AG",
+        "AR",
+        "AI",
+        "BL",
+        "BS",
+        "SG",
+        "TG",
+        "ZH"
+      ],
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Räbeliechtli mit Punsch",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Heisser Punsch und Gebäck am Strassenrand",
+            "hook": "Nach dem Umzug gibt es bei uns Punsch und ein Stück Zopf."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Punschtassen im Licht der Räben",
+            "hook": "Wer wärmt sich nach dem Umzug bei uns auf? Wir stellen die Tassen bereit."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Punsch wird aufgesetzt",
+            "hook": "So entsteht der Punsch für den Räbeliechtli-Umzug."
+          }
+        ]
+      },
+      "hinweis": "Das Datum legt jede Gemeinde selbst fest. Der 11. November (Martinstag) ist ein Richtwert; die Umzüge finden im November statt."
+    },
+    {
+      "id": "raebeliechtli",
+      "name": "Räbeliechtli",
+      "datum": "fix:11-11",
+      "region": [
+        "AG",
+        "AR",
+        "AI",
+        "BL",
+        "BS",
+        "SG",
+        "TG",
+        "ZH"
+      ],
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Räbeliechtli-Umzug des Vereins",
+        "varianten": [
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text als Einladung",
+            "hook": "Wir laden zum Räbeliechtli-Umzug ein. Treffpunkt, Zeit und Route stehen hier."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Fotos vom letzten Umzug",
+            "hook": "Bilder vom letzten Räbeliechtli-Umzug bei uns."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Räben auf einem Tisch",
+            "hook": "Wer schnitzt mit? Wir treffen uns am Vorabend im Vereinslokal."
+          }
+        ]
+      },
+      "hinweis": "Das Datum legt jede Gemeinde selbst fest. Der 11. November (Martinstag) ist ein Richtwert; die Umzüge finden im November statt."
+    },
+    {
+      "id": "samichlaus",
+      "name": "Samichlaus",
+      "datum": "fix:12-06",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Samichlaus-Gruss",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Nüsse, Mandarinen und Lebkuchen",
+            "hook": "Der Samichlaus kommt am 6. Dezember. Was steckt bei dir im Chlaussack?"
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Schmutzli oder Samichlaus?»",
+            "hook": "Schmutzli oder Samichlaus: Wer war dir als Kind unheimlicher?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Kein Bild nötig, nur Text",
+            "hook": "Am 6. Dezember kommt der Samichlaus. Wir wünschen allen Kindern einen guten Besuch und den Eltern starke Nerven."
+          }
+        ]
+      }
+    },
+    {
+      "id": "samichlaus",
+      "name": "Samichlaus",
+      "datum": "fix:12-06",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Süsses zum Samichlaus",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Grättimänner und Lebkuchen in der Vitrine",
+            "hook": "Grättimänner und Lebkuchen zum Samichlaus, frisch bei uns in der Vitrine."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Hefeteig wird zum Grättimann geformt",
+            "hook": "So entsteht ein Grättimann aus Hefeteig."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Drei Süssigkeiten",
+            "hook": "Drei Süssigkeiten, die in den Chlaussack gehören."
+          }
+        ]
+      }
+    },
+    {
+      "id": "samichlaus",
+      "name": "Samichlaus",
+      "datum": "fix:12-06",
+      "region": "alle",
+      "branchen": [
+        "detailhandel"
+      ],
+      "vorschlag": {
+        "titel": "Kleine Geschenke für den Chlaussack",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Kleine Geschenke nebeneinander",
+            "hook": "Kleine Dinge für den Chlaussack, von Nüssen bis zum Spiel."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Mandarine oder Schoggi?»",
+            "hook": "Mandarine oder Schoggi: Was gehört für dich in den Chlaussack?"
+          },
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Gepackter Chlaussack",
+            "hook": "Der Chlaussack zum Mitnehmen: Wir packen ihn dir nach deinem Budget."
+          }
+        ]
+      }
+    },
+    {
+      "id": "samichlaus",
+      "name": "Samichlaus",
+      "datum": "fix:12-06",
+      "region": "alle",
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Chlausabend",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Programm und Treffpunkt",
+            "hook": "Der Chlausabend: Programm, Treffpunkt und was die Kinder mitbringen dürfen."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Kerzen und Samichlaus-Kostüm",
+            "hook": "Wer spielt dieses Jahr den Samichlaus? Wir suchen eine Stimme und einen Bart."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Säckli werden gepackt",
+            "hook": "Die Säckli für den Chlausabend sind gepackt. Es kann losgehen."
+          }
+        ]
+      }
+    },
+    {
+      "id": "adventsfenster",
+      "name": "Adventsfenster",
+      "datum": "fix:12-01/12-24",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Unser Adventsfenster",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Das beleuchtete Fenster am Abend",
+            "hook": "Heute Abend öffnet sich unser Fenster. Was steckt dahinter? Rate mit."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Fenster wird dekoriert, Zeitraffer",
+            "hook": "So wird unser Adventsfenster fertig: vom ersten Papier bis zum letzten Licht."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Drei Motive als Umfrage",
+            "hook": "Welches Motiv zeigt unser Fenster? A, B oder C? Die Auflösung gibt es am Abend."
+          }
+        ]
+      }
+    },
+    {
+      "id": "adventsfenster",
+      "name": "Adventsfenster",
+      "datum": "fix:12-01/12-24",
+      "region": "alle",
+      "branchen": [
+        "detailhandel"
+      ],
+      "vorschlag": {
+        "titel": "Schaufenster im Advent",
+        "varianten": [
+          {
+            "format": "Reel",
+            "bildidee": "Schaufenster wird eingerichtet",
+            "hook": "So richten wir unser Schaufenster für den Advent ein, Produkt für Produkt."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Schaufenster aus drei Winkeln, ein Detail",
+            "hook": "Drei Blicke in unser Schaufenster. Findest du den kleinen Stern?"
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Zwei Produkte aus dem Fenster",
+            "hook": "Welches Produkt aus dem Fenster würdest du verschenken?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "adventsfenster",
+      "name": "Adventsfenster",
+      "datum": "fix:12-01/12-24",
+      "region": "alle",
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Adventsfenster des Vereins",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Das Fenster oder der Platz davor",
+            "hook": "Unser Adventsfenster öffnet sich an einem Abend im Dezember. Datum, Zeit und Ort stehen hier. Komm vorbei."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Programm und Fotos vom Vorbereiten",
+            "hook": "Das Adventsfenster des Vereins: Programm und Bilder vom Vorbereiten."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text als Dank an die Helfer",
+            "hook": "Danke an alle, die beim Adventsfenster mitgeholfen haben."
+          }
+        ]
+      }
+    },
+    {
+      "id": "black-friday",
+      "name": "Black Friday",
+      "datum": "regel:black-friday",
+      "region": "alle",
+      "branchen": [
+        "detailhandel"
+      ],
+      "vorschlag": {
+        "titel": "Aktion zum Black Friday",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Ausgewählte Produkte mit Preisschild",
+            "hook": "Black Friday bei uns: ausgewählte Produkte zu besonderen Preisen, solange der Vorrat reicht."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Drei reduzierte Produkte",
+            "hook": "Drei Produkte, die wir zum Black Friday reduzieren, und warum wir sie ausgewählt haben."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Wunschliste als Umfrage",
+            "hook": "Welches Produkt aus unserem Laden steht auf deiner Wunschliste?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "black-friday",
+      "name": "Black Friday",
+      "datum": "regel:black-friday",
+      "region": "alle",
+      "branchen": [
+        "dienstleistung"
+      ],
+      "vorschlag": {
+        "titel": "Black Friday mit Gutschein",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Gutscheinkarte",
+            "hook": "Unser Gutschein zum Black Friday: ein Leistungspaket zum besonderen Preis."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Bild aus dem Alltag der Dienstleistung",
+            "hook": "Was würdest du dir gönnen, wenn alle auf Schnäppchen schauen?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Kein Bild nötig, nur Text",
+            "hook": "Zum Black Friday gibt es bei uns Gutscheine. Frag nach, wir erklären dir die Bedingungen."
+          }
+        ]
+      }
+    },
+    {
+      "id": "black-friday",
+      "name": "Black Friday",
+      "datum": "regel:black-friday",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Gutscheine für Geniesser",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Gutscheinkarte neben einem Teller",
+            "hook": "Gutscheine für Geniesser: ein Abend bei uns zum Verschenken oder für dich."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Drei Gutscheinarten",
+            "hook": "Drei Arten, bei uns zu schenken: Abendessen, Brunch und Apéro."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Brunch oder Abendessen?»",
+            "hook": "Brunch oder Abendessen: Was verschenkst du lieber?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "weihnachten",
+      "name": "Weihnachten",
+      "datum": "fix:12-25",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Frohe Weihnachten",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Weihnachtliche Dekoration im Betrieb, ein Satz im Bild",
+            "hook": "Wir wünschen dir frohe Weihnachten. Was gehört bei dir unbedingt dazu?"
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Das Team sagt je ein Wort in die Kamera",
+            "hook": "Ein Wort von jedem im Team zu Weihnachten: Danke."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text zu den Öffnungszeiten über die Festtage",
+            "hook": "Über die Festtage gelten bei uns besondere Öffnungszeiten. Hier siehst du, wann wir für dich da sind."
+          }
+        ]
+      }
+    },
+    {
+      "id": "weihnachten",
+      "name": "Weihnachten",
+      "datum": "fix:12-25",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Weihnachtsmenü und Öffnungszeiten",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Gedeckter Tisch mit Kerzen",
+            "hook": "Unser Weihnachtsmenü: Reservieren geht telefonisch oder online."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text zu den Öffnungszeiten",
+            "hook": "Über die Festtage haben wir besondere Öffnungszeiten. Hier siehst du sie auf einen Blick."
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Das Menü in Bildern, Gang für Gang",
+            "hook": "Unser Weihnachtsmenü in Bildern."
+          }
+        ]
+      }
+    },
+    {
+      "id": "weihnachten",
+      "name": "Weihnachten",
+      "datum": "fix:12-25",
+      "region": "alle",
+      "branchen": [
+        "detailhandel"
+      ],
+      "vorschlag": {
+        "titel": "Letzte Geschenkideen",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Drei Geschenke, die noch heute mitgehen",
+            "hook": "Drei Geschenke für die letzten Tage vor Weihnachten."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Ein Geschenk wird verpackt",
+            "hook": "So verpacken wir ein Geschenk, wenn es schnell gehen muss."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Verpackt oder offen?»",
+            "hook": "Verpackt oder offen: Wie verschenkst du am liebsten?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "weihnachten",
+      "name": "Weihnachten",
+      "datum": "fix:12-25",
+      "region": "alle",
+      "branchen": [
+        "handwerk"
+      ],
+      "vorschlag": {
+        "titel": "Betriebsferien über die Festtage",
+        "varianten": [
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text mit Datum und Pikett-Nummer",
+            "hook": "Über die Festtage ist unser Betrieb geschlossen. Bei Notfällen erreichst du uns über die Pikett-Nummer."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Bild von der letzten Baustelle des Jahres",
+            "hook": "Das war unsere letzte Baustelle in diesem Jahr. Danke an alle, die uns ihr Zuhause anvertraut haben."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Rückblick auf die Projekte des Jahres",
+            "hook": "Ein Jahr in 20 Sekunden: Das haben wir gebaut."
+          }
+        ]
+      }
+    },
+    {
+      "id": "weihnachten",
+      "name": "Weihnachten",
+      "datum": "fix:12-25",
+      "region": "alle",
+      "branchen": [
+        "dienstleistung"
+      ],
+      "vorschlag": {
+        "titel": "Gutschein als Geschenk",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Gutscheinkarte unter dem Baum",
+            "hook": "Der Gutschein als Geschenk: Zeit bei uns statt noch ein Gegenstand."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Bild aus dem Alltag der Dienstleistung",
+            "hook": "Wem würdest du dieses Jahr Zeit schenken?"
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Kein Bild nötig, nur Text",
+            "hook": "Gutscheine für Weihnachten bestellst du bei uns telefonisch oder per Nachricht."
+          }
+        ]
+      }
+    },
+    {
+      "id": "weihnachten",
+      "name": "Weihnachten",
+      "datum": "fix:12-25",
+      "region": "alle",
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Weihnachtsgruss des Vereins",
+        "varianten": [
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Gruppenfoto vor Lichtern",
+            "hook": "Der Vorstand wünscht allen Mitgliedern frohe Weihnachten. Was war dein schönster Moment im Verein?"
+          },
+          {
+            "format": "Karussell",
+            "bildidee": "Bilder aus dem Vereinsjahr",
+            "hook": "Unser Vereinsjahr in fünf Bildern."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text als Dank an die Freiwilligen",
+            "hook": "Danke an alle, die dieses Jahr mitangepackt haben. Ohne euch gäbe es unseren Verein nicht."
+          }
+        ]
+      }
+    },
+    {
+      "id": "jahresende",
+      "name": "Jahresende",
+      "datum": "fix:12-31",
+      "region": "alle",
+      "branchen": "alle",
+      "vorschlag": {
+        "titel": "Danke für das Jahr",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Fünf Bilder aus dem Jahr",
+            "hook": "Unser Jahr in fünf Bildern. Danke, dass du dabei warst."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Ausschnitte aus dem Jahr, 20 Sekunden",
+            "hook": "Ein Jahr in 20 Sekunden. Danke an alle, die uns begleitet haben."
+          },
+          {
+            "format": "Einzelbild mit Frage",
+            "bildidee": "Foto vom Team",
+            "hook": "Was war dein Highlight im letzten Jahr? Wir lesen jede Antwort."
+          }
+        ]
+      }
+    },
+    {
+      "id": "jahresende",
+      "name": "Jahresende",
+      "datum": "fix:12-31",
+      "region": "alle",
+      "branchen": [
+        "gastronomie"
+      ],
+      "vorschlag": {
+        "titel": "Silvester bei uns",
+        "varianten": [
+          {
+            "format": "Beitrag mit Angebot",
+            "bildidee": "Gedeckter Tisch mit Kerzen und Sekt",
+            "hook": "Silvester bei uns: Menü und Plätze. Reservieren geht telefonisch oder online."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Küche am Silvesterabend",
+            "hook": "Hinter den Kulissen: So bereiten wir den Silvesterabend vor."
+          },
+          {
+            "format": "Story mit Umfrage",
+            "bildidee": "Umfrage «Fondue oder Raclette?»",
+            "hook": "Fondue oder Raclette zum Jahreswechsel: Was kommt bei dir auf den Tisch?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "jahresende",
+      "name": "Jahresende",
+      "datum": "fix:12-31",
+      "region": "alle",
+      "branchen": [
+        "handwerk"
+      ],
+      "vorschlag": {
+        "titel": "Jahresrückblick auf Projekte",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Fünf Projekte, je ein Foto",
+            "hook": "Fünf Projekte aus unserem Jahr, vom ersten Plan bis zum fertigen Ergebnis."
+          },
+          {
+            "format": "Vorher-nachher",
+            "bildidee": "Ein Objekt vorher und nachher",
+            "hook": "Das war der grösste Unterschied in diesem Jahr: vorher und nachher."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Clips der Baustellen im Zeitraffer",
+            "hook": "Ein Jahr auf unseren Baustellen, in 20 Sekunden."
+          }
+        ]
+      }
+    },
+    {
+      "id": "jahresende",
+      "name": "Jahresende",
+      "datum": "fix:12-31",
+      "region": "alle",
+      "branchen": [
+        "verein"
+      ],
+      "vorschlag": {
+        "titel": "Jahresrückblick des Vereins",
+        "varianten": [
+          {
+            "format": "Karussell",
+            "bildidee": "Bilder aus dem Vereinsjahr",
+            "hook": "Unser Vereinsjahr in fünf Bildern. Danke an alle, die dabei waren."
+          },
+          {
+            "format": "Reel",
+            "bildidee": "Ausschnitte der Anlässe",
+            "hook": "Das Vereinsjahr in 20 Sekunden."
+          },
+          {
+            "format": "Text-Beitrag",
+            "bildidee": "Nur Text mit Dank und Ausblick",
+            "hook": "Danke für das Vereinsjahr. Die ersten Termine im neuen Jahr stehen bereits fest und folgen im Januar."
+          }
+        ]
+      }
+    }
   ]
 }

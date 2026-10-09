@@ -1,6 +1,9 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CopyButton } from "@/components/tool/CopyButton";
+import { DocView } from "@/components/tool/DocView";
 import { DocumentExport } from "@/components/tool/DocumentExport";
 import { ProfileFieldsForm } from "@/components/tool/ProfileFieldsForm";
 import { ResultCard } from "@/components/tool/ResultCard";
@@ -39,6 +42,7 @@ import {
   icsFilename,
   inputFromState,
   isBranche,
+  jahresRaster,
   kanaeleAusProfil,
   kanaeleText,
   kanaeleVorschlag,
@@ -53,6 +57,7 @@ import {
   type Input as CalInput,
   type KalenderData,
   type KanalKey,
+  type Vorschlag,
 } from "./logic";
 import config from "./tool.config";
 
@@ -78,6 +83,38 @@ function Intro() {
 
 type FileKind = "ics" | "csv";
 
+/** Der Vorschlag zu einem Anlass: drei Varianten mit Format, Bildidee und Hook, zum Aufklappen. */
+function VorschlagView({ vorschlag, kanaele }: { vorschlag: Vorschlag; kanaele: readonly KanalKey[] }) {
+  return (
+    <details className="group mt-2 rounded-lg border border-line bg-paper" data-testid="ck-vorschlag">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
+        <span>
+          <span className="font-medium">Vorschlag:</span> {vorschlag.titel}
+          <span className="block text-muted-foreground">{vorschlag.varianten.length} Varianten, je mit Format, Bildidee und Hook</span>
+        </span>
+        <ChevronDown aria-hidden="true" strokeWidth={1.8} className="size-4 shrink-0 transition-transform duration-300 group-open:rotate-180" />
+      </summary>
+      <div className="grid gap-3 border-t border-line p-3 md:grid-cols-3">
+        {vorschlag.varianten.map((v, i) => (
+          <div key={i} className="grid min-w-0 content-start gap-2 rounded-lg bg-surface p-3 text-sm" data-testid="ck-variante">
+            <p className="eyebrow">
+              Variante {i + 1} · {v.format}
+            </p>
+            <p>
+              <span className="font-medium">Bild:</span> {v.bildidee}
+            </p>
+            <p>
+              <span className="font-medium">Hook:</span> «{v.hook}»
+            </p>
+            <CopyButton text={v.hook} label="Hook kopieren" variant="ghost" className="justify-self-start" />
+          </div>
+        ))}
+        <p className="text-sm text-muted-foreground md:col-span-3">Kanäle: {kanaeleText(kanaele)}</p>
+      </div>
+    </details>
+  );
+}
+
 function ResultView({
   cal,
   firma,
@@ -94,6 +131,7 @@ function ResultView({
   const ctx = useToolContext();
   const { input, note } = cal;
   const doc = useMemo(() => toDocument(cal, firma), [cal, firma]);
+  const raster = useMemo(() => jahresRaster(cal), [cal]);
   const [busy, setBusy] = useState<FileKind | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -141,6 +179,12 @@ function ResultView({
         <p className="text-sm text-muted-foreground">{READING_HINWEIS}</p>
       </section>
 
+      {raster && (
+        <section aria-label="Jahr auf einen Blick" data-testid="ck-raster">
+          <DocView blocks={[raster]} />
+        </section>
+      )}
+
       <section aria-label="Dateien" className="grid gap-3">
         <h4 className="font-heading font-medium">Dateien</h4>
         <p className="text-sm text-muted-foreground">
@@ -174,15 +218,7 @@ function ResultView({
                     {dateLabel(e)}: {e.titel}
                   </p>
                   <p className="text-sm text-muted-foreground">{artLabel(e)}</p>
-                  {e.vorschlag && (
-                    <div className="mt-2 grid gap-1 text-sm">
-                      <p>
-                        <span className="font-medium">Vorschlag:</span> {e.vorschlag.titel} <span className="text-muted-foreground">(Format: {e.vorschlag.format})</span>
-                      </p>
-                      <p>«{e.vorschlag.hook}»</p>
-                      <p className="text-muted-foreground">Kanäle: {kanaeleText(input.kanaele)}</p>
-                    </div>
-                  )}
+                  {e.vorschlag && <VorschlagView vorschlag={e.vorschlag} kanaele={input.kanaele} />}
                   {e.hinweis && <p className="mt-1 text-sm text-muted-foreground">{e.hinweis}</p>}
                 </li>
               ))}

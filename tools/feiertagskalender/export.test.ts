@@ -27,7 +27,7 @@ describe("feiertagskalender: PDF und Word", () => {
     expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
     const pdf = await PDFDocument.load(bytes);
     expect(pdf.getPageCount()).toBeGreaterThanOrEqual(2);
-    expect(pdf.getPageCount()).toBeLessThanOrEqual(10);
+    expect(pdf.getPageCount()).toBeLessThanOrEqual(16); // mit drei Varianten je Vorschlag und 20 eigenen Terminen
     expect(pdf.getTitle()).toBe("Feiertagskalender 2026");
   });
 

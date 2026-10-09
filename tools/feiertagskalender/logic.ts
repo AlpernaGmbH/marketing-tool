@@ -17,7 +17,7 @@ export const MAX_TITEL = 60;
 /** Erinnerung vor einem Anlass in der Kalenderdatei (iCalendar-Dauer). Richtwert von Alperna, keine Statistik. */
 export const ALARM_TRIGGER = "-P7D";
 export const SUMMARY_PREFIX = "Beitrag: ";
-export const CSV_HEADER = ["Datum", "Art", "Titel", "Vorschlag", "Format", "Kanäle"] as const;
+export const CSV_HEADER = ["Datum", "Art", "Titel", "Vorschlag", "Variante 1", "Variante 2", "Variante 3", "Kanäle"] as const;
 export const PRODID = "-//Alperna//Feiertagskalender Schweiz//DE";
 
 export const WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"] as const;
@@ -195,7 +195,7 @@ const metaSchema = z.object({
 });
 export type DataMeta = z.infer<typeof metaSchema>;
 
-const RULE_NAMES = ["2-sonntag-mai", "1-sonntag-juni", "black-friday", "schulbeginn"] as const;
+const RULE_NAMES = ["2-sonntag-mai", "1-sonntag-juni", "black-friday", "schulbeginn", "sechselaeuten"] as const;
 const DATUM_FIX = /^fix:(\d{2})-(\d{2})(?:\/(\d{2})-(\d{2}))?$/;
 const DATUM_OSTERN = /^ostern:([+-]?\d{1,3})(?:\.\.([+-]?\d{1,3}))?$/;
 const DATUM_JAHR = /^fix-jahr:(\d{4}-\d{2}-\d{2})(?:\/(\d{4}-\d{2}-\d{2}))?$/;
@@ -228,13 +228,32 @@ export function isValidDatum(datum: string): boolean {
 
 const datumString = z.string().refine(isValidDatum, "datum: fix:MM-TT, ostern:N, regel:<name> oder fix-jahr:JJJJ-MM-TT");
 
+/** Anzahl Varianten je Vorschlag (Beschluss vom 09.10.2026: drei, mit je einem Format, einer Bildidee und einem Hook). */
+export const VARIANTEN = 3;
+
+/**
+ * Die Formate der Varianten. «Foto mit kurzem Text» steht nicht darin: Es sagt weder, was zu sehen ist, noch, wie der Beitrag
+ * aufgebaut ist (Rückmeldung vom 09.10.2026).
+ */
+export const FORMATE = ["Reel", "Karussell", "Story mit Umfrage", "Einzelbild mit Frage", "Beitrag mit Angebot", "Text-Beitrag", "Vorher-nachher"] as const;
+export type Format = (typeof FORMATE)[number];
+
+export const varianteSchema = z.object({
+  format: z.enum(FORMATE),
+  bildidee: z.string().min(10).max(160),
+  hook: z.string().min(10).max(240),
+});
+export type Variante = z.infer<typeof varianteSchema>;
+
 export const anlassSchema = z.object({
   id: slug,
   name: z.string().min(2).max(60),
   datum: z.union([datumString, z.array(datumString).min(1)]),
   region: z.union([z.literal("alle"), z.array(kantonCode).min(1)]),
   branchen: z.union([z.literal("alle"), z.array(z.enum(["handwerk", "gastronomie", "dienstleistung", "detailhandel", "verein"])).min(1)]),
-  vorschlag: z.object({ titel: z.string().min(3).max(80), format: z.string().min(3).max(60), hook: z.string().min(10).max(240) }),
+  /** Kurzer Hinweis zum Anlass, zum Beispiel «Das Datum legt jede Gemeinde selbst fest». */
+  hinweis: z.string().min(10).max(240).optional(),
+  vorschlag: z.object({ titel: z.string().min(3).max(80), varianten: z.array(varianteSchema).length(VARIANTEN) }),
 });
 export type Anlass = z.infer<typeof anlassSchema>;
 export type Vorschlag = Anlass["vorschlag"];
@@ -365,6 +384,12 @@ export function resolveRule(datum: string, year: number, ferien: readonly Ferien
       case "black-friday": {
         const thanksgiving = nthWeekday(year, 11, 3, 4); // vierter Donnerstag im November
         iso = thanksgiving ? addDays(thanksgiving, 1) : null;
+        break;
+      }
+      case "sechselaeuten": {
+        // Dritter Montag im April; fällt er auf den Ostermontag, der vierte (Stadtratsbeschluss Nr. 1214 vom 13. Juni 1952).
+        const dritter = nthWeekday(year, 4, 0, 3);
+        iso = dritter === addDays(toIso(easterSunday(year)), 1) ? nthWeekday(year, 4, 0, 4) : dritter;
         break;
       }
       case "schulbeginn": {
@@ -623,6 +648,7 @@ export function entriesFor(input: KalenderEingabe, data: KalenderData): Entry[] 
         vonOrig: r.von,
         bisOrig: r.bis,
         vorschlag: a.vorschlag,
+        ...(a.hinweis ? { hinweis: a.hinweis } : {}),
       };
       out.push(entry);
       anlassById.set(a.id, entry);
@@ -635,7 +661,7 @@ export function entriesFor(input: KalenderEingabe, data: KalenderData): Entry[] 
     const same = anlassById.get(h.id);
     if (same && same.von === h.date && same.bis === h.date) {
       same.auchFeiertag = true;
-      if (h.hinweis) same.hinweis = h.hinweis;
+      if (h.hinweis) same.hinweis = same.hinweis ? `${same.hinweis} ${h.hinweis}` : h.hinweis;
       continue;
     }
     out.push({
@@ -679,6 +705,39 @@ export function byMonth(entries: readonly Entry[], year: number): MonthGroup[] {
     label: `${name} ${year}`,
     entries: entries.filter((e) => e.von.startsWith(`${pad(year, 4)}-${pad(i + 1)}-`)),
   }));
+}
+
+/** «10.05.» aus einem Datum JJJJ-MM-TT. */
+const dayMonth = (iso: string): string => `${formatIso(iso).slice(0, 5)}.`;
+
+const RASTER_SPALTEN: readonly [EntryArt, string][] = [
+  ["anlass", "Anlässe"],
+  ["feiertag", "Feiertage"],
+  ["ferien", "Schulferien"],
+  ["termin", "Eigene Termine"],
+];
+
+/**
+ * Das Jahr auf einen Blick: zwölf Monate als Zeilen, je Art eine Spalte (Anlässe, Feiertage, Schulferien, eigene Termine).
+ * Spalten ohne Eintrag entfallen; ohne jeden Eintrag gibt es kein Raster. Ferien stehen im Monat, in dem sie beginnen.
+ */
+export function jahresRaster(cal: Pick<Calendar, "months">): DocBlock | null {
+  const used = RASTER_SPALTEN.filter(([art]) => cal.months.some((m) => m.entries.some((e) => e.art === art)));
+  if (used.length === 0) return null;
+  return {
+    type: "grid",
+    title: "Dein Jahr auf einen Blick",
+    columns: used.map(([, label]) => label),
+    rows: cal.months.map((m) => ({
+      label: m.name,
+      cells: used.map(([art]) =>
+        m.entries
+          .filter((e) => e.art === art)
+          .map((e) => `${art === "ferien" ? "ab " : ""}${dayMonth(e.vonOrig)} ${e.titel}`)
+          .join("\n"),
+      ),
+    })),
+  };
 }
 
 // ---- Hinweis mit Quellen -----------------------------------------------------------------------
@@ -734,7 +793,11 @@ export function quellenHinweis(input: Pick<Input, "kanton" | "jahr" | "termine">
     for (const b of data.feiertage.bund) links.push({ label: `Bund: ${b.titel} (${b.stand})`, url: b.url });
     gruppen.push({ titel: "Feiertage", text: m.source, stand: m.asOf, links });
     const have = feiertageKantone(data.feiertage);
-    kantone.push(`Feiertage sind für ${have.length} Kantone belegt (${codes(have)}). Für alle anderen zeigt das Werkzeug nur Neujahr, Auffahrt, den 1. August und Weihnachten.`);
+    kantone.push(
+      have.length === KANTONE.length
+        ? `Feiertage sind für alle ${have.length} Kantone belegt.`
+        : `Feiertage sind für ${have.length} Kantone belegt (${codes(have)}). Für alle anderen zeigt das Werkzeug nur Neujahr, Auffahrt, den 1. August und Weihnachten.`,
+    );
     if (!data.feiertage.jahre.includes(jahr)) {
       hinweise.push(`Die Feiertage sind für ${data.feiertage.jahre.join(" und ")} geprüft. Für ${jahr} sind sie nach denselben Regeln gerechnet, aber nicht geprüft.`);
     }
@@ -818,11 +881,16 @@ function icsStamp(now: Date): string {
   return `${pad(d.getUTCFullYear(), 4)}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
 }
 
-/** Text für DESCRIPTION: Vorschlag mit Format und Hook, Kanäle; bei Ferien und Feiertagen eine Zeile zur Art. */
+/** Eine Variante als Textblock: Format, Bildidee, Hook. */
+export const varianteText = (v: Variante, nr: number): string => `Variante ${nr}, ${v.format}\nBild: ${v.bildidee}\nHook: ${v.hook}`;
+
+/** Text für DESCRIPTION: Vorschlag mit den drei Varianten, Kanäle; bei Ferien und Feiertagen eine Zeile zur Art. */
 export function entryDescription(e: Entry, input: Pick<Input, "kanton" | "kanaele">): string {
   const lines: string[] = [];
   if (e.vorschlag) {
-    lines.push(`Vorschlag: ${e.vorschlag.titel}`, `Format: ${e.vorschlag.format}`, `Hook: ${e.vorschlag.hook}`, `Kanäle: ${kanaeleText(input.kanaele)}`);
+    lines.push(`Vorschlag: ${e.vorschlag.titel}`);
+    e.vorschlag.varianten.forEach((v, i) => lines.push("", varianteText(v, i + 1)));
+    lines.push("", `Kanäle: ${kanaeleText(input.kanaele)}`);
   }
   if (e.art === "ferien") lines.push(`Schulferien ${kantonName(input.kanton)}: ${dateLabel(e)}`);
   if (e.art === "feiertag" || e.auchFeiertag) lines.push(`Gesetzlicher Feiertag in ${kantonName(input.kanton)}.`);
@@ -877,7 +945,10 @@ export function csvCell(value: string): string {
   return /[;"]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
 }
 
-/** Datum;Art;Titel;Vorschlag;Format;Kanäle, UTF-8 mit BOM, Semikolon, CRLF. Das Datum ist der erste Tag im Jahr; Mehrtägiges trägt das Ende im Titel. */
+/** Eine Variante in einer Zelle: «Reel. Bild: … Hook: …». */
+export const varianteZelle = (v: Variante): string => `${v.format}. Bild: ${v.bildidee}. Hook: ${v.hook}`;
+
+/** Datum;Art;Titel;Vorschlag;Variante 1 bis 3;Kanäle, UTF-8 mit BOM, Semikolon, CRLF. Das Datum ist der erste Tag im Jahr; Mehrtägiges trägt das Ende im Titel. */
 export function buildCsv(cal: Calendar): string {
   const kanaele = kanaeleText(cal.input.kanaele);
   const rows = cal.entries.map((e) => {
@@ -886,8 +957,8 @@ export function buildCsv(cal: Calendar): string {
       formatIso(e.von),
       artLabel(e),
       titel,
-      e.vorschlag ? `${e.vorschlag.titel}: ${e.vorschlag.hook}` : "",
-      e.vorschlag ? e.vorschlag.format : "",
+      e.vorschlag ? e.vorschlag.titel : "",
+      ...Array.from({ length: VARIANTEN }, (_, i) => (e.vorschlag?.varianten[i] ? varianteZelle(e.vorschlag.varianten[i]) : "")),
       e.vorschlag ? kanaele : "",
     ];
   });
@@ -899,7 +970,8 @@ export function buildCsv(cal: Calendar): string {
 export const READING_HINWEIS =
   "Die Vorschläge sind Entwürfe von Alperna, keine Vorgaben. Du musst nicht zu jedem Anlass etwas posten; wähl, was zu deinem Betrieb passt.";
 
-const vorschlagZelle = (v: Vorschlag): string => `${v.titel} (${v.format}). ${v.hook}`;
+/** Zelle der Jahresübersicht: Titel, dann je Variante eine Zeile mit Format, Bildidee und Hook. */
+const vorschlagZelle = (v: Vorschlag): string => [v.titel, ...v.varianten.map((x, i) => `${i + 1}. ${x.format}: ${x.bildidee}. Hook: ${x.hook}`)].join("\n");
 
 /** Jahresübersicht: Steckbrief, ein Abschnitt mit Tabelle je Monat, dann Quellen und Hinweise. */
 export function toDocument(cal: Calendar, firma?: string): DocumentModel {
@@ -918,6 +990,8 @@ export function toDocument(cal: Calendar, firma?: string): DocumentModel {
     },
     { type: "paragraph", text: READING_HINWEIS },
   ];
+  const raster = jahresRaster(cal);
+  if (raster) blocks.push(raster);
   for (const m of cal.months) {
     blocks.push({ type: "heading", level: 2, text: m.label });
     if (m.entries.length === 0) {

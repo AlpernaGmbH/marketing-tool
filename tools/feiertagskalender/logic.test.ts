@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import anlaesseJson from "@/data/anlaesse-ch.json";
 import feiertageJson from "@/data/feiertage.json";
 import schulferienJson from "@/data/schulferien.json";
+import { brandHits } from "@/lib/brand-rules";
 import { toMarkdown } from "@/lib/export/model";
 import {
   ALARM_TRIGGER,
@@ -11,6 +12,9 @@ import {
   MAX_TERMINE,
   addDays,
   addTermin,
+  FORMATE,
+  VARIANTEN,
+  MONATE,
   anlaesseDataSchema,
   artLabel,
   ausgabeText,
@@ -37,6 +41,7 @@ import {
   icsFilename,
   inputFromState,
   isValidDatum,
+  jahresRaster,
   kanaeleAusProfil,
   kanaeleVorschlag,
   nthWeekday,
@@ -170,8 +175,51 @@ describe("feiertagskalender: Datensätze", () => {
     for (const x of a?.anlaesse ?? []) {
       const hit = [2026, 2027].some((y) => resolveDatum(x.datum, y, sommer) !== null);
       expect(hit, `${x.id} löst nicht auf`).toBe(true);
-      expect(x.vorschlag.hook).not.toMatch(/[!—]|\bjetzt\b/i);
+      for (const v of x.vorschlag.varianten) expect(v.hook, `${x.id}: ${v.hook}`).not.toMatch(/[!—]|\bjetzt\b/i);
     }
+  });
+
+  it("jeder Vorschlag hat drei Varianten mit drei verschiedenen Formaten aus der Liste, ohne «Foto mit kurzem Text»", () => {
+    const rows = parseAnlaesse(anlaesseJson)!.anlaesse;
+    expect(VARIANTEN).toBe(3);
+    expect(FORMATE).not.toContain("Foto mit kurzem Text");
+    for (const x of rows) {
+      const formate = x.vorschlag.varianten.map((v) => v.format);
+      expect(formate, `${x.id} ${x.branchen}`).toHaveLength(3);
+      expect(new Set(formate).size, `${x.id} ${x.branchen}: drei verschiedene Formate`).toBe(3);
+      for (const f of formate) expect(FORMATE as readonly string[]).toContain(f);
+      expect(new Set(x.vorschlag.varianten.map((v) => v.hook)).size).toBe(3);
+    }
+    expect(JSON.stringify(rows)).not.toMatch(/Foto mit kurzem Text/);
+  });
+
+  it("die Texte der Varianten verletzen keine harte Regel der Alperna-Stimme und enthalten kein Ausrufezeichen", () => {
+    for (const x of parseAnlaesse(anlaesseJson)!.anlaesse) {
+      for (const v of x.vorschlag.varianten) {
+        const hits = brandHits(`${v.bildidee}\n${v.hook}`).filter((h) => h.level === "hart");
+        expect(hits, `${x.id}: ${v.hook}`).toEqual([]);
+        expect(`${v.bildidee} ${v.hook}`).not.toMatch(/[!]|\bgarantiert\b|\bnur noch\b|\bNr\. 1\b/);
+      }
+      expect(x.vorschlag.titel).not.toMatch(/[!—]/);
+    }
+  });
+
+  it("deckt jede Branchengruppe der gemeinsamen Branchenliste ab, jede mit mindestens einem Vorschlag je grossem Anlass", () => {
+    const rows = parseAnlaesse(anlaesseJson)!.anlaesse;
+    for (const b of ["handwerk", "gastronomie", "dienstleistung", "detailhandel", "verein"] as const) {
+      const sel = selectAnlaesse(rows, "SG", b).map((a) => a.id);
+      for (const id of ["neujahr", "ostern", "muttertag", "weihnachten", "jahresende", "halloween"]) expect(sel, `${b}: ${id}`).toContain(id);
+    }
+  });
+
+  it("enthält Halloween, Räbeliechtli und Sechseläuten mit Quelle in den Links", () => {
+    const d = parseAnlaesse(anlaesseJson)!;
+    const ids = new Set(d.anlaesse.map((a) => a.id));
+    for (const id of ["halloween", "raebeliechtli", "sechselaeuten"]) expect(ids.has(id), id).toBe(true);
+    const urls = (d.meta.links ?? []).map((l) => l.url).join(" ");
+    expect(urls).toContain("stadt-zuerich.ch");
+    expect(urls).toContain("famigros-warum-feiern-wir-halloween");
+    expect(urls).toContain("karussell-baden.ch");
   });
 
   it("schulferien.json erfüllt das Schema, hat eine https-Quelle und geordnete Blöcke", () => {
@@ -244,6 +292,105 @@ describe("feiertagskalender: Filter nach Region und Branche", () => {
     const weihnachten = selectAnlaesse(anl, "SG", "verein").find((a) => a.id === "weihnachten")!;
     expect(weihnachten.vorschlag.titel).toBe("Weihnachtsgruss des Vereins");
   });
+
+  it("das Sechseläuten gibt es nur in Zürich, Halloween überall, das Räbeliechtli in den belegten Kantonen", () => {
+    expect(ids("ZH", "handwerk")).toContain("sechselaeuten");
+    for (const k of ["SG", "BE", "GE", "TI"]) expect(ids(k, "handwerk"), k).not.toContain("sechselaeuten");
+    for (const k of ["SG", "ZH", "BE", "GE", "TI", "VS"]) expect(ids(k, "handwerk"), k).toContain("halloween");
+    for (const k of ["AG", "AR", "AI", "BL", "BS", "SG", "TG", "ZH"]) expect(ids(k, "handwerk"), k).toContain("raebeliechtli");
+    for (const k of ["BE", "GE", "VS", "TI"]) expect(ids(k, "handwerk"), k).not.toContain("raebeliechtli");
+  });
+});
+
+describe("feiertagskalender: Sechseläuten", () => {
+  it("fällt auf den dritten Montag im April, bei Ostermontag auf den vierten", () => {
+    expect(resolveRule("regel:sechselaeuten", 2026)).toEqual({ von: "2026-04-20", bis: "2026-04-20" });
+    expect(resolveRule("regel:sechselaeuten", 2027)).toEqual({ von: "2027-04-19", bis: "2027-04-19" });
+    expect(resolveRule("regel:sechselaeuten", 2024)).toEqual({ von: "2024-04-15", bis: "2024-04-15" });
+    // 2025: Ostermontag ist der 21. April, der dritte Montag; das Fest rückt auf den 28. April (Stadt Zürich, Stadtratsbeschluss 1952).
+    expect(toIso(easterSunday(2025))).toBe("2025-04-20");
+    expect(resolveRule("regel:sechselaeuten", 2025)).toEqual({ von: "2025-04-28", bis: "2025-04-28" });
+    // 2038: Ostersonntag am 25. April, der Ostermontag liegt nach dem dritten Montag (19.); der dritte bleibt.
+    expect(resolveRule("regel:sechselaeuten", 2038)).toEqual({ von: "2038-04-19", bis: "2038-04-19" });
+  });
+
+  it("liegt in jedem Jahr auf einem Montag im April, nie auf dem Ostermontag", () => {
+    for (let y = 2020; y <= 2060; y++) {
+      const r = resolveRule("regel:sechselaeuten", y)!;
+      expect(r.von.startsWith(`${y}-04-`), String(y)).toBe(true);
+      expect(weekdayIndex(r.von), String(y)).toBe(0);
+      expect(r.von === addDays(toIso(easterSunday(y)), 1), `${y}: nie am Ostermontag`).toBe(false);
+    }
+  });
+
+  it("steht im Kalender von Zürich mit dem Hinweis zur Regel", () => {
+    const c = cal({ kanton: "ZH", branche: "gastronomie" });
+    const e = find(c, "Sechseläuten")!;
+    expect(e).toMatchObject({ art: "anlass", von: "2026-04-20" });
+    expect(e.hinweis).toMatch(/dritten Montag im April/);
+    expect(e.vorschlag?.titel).toBe("Sechseläuten bei uns am Tisch");
+    expect(find(cal({ kanton: "SG" }), "Sechseläuten")).toBeUndefined();
+  });
+});
+
+describe("feiertagskalender: Halloween und Räbeliechtli", () => {
+  it("Halloween ist der 31. Oktober", () => {
+    expect(find(cal(), "Halloween")).toMatchObject({ art: "anlass", von: "2026-10-31", bis: "2026-10-31" });
+    expect(find(cal({ jahr: 2027 }), "Halloween")?.von).toBe("2027-10-31");
+  });
+
+  it("das Räbeliechtli steht um den 11. November und trägt den Hinweis, dass jede Gemeinde das Datum festlegt", () => {
+    const e = find(cal(), "Räbeliechtli")!;
+    expect(e.von).toBe("2026-11-11");
+    expect(e.hinweis).toMatch(/jede Gemeinde selbst/);
+    expect(find(cal({ kanton: "BE" }), "Räbeliechtli")).toBeUndefined();
+  });
+
+  it("der Hinweis eines Anlasses bleibt neben dem Hinweis des Feiertags erhalten", () => {
+    const basis = DATA.anlaesse!.anlaesse.find((a) => a.id === "neujahr" && a.branchen === "alle")!;
+    const data: KalenderData = {
+      anlaesse: { meta: DATA.anlaesse!.meta, anlaesse: [{ ...basis, hinweis: "Hinweis des Anlasses." }] },
+      ferien: null,
+      feiertage: { ...DATA.feiertage!, feiertage: [{ id: "neujahr", name: "Neujahrstag", datum: "fix:01-01", kantone: "alle", art: "gesetzlich", hinweis: "Hinweis des Feiertags." }] },
+    };
+    const e = entriesFor(input(), data).find((x) => x.titel === "Neujahr")!;
+    expect(e.auchFeiertag).toBe(true);
+    expect(e.hinweis).toBe("Hinweis des Anlasses. Hinweis des Feiertags.");
+  });
+});
+
+describe("feiertagskalender: Jahr auf einen Blick", () => {
+  it("setzt zwölf Monate als Zeilen und eine Spalte je vorhandener Art", () => {
+    const raster = jahresRaster(cal({ termine: [{ datum: "2026-11-14", titel: "Tag der offenen Tür" }] }));
+    expect(raster?.type).toBe("grid");
+    if (raster?.type !== "grid") return;
+    expect(raster.columns).toEqual(["Anlässe", "Feiertage", "Schulferien", "Eigene Termine"]);
+    expect(raster.rows.map((r) => r.label)).toEqual([...MONATE]);
+    const mai = raster.rows.find((r) => r.label === "Mai")!;
+    expect(mai.cells[0]).toBe("10.05. Muttertag");
+    expect(mai.cells[1]).toContain("14.05. Auffahrt");
+    const juli = raster.rows.find((r) => r.label === "Juli")!;
+    expect(juli.cells[2]).toBe("ab 04.07. Sommerferien");
+    const november = raster.rows.find((r) => r.label === "November")!;
+    expect(november.cells[3]).toBe("14.11. Tag der offenen Tür");
+    expect(november.cells[0]).toContain("11.11. Räbeliechtli");
+  });
+
+  it("lässt Spalten ohne Einträge weg und gibt ohne jeden Eintrag nichts zurück", () => {
+    const ohneTermine = jahresRaster(cal());
+    expect(ohneTermine?.type === "grid" && ohneTermine.columns).toEqual(["Anlässe", "Feiertage", "Schulferien"]);
+    expect(jahresRaster({ months: byMonth([], 2026) })).toBeNull();
+  });
+
+  it("steht in der Jahresübersicht nach dem Hinweis und vor den Monaten", () => {
+    const doc = toDocument(cal(), "Malerei Keller, Gossau");
+    const i = doc.blocks.findIndex((b) => b.type === "grid");
+    expect(i).toBeGreaterThan(1);
+    expect(doc.blocks[i - 1].type).toBe("paragraph");
+    const md = toMarkdown(doc);
+    expect(md).toContain("Dein Jahr auf einen Blick");
+    expect(md).toContain("10.05. Muttertag");
+  });
 });
 
 describe("feiertagskalender: Einträge", () => {
@@ -305,15 +452,19 @@ describe("feiertagskalender: Einträge", () => {
     expect(c.note.hinweise.join(" ")).toMatch(/Ortsübliche Feiertage.*Berchtoldstag/);
   });
 
-  it("ein Kanton ohne geprüfte Listen zeigt nur die eidgenössischen Tage und sagt es (Freiburg)", () => {
+  it("Freiburg hat geprüfte Feiertage (katholische Gemeinden), aber keine geprüften Schulferien und sagt es", () => {
     const c = cal({ kanton: "FR" });
     const feiertage = c.entries.filter((e) => e.art === "feiertag" || e.auchFeiertag).map((e) => e.titel);
-    expect(feiertage.sort()).toEqual(["Auffahrt", "Bundesfeier", "Neujahr", "Weihnachten"].sort());
+    expect(feiertage).toEqual(expect.arrayContaining(["Auffahrt", "Bundesfeier", "Neujahr", "Weihnachten", "Karfreitag"]));
+    // die reformierten Tage sind ortsüblich und stehen im Hinweis, nicht im Kalender
+    expect(find(c, "Ostermontag")).toBeUndefined();
     expect(c.entries.some((e) => e.art === "ferien")).toBe(false);
     expect(find(c, "Schulbeginn")).toBeUndefined();
     const hinweise = c.note.hinweise.join(" ");
     expect(hinweise).toMatch(/Für Freiburg haben wir keine geprüften Schulferien/);
-    expect(hinweise).toMatch(/Für Freiburg haben wir keine geprüfte Feiertagsliste/);
+    expect(hinweise).not.toMatch(/keine geprüfte Feiertagsliste/);
+    expect(hinweise).toMatch(/Feiertage Freiburg: Freiburg kennt zwei Listen/);
+    expect(hinweise).toMatch(/Ortsübliche Feiertage.*Ostermontag/);
     expect(c.note.kantone.join(" ")).toMatch(/Es fehlen FR, GE, JU, SO, VS/);
   });
 
@@ -436,11 +587,11 @@ describe("feiertagskalender: Monate", () => {
   it("zählt Anlässe, Feiertage, Ferien und Termine", () => {
     const c = cal({ termine: [{ datum: "2026-03-03", titel: "Messe" }] });
     const n = counts(c.entries);
-    expect(n.anlaesse).toBe(13);
+    expect(n.anlaesse).toBe(15);
     expect(n.feiertage).toBe(9);
     expect(n.ferien).toBe(5);
     expect(n.termine).toBe(1);
-    expect(countsText(c.entries)).toBe("13 Anlässe, 9 Feiertage, 5 Schulferienblöcke, 1 eigener Termin");
+    expect(countsText(c.entries)).toBe("15 Anlässe, 9 Feiertage, 5 Schulferienblöcke, 1 eigener Termin");
   });
 });
 
@@ -455,7 +606,7 @@ describe("feiertagskalender: Hinweis mit Quellen", () => {
     expect(n.gruppen[1].links.some((l) => l.url.includes("edk.ch"))).toBe(true);
     expect(n.gruppen[2].links[0].url).toContain("sg.ch");
     expect(n.kantone[0]).toMatch(/^Schulferien sind für 21 Kantone belegt/);
-    expect(n.kantone[1]).toMatch(/^Feiertage sind für 18 Kantone belegt/);
+    expect(n.kantone[1]).toBe("Feiertage sind für alle 26 Kantone belegt.");
   });
 
   it("gibt die Hinweise des Datensatzes für den Kanton weiter (Graubünden)", () => {
@@ -492,7 +643,9 @@ describe("feiertagskalender: Kalenderdatei (.ics)", () => {
     expect(ics).toContain("SUMMARY:Beitrag: Muttertag\r\n");
     expect(ics).toContain("SUMMARY:Beitrag: Sommerferien\r\n");
     const unfolded = ics.replace(/\r\n /g, "");
-    expect(unfolded).toContain("DESCRIPTION:Vorschlag: Danke an alle Mütter\\nFormat: Foto mit kurzem Text\\nHook: Zum Muttertag sagen wir Danke");
+    expect(unfolded).toContain("DESCRIPTION:Vorschlag: Danke an alle Mütter\\n\\nVariante 1\\, Einzelbild mit Frage\\nBild: Blumen im Betrieb\\nHook: Danke an alle Mütter.");
+    expect(unfolded).toContain("Variante 2\\, Reel\\nBild:");
+    expect(unfolded).toContain("Variante 3\\, Story mit Umfrage\\nBild:");
     expect(unfolded).toContain("Kanäle: Instagram\\, Google-Beitrag");
     expect(unfolded).toContain("SUMMARY:Beitrag: Tag der offenen Tür\\, mit Apéro\\; 10 Uhr");
   });
@@ -543,18 +696,25 @@ describe("feiertagskalender: CSV", () => {
 
   it("beginnt mit BOM und Kopfzeile, trennt mit Semikolon und endet mit CRLF", () => {
     expect(csv.startsWith(CSV_BOM + CSV_HEADER.join(";") + "\r\n")).toBe(true);
-    expect(CSV_HEADER).toEqual(["Datum", "Art", "Titel", "Vorschlag", "Format", "Kanäle"]);
+    expect(CSV_HEADER).toEqual(["Datum", "Art", "Titel", "Vorschlag", "Variante 1", "Variante 2", "Variante 3", "Kanäle"]);
     expect(csv.endsWith("\r\n")).toBe(true);
     const rows = csv.slice(1).trimEnd().split("\r\n");
     expect(rows).toHaveLength(c.entries.length + 1);
   });
 
-  it("schreibt Datum, Art, Vorschlag, Format und Kanäle; Mehrtägiges trägt das Ende im Titel", () => {
+  it("schreibt Datum, Art, Vorschlag, drei Varianten und Kanäle; Mehrtägiges trägt das Ende im Titel", () => {
     const rows = csv.slice(1).split("\r\n");
-    expect(rows).toContain("10.05.2026;Anlass;Muttertag;Danke an alle Mütter: Zum Muttertag sagen wir Danke an alle, die für andere da sind.;Foto mit kurzem Text;Instagram, Google-Beitrag");
-    expect(rows).toContain("03.04.2026;Feiertag;Karfreitag;;;");
-    expect(rows).toContain("04.07.2026;Schulferien;Sommerferien (bis 09.08.2026);;;");
-    expect(rows).toContain("01.01.2026;Schulferien;Weihnachtsferien (bis 04.01.2026);;;"); // erster Tag im Jahr, nicht 20.12.2025
+    const mutter = rows.find((r) => r.startsWith("10.05.2026;Anlass;Muttertag;"))!;
+    const cells = mutter.split(";");
+    expect(cells).toHaveLength(8);
+    expect(cells[3]).toBe("Danke an alle Mütter");
+    expect(cells[4]).toBe("Einzelbild mit Frage. Bild: Blumen im Betrieb. Hook: Danke an alle Mütter. Was hat dir deine Mutter mitgegeben, das du bis heute brauchst?");
+    expect(cells[5]).toMatch(/^Reel\. Bild: /);
+    expect(cells[6]).toMatch(/^Story mit Umfrage\. Bild: /);
+    expect(cells[7]).toBe("Instagram, Google-Beitrag");
+    expect(rows).toContain("03.04.2026;Feiertag;Karfreitag;;;;;");
+    expect(rows).toContain("04.07.2026;Schulferien;Sommerferien (bis 09.08.2026);;;;;");
+    expect(rows).toContain("01.01.2026;Schulferien;Weihnachtsferien (bis 04.01.2026);;;;;"); // erster Tag im Jahr, nicht 20.12.2025
   });
 
   it("setzt Anführungszeichen bei Semikolon und Anführungszeichen und schützt vor Formeln", () => {
@@ -567,7 +727,7 @@ describe("feiertagskalender: CSV", () => {
     expect(csvCell("@Chef")).toBe("'@Chef");
     expect(csvCell("normal")).toBe("normal");
     const heikel = buildCsv(cal({ termine: [{ datum: "2026-05-05", titel: "=1+1" }] }));
-    expect(heikel).toContain("05.05.2026;Eigener Termin;'=1+1;;;");
+    expect(heikel).toContain("05.05.2026;Eigener Termin;'=1+1;;;;;");
   });
 });
 
@@ -594,7 +754,12 @@ describe("feiertagskalender: Dokument für PDF und Word", () => {
       "01.01.2026, Donnerstag",
       "Anlass und Feiertag",
       "Neujahr",
-      "Guter Start ins neue Jahr (Foto mit kurzem Text). Ein neues Jahr beginnt. Wir sind ab dem ersten Werktag wieder für dich da.",
+      [
+        "Guter Start ins neue Jahr",
+        "1. Einzelbild mit Frage: Eingang oder Team im Winterlicht, ein Satz im Bild. Hook: Ein neues Jahr beginnt. Ab dem ersten Werktag sind wir wieder für dich da. Was steht bei dir dieses Jahr an?",
+        "2. Karussell: Drei Bilder: ein Projekt vom letzten Jahr, ein Moment im Team, ein Ausblick. Hook: Drei Dinge nehmen wir aus dem letzten Jahr mit. Und eine Sache machen wir dieses Jahr anders.",
+        "3. Story mit Umfrage: Bild vom Arbeitsplatz mit Umfrage-Sticker. Hook: Wir planen unser Jahr. Welches Thema soll bei uns mehr Platz bekommen?",
+      ].join("\n"),
     ]);
     const heads = doc.blocks.filter((b) => b.type === "heading").map((b) => (b.type === "heading" ? b.text : ""));
     expect(heads[heads.length - 1]).toBe("Quellen und Hinweise");
@@ -631,7 +796,7 @@ describe("feiertagskalender: Texte fürs CRM", () => {
     const lines = text.split("\n");
     expect(lines[0]).toBe("# Feiertagskalender 2026, Malerei Keller, Gossau");
     expect(lines[1]).toBe("St. Gallen, Handwerk, Instagram, Google-Beitrag");
-    expect(lines[2]).toBe("13 Anlässe, 9 Feiertage, 5 Schulferienblöcke, 1 eigener Termin");
+    expect(lines[2]).toBe("15 Anlässe, 9 Feiertage, 5 Schulferienblöcke, 1 eigener Termin");
     expect(text).toContain("## Mai\n- 10.05. Muttertag (Anlass)");
     expect(text).toContain("- 04.07. bis 09.08. Sommerferien (Schulferien)");
     expect(text).not.toContain("## März"); // leere Monate fehlen

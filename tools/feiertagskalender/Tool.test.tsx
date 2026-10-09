@@ -60,6 +60,19 @@ describe("feiertagskalender: Werkzeug im Browser", () => {
     expect(mai[0]).toHaveTextContent("10.05.2026, Sonntag: Muttertag");
     expect(mai[0]).toHaveTextContent("Vorschlag: Danke an alle Mütter");
     expect(mai[0]).toHaveTextContent("Kanäle: Instagram, Newsletter");
+    // drei Varianten mit Format, Bildidee und Hook, zum Aufklappen
+    const varianten = within(mai[0]).getAllByTestId("ck-variante");
+    expect(varianten).toHaveLength(3);
+    expect(varianten[0]).toHaveTextContent("Variante 1 · Einzelbild mit Frage");
+    expect(varianten[0]).toHaveTextContent("Bild: Blumen im Betrieb");
+    expect(varianten[1]).toHaveTextContent("Variante 2 · Reel");
+    expect(varianten[2]).toHaveTextContent("Variante 3 · Story mit Umfrage");
+    expect(within(varianten[0]).getByRole("button", { name: "Hook kopieren" })).toBeInTheDocument();
+    // das Jahr auf einen Blick: zwölf Monate, Muttertag im Mai
+    const raster = within(card).getByTestId("ck-raster");
+    expect(raster).toHaveTextContent("Dein Jahr auf einen Blick");
+    expect(within(raster).getAllByRole("rowheader")).toHaveLength(12);
+    expect(raster).toHaveTextContent("10.05. Muttertag");
     expect(within(card).getByRole("list", { name: "März" })).toHaveTextContent("Keine Einträge in diesem Monat.");
     expect(within(card).getByTestId("ck-quellen")).toHaveTextContent("Schulferien sind für 21 Kantone belegt");
     expect(within(card).getByRole("button", { name: "Kalender (.ics)" })).toBeInTheDocument();
@@ -135,7 +148,7 @@ describe("feiertagskalender: Werkzeug im Browser", () => {
     await user.click(within(card).getByTestId("ck-csv"));
     await waitFor(() => expect(downloads).toHaveLength(2));
     expect(downloads[1].name).toBe("feiertagskalender-2026-malerei-keller.csv");
-    expect(downloads[1].text.startsWith("\uFEFFDatum;Art;Titel;Vorschlag;Format;Kanäle\r\n")).toBe(true);
+    expect(downloads[1].text.startsWith("\uFEFFDatum;Art;Titel;Vorschlag;Variante 1;Variante 2;Variante 3;Kanäle\r\n")).toBe(true);
   });
 
   it("meldet einen fehlenden Kanton, ohne das Fenster zu öffnen", async () => {

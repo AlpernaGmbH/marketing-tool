@@ -1,7 +1,7 @@
 # Content-Kalender Schweiz (feiertagskalender)
 
 ## Nutzen in einem Satz
-Für KMU und Vereine, die regelmässig posten wollen: ein Jahreskalender mit den Anlässen, Feiertagen und Schulferien des eigenen Kantons und einem Beitrags-Vorschlag je Anlass, in vier Minuten, als Monatsansicht, Kalenderdatei (.ics), CSV und PDF.
+Für KMU, die regelmässig posten wollen: ein Jahreskalender mit den Anlässen, Feiertagen und Schulferien des eigenen Kantons und drei Beitragsideen je Anlass (Format, Bildidee, Hook), in vier Minuten, als Jahresraster, Monatsansicht, Kalenderdatei (.ics), CSV und PDF.
 
 ## Kategorie und Verknüpfung
 Kategorie: content, Zielgruppe beide (KMU und Vereine), Klasse C (Browser, mit Datensätzen), Pfad «content», Schritt 5.
@@ -30,10 +30,11 @@ Verwandte Werkzeuge: inhalte-saeulen, inhalte-ideen, gbp-feiertage.
 7. Reihenfolge: Datum, dann Anlass, Feiertag, eigener Termin, Schulferien, dann Titel.
 
 ## Ausgaben
-- Monatsansicht (zwölf Abschnitte), je Eintrag Datum, Wochentag, Titel, Art; bei Anlässen Vorschlag (Titel, Format, Hook) und Kanäle.
+- Jahr auf einen Blick (`jahresRaster`, DocBlock `grid`, data-testid `ck-raster`): zwölf Monate als Zeilen, je Art (Anlässe, Feiertage, Schulferien, eigene Termine) eine Spalte, leere Spalten entfallen; Ferien stehen im Startmonat («ab 04.07. Sommerferien»). Das Raster steht auch in PDF, Word und Markdown.
+- Monatsansicht (zwölf Abschnitte), je Eintrag Datum, Wochentag, Titel, Art; bei Anlässen ein aufklappbarer Vorschlag mit drei Varianten (`VorschlagView`, data-testid `ck-vorschlag` und `ck-variante`): je Variante Format, Bildidee, Hook und «Hook kopieren»; dazu Kanäle und, wenn vorhanden, der Hinweis des Anlasses.
 - Text kopieren (Jahresübersicht als Markdown) ist frei. Downloads (Kalender .ics, CSV, PDF, Word) laufen über guardDownload.
-- .ics: ein Ganztagstermin je Eintrag, Ferien und Mehrtägiges als mehrtägiger Termin, SUMMARY «Content: …», DESCRIPTION mit Vorschlag, Erinnerung 7 Tage vorher bei Anlässen.
-- CSV: Datum;Art;Titel;Vorschlag;Format;Kanäle, UTF-8 mit BOM, Semikolon.
+- .ics: ein Ganztagstermin je Eintrag, Ferien und Mehrtägiges als mehrtägiger Termin, SUMMARY «Beitrag: …», DESCRIPTION mit Vorschlag und den drei Varianten (Format, Bild, Hook), Erinnerung 7 Tage vorher bei Anlässen.
+- CSV: Datum;Art;Titel;Vorschlag;Variante 1;Variante 2;Variante 3;Kanäle, UTF-8 mit BOM, Semikolon. Eine Variante steht in einer Zelle: «Reel. Bild: … Hook: …».
 - PDF und Word: Jahresübersicht mit einer Tabelle je Monat und den Quellen.
 - Hinweis mit Quellen (Links) und dem Satz, welche Kantone belegt sind.
 - CRM: eingabe = Kanton, Jahr, Branche, Kanäle, eigene Termine; ausgabe = Jahresübersicht als kompaktes Markdown.
@@ -47,7 +48,7 @@ Verwandte Werkzeuge: inhalte-saeulen, inhalte-ideen, gbp-feiertage.
 - Eigener Termin mit «=», «+», «-», «@» am Anfang: in der CSV mit vorangestelltem Apostroph, damit Excel keine Formel ausführt.
 
 ## Texte
-- Tagline: «Anlässe, Feiertage und Schulferien deines Kantons als Jahresplan mit einem Beitrags-Vorschlag je Anlass.»
+- Tagline: «Anlässe, Feiertage und Schulferien deines Kantons als Jahresplan mit drei Beitragsideen je Anlass.»
 - SEO-Title (≤ 60, mit «Schweiz»), Meta-Description (≤ 155): siehe content/tools/feiertagskalender.md.
 - Seitentext: 350 bis 700 Wörter, Beispiel Malerei Keller, Gossau (Kanton St. Gallen), drei Monate aus dem echten Ergebnis.
 - Alperna-Baustein: Social Media.
@@ -57,3 +58,11 @@ Mindestens 22 Fälle in logic.test.ts (Regeln, Osterrechnung, Filter, Schulferie
 
 ## Nicht Teil dieses Tools
 Kein Server, keine KI. Keine Texte zu den Beiträgen selbst (das machen inhalte-ideen und caption-baukasten). Keine Gemeinde-Feiertage, kein Kalender-Abo (nur Datei). Keine Zahlen zu Reichweite oder Wirkung.
+
+## Varianten, Formate und neue Anlässe (Stand 09.10.2026, Charge A2)
+- Jeder Vorschlag (`vorschlag.titel`) hat genau drei Varianten (`VARIANTEN = 3`) mit je Format, Bildidee (10 bis 160 Zeichen) und Hook (10 bis 240 Zeichen). Die drei Formate eines Vorschlags sind verschieden.
+- Formate (`FORMATE`): Reel, Karussell, Story mit Umfrage, Einzelbild mit Frage, Beitrag mit Angebot, Text-Beitrag, Vorher-nachher. «Foto mit kurzem Text» ist gestrichen: Es sagt weder, was zu sehen ist, noch, wie der Beitrag aufgebaut ist (Rückmeldung vom 09.10.2026). Längenangaben wie «15 Sekunden» beschreiben die Länge eines Kurzvideos, keine Messung.
+- Sechs Branchengruppen (Handwerk, Gastronomie, Dienstleistung, Detailhandel, Verein, Andere); die 14 Einträge der gemeinsamen Branchenliste (`lib/branchen.ts`, Feld `kalender`) werden darauf abgebildet. Zielwert im Plan waren 12 Branchen; eigene Texte je Branche gäbe es nur für die grossen Anlässe, der Rest fällt auf «alle» zurück. Das ist offen und eine Entscheidung für P4 oder später.
+- Neue Anlässe: Halloween (31.10., überall), Räbeliechtli (11.11. als Richtwert, belegt für AG, AR, AI, BL, BS, SG, TG, ZH; Hinweis «Das Datum legt jede Gemeinde selbst fest»), Sechseläuten (`regel:sechselaeuten`, nur ZH; dritter Montag im April, bei Ostermontag der vierte, Stadt Zürich, Stadtratsbeschluss Nr. 1214 vom 13.06.1952). Quellen stehen in `data/anlaesse-ch.json` (`meta.links`).
+- Optionales Feld `hinweis` am Anlass; es erscheint als Hinweis am Eintrag und wird mit dem Hinweis eines gleichzeitigen Feiertags zusammengesetzt.
+- Tests: Schema, drei verschiedene Formate, keine harte Regel der Stimme (`brandHits`), kein Ausrufezeichen, Abdeckung der grossen Anlässe je Branchengruppe, Sechseläuten 2020 bis 2060 immer ein Montag im April und nie der Ostermontag, Filter nach Kanton, Jahresraster, Dokument, CSV, ICS.
