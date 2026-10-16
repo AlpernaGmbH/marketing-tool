@@ -185,9 +185,18 @@ export function normName(s: string): string {
   return typoCH(s).toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-/** Kanalname für den Vergleich: klein, ohne Bindestrich, Leerzeichen und Satzzeichen. */
+/**
+ * Kanalname für den Vergleich: klein, ohne Bindestrich, Leerzeichen und Satzzeichen. Der Zusatz «(neu)» und ein angehängtes
+ * «-Kanal», «-Profil», «-Seite», «-Account» oder «-Konto» fallen weg («Instagram-Kanal», «Google Business Profile»), ein
+ * Schrägstrich gilt als «oder» («Gemeindeblatt/Anzeiger»).
+ */
 export function kanalKey(name: string): string {
-  return name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  return name
+    .replace(/\s*\(neu\)\s*$/i, "")
+    .replace(/\s*\/\s*/g, " oder ")
+    .toLowerCase()
+    .replace(/[-\s](?:kanal|profile?|seite|account|konto)$/u, "")
+    .replace(/[^\p{L}\p{N}]/gu, "");
 }
 
 /** Weitere Schreibweisen, unter denen die KI einen gewählten Kanal nennen darf (neben Name und Schlüssel). */
@@ -199,8 +208,8 @@ const KANAL_ALIASE: Record<KanalKey, readonly string[]> = {
   linkedin: [],
   whatsapp: ["WhatsApp", "WhatsApp-Gruppe"],
   newsletter: ["Newsletter", "Mail", "E-Mail"],
-  gemeindeblatt: ["Gemeindeblatt", "Anzeiger"],
-  aushang: [],
+  gemeindeblatt: ["Gemeindeblatt", "Anzeiger", "Anzeiger oder Gemeindeblatt"],
+  aushang: ["Aushänge"],
   lokalpresse: ["Lokalzeitung"],
 };
 
@@ -254,15 +263,21 @@ export function outputTexts(o: KonzeptOutput): string[] {
   ];
 }
 
+/** Der Kanal hinter einem Namen im Plan (alle zehn Kanäle, «(neu)» zählt nicht); ein unbekannter Name steht für sich. Zwei Zeilen mit demselben Kanal sind doppelt. */
+function kanalId(name: string): string {
+  return KANAL_KEYS.find((key) => kanalNamen(key).includes(kanalKey(name))) ?? kanalKey(name);
+}
+
 /**
  * Prüfung, die nur dieses Werkzeug kennt. Gibt den Grund zurück oder null, in dieser Reihenfolge:
  * «zahl»: eine Ziffernfolge in der Antwort steht nicht in den Angaben (Name, Ort, Kanton, Zweck, Anzahl, Stunden,
  * Budget, wer, Anlassnamen, Anspruchsgruppen);
  * «stunden»: die Stunden der Rollen ergeben zusammen mehr als die angegebenen Stunden pro Monat;
+ * «namedoppelt»: zwei Zielgruppen heissen gleich (ohne Gross/Klein);
  * «kalender»: ein Eintrag im Jahreskalender nennt einen Anlass, den es in den Angaben nicht gibt (Name ohne Gross/Klein,
- * gleicher Monat);
- * «kanal»: ein Kanal im Kanalplan steht nicht in den Angaben und trägt nicht den Zusatz «(neu)», oder es sind mehr als
- * zwei neue Kanäle.
+ * gleicher Monat), oder derselbe Anlass steht zweimal;
+ * «kanal»: ein Kanal im Kanalplan steht nicht in den Angaben und trägt nicht den Zusatz «(neu)», es sind mehr als
+ * zwei neue Kanäle, oder ein Kanal steht zweimal im Plan.
  */
 export function checkKonzept(output: KonzeptOutput, input: KonzeptInput): string | null {
   const known = new Set(numbersIn(knownText(input)));
@@ -270,8 +285,13 @@ export function checkKonzept(output: KonzeptOutput, input: KonzeptInput): string
 
   if (stundenSumme(output.rollen) > input.stundenProMonat) return "stunden";
 
+  const namen = output.zielgruppen.map((z) => normName(z.name));
+  if (new Set(namen).size !== namen.length) return "namedoppelt";
+
   const anlaesse = input.anlaesse.map((a) => `${a.monat}|${normName(a.name)}`);
-  for (const e of output.jahreskalender) if (!anlaesse.includes(`${e.monat}|${normName(e.anlass)}`)) return "kalender";
+  const zeilen = output.jahreskalender.map((e) => `${e.monat}|${normName(e.anlass)}`);
+  for (const z of zeilen) if (!anlaesse.includes(z)) return "kalender";
+  if (new Set(zeilen).size !== zeilen.length) return "kalender";
 
   let neu = 0;
   for (const k of output.kanalplan) {
@@ -279,6 +299,8 @@ export function checkKonzept(output: KonzeptOutput, input: KonzeptInput): string
     else if (!istGewaehlterKanal(k.kanal, input.kanaele)) return "kanal";
   }
   if (neu > MAX_NEUE_KANAELE) return "kanal";
+  const ids = output.kanalplan.map((k) => kanalId(k.kanal));
+  if (new Set(ids).size !== ids.length) return "kanal";
   return null;
 }
 
@@ -288,9 +310,9 @@ const INSTRUCTION = `Schreib ein Kommunikationskonzept für einen Schweizer Vere
 - Grundlage sind die Angaben: «typ», «betrieb» (Name des Vereins oder Betriebs), «ort», «kanton», «zweck» (was er tut), «anzahl» (bei einem Verein die Mitglieder, bei einem Betrieb die Mitarbeitenden), «entwicklung» (bei einem Verein die Mitgliederzahl, bei einem Betrieb die Nachfrage), «ziele» (was er erreichen will), «anlaesse» (Name, Monat als Zahl 1 bis 12 und Monatsname), «kanaele» (Kanäle, die heute laufen), «wer» (wer die Kommunikation macht), «stundenProMonat», «budget» (CHF pro Jahr, 0 heisst: kein Budget angegeben) und, falls vorhanden, «gruppen» (Anspruchsgruppen mit Interesse und Einfluss von 1 bis 5). Erfinde nichts, was nicht in den Angaben steht. Erfinde keinen Namen: Nenn den Verein oder Betrieb so, wie er in «betrieb» steht.
 - «ausgangslage»: 120 bis 700 Zeichen. Was der Verein oder Betrieb ist, wie gross er ist (Mitglieder oder Mitarbeitende) und wohin sich Mitgliederzahl oder Nachfrage entwickelt, welche Kanäle heute laufen, wie viel Zeit und Budget es gibt. Sachlich, ohne Urteil von aussen.
 - «ziele»: 2 bis 5 Ziele, die zu den gewählten «ziele» passen. «ziel» ist ein Satz (10 bis 120 Zeichen). «messgroesse» (5 bis 80 Zeichen) sagt, was er selbst zählt: bei einem Verein Mitglieder, Anmeldungen, Helferinnen und Helfer, Besucher; bei einem Betrieb Anfragen, Offerten, Neukundschaft, Bewerbungen, Besuche auf der Website. Keine Benchmarks, keine Vergleichszahlen. Brauchst du eine Zielzahl, schreib den Platzhalter [Zielzahl].
-- «zielgruppen»: 2 bis 6 Gruppen, je «name» (3 bis 60 Zeichen) und «erwartung» (was die Gruppe wissen will, 10 bis 200 Zeichen). Sind «gruppen» angegeben, bilden sie die Zielgruppen: Nimm zuerst die mit hohem Interesse oder hohem Einfluss (Wert 4 oder 5) und schreib den Namen so, wie er in «gruppen» steht. Fehlen «gruppen», leite drei bis fünf Zielgruppen aus Zweck und Zielen ab, bei einem Verein zum Beispiel Mitglieder, Eltern, Gemeinde, Sponsoren, bei einem Betrieb zum Beispiel Stammkundschaft, Neukundschaft, Partnerbetriebe, Bewerbende.
+- «zielgruppen»: 2 bis 6 Gruppen, je «name» (3 bis 60 Zeichen) und «erwartung» (was die Gruppe wissen will, 10 bis 200 Zeichen). Sind «gruppen» angegeben, bilden sie die Zielgruppen: Nimm zuerst die mit hohem Interesse oder hohem Einfluss (Wert 4 oder 5) und schreib den Namen so, wie er in «gruppen» steht. Fehlen «gruppen», leite drei bis fünf Zielgruppen aus Zweck und Zielen ab, bei einem Verein zum Beispiel Mitglieder, Eltern, Gemeinde, Sponsoren, bei einem Betrieb zum Beispiel Stammkundschaft, Neukundschaft, Partnerbetriebe, Bewerbende. Jede Zielgruppe steht nur einmal.
 - «kernbotschaft»: ein Satz von 30 bis 200 Zeichen, den jede Person im Vorstand oder im Team weitersagen kann. Bei einem Verein sagt er, wofür der Verein steht und wen er einlädt; bei einem Betrieb, was er für wen tut und warum man ihn wählt. Keine Werbesprache.
-- «kanalplan»: 2 bis 6 Zeilen, eine je Kanal aus «kanaele» (bei vielen Kanälen die wichtigsten). «kanal» (3 bis 40 Zeichen) nennt den Kanal so, wie er in «kanaele» steht, zum Beispiel «WhatsApp-Gruppen», «Google Business Profil» oder «Gemeindeblatt oder Anzeiger». Du darfst höchstens zwei Kanäle vorschlagen, die nicht in «kanaele» stehen; schreib dann «(neu)» ans Ende des Namens, zum Beispiel «Instagram (neu)». Hat der Verein oder Betrieb weniger als zwei Kanäle, schlag so viele vor, dass es zwei Zeilen sind. «zweck»: wofür der Kanal dient (10 bis 160 Zeichen). «rhythmus»: in Worten, zum Beispiel «wöchentlich» oder «vor jedem Anlass» (höchstens 60 Zeichen). «verantwortlich»: eine Rolle oder eine Person aus «wer» (höchstens 60 Zeichen); ist nichts bekannt, bleibt es leer. Der Aufwand passt zu «stundenProMonat».
+- «kanalplan»: 2 bis 6 Zeilen, eine je Kanal aus «kanaele» (bei vielen Kanälen die wichtigsten). «kanal» (3 bis 40 Zeichen) nennt den Kanal genau so, wie er in «kanaele» steht, zum Beispiel «WhatsApp-Gruppen», «Google Business Profil», «Gemeindeblatt oder Anzeiger» oder «Aushang», ohne «-Kanal» und ohne Zusatz. Jeder Kanal steht höchstens einmal im Plan. Du darfst höchstens zwei Kanäle vorschlagen, die nicht in «kanaele» stehen; schreib dann «(neu)» ans Ende des Namens, zum Beispiel «Instagram (neu)». Hat der Verein oder Betrieb weniger als zwei Kanäle, schlag so viele vor, dass es zwei Zeilen sind. «zweck»: wofür der Kanal dient (10 bis 160 Zeichen). «rhythmus»: in Worten, zum Beispiel «wöchentlich» oder «vor jedem Anlass» (höchstens 60 Zeichen). «verantwortlich»: eine Rolle oder eine Person aus «wer» (höchstens 60 Zeichen); ist nichts bekannt, bleibt es leer. Der Aufwand passt zu «stundenProMonat».
 - «jahreskalender»: höchstens eine Zeile je Anlass aus «anlaesse» und ausschliesslich mit diesen Anlässen. «anlass» steht genau so wie in den Angaben, «monat» ist dieselbe Zahl wie in den Angaben. «kommunikation»: was vor, während und nach dem Anlass kommuniziert wird (10 bis 200 Zeichen). Sind keine Anlässe angegeben, ist die Liste leer.
 - «rollen»: 1 bis 5 Rollen mit «rolle» (Bezeichnung, 3 bis 60 Zeichen), «aufgaben» (was die Rolle in der Kommunikation tut, 10 bis 200 Zeichen) und «stundenProMonat» (ganze Zahl). Die Stunden aller Rollen zusammen sind höchstens so viele wie «stundenProMonat» aus den Angaben. Sind es 0 Stunden, steht bei jeder Rolle 0. Die Stunden stehen nur in diesem Feld, nicht im Text.
 - «erfolgsmessung»: 2 bis 5 Grössen, die er selbst zählt, je ein Satz von 10 bis 160 Zeichen: bei einem Verein Mitglieder, Anmeldungen, Helferinnen und Helfer, Besucher; bei einem Betrieb Anfragen, Offerten, Neukundschaft, Bewerbungen. Keine Benchmarks aus Statistiken.
@@ -324,7 +346,7 @@ export const konzeptGenerator = defineGenerator({
   output: konzeptOutput,
   instruction: INSTRUCTION,
   prompt: (i) => dataPrompt(i.typ === "verein" ? "Angaben zum Verein" : "Angaben zum Betrieb", promptData(i)),
-  maxTokens: 1800,
+  maxTokens: 2600,
   temperature: 0.4,
   check: checkKonzept,
 });

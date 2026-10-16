@@ -41,11 +41,11 @@ Ein Nutzenversprechen sagt in einem Satz, was deine Kundschaft von dir hat, und 
 ## Beispiel
 Malerei Keller, Gossau, für Hausbesitzer in der Region: Fassaden, Innenräume, Farbberatung; Beweise: seit 1985, fünf Jahre Garantie. So könnte der Entwurf aussehen (von Hand geschrieben, keine Ausgabe der KI):
 
-> **Kurz:** Fassaden in Gossau, die zwanzig Jahre halten.
+> **Kurz:** Fassaden in Gossau, die halten, mit fünf Jahren Garantie.
 >
-> **Mittel:** Du bekommst eine Fassade, die zwanzig Jahre hält, und eine Offerte innert einer Woche. Die Farbwahl erklären wir dir vor Ort.
+> **Mittel:** Du bekommst eine Fassade, die hält, und eine Offerte innert einer Woche. Die Farbwahl erklären wir dir vor Ort.
 >
-> **Lang:** Hausbesitzer in der Region Gossau bekommen von der Malerei Keller eine Fassade, die zwanzig Jahre hält. Die Offerte kommt innert einer Woche, und die Rechnung hält, was die Offerte verspricht. Seit 1985 streichen wir Häuser im Fürstenland, mit fünf Jahren Garantie auf jede Fassade.
+> **Lang:** Hausbesitzer in der Region Gossau bekommen von der Malerei Keller eine Fassade, die hält. Die Offerte kommt innert einer Woche, und die Rechnung hält, was die Offerte verspricht. Seit 1985 streichen wir Häuser im Fürstenland, mit fünf Jahren Garantie auf jede Fassade.
 >
 > **Website-Titel (46 Zeichen):** Malerei Keller: Fassaden in Gossau, die halten
 >

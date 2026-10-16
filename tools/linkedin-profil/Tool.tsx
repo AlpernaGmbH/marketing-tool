@@ -32,7 +32,7 @@ import {
   kiInput,
   outputOf,
   parseState,
-  reportMarkdown,
+  ausgabeText,
   toDocument,
   validate,
   vorbefuellt,
@@ -118,7 +118,7 @@ function LinkedinFlow() {
   const gen = useGenerator(linkedinGenerator, {
     eingabe: (i) => eingabeText({ firma: i.betrieb, branche: i.branche, zielgruppe: i.zielgruppe, headline: i.headline, about: i.about }),
     // Das Dokument fürs CRM braucht den Punktwert; die Texte stehen in der Eingabe, die der Versuch festhält.
-    ausgabe: (o) => (attemptRef.current ? reportMarkdown({ ...attemptRef.current.state, ki: o, kiAusfall: false }) : ""),
+    ausgabe: (o) => (attemptRef.current ? ausgabeText({ ...attemptRef.current.state, ki: o, kiAusfall: false }) : ""),
     loadingSteps: LOADING_STEPS,
   });
 
@@ -165,7 +165,7 @@ function LinkedinFlow() {
     shouldFocus.current = "result";
     set(next);
     setDraft(null);
-    void ctx.sendResult({ eingabe: eingabeText(next), ausgabe: reportMarkdown(next) });
+    void ctx.sendResult({ eingabe: eingabeText(next), ausgabe: ausgabeText(next) });
   }, [busy, attempt, kiDown, set, ctx]);
 
   const change = (patch: Partial<Form>) => {

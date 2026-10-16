@@ -35,6 +35,7 @@ import {
   WORTE,
   addAnlass,
   anlassFieldId,
+  ausgabeText,
   charCount,
   effectiveKanaele,
   eingabeText,
@@ -52,7 +53,6 @@ import {
   pitchFor,
   profilePatch,
   removeAnlass,
-  reportMarkdown,
   screenBlocks,
   setAnlass,
   toDocument,
@@ -84,7 +84,7 @@ function KonzeptFlow() {
   const inputRef = useRef<KonzeptInput | null>(null);
   const gen = useGenerator(konzeptGenerator, {
     eingabe: eingabeText,
-    ausgabe: (o) => (inputRef.current ? reportMarkdown(o, inputRef.current) : ""),
+    ausgabe: (o) => (inputRef.current ? ausgabeText(o, inputRef.current) : ""),
   });
 
   // null: die Person hat noch nichts getippt. Dann gelten die gespeicherten Angaben (auch ohne Ergebnis), sonst das leere Formular.

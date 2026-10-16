@@ -4,9 +4,12 @@ import {
   ABSCHNITTE,
   BEWERTUNG,
   BEWERTUNG_HINWEIS,
+  CRM_MAX,
   EMPTY_FORM,
   EMPTY_STATE,
+  KI_HINWEIS,
   PUNKTEKARTE_TITEL,
+  ausgabeText,
   bewerten,
   eingabeText,
   einordnung,
@@ -22,6 +25,7 @@ import {
   reportMarkdown,
   toDocument,
   toInput,
+  viewBlocks,
   type FormFields,
 } from "./logic";
 
@@ -181,7 +185,7 @@ describe("icp-builder: Dokument", () => {
   it("enthält Facts, KI-Hinweis, alle Abschnitte, die Punktekarte als Tabelle und den Hinweis zur Bewertung", () => {
     const doc = toDocument(output, input);
     expect(doc.title).toBe("Idealkundenprofil");
-    expect(doc.subtitle).toBe(output.segmentName);
+    expect(doc.subtitle).toBe("Für Malerei Keller");
     expect(doc.firma).toBe("Malerei Keller");
     expect(doc.filename).toBe("icp-malerei-keller");
     expect(doc.blocks[0]).toEqual({
@@ -215,16 +219,72 @@ describe("icp-builder: Dokument", () => {
     const doc = toDocument(output, { betrieb: "", branche: "", einzugsgebiet: "" });
     expect(doc.blocks[0]).toEqual({ type: "facts", items: [{ label: "Betrieb", value: "keine Angabe" }] });
     expect(doc.firma).toBeUndefined();
+    expect(doc.subtitle).toBe("Für deinen Betrieb");
     expect(doc.filename).toBe("icp-betrieb");
   });
   it("reportMarkdown beginnt mit dem Titel und enthält die Tabelle", () => {
     const md = reportMarkdown(output, input);
     expect(md.startsWith("# Idealkundenprofil\n")).toBe(true);
-    expect(md).toContain(`_${output.segmentName}_`);
+    expect(md).toContain("_Für Malerei Keller_");
     expect(md).toContain("- **Betrieb:** Malerei Keller");
     expect(md).toContain("### Wer sie sind");
     expect(md).toContain("| Kriterium | Punkte | Warum |");
     expect(md).toContain("| Fragt nach Farbberatung | 1 | Zusatzleistung, die der Betrieb gern macht. |");
+  });
+});
+
+describe("icp-builder: Dokument ohne Doppelungen (Befund 10)", () => {
+  it("der Segmentname steht in PDF, Word und Markdown einmal, der KI-Hinweis am Bildschirm nur in der Karte", () => {
+    const md = reportMarkdown(output, input);
+    expect(md.split(output.segmentName)).toHaveLength(2);
+    const doc = toDocument(output, input);
+    const screen = viewBlocks(doc);
+    expect(screen).toHaveLength(doc.blocks.length - 1);
+    expect(JSON.stringify(screen)).not.toContain(KI_HINWEIS);
+    // PDF, Word und Copy behalten den Hinweis; der Segmentname bleibt als Überschrift auch am Bildschirm.
+    expect(md).toContain(KI_HINWEIS);
+    expect(screen.some((b) => b.type === "heading" && b.text === output.segmentName)).toBe(true);
+  });
+});
+
+describe("icp-builder: Text fürs CRM (Befund 9)", () => {
+  /** Die Obergrenzen des Schemas ausgeschöpft: längster Segmentname, längste Beschreibung, acht Kriterien zu 90 Zeichen. */
+  const voll: IcpOutput = {
+    segmentName: "S".repeat(60),
+    beschreibung: "B".repeat(500),
+    merkmale: Array.from({ length: 7 }, (_, i) => `Merkmal ${i} ${"m".repeat(150)}`),
+    ausloeser: Array.from({ length: 5 }, (_, i) => `Auslöser ${i} ${"a".repeat(150)}`),
+    einwaende: Array.from({ length: 4 }, (_, i) => `Einwand ${i} ${"e".repeat(150)}`),
+    signale: Array.from({ length: 6 }, (_, i) => `Signal ${i} ${"s".repeat(150)}`),
+    nichtIdeal: Array.from({ length: 4 }, (_, i) => `Nicht ideal ${i} ${"n".repeat(150)}`),
+    punktekarte: Array.from({ length: 8 }, (_, i) => kriterium(`${"abcdefgh"[i]}${"k".repeat(89)}`, [3, 3, 3, 2, 2, 2, 1, 1][i])),
+  };
+  it("nennt Segment, Beschreibung und die ganze Punktekarte zuerst und bleibt unter der Grenze des Servers", () => {
+    const text = ausgabeText(output, input);
+    expect(text.length).toBeLessThanOrEqual(CRM_MAX);
+    expect(text.startsWith("# Idealkundenprofil für Malerei Keller\nSegment: Eigentümer älterer Einfamilienhäuser in Gossau und Umgebung\n")).toBe(true);
+    expect(text.indexOf(output.beschreibung)).toBeGreaterThan(0);
+    expect(text).toContain("## Punktekarte (höchstens 16 Punkte)\n- Einfamilienhaus in Gossau und Umgebung: 3 Punkte\n");
+    for (const k of output.punktekarte) expect(text).toContain(`- ${k.kriterium}: ${punkteText(k.punkte)}`);
+    // Die Begründungen der Punktekarte stehen nur im Dokument, nicht im CRM-Text.
+    expect(text).not.toContain("Kurze Wege, bekannte Bauart");
+  });
+  it("auch an den Obergrenzen des Schemas steht die ganze Punktekarte vor dem Schnitt, Listen füllen den Rest", () => {
+    const text = ausgabeText(voll, input);
+    expect(text.length).toBeLessThanOrEqual(CRM_MAX);
+    for (const k of voll.punktekarte) expect(text).toContain(`- ${k.kriterium}: ${punkteText(k.punkte)}`);
+    expect(text.indexOf("## Punktekarte")).toBeLessThan(text.indexOf("## Wer sie sind"));
+    expect(text).toContain("## Wer sie sind\n- Merkmal 0 ");
+    // Was nicht mehr passt, fällt als ganze Zeile weg, nie mitten im Wort.
+    expect(text.endsWith("m")).toBe(true);
+    expect(text).not.toContain("## Anfragen, die nicht passen");
+  });
+  it("lässt einen Abschnitt samt Titel weg, von dem keine Zeile mehr passt, und kommt ohne Betrieb aus", () => {
+    const text = ausgabeText({ ...output, merkmale: ["x".repeat(2_000)] }, { betrieb: "" });
+    expect(text.startsWith("# Idealkundenprofil für einen Betrieb\n")).toBe(true);
+    expect(text).not.toContain("Wer sie sind");
+    expect(text).toContain("## Wann sie kaufen\n- Im Frühling vor der Fassadensaison");
+    expect(text.endsWith("\n")).toBe(false);
   });
 });
 

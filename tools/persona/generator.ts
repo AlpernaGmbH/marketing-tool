@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { collectStrings, dataPrompt, defineGenerator, numbersIn } from "@/lib/generator";
+import { collectStrings, dataPrompt, defineGenerator, numbersIn, withoutKeys } from "@/lib/generator";
 
 // Generator des Persona-Generators (Klasse B, docs/TOOL-BAUEN.md Abschnitt 4). Läuft im Browser und auf dem Server:
 // nur zod, Strings und reine Funktionen. Die Angaben kommen aus dem Firmenprofil (Betrieb, Branche, Ort) und dem
@@ -77,6 +77,9 @@ export type PersonaOutput = z.infer<typeof personaOutput>;
 
 export { numbersIn };
 
+/** Unter diesem Schlüssel nennt die KI Wörter, die die Persona abschrecken («Premium», «Best Practice», «Nr. 1»): Sie gelten als Beispiele, nicht als Text. */
+export const NEGATIVE_KEYS = ["vermeiden"] as const;
+
 /** Die Angaben, wie sie an die KI gehen: Altersgruppe und Rolle als Text, nicht als Schlüssel. */
 export function promptData(input: PersonaInput) {
   return { ...input, altersgruppe: altersgruppeLabel(input.altersgruppe), rolle: rolleLabel(input.rolle) };
@@ -85,6 +88,7 @@ export function promptData(input: PersonaInput) {
 /**
  * Prüfung, die nur dieses Werkzeug kennt: keine Ziffer in der Persona, die nicht in den Angaben steht (Betrieb, Branche,
  * Ort, Zielgruppe, Angebot, Situation, Fragen und der Text der Altersgruppe), und der Name ist nicht der Betrieb.
+ * Die Liste «vermeiden» zählt nicht: Wörter wie «24/7» oder «Nr. 1» sind dort Beispiele für Abschreckendes, keine Behauptungen.
  * Gibt den Grund zurück («name», «zahl») oder null.
  */
 export function checkPersona(output: PersonaOutput, input: PersonaInput): string | null {
@@ -92,20 +96,20 @@ export function checkPersona(output: PersonaOutput, input: PersonaInput): string
   const known = new Set(
     numbersIn([input.betrieb, input.branche, input.ort, input.zielgruppe, input.angebot, altersgruppeLabel(input.altersgruppe), input.situation, input.fragen].join("\n")),
   );
-  for (const n of numbersIn(collectStrings(output).join("\n"))) if (!known.has(n)) return "zahl";
+  for (const n of numbersIn(collectStrings(withoutKeys(output, NEGATIVE_KEYS)).join("\n"))) if (!known.has(n)) return "zahl";
   return null;
 }
 
 const INSTRUCTION = `Schreib eine Persona für ein Schweizer KMU: eine erfundene, konkrete Person aus der Zielgruppe, an die der Betrieb seine Texte und Beiträge richtet.
 - Die Person ist fiktiv. «name» besteht aus Vorname und Nachname, wie sie in der Schweiz üblich sind, und ist erkennbar erfunden: keine echte oder bekannte Person, nicht der Name des Betriebs, keine Person aus den Angaben.
-- «kurz»: ein Satz, wer sie ist, mit ihrer Rolle und der Altersgruppe. Übernimm die Altersgruppe wörtlich aus den Angaben, zum Beispiel «zwischen 30 und 45» oder «über 60». Schreib kein genaues Alter in Ziffern; «Mitte vierzig» als Wort ist erlaubt.
-- Ziffern nur, wenn sie wörtlich in den Angaben stehen (die Altersgruppe zählt dazu). Sonst schreib die Zahl als Wort oder lass sie weg. Erfinde keine Preise, Einwohnerzahlen, Jahreszahlen oder Statistiken.
+- «kurz»: ein Satz, wer sie ist, mit ihrer Rolle und der Altersgruppe. Übernimm die Altersgruppe wörtlich aus den Angaben, zum Beispiel «zwischen 30 und 45» oder «über 60». Schreib kein genaues Alter, weder in Ziffern noch als Wort («52», «Mitte vierzig»).
+- Zahlen nur, wenn sie wörtlich in den Angaben stehen (die Altersgruppe zählt dazu); auch Zahlwörter wie «zwanzig», «hundert» oder «tausend» zählen dazu. Sonst lass die Zahl weg. Erfinde keine Preise, Einwohnerzahlen, Jahreszahlen oder Statistiken.
 - Konkret und ohne Klischees: Schweizer Alltag und echte Orte in der Region des Betriebs (Gemeinde, Kanton, Pendlerstrecke, Dorfladen, Gemeindeversammlung, Vereinsabend). Keine Werbesprache, keine Verallgemeinerungen über Altersgruppen.
 - «alltag»: ein kurzer Absatz, wie ein Tag oder eine Woche dieser Person aussieht und wo das Angebot des Betriebs darin vorkommt.
 - «ziele»: drei bis fünf Dinge, die sie mit dem Angebot erreichen will. «sorgen»: drei bis fünf Dinge, die sie zögern lassen oder beschäftigen.
 - «informationswege»: drei bis fünf Orte, wo sie sucht und liest, zum Beispiel Google, Empfehlung von Bekannten, Instagram, Gemeindeblatt, Anzeiger, Aushang im Dorfladen. Nimm, was zu Rolle und Altersgruppe passt.
 - «einwaende»: zwei bis vier Sätze in ihrer Sprache, die sie dem Betrieb entgegenhält, bevor sie anfragt.
-- «soSprichstDuSieAn»: «ton» sagt in ein bis zwei Sätzen, wie der Betrieb mit ihr spricht (Du oder Sie, Tempo, Fachwörter ja oder nein). «woerter»: vier bis acht Wörter oder kurze Wendungen, die bei ihr ankommen. «vermeiden»: drei bis sechs Wörter, die sie abschrecken, zum Beispiel Fachbegriffe, Abkürzungen oder englische Werbewörter aus der Branche; nenne dort keine Wörter aus den Regeln oben.
+- «soSprichstDuSieAn»: «ton» sagt in ein bis zwei Sätzen, wie der Betrieb mit ihr spricht (Du oder Sie, Tempo, Fachwörter ja oder nein). «woerter»: vier bis acht Wörter oder kurze Wendungen, die bei ihr ankommen. «vermeiden»: drei bis sechs Wörter, die sie abschrecken, zum Beispiel Fachbegriffe, Abkürzungen oder englische Werbewörter aus der Branche. Hier dürfen auch Wörter stehen, die du selbst nicht verwenden darfst («innovativ», «ganzheitlich», «Best Practice»); nur keine Ausrufezeichen.
 - «zitat»: ein Satz, den sie so sagen könnte, in ihrer Sprache, ohne Anführungszeichen.
 - Nutze die typische Situation und die Fragen aus den Angaben, wenn sie da sind. Fehlen sie, leite sie aus Angebot, Rolle und Altersgruppe ab.
 Form: {"name": "…", "kurz": "…", "alltag": "…", "ziele": ["…"], "sorgen": ["…"], "informationswege": ["…"], "einwaende": ["…"], "soSprichstDuSieAn": {"ton": "…", "woerter": ["…"], "vermeiden": ["…"]}, "zitat": "…"}`;
@@ -116,8 +120,13 @@ export const personaGenerator = defineGenerator({
   output: personaOutput,
   instruction: INSTRUCTION,
   prompt: (i) => dataPrompt("Angaben zur Zielgruppe", promptData(i)),
-  maxTokens: 1200,
+  // Eine Antwort an der Obergrenze des Schemas hat rund 1'450 bis 1'700 Token, eine typische 420 bis 490. 1'200 schnitt volle Antworten ab.
+  maxTokens: 1500,
   temperature: 0.6,
+  // Wörter, die abschrecken («Premium», «Best Practice», «Nr. 1»), sind Beispiele und kein Text der Persona.
+  negativeKeys: NEGATIVE_KEYS,
+  // «möchte mehr Sichtbarkeit bei Google» beschreibt ein Ziel der Person, keinen Zweck des Textes.
+  purposeRules: false,
   check: checkPersona,
 });
 

@@ -352,7 +352,10 @@ describe("Kommunikationskonzept im Browser: Verein", () => {
     expect(crm.eingabe).toContain("Anlässe im Jahr: Dorffest (Juni)");
     expect(crm.eingabe).toContain("Kanäle heute: Website, WhatsApp-Gruppen");
     expect(crm.ausgabe.startsWith("# Kommunikationskonzept")).toBe(true);
-    expect(crm.ausgabe).toContain("## 5. Kanalplan");
+    // Der kurze Text fürs CRM: Kernbotschaft und Kanalplan stehen vorne (das ganze Dokument würde gekürzt)
+    expect(crm.ausgabe).toContain("## Kanalplan");
+    expect(crm.ausgabe.indexOf("## Kanalplan")).toBeLessThan(crm.ausgabe.indexOf("## Ziele"));
+    expect(crm.ausgabe).toContain("- Website: ");
     expect(crm.ausgabe).not.toMatch(/^\{|\[object|undefined/);
 
     // Stand: Objekt unter «output», damit der Pfad-Fortschritt das Werkzeug als erledigt erkennt

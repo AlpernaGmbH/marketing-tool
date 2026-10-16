@@ -47,7 +47,7 @@ Malerei Keller, Gossau: Fassaden und Innenräume, Ziel «Anfragen und Aufträge�
 >
 > **Rollen der Kanäle:**
 > - Instagram: zeigt die Arbeit auf der Baustelle, als Foto oder Kurzvideo.
-> - Google-Beitrag: wird gefunden, wer in Gossau einen Maler sucht, als Text mit Bild.
+> - Google-Beitrag: wer in Gossau einen Maler sucht, findet dich, als Text mit Bild.
 >
 > **Monat 1, aufbauen:** Säulen im Team festhalten; Google-Profil und Instagram-Profil aktualisieren; die ersten Beiträge vorbereiten.
 

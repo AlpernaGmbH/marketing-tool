@@ -22,6 +22,7 @@ import {
   KI_HINWEIS,
   RICHTWERT_HINWEIS,
   SLUG,
+  ausgabeText,
   checkPositionierung,
   eingabeText,
   entwurfBodyBlocks,
@@ -30,7 +31,6 @@ import {
   parseState,
   profilePatch,
   prozent,
-  reportMarkdown,
   stripText,
   toDocument,
   toInput,
@@ -115,7 +115,7 @@ function PositionierungFlow() {
   const angabenRef = useRef<StoredInput | null>(null);
   const gen = useGenerator(positionierungGenerator, {
     eingabe: (i) => eingabeText(stripText(i)),
-    ausgabe: (o) => (checkRef.current && angabenRef.current ? reportMarkdown(checkRef.current, o, angabenRef.current) : ""),
+    ausgabe: (o) => (checkRef.current && angabenRef.current ? ausgabeText(checkRef.current, o, angabenRef.current) : ""),
     // Der Check steht schon, während der Entwurf entsteht: Das Werkzeug bleibt sichtbar und zeigt seine eigene Statusmeldung.
     loading: false,
   });
@@ -153,7 +153,7 @@ function PositionierungFlow() {
   async function sendCheckOnly(input: PositionierungInput, check: PositionierungCheck) {
     if (checkSentRef.current) return;
     checkSentRef.current = true;
-    await ctx.sendResult({ eingabe: eingabeText(stripText(input)), ausgabe: reportMarkdown(check, null, stripText(input)) });
+    await ctx.sendResult({ eingabe: eingabeText(stripText(input)), ausgabe: ausgabeText(check, null, stripText(input)) });
   }
 
   async function entwurf(input: PositionierungInput, check: PositionierungCheck) {

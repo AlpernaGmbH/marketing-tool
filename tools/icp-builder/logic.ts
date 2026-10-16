@@ -206,16 +206,60 @@ export function toDocument(output: IcpOutput, input: Pick<IcpInput, "betrieb" | 
   );
   return {
     title: "Idealkundenprofil",
-    subtitle: output.segmentName,
+    // Der Segmentname steht schon als Überschrift im Dokument; im Untertitel stünde er in PDF, Word und Markdown zweimal.
+    subtitle: input.betrieb ? `Für ${input.betrieb}` : "Für deinen Betrieb",
     firma: input.betrieb || undefined,
     filename: `icp-${safeFilename(input.betrieb, "betrieb")}`,
     blocks,
   };
 }
 
-/** Der Entwurf als Markdown fürs CRM und zum Kopieren. */
+/** Der Entwurf als Markdown zum Kopieren. */
 export function reportMarkdown(output: IcpOutput, input: Pick<IcpInput, "betrieb" | "branche" | "einzugsgebiet">): string {
   return toMarkdown(toDocument(output, input));
+}
+
+/** Blöcke für den Bildschirm: ohne den KI-Hinweis, den die Karte selbst über dem Entwurf zeigt. PDF, Word und Copy behalten ihn. */
+export function viewBlocks(doc: DocumentModel): DocBlock[] {
+  return doc.blocks.filter((b) => !(b.type === "paragraph" && b.text === KI_HINWEIS));
+}
+
+/** Der Server kürzt den Text fürs CRM auf diese Länge (lib/lead.ts, CLIP_CHARS). */
+export const CRM_MAX = 1900;
+
+type CrmAbschnitt = { titel: string; zeilen: string[] };
+
+/**
+ * Setzt Abschnitte in der Reihenfolge ihrer Wichtigkeit zusammen (Titel als Markdown-Überschriften) und füllt bis CRM_MAX Zeichen,
+ * Zeile für Zeile. Was nicht mehr passt, fällt hinten weg; ein Abschnitt ohne eine passende Zeile entfällt samt Titel.
+ */
+function crmZusammen(abschnitte: CrmAbschnitt[], max = CRM_MAX): string {
+  let out = "";
+  for (const { titel, zeilen } of abschnitte) {
+    let text = out ? `${out}\n\n## ${titel}` : `# ${titel}`;
+    let n = 0;
+    for (const zeile of zeilen) {
+      const next = `${text}\n${zeile}`;
+      if (next.length > max) break;
+      text = next;
+      n++;
+    }
+    if (n > 0) out = text;
+  }
+  return out;
+}
+
+/**
+ * Der Entwurf fürs CRM. Der Server kürzt hinten; darum steht das Wichtigste vorn: Segment mit Beschreibung, die ganze
+ * Punktekarte (nur Kriterium und Punkte, ohne Begründung), danach die Listen, jede so weit der Platz reicht.
+ */
+export function ausgabeText(output: IcpOutput, input: Pick<IcpInput, "betrieb">): string {
+  const liste = (key: (typeof ABSCHNITTE)[number]["key"]) => output[key].map((p) => `- ${p}`);
+  return crmZusammen([
+    { titel: `Idealkundenprofil für ${input.betrieb || "einen Betrieb"}`, zeilen: [`Segment: ${output.segmentName}`, output.beschreibung] },
+    { titel: `Punktekarte (höchstens ${punkteText(maxPunkte(output))})`, zeilen: output.punktekarte.map((k) => `- ${k.kriterium}: ${punkteText(k.punkte)}`) },
+    ...ABSCHNITTE.map((a) => ({ titel: a.titel, zeilen: liste(a.key) })),
+  ]);
 }
 
 // ---- Profil ------------------------------------------------------------------------------------

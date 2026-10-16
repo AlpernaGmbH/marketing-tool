@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 import type { BotschaftenInput, BotschaftenOutput } from "./generator";
 import {
   ANREDEN,
+  CRM_MAX,
   EMPTY_FORM,
   EMPTY_STATE,
   KANAELE,
   KI_HINWEIS,
   TELEFON,
   anredeLabel,
+  ausgabeText,
   charCount,
   eingabeText,
   hinweisNamen,
@@ -261,6 +263,44 @@ describe("botschaften: Dokument", () => {
     expect(md).toContain(`- **Offerte oder Mail:** ${output.kanaele.offerteOderMail}`);
     expect(md).toContain(`## Am Telefon oder am Stand\n\n${output.telefonsatz}`);
     expect(md).toContain("- Dass wir alles für alle machen");
+  });
+});
+
+describe("botschaften: Text fürs CRM (Befund 9)", () => {
+  /** Die Obergrenzen des Schemas ausgeschöpft: fünf Botschaften mit «fuer» zu 80 und «satz» zu 200, sechs Aussagen zu 80. */
+  const voll: BotschaftenOutput = {
+    hauptbotschaft: "H".repeat(200),
+    botschaften: Array.from({ length: 5 }, (_, i) => ({ fuer: `${i}${"f".repeat(79)}`, satz: `${i}${"s".repeat(199)}`, beleg: "b".repeat(200) })),
+    kanaele: { website: "w".repeat(240), googleProfil: "g".repeat(300), instagram: "i".repeat(200), offerteOderMail: "o".repeat(400) },
+    telefonsatz: "t".repeat(200),
+    nichtSagen: Array.from({ length: 6 }, (_, i) => `${i}${"n".repeat(79)}`),
+  };
+
+  it("nennt Hauptbotschaft, Botschaften je Zielgruppe, «Das sagen wir nicht» und den Telefonsatz vor den Kanälen", () => {
+    const text = ausgabeText(output, input);
+    expect(text.length).toBeLessThanOrEqual(CRM_MAX);
+    expect(text.startsWith(`# Kernbotschaften für Malerei Keller (Anrede: Du)\nHauptbotschaft: ${output.hauptbotschaft}\n\n## Botschaften je Zielgruppe oder Anlass\n- Hausbesitzer: Du bekommst`)).toBe(true);
+    expect(text).toContain("## Das sagen wir nicht\n- Dass wir alles für alle machen\n- Dass wir die Günstigsten in der Region sind\n- Ein Preis am Telefon ohne Besichtigung");
+    expect(text).toContain(`## Am Telefon oder am Stand\n${output.telefonsatz}`);
+    expect(text.indexOf("## Das sagen wir nicht")).toBeLessThan(text.indexOf("## Fassung je Kanal"));
+    expect(text).toContain(`- Website: ${output.kanaele.website}`);
+    // Belege stehen nur im Dokument
+    expect(text).not.toContain("[Zahl der Treppenhäuser");
+  });
+  it("auch an den Obergrenzen des Schemas steht «Das sagen wir nicht» vor dem Schnitt, ohne Zeile mitten im Wort", () => {
+    const text = ausgabeText(voll, { betrieb: "Malerei Keller", anrede: "sie" });
+    expect(text.length).toBeLessThanOrEqual(CRM_MAX);
+    expect(text.startsWith("# Kernbotschaften für Malerei Keller (Anrede: Sie)\nHauptbotschaft: HHH")).toBe(true);
+    expect(text).toContain("## Das sagen wir nicht\n- 0nnn");
+    expect(text).toContain(`- 4${"f".repeat(79)}: 4${"s".repeat(199)}`);
+    // Zeilen werden ganz oder gar nicht übernommen
+    const ganz = new Set([...voll.botschaften.map((b) => `- ${b.fuer}: ${b.satz}`), ...voll.nichtSagen.map((n) => `- ${n}`), ...KANAELE.map((k) => `- ${k.label}: ${voll.kanaele[k.key]}`)]);
+    for (const zeile of text.split("\n").filter((z) => z.startsWith("- "))) expect(ganz.has(zeile), zeile.slice(0, 20)).toBe(true);
+    // Markdown dagegen verliert «Das sagen wir nicht» hinten, wenn alles lang ist
+    expect(reportMarkdown(voll, input).slice(0, CRM_MAX)).not.toContain("Das sagen wir nicht");
+  });
+  it("kommt ohne Betrieb aus", () => {
+    expect(ausgabeText(output, { betrieb: "", anrede: "du" }).startsWith("# Kernbotschaften für einen Betrieb (Anrede: Du)\n")).toBe(true);
   });
 });
 

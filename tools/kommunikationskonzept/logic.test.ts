@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { brandHits } from "@/lib/brand-rules";
 import { PROFILE_FIELDS } from "@/lib/profile-fields";
 import { toMarkdown } from "@/lib/export/model";
+import { clipText } from "@/lib/lead";
 import { LIMITS, type KonzeptInput, type KonzeptOutput } from "./generator";
 import {
   ANSPRUCHSGRUPPEN_SLUG,
@@ -18,6 +19,7 @@ import {
   addAnlass,
   anlassFieldId,
   anzahlZeile,
+  ausgabeText,
   betriebZeile,
   charCount,
   effectiveKanaele,
@@ -634,6 +636,18 @@ describe("kommunikationskonzept: Dokument", () => {
       expect(facts.items[3].value).toBe("kein Budget angegeben");
     }
   });
+  it("Befund 8b: meldet «keine Anlässe angegeben» nur, wenn keine angegeben sind; sonst, dass der Entwurf keine Einträge hat", () => {
+    const text = (o: KonzeptOutput, i: KonzeptInput) => toDocument(o, i).blocks.flatMap((b) => (b.type === "paragraph" ? [b.text] : []));
+    const ohne = toInput({ firma: "FC Trogen", organisationstyp: "verein" }, form({ anlaesse: [], budget: "", wer: "" }))!;
+    expect(text(output({ jahreskalender: [] }), ohne).some((t) => t.startsWith("Es sind keine Anlässe angegeben"))).toBe(true);
+    // Die Person hat drei Anlässe angegeben, die KI liess den Kalender leer.
+    const leer = text(output({ jahreskalender: [] }), input());
+    expect(leer.some((t) => t.startsWith("Es sind keine Anlässe angegeben"))).toBe(false);
+    expect(leer.some((t) => t.startsWith("Zu deinen Anlässen enthält dieser Entwurf keine Einträge"))).toBe(true);
+    // Mit Einträgen erscheint weder der eine noch der andere Satz.
+    const voll = text(output(), input());
+    expect(voll.some((t) => t.startsWith("Es sind keine Anlässe") || t.startsWith("Zu deinen Anlässen"))).toBe(false);
+  });
   it("screenBlocks lässt nur den KI-Hinweis weg", () => {
     const doc = toDocument(output(), input());
     expect(screenBlocks(doc)).toHaveLength(doc.blocks.length - 1);
@@ -652,6 +666,52 @@ describe("kommunikationskonzept: Dokument", () => {
     const md = reportMarkdown(output(), input());
     expect(md).not.toMatch(/!|—|ß/);
     expect(brandHits(md.replace(/^\| .*$/gm, ""))).toEqual([]);
+  });
+});
+
+describe("kommunikationskonzept: Text fürs CRM", () => {
+  // Eine volle Antwort: sechs Kanäle, acht Anlässe, fünf Rollen, lange Texte. Das ganze Dokument ist länger als 1'900 Zeichen.
+  const voll = (): KonzeptOutput => ({
+    ...output(),
+    ausgangslage: `Der FC Trogen hat 180 Mitglieder, und die Zahl wächst. ${"Heute laufen die Website, Instagram, WhatsApp-Gruppen und das Gemeindeblatt. ".repeat(5)}`.trim(),
+    kanalplan: ["Website", "Instagram", "WhatsApp-Gruppen", "Gemeindeblatt oder Anzeiger", "Aushang", "Facebook (neu)"].map((kanal) => ({
+      kanal,
+      zweck: "Termine, Kontakt und Hinweise für Aktive, Eltern und Sponsoren an einer Stelle bündeln.",
+      rhythmus: "vor jedem Spiel",
+      verantwortlich: "Vorstand",
+    })),
+    jahreskalender: Array.from({ length: 8 }, (_, i) => ({ monat: i + 1, anlass: `Anlass ${i + 1}`, kommunikation: "Einladung im Gemeindeblatt, Bilder auf Instagram, Dank an die Helferinnen und Helfer." })),
+    rollen: Array.from({ length: 5 }, (_, i) => ({ rolle: `Rolle ${i + 1}`, aufgaben: "Plant und veröffentlicht die Beiträge und hält die Termine aktuell.", stundenProMonat: 1 })),
+    erfolgsmessung: Array.from({ length: 5 }, () => "Zahl der Mitglieder am Ende des Vereinsjahrs"),
+  });
+
+  it("Befund 8c: das ganze Dokument verliert beim Kürzen auf 1'900 Zeichen den Kanalplan, der kurze Text nicht", () => {
+    const lang = reportMarkdown(voll(), input());
+    expect(lang.length).toBeGreaterThan(1900);
+    expect(clipText(lang)).not.toContain("Aushang");
+    const kurz = clipText(ausgabeText(voll(), input()));
+    for (const kanal of ["Website", "Instagram", "WhatsApp-Gruppen", "Gemeindeblatt oder Anzeiger", "Aushang", "Facebook (neu)"]) expect(kurz).toContain(kanal);
+    expect(kurz).toContain("## Ziele");
+    expect(kurz).toContain("## Rollen");
+  });
+  it("Befund 8c: beginnt mit Titel, Name, Kernbotschaft und Kanalplan und enthält keine Lücken oder verbotenen Zeichen", () => {
+    const t = ausgabeText(output(), input());
+    const lines = t.split("\n");
+    expect(lines[0]).toBe("# Kommunikationskonzept");
+    expect(lines[1]).toBe("FC Trogen, Vorlage für die Generalversammlung");
+    expect(lines[2]).toBe(`Kernbotschaft: ${output().kernbotschaft}`);
+    expect(lines[3]).toBe("## Kanalplan");
+    expect(t).toContain("- Website: Termine, Kontakt und Anmeldung für den Nachwuchs. (bei jeder Änderung; Betreuung Website)");
+    expect(t).toContain("(zweimal im Jahr; noch offen)");
+    expect(t).toContain("Jahreskalender: März: Generalversammlung; Juni: Dorffest; August: Grümpelturnier");
+    expect(t).toContain("Zielgruppen: Mitglieder, Sponsoren");
+    expect(t.indexOf("## Kanalplan")).toBeLessThan(t.indexOf("## Ziele"));
+    expect(t.indexOf("## Ziele")).toBeLessThan(t.indexOf("## Rollen"));
+    expect(t).not.toMatch(/undefined|NaN|\[object|!|—|ß/);
+  });
+  it("Befund 8c: lässt den Jahreskalender ohne Einträge weg und nennt beim Betrieb den Wortlaut des Betriebs", () => {
+    expect(ausgabeText(output({ jahreskalender: [] }), input())).not.toContain("Jahreskalender");
+    expect(ausgabeText(output(), kmuInput()).split("\n")[1]).toBe("Malerei Keller, Konzept für die Jahresplanung");
   });
 });
 

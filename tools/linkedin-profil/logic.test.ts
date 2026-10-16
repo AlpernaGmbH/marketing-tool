@@ -6,6 +6,7 @@ import { findingsOf } from "@/tools/textcheck/logic";
 import {
   ABOUT_ANFANG,
   EMPTY_STATE,
+  GEWICHT_STELLE,
   GEWICHT_SUMME,
   HEADLINE_RICHTWERT,
   HINWEISE,
@@ -21,6 +22,7 @@ import {
   eingabeText,
   hinweiseFuerKi,
   kiInput,
+  nurEinText,
   outputOf,
   parseState,
   punkteFuer,
@@ -473,5 +475,115 @@ describe("linkedin-profil: Sprache und Sperrliste", () => {
     expect(RICHTWERT_HINWEIS).toBe("Gewichte, Stufen und Grenzen sind ein Richtwert von Alperna, keine Statistik und keine Vorgabe von LinkedIn.");
     expect(HINWEISE[0]).toContain("Richtwert von Alperna");
     expect(HINWEISE[2]).toMatch(/Plattform ändert/);
+  });
+});
+
+describe("linkedin-profil: Befund 7, Regeln für Aufruf, Aussage, Beleg und englische Headline", () => {
+  const vorne = "Wir streichen Fassaden und Innenräume in Gossau, Flawil und Herisau und beraten dich bei der Farbwahl. ".repeat(4);
+  const aufruf = (satz: string) => P("i-aufruf", "", vorne + satz) === 2;
+
+  it("i-aufruf: erkennt Bitten, Sätze in der Ich-Form, englische Bitten und Wege zur Person", () => {
+    for (const satz of [
+      "Schreib mir eine Nachricht.", "Sprich mich an.", "Gerne berate ich Sie persönlich.", "Ich freue mich auf Ihre Nachricht.", "Nimm Kontakt auf.",
+      "Ruf mich an.", "Melde dich bei mir.", "Meld dich bei mir.", "Vernetzen wir uns.", "Let's connect.", "Let’s connect.", "Kontaktiere mich über LinkedIn.",
+      "Bestell deine Offerte.", "Termin vereinbaren: 071 555 12 34", "Termin vereinbaren", "Termine vereinbaren Sie telefonisch oder online.", "DM me",
+      "Mehr unter malerei-keller.ch", "Rufen Sie uns an.", "Schreiben Sie uns eine Nachricht.", "Kommt vorbei.", "Wir kommen zu dir.", "Komm auf einen Kaffee vorbei.",
+      "Offerte anfordern.", "Anfragen sind jederzeit willkommen.", "Lass uns reden.", "Kontakt aufnehmen lohnt sich.", "Bei Fragen schreibe ich gerne zurück.",
+      "Wenn Sie eine Frage haben, schreiben wir gerne zurück.", "Mail: ruth@keller-maler.ch", "Telefon 071 123 45 67",
+    ]) {
+      expect(aufruf(satz), satz).toBe(true);
+    }
+  });
+  it("i-aufruf: «Buchhaltung», «Kommunikation», «Termine», «Besucher» und «Ruf in der Region» sind keine Aufforderung", () => {
+    for (const satz of [
+      "Wir übernehmen die Buchhaltung.", "Ein Beispiel für gute Kommunikation.", "Beruf: Maler. Ruf in der Region: top.", "Besucher willkommen.", "Wir halten alle Termine ein.",
+      "Buchungen über die Website.", "Wir sind für Sie da.", "Ihr Zuhause in guten Händen.", "Ich schreibe Texte für Vereine.", "Das Buch zur Fassade.",
+      "Die Frage der Woche.", "Viele Kunden kommen zu uns aus Gossau.", "Wir beantworten Fragen zu Farben.", "Ein Gespräch mit dem Team.", "Wir bestellen das Material.",
+    ]) {
+      expect(aufruf(satz), satz).toBe(false);
+    }
+  });
+  it("i-aufruf: nur die letzten 300 Zeichen zählen, wie bisher", () => {
+    expect(P("i-aufruf", "", `Sprich mich an. ${vorne}`)).toBe(0);
+    expect(P("i-aufruf", "", `${vorne}Sprich mich an.`)).toBe(2);
+  });
+
+  it("h-aussage: erkennt gebeugte Kundschaft und weitere Verben («Ich helfe Hausbesitzern in Gossau …», «Ich verkaufe Landmaschinen an Landwirte»)", () => {
+    expect(P("h-aussage", "Ich helfe Hausbesitzern in Gossau, ihre Fassade termingerecht zu streichen")).toBe(2);
+    expect(P("h-aussage", "Ich verkaufe Landmaschinen an Landwirte im Toggenburg")).toBe(2);
+    expect(P("h-aussage", "Ich richte IT für Arztpraxen in der Region St. Gallen ein")).toBe(2);
+    expect(P("h-aussage", "Ich erstelle Websites für Vereine und Gewerbe in der Ostschweiz")).toBe(2);
+    expect(P("h-aussage", "Wir führen Ihr Restaurant durch die Hochsaison: Gastro-Beratung in Appenzell")).toBe(2);
+    expect(P("h-aussage", "Wir machen Handwerksbetriebe im Toggenburg online sichtbar")).toBe(2);
+    expect(P("h-aussage", "Anwalt für Arbeitsrecht in Zürich: Ich vertrete Arbeitnehmende und KMU")).toBe(2);
+  });
+  it("h-aussage: ein Titel, ein Stichwort-Katalog und ein Bezug allein bleiben bei 0 oder 1", () => {
+    expect(P("h-aussage", "Marketingleiter | Strategie | Wachstum | Brand | Content")).toBe(0);
+    expect(P("h-aussage", "Geschäftsführer")).toBe(0);
+    expect(P("h-aussage", "CEO @ Müller AG")).toBe(0);
+    expect(P("h-aussage", "Malermeister bei Malerei Keller")).toBe(0);
+    expect(P("h-aussage", "Handwerksbetrieb in Gossau")).toBe(0);
+    expect(P("h-aussage", "Treuhänderin in St. Gallen für Selbständige und Kleinbetriebe")).toBe(1);
+    // Ein Hauptwort mit dem Stamm eines Verbs ist kein Verb («Bauleiter», «Macher», «Planer», «Betreuer», «Berater»)
+    for (const h of ["Bauleiter für Kunden", "Planer für Kunden", "Betreuer für Kunden", "Berater für Kunden"]) expect(P("h-aussage", h), h).toBe(1);
+    expect(P("h-aussage", "Macher aus Leidenschaft")).toBe(0);
+    // «sie» klein ist kein Bezug auf die Kundschaft, «Ihr» gross schon
+    expect(P("h-aussage", "Wir streichen, was sie brauchen")).toBe(1);
+    expect(P("h-aussage", "Wir streichen Ihr Haus")).toBe(2);
+  });
+  it("h-aussage: eine englische Headline mit Verb und Kundschaft bekommt 2 («Helping Swiss SMEs get found online»)", () => {
+    expect(P("h-aussage", "Helping Swiss SMEs get found online | Website, Google Business Profile, Social Media")).toBe(2);
+    expect(P("h-aussage", "I help craftsmen in Eastern Switzerland win more customers with simple websites")).toBe(2);
+    expect(P("h-aussage", "Founder | Marketing | Growth")).toBe(0);
+    // Die englische Headline erreicht jetzt mehr als die 14 Punkte von vorher
+    expect(bewerten("Helping Swiss SMEs get found online | Website, Google Business Profile, Social Media", "").score).toBeGreaterThanOrEqual(32);
+  });
+
+  it("h-beleg: erkennt «in St. Gallen», «in der Ostschweiz», «im Appenzellerland», «Region Toggenburg» als Ort", () => {
+    for (const h of ["Maler in Gossau", "Maler in St. Gallen", "Maler in der Ostschweiz", "Maler im Appenzellerland", "Maler aus Herisau", "Maler Region Toggenburg", "Maler Raum Gossau"]) {
+      expect(P("h-beleg", h), h).toBe(1);
+    }
+  });
+  it("h-beleg: «in Ihrem Alltag», «in Zukunft», «aus Leidenschaft» und «bei Malerei Keller» sind kein Ort", () => {
+    for (const h of ["Maler in Ihrem Alltag", "Maler in Zukunft", "Macher aus Leidenschaft", "Malermeister bei Malerei Keller", "Maler in Ruhe", "Maler"]) expect(P("h-beleg", h), h).toBe(0);
+    expect(P("h-beleg", "Malerei seit 1987")).toBe(2);
+    expect(P("h-beleg", "Maler in Gossau seit 1987")).toBe(2);
+  });
+
+  it("i-kundschaft: erkennt «Privatkunden», «Patienten», «Unternehmen» und «Mandanten», nicht «Handwerksbetrieb» und nicht «sie» klein", () => {
+    for (const t of ["Wir beraten Privatkunden in Gossau.", "Unsere Patienten kommen aus Herisau.", "Wir beraten Unternehmen.", "Wir vertreten Mandanten vor Gericht.", "Familien in Gossau."]) {
+      expect(sprichtKundschaftAn(t), t).toBe(true);
+    }
+    expect(sprichtKundschaftAn("Handwerksbetrieb in Gossau")).toBe(false);
+    expect(sprichtKundschaftAn("Wir streichen Fassaden in Gossau.")).toBe(false);
+  });
+});
+
+describe("linkedin-profil: nur Headline oder nur Info-Text", () => {
+  it("gibt jeder Stelle ihr Gewicht: Headline 38, Info-Text 62", () => {
+    expect(GEWICHT_STELLE).toEqual({ Headline: 38, "Info-Text": 62 });
+    expect(GEWICHT_STELLE.Headline + GEWICHT_STELLE["Info-Text"]).toBe(GEWICHT_SUMME);
+  });
+  it("sagt bei nur einer Headline, dass höchstens 38 Punkte möglich sind und der Info-Text fehlt", () => {
+    const t = nurEinText("Ich helfe Hausbesitzern in Gossau, ihre Fassade zu streichen", "");
+    expect(t).toBe("Du hast nur die Headline eingefügt. Sie kann höchstens 38 von 100 Punkten bringen, darum bleibt die Stufe tief. Füge auch den Info-Text ein, dann zählt das ganze Profil.");
+    expect(nurEinText("  ", "Wir streichen Fassaden.")).toBe("Du hast nur den Info-Text eingefügt. Er kann höchstens 62 von 100 Punkten bringen, darum bleibt die Stufe tief. Füge auch die Headline ein, dann zählt das ganze Profil.");
+  });
+  it("sagt nichts, wenn beide Texte da sind oder keiner", () => {
+    expect(nurEinText("Headline", "Info-Text")).toBeNull();
+    expect(nurEinText("", "")).toBeNull();
+  });
+  it("setzt den Satz ins Dokument, zwischen den Hinweis auf die festen Regeln und die Balken, nur bei einem einzelnen Text", () => {
+    const nur = { ...KELLER, about: "", ki: null };
+    const teile = documentParts(nur).vor;
+    const text = nurEinText(nur.headline, "") as string;
+    const i = teile.findIndex((b) => b.type === "paragraph" && b.text === text);
+    expect(i).toBeGreaterThan(0);
+    expect(teile[i - 1]).toMatchObject({ type: "paragraph", text: expect.stringContaining("festen Regeln") as string });
+    expect(teile[i + 1].type).toBe("bars");
+    expect(reportMarkdown(nur)).toContain("Du hast nur die Headline eingefügt.");
+    expect(reportMarkdown(KELLER)).not.toContain("Du hast nur");
+    expect(brandHits(text)).toEqual([]);
+    expect(styleIssues(text)).toEqual([]);
   });
 });

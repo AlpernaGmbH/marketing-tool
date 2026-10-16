@@ -50,7 +50,7 @@ Malerei Keller, Gossau, gibt malerei-keller.ch an. Die Startseite nennt Hausbesi
 
 Der Entwurf, von Hand geschrieben, keine Ausgabe der KI:
 
-> **Kernsatz:** Für Hausbesitzer in Gossau und im Fürstenland: Fassaden, die zwanzig Jahre halten, in zwei Wochen fertig.
+> **Kernsatz:** Für Hausbesitzer in Gossau und im Fürstenland: Fassaden, die halten, in zwei Wochen fertig.
 >
 > **Beweise:** Seit 1985 in Gossau. Zwölf Mitarbeitende und drei Lernende. [Name einer Referenz]
 >
@@ -75,7 +75,7 @@ Betrieb, Branche, Ort und Kanton aus deinem Firmenprofil, der Text deiner Starts
 Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Angaben, Check und Entwurf gehen mit der Adresse an Alperna. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Erfindet die KI Beweise?
-Nein. Jede Ziffer im Entwurf muss auf deiner Website oder in deinen Angaben stehen, sonst verwirft das Werkzeug ihn. Fehlen Beweise, setzt die KI Platzhalter in eckigen Klammern.
+Sie soll nicht, und das Werkzeug prüft nach: Jede Zahl im Entwurf, auch «zwanzig», muss auf deiner Website oder in deinen Angaben stehen. Fehlen Beweise, setzt die KI Platzhalter. Namen und Aussagen prüfst du selbst.
 
 ### Was kostet das?
 Nichts. Kein Limit pro Person, nur eine Bremse gegen Missbrauch pro Stunde und Tag.

@@ -34,6 +34,7 @@ export const anspruchsgruppenInput = z.object({
 export type AnspruchsgruppenInput = z.infer<typeof anspruchsgruppenInput>;
 
 const wert = z.number().int().min(1).max(5);
+export const BEZIEHUNGEN = ["eng", "gut", "lose", "keine"] as const;
 
 export const anspruchsgruppenOutput = z.object({
   gruppen: z
@@ -42,7 +43,7 @@ export const anspruchsgruppenOutput = z.object({
         name: z.string().trim().min(3).max(NAME_MAX),
         interesse: wert,
         einfluss: wert,
-        beziehung: z.enum(["eng", "gut", "lose", "keine"]),
+        beziehung: z.enum(BEZIEHUNGEN),
         erwartung: z.string().trim().min(TEXT.min).max(TEXT.max),
         bedarf: z.string().trim().min(TEXT.min).max(TEXT.max),
       }),
@@ -52,6 +53,29 @@ export const anspruchsgruppenOutput = z.object({
 });
 export type AnspruchsgruppenOutput = z.infer<typeof anspruchsgruppenOutput>;
 export type VorgeschlageneGruppe = AnspruchsgruppenOutput["gruppen"][number];
+
+/** Die Zahl als Zahl: «4» und «4,0» gelten als 4; alles andere bleibt, wie es ist. */
+function alsGanzzahl(v: unknown): unknown {
+  if (typeof v === "string" && /^\s*\d(?:[.,]0)?\s*$/.test(v)) return Number(v.replace(",", ".").trim());
+  return v;
+}
+
+/**
+ * Formt die rohe Antwort der KI vor dem Schema: «interesse» und «einfluss» als Zahl, wenn sie als Text kommen («4»), und
+ * «beziehung» ohne Gross/Klein («Eng»). Alles andere fällt am Schema durch.
+ */
+export function normalizeGruppen(value: Record<string, unknown>): Record<string, unknown> {
+  if (!Array.isArray(value.gruppen)) return value;
+  return {
+    ...value,
+    gruppen: value.gruppen.map((g) => {
+      if (typeof g !== "object" || g === null || Array.isArray(g)) return g;
+      const r = g as Record<string, unknown>;
+      const beziehung = typeof r.beziehung === "string" ? (BEZIEHUNGEN.find((b) => b === (r.beziehung as string).trim().toLowerCase()) ?? r.beziehung) : r.beziehung;
+      return { ...r, interesse: alsGanzzahl(r.interesse), einfluss: alsGanzzahl(r.einfluss), beziehung };
+    }),
+  };
+}
 
 // ---- Prüfung -----------------------------------------------------------------------------------
 
@@ -65,13 +89,32 @@ export function bekannteListe(bekannte: string): string[] {
     .filter((s) => s !== "");
 }
 
+const woerter = (s: string): string[] => norm(s).split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 4);
+/** Ab dieser Länge zählt ein Wort der Angabe auch dann, wenn es mitten in einem Wort der Antwort steht («Hausverwaltungen», «Vereinsmitglieder»). */
+export const TEILWORT_MIN = 6;
+/** Wortanfang eines langen Worts ohne Endung («sponsoren» gleich «sponso»), mindestens sechs Buchstaben. */
+const wurzel = (w: string): string => w.slice(0, Math.max(TEILWORT_MIN, w.length - 3));
+
+/**
+ * Nennt der Text die bekannte Gruppe? Wie nenntAngabe (gleicher Wortanfang von fünf Buchstaben), dazu ein Teilwort ab sechs
+ * Buchstaben in beide Richtungen: «Verwaltungen und Eigentümer» nennt «Hausverwaltungen», «Sponsoren» nennt «Hauptsponsor
+ * Raiffeisenbank», «Mitglieder» nennt «Vereinsmitglieder». «Eltern» nennt «Sponsoren» nicht.
+ */
+export function nenntBekannte(text: string, angabe: string): boolean {
+  if (nenntAngabe(text, angabe)) return true;
+  const imText = woerter(text);
+  return woerter(angabe).some(
+    (w) => w.length >= TEILWORT_MIN && imText.some((t) => t.length >= TEILWORT_MIN && (t.includes(wurzel(w)) || w.includes(wurzel(t)))),
+  );
+}
+
 /** Interesse und Einfluss ab 4 gelten als hoch (wie in logic.ts, SCHWELLE). */
 const hoch = (n: number): boolean => n >= 4;
 
 /**
  * Prüfung, die nur dieses Werkzeug kennt. Gibt den Grund zurück oder null:
  * «namedoppelt» (zwei Gruppen heissen gleich), «zahl» (eine Ziffernfolge, die nicht in den Angaben steht), «bekannt» (eine Gruppe, die die Person
- * genannt hat, fehlt), «streuung» (alle Gruppen liegen im selben Quadranten: Die Matrix wäre sinnlos).
+ * genannt hat, fehlt; ein gemeinsamer Wortanfang oder ein Teilwort ab sechs Buchstaben genügt, nenntBekannte), «streuung» (alle Gruppen liegen im selben Quadranten: Die Matrix wäre sinnlos).
  */
 export function checkAnspruchsgruppen(output: AnspruchsgruppenOutput, input: AnspruchsgruppenInput): string | null {
   const namen = new Set<string>();
@@ -86,7 +129,7 @@ export function checkAnspruchsgruppen(output: AnspruchsgruppenOutput, input: Ans
   for (const n of numbersIn(collectStrings(output).join("\n"))) if (!known.has(n)) return "zahl";
 
   const alleNamen = output.gruppen.map((g) => g.name).join("\n");
-  for (const b of bekannteListe(input.bekannte)) if (!nenntAngabe(alleNamen, b)) return "bekannt";
+  for (const b of bekannteListe(input.bekannte)) if (!nenntBekannte(alleNamen, b)) return "bekannt";
 
   const quadranten = new Set(output.gruppen.map((g) => `${hoch(g.interesse)}-${hoch(g.einfluss)}`));
   if (quadranten.size < 2) return "streuung";
@@ -96,12 +139,12 @@ export function checkAnspruchsgruppen(output: AnspruchsgruppenOutput, input: Ans
 // ---- Aufgabe -----------------------------------------------------------------------------------
 
 const INSTRUCTION = `Du schlägst Anspruchsgruppen für einen Schweizer Betrieb oder Verein vor. Anspruchsgruppen sind Gruppen von Menschen oder Stellen, die Erwartungen an ihn haben oder seinen Erfolg beeinflussen. Die Person prüft und ändert alles danach selbst.
-- «typ» ist «kmu» (Betrieb) oder «verein». Nutze «rechtsform», «branche», «ort», «finanzierung» (woher das Geld kommt), «vorhaben» (was in den nächsten zwölf Monaten ansteht) und «bekannte» (Gruppen, die die Person selbst genannt hat; sie müssen alle vorkommen).
-- Antworte mit sechs bis zehn Gruppen. Eine Gruppe ist eine Gruppe, keine Einzelperson und keine Firma mit Namen: «Vorstand», «Sponsoren», «Gemeinde und Behörden», «Stammkundschaft», nicht «Hans Keller». Jeder Name ist verschieden und hat höchstens 60 Zeichen.
+- «typ» ist «kmu» (Betrieb) oder «verein». Nutze «rechtsform», «branche», «ort», «finanzierung» (woher das Geld kommt), «vorhaben» (was in den nächsten zwölf Monaten ansteht) und «bekannte» (Gruppen, die die Person selbst genannt hat; übernimm jede wörtlich als Namen einer Gruppe, auch wenn es eine Firma ist, und lass keine weg).
+- Antworte mit sechs bis zehn Gruppen. Eine Gruppe ist eine Gruppe, keine Einzelperson und keine Firma mit Namen: «Vorstand», «Sponsoren», «Gemeinde und Behörden», «Stammkundschaft», nicht «Hans Keller». Ausnahme sind die Namen aus «bekannte»: Sie bleiben, wie die Person sie schreibt. Jeder Name ist verschieden und hat höchstens 60 Zeichen.
 - «interesse» und «einfluss» sind ganze Zahlen von 1 bis 5: Interesse = wie stark sich die Gruppe mit dem Betrieb oder Verein beschäftigt, Einfluss = wie stark sie seinen Erfolg beeinflussen kann. Nutze die ganze Skala, die Gruppen liegen nicht alle gleich.
 - «beziehung» ist «eng», «gut», «lose» oder «keine»: So schätzt du die heutige Beziehung aus den Angaben ein. Fehlt jede Grundlage, wähle «lose».
 - «erwartung» ist ein Satz (10 bis 200 Zeichen), was die Gruppe vom Betrieb oder Verein erwartet. «bedarf» ist ein Satz (10 bis 200 Zeichen), was der Betrieb oder Verein von der Gruppe braucht.
-- Erfinde nichts: keine Namen von Personen, Firmen oder Vereinen, keine Zahlen, die nicht in den Angaben stehen. Du darfst Gruppen nennen, die zur Rechtsform, zur Branche und zum Ort passen.
+- Erfinde nichts: keine Namen von Personen, Firmen oder Vereinen (ausser denen aus «bekannte»), keine Zahlen, die nicht in den Angaben stehen. Du darfst Gruppen nennen, die zur Rechtsform, zur Branche und zum Ort passen.
 - Keine Floskeln, keine Ausrufezeichen, keine Emojis.
 Form: {"gruppen": [{"name": "…", "interesse": 3, "einfluss": 4, "beziehung": "gut", "erwartung": "…", "bedarf": "…"}]}`;
 
@@ -114,6 +157,7 @@ export const anspruchsgruppenGenerator = defineGenerator({
   maxTokens: 2200,
   temperature: 0.4,
   check: checkAnspruchsgruppen,
+  normalize: normalizeGruppen,
 });
 
 export { anspruchsgruppenGenerator as generator };

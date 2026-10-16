@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { typoCH } from "@/lib/ch";
 import { dataPrompt, defineGenerator, numbersIn } from "@/lib/generator";
 
 // Generator des Werkzeugs «Themensäulen» (Klasse B, docs/TOOL-BAUEN.md Abschnitt 4). Läuft im Browser und auf dem
@@ -88,15 +89,99 @@ export type SaeulenOutput = z.infer<typeof saeulenOutput>;
 
 export { numbersIn };
 
-/** Kanalname für den Vergleich: klein, ohne Bindestrich und Leerzeichen («Google-Beitrag» und «Google Beitrag» sind gleich). */
+/**
+ * Kanalname für den Vergleich: klein, ohne Bindestrich, Leerzeichen und Satzzeichen («Google-Beitrag» und «Google Beitrag»
+ * sind gleich). Ein angehängtes «-Kanal», «-Profil», «-Seite», «-Account» oder «-Konto» und der Zusatz «(neu)» fallen weg
+ * («Instagram-Kanal»), ein Schrägstrich gilt als «oder».
+ */
 export function kanalKey(name: string): string {
-  return name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  return name
+    .replace(/\s*\(neu\)\s*$/i, "")
+    .replace(/\s*\/\s*/g, " oder ")
+    .toLowerCase()
+    .replace(/[-\s](?:kanal|profile?|seite|account|konto)$/u, "")
+    .replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+/** Name für den Vergleich: Schweizer Schreibweise, klein, Leerraum zu einem Leerzeichen (Säulennamen). */
+export function normName(s: string): string {
+  return typoCH(s).toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+// ---- Form der Antwort vor der Prüfung ------------------------------------------------------------
+
+/** Der Wert aus der Liste, der `v` ohne Gross/Klein und Leerraum gleicht; sonst `v` unverändert. */
+function ausListe(v: unknown, liste: readonly string[]): unknown {
+  if (typeof v !== "string") return v;
+  const k = v.trim().toLowerCase();
+  return liste.find((x) => x.toLowerCase() === k) ?? v;
+}
+
+/** Eine Anzahl als Zahl: «30» und «30 %» gelten als 30; alles andere bleibt, wie es ist. */
+function alsZahl(v: unknown): unknown {
+  if (typeof v === "string" && /^\s*\d+(?:[.,]\d+)?\s*%?\s*$/.test(v)) return Number(v.replace("%", "").replace(",", ".").trim());
+  return v;
+}
+
+/** Die Summe der Anteile, die als Rundung der KI gilt und auf 100 gebracht wird (Grenzen: keine Rundung mehr, sondern ein falscher Entwurf). */
+export const ANTEIL_SKALIERUNG = { min: 50, max: 150 } as const;
+
+/**
+ * Bringt ganze Zahlen auf die Summe 100, im Verhältnis der Werte (Verfahren des grössten Rests). Gibt die Werte unverändert
+ * zurück, wenn die Summe schon 100 ist oder ausserhalb von ANTEIL_SKALIERUNG liegt.
+ */
+export function aufHundert(anteile: readonly number[]): number[] {
+  const summe = anteile.reduce((a, b) => a + b, 0);
+  if (summe === 100 || summe < ANTEIL_SKALIERUNG.min || summe > ANTEIL_SKALIERUNG.max) return [...anteile];
+  const exakt = anteile.map((a) => (a * 100) / summe);
+  const ganz = exakt.map(Math.floor);
+  let rest = 100 - ganz.reduce((a, b) => a + b, 0);
+  const reihenfolge = exakt.map((e, i) => ({ i, r: e - Math.floor(e) })).sort((a, b) => b.r - a.r || a.i - b.i);
+  for (const { i } of reihenfolge) {
+    if (rest <= 0) break;
+    ganz[i] += 1;
+    rest -= 1;
+  }
+  return ganz;
+}
+
+/**
+ * Formt die rohe Antwort der KI vor dem Schema: «ziel» und «tag» ohne Gross/Klein («Vertrauen», «montag»), «anteil» als Zahl
+ * («30», «30 %») und die Anteile auf die Summe 100 (Rundung der KI: 105, 90, 96 oder 103 sind kein Grund, den Entwurf zu verwerfen).
+ */
+export function normalizeSaeulen(value: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...value };
+  if (Array.isArray(value.saeulen)) {
+    const saeulen = value.saeulen.map((s) => {
+      if (typeof s !== "object" || s === null || Array.isArray(s)) return s;
+      const r = s as Record<string, unknown>;
+      return { ...r, ziel: ausListe(r.ziel, ZIEL_KEYS), anteil: alsZahl(r.anteil) };
+    });
+    const anteile = saeulen.map((s) => (typeof s === "object" && s !== null ? (s as Record<string, unknown>).anteil : undefined));
+    if (anteile.length > 0 && anteile.every((a) => typeof a === "number" && Number.isInteger(a) && a > 0)) {
+      const neu = aufHundert(anteile as number[]);
+      out.saeulen = saeulen.map((s, i) => ({ ...(s as Record<string, unknown>), anteil: neu[i] }));
+    } else {
+      out.saeulen = saeulen;
+    }
+  }
+  const rhythmus = value.rhythmus;
+  if (typeof rhythmus === "object" && rhythmus !== null && !Array.isArray(rhythmus) && Array.isArray((rhythmus as Record<string, unknown>).wochenplan)) {
+    const r = rhythmus as Record<string, unknown>;
+    out.rhythmus = {
+      ...r,
+      wochenplan: (r.wochenplan as unknown[]).map((e) => (typeof e === "object" && e !== null && !Array.isArray(e) ? { ...(e as Record<string, unknown>), tag: ausListe((e as Record<string, unknown>).tag, TAGE) } : e)),
+    };
+  }
+  return out;
 }
 
 /**
  * Prüfung, die nur dieses Werkzeug kennt. Gibt den Grund zurück oder null:
- * «anteil»: die Anteile summieren nicht auf 100 (± ANTEIL_TOLERANZ);
+ * «anteil»: die Anteile summieren nicht auf 100 (± ANTEIL_TOLERANZ; die KI-Antwort wird vorher auf 100 gebracht, normalizeSaeulen);
+ * «namedoppelt»: zwei Säulen heissen gleich (ohne Gross/Klein);
  * «wochenplan»: der Wochenplan hat nicht genau so viele Einträge wie Beiträge pro Woche;
+ * «saeule»: ein Eintrag im Wochenplan nennt eine Säule, die es unter «saeulen» nicht gibt (Name ohne Gross/Klein);
  * «kanal»: ein Eintrag im Wochenplan nennt einen Kanal, der nicht gewählt ist (Vergleich über Name oder Schlüssel, klein);
  * «zahl»: eine Ziffer in Name, Beschreibung, Beispielen, Rhythmus-Satz oder «niemals», die nicht in den Angaben steht
  * (die Zahl der Beiträge pro Woche zählt zu den Angaben).
@@ -104,7 +189,10 @@ export function kanalKey(name: string): string {
 export function checkSaeulen(output: SaeulenOutput, input: SaeulenInput): string | null {
   const summe = output.saeulen.reduce((acc, s) => acc + s.anteil, 0);
   if (Math.abs(summe - 100) > ANTEIL_TOLERANZ) return "anteil";
+  const namen = output.saeulen.map((s) => normName(s.name));
+  if (new Set(namen).size !== namen.length) return "namedoppelt";
   if (output.rhythmus.wochenplan.length !== Number(input.beitraegeProWoche)) return "wochenplan";
+  if (output.rhythmus.wochenplan.some((e) => !namen.includes(normName(e.saeule)))) return "saeule";
   const erlaubt = new Set(input.kanaele.flatMap((k) => [kanalKey(KANAL_LABELS[k]), kanalKey(k)]));
   for (const e of output.rhythmus.wochenplan) if (!erlaubt.has(kanalKey(e.kanal))) return "kanal";
   const known = new Set(
@@ -119,19 +207,19 @@ export function checkSaeulen(output: SaeulenOutput, input: SaeulenInput): string
   return null;
 }
 
-const INSTRUCTION = `Schreib die Themensäulen eines Schweizer KMU aus den Angaben: ${MIN_SAEULEN} bis ${MAX_SAEULEN} feste Themenfelder, aus denen alle Beiträge des Betriebs kommen.
+const INSTRUCTION = `Schreib die Themensäulen eines Schweizer KMU aus den Angaben: genau vier oder fünf feste Themenfelder, aus denen alle Beiträge des Betriebs kommen. Drei Säulen sind zu wenig, sechs zu viel. Jede Säule hat einen eigenen Namen.
 - Jede Säule kommt konkret aus dem Angebot («angebot») oder aus dem Alltag («alltag») des Betriebs. Keine allgemeinen Säulen wie «Tipps» oder «Branchenwissen» ohne Bezug zum Betrieb.
 - Mindestens eine Säule zeigt die Region und die Menschen: Ort, Team, Kundschaft, Anlässe in der Gemeinde. Fehlt der Ort, schreib den Platzhalter [Ort].
 - «name»: ein kurzer Begriff, 3 bis 40 Zeichen. «beschreibung»: 40 bis 300 Zeichen, worum es geht und warum es die Kundschaft interessiert. «ziel»: eines von vertrauen, sichtbarkeit, anfragen, bindung.
 - «beispiele»: 3 bis 5 fertige Beitragsideen je Säule, je 10 bis 160 Zeichen, so konkret, dass der Betrieb sie diese Woche umsetzen kann. Kennst du einen Namen oder Anlass nicht, schreib einen Platzhalter in eckigen Klammern, zum Beispiel [Name der Mitarbeiterin].
-- «anteil»: ganze Zahl von 10 bis 50, der Anteil der Säule an allen Beiträgen in Prozent. Die Summe aller Anteile ist genau 100.
+- «anteil»: ganze Zahl von 10 bis 50, der Anteil der Säule an allen Beiträgen in Prozent. Die Summe aller Anteile ist genau 100, zum Beispiel 30, 25, 25, 20 bei vier Säulen oder 25, 25, 20, 15, 15 bei fünf.
 - «rhythmus.satz»: 40 bis 300 Zeichen, wie sich die Säulen auf die Woche verteilen, mit der Zahl der Beiträge aus «beitraegeProWoche».
-- «rhythmus.wochenplan»: genau so viele Einträge, wie «beitraegeProWoche» sagt (1, 2, 3 oder 5). Je Eintrag «tag» (Montag bis Sonntag), «saeule» (der Name einer Säule aus «saeulen») und «kanal» (der Name eines gewählten Kanals). Die Schlüssel in «kanaele» bedeuten: instagram (Instagram), facebook (Facebook), linkedin (LinkedIn), google (Google-Beitrag), newsletter (Newsletter), website (Website). Schreib in «kanal» den Namen, nicht den Schlüssel. Kanäle, die nicht in «kanaele» stehen, kommen nicht vor.
+- «rhythmus.wochenplan»: genau so viele Einträge, wie «beitraegeProWoche» sagt (1, 2, 3 oder 5). Je Eintrag «tag» (Montag bis Sonntag), «saeule» (genau der Name einer Säule aus «saeulen», so geschrieben wie dort) und «kanal» (der Name eines gewählten Kanals). Die Schlüssel in «kanaele» bedeuten: instagram (Instagram), facebook (Facebook), linkedin (LinkedIn), google (Google-Beitrag), newsletter (Newsletter), website (Website). Schreib in «kanal» den Namen, nicht den Schlüssel. Kanäle, die nicht in «kanaele» stehen, kommen nicht vor.
 - «niemals»: 2 bis 4 Beitragsarten, die nicht zu diesem Betrieb passen, je 10 bis 160 Zeichen, mit kurzem Grund.
 - Nimm Positionierung («positionierung»), Zielgruppe («primaersegment») und Personas («personas») als Hintergrund, wenn sie da sind; wiederhole sie nicht wörtlich.
 - Schreib so, dass Kundschaft es versteht: keine Fachwörter aus dem Marketing, keine englischen Wörter, wo ein deutsches reicht.
 - Ziffern nur, wenn sie wörtlich in den Angaben stehen (dazu zählt die Zahl der Beiträge pro Woche). Sonst schreib die Zahl als Wort oder lass sie weg. In «anteil» steht die Zahl als JSON-Zahl, nicht im Text.
-Form: {"saeulen": [{"name": "…", "beschreibung": "…", "ziel": "vertrauen", "beispiele": ["…", "…", "…"], "anteil": 30}], "rhythmus": {"satz": "…", "wochenplan": [{"tag": "Montag", "saeule": "…", "kanal": "Instagram"}]}, "niemals": ["…", "…"]}`;
+Form (hier mit zwei Säulen, du lieferst vier oder fünf): {"saeulen": [{"name": "…", "beschreibung": "…", "ziel": "vertrauen", "beispiele": ["…", "…", "…"], "anteil": 30}, {"name": "…", "beschreibung": "…", "ziel": "anfragen", "beispiele": ["…", "…", "…"], "anteil": 25}], "rhythmus": {"satz": "…", "wochenplan": [{"tag": "Montag", "saeule": "…", "kanal": "Instagram"}]}, "niemals": ["…", "…"]}`;
 
 export const saeulenGenerator = defineGenerator({
   slug: "inhalte-saeulen",
@@ -139,9 +227,10 @@ export const saeulenGenerator = defineGenerator({
   output: saeulenOutput,
   instruction: INSTRUCTION,
   prompt: (i) => dataPrompt("Angaben zum Betrieb", i),
-  maxTokens: 1600,
+  maxTokens: 2200,
   temperature: 0.5,
   check: checkSaeulen,
+  normalize: normalizeSaeulen,
 });
 
 export { saeulenGenerator as generator };

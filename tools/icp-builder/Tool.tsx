@@ -22,6 +22,7 @@ import {
   EMPTY_STATE,
   KI_HINWEIS,
   SLUG,
+  ausgabeText,
   bewerten,
   eingabeText,
   einzugsgebietVorschlag,
@@ -30,9 +31,9 @@ import {
   parseState,
   profilePatch,
   punkteText,
-  reportMarkdown,
   toDocument,
   toInput,
+  viewBlocks,
   type FormFields,
 } from "./logic";
 import config from "./tool.config";
@@ -93,7 +94,7 @@ function IcpFlow() {
   const inputRef = useRef<IcpInput | null>(null);
   const gen = useGenerator(icpGenerator, {
     eingabe: eingabeText,
-    ausgabe: (o) => reportMarkdown(o, inputRef.current ?? { betrieb: "", branche: "", einzugsgebiet: "" }),
+    ausgabe: (o) => ausgabeText(o, inputRef.current ?? { betrieb: "" }),
   });
 
   // Änderungen am Formular leben im Entwurf, bis der Entwurf gespeichert wird; vorher gilt der gespeicherte Stand.
@@ -188,7 +189,7 @@ function IcpFlow() {
             Platzhalter ausfüllen: {placeholders.join(", ")}
           </p>
         )}
-        <DocView blocks={doc.blocks} />
+        <DocView blocks={viewBlocks(doc)} />
         <Punktekarte key={output.segmentName} output={output} />
       </ResultCard>
     );

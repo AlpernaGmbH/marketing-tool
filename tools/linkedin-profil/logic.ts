@@ -48,32 +48,81 @@ export function stufe(punktwert: number): StufeName {
 
 // ---- Wörter und Muster -------------------------------------------------------------------------
 
+/** Gebeugte Formen von Verben, mit denen eine Headline sagt, was die Person tut. Ganze Wörter; Hauptwörter wie «Bauleiter» oder «Macher» zählen nicht. */
 const VERBEN = [
   "helfe", "helfen", "hilft", "unterstütze", "unterstützen", "unterstützt", "schaffe", "schaffen", "schafft", "bringe", "bringen", "bringt",
   "mache", "machen", "macht", "begleite", "begleiten", "begleitet", "baue", "bauen", "baut", "sorge", "sorgen", "sorgt", "zeige", "zeigen",
   "zeigt", "löse", "lösen", "löst", "berate", "beraten", "berät", "verhelfe", "verhelfen", "verhilft", "entwickle", "entwickeln", "entwickelt",
   "gestalte", "gestalten", "gestaltet", "steigere", "steigern", "steigert", "spare", "sparen", "spart", "streiche", "streichen", "pflege",
   "pflegen", "plane", "planen", "betreue", "betreuen", "betreut", "repariere", "reparieren", "repariert", "liefere", "liefern", "liefert",
+  "erstelle", "erstellen", "erstellt", "verkaufe", "verkaufen", "verkauft", "führe", "führen", "führt", "vertrete", "vertreten", "vertritt",
+  "richte", "richten", "richtet", "biete", "bieten", "bietet", "vermittle", "vermitteln", "vermittelt", "übernehme", "übernehmen", "übernimmt",
+  "optimiere", "optimieren", "optimiert", "realisiere", "realisieren", "realisiert", "konzipiere", "konzipieren", "konzipiert",
+  "unterrichte", "unterrichten", "unterrichtet", "behandle", "behandeln", "behandelt", "coache", "coachen", "coacht", "trainiere", "trainieren",
+  "trainiert", "fotografiere", "fotografieren", "fotografiert", "programmiere", "programmieren", "programmiert", "installiere", "installieren",
+  "installiert", "saniere", "sanieren", "saniert", "renoviere", "renovieren", "renoviert", "kümmere", "kümmern", "kümmert", "vernetze",
+  "vernetzen", "vernetzt", "finde", "finden", "findet",
+  // englische Headlines
+  "help", "helps", "helping", "build", "builds", "building", "create", "creates", "creating", "grow", "grows", "growing", "deliver", "delivers",
+  "delivering", "empower", "empowers", "empowering", "advise", "advises", "advising",
 ];
 const VERB_RE = new RegExp(`(?<![\\p{L}])(?:${VERBEN.join("|")})(?![\\p{L}])`, "iu");
-const BEZUG_RE = /(?<![\p{L}])(?:für|bei)(?![\p{L}])/iu;
-const FUER_RE = /(?<![\p{L}])für(?![\p{L}])/iu;
-const ORT_RE = /(?<![\p{L}])in\s+[A-ZÄÖÜ]\p{L}{2,}/u;
+const BEZUG_RE = /(?<![\p{L}])(?:für|bei|for)(?![\p{L}])/iu;
+const FUER_RE = /(?<![\p{L}])(?:für|for)(?![\p{L}])/iu;
 
-/** Wörter, die zeigen, dass ein Text seine Kundschaft anspricht. «Sie» gilt nur gross geschrieben (klein ist es «sie» im Plural). */
+/**
+ * Ein Ort, den die Headline nennt: «in Gossau», «in St. Gallen», «in der Ostschweiz», «im Appenzellerland», «aus Herisau»,
+ * «Region Toggenburg», «Raum Gossau». Hauptwörter, die kein Ort sind («in Zukunft», «in Ihrem Alltag», «aus Leidenschaft»), zählen nicht.
+ */
+const NICHT_ORT =
+  "(?:Ihr|Dein|Euer|Sie\\b|Zukunft|Zusammenarbeit|Ruhe|Auftrag|Alltag|Teilzeit|Vollzeit|Leidenschaft|Überzeugung|Erfahrung|Tradition|Liebe|Freude|Berufung|Verantwortung|Qualität)";
+const ORT_RE = new RegExp(`(?<![\\p{L}])(?:in|im|aus|rund um|Raum|Region)\\s+(?:der\\s+|dem\\s+)?(?!${NICHT_ORT}\\p{L}*)(?:St\\.\\s?)?[A-ZÄÖÜ]\\p{L}{2,}`, "u");
+
+/** Wörter, die zeigen, dass ein Text seine Kundschaft anspricht (kleingeschrieben verglichen). */
 const KUNDSCHAFT_WOERTER = new Set([
-  "du", "dich", "dir", "dein", "deine", "deiner", "deinen", "deinem", "deines", "kundschaft", "kunde", "kundin", "kunden", "kundinnen",
-  "betriebe", "kmu", "vereine", "mitglieder", "publikum", "sponsoren", "familien", "hausbesitzer", "eigentümer", "eltern", "gäste",
+  "du", "dich", "dir", "dein", "deine", "deiner", "deinen", "deinem", "deines", "euch", "euer", "eure", "kundschaft", "kunde", "kundin", "kunden", "kundinnen",
+  "betriebe", "kmu", "vereine", "mitglieder", "publikum", "sponsoren", "familien", "hausbesitzer", "eigentümer", "eltern", "gäste", "unternehmen", "firmen",
+  "gemeinden", "praxen", "arztpraxen", "menschen", "selbständige", "selbstständige", "gewerbe", "landwirte", "mandanten", "patienten", "lernende",
+  // englische Headlines
+  "sme", "smes", "clients", "customers", "businesses", "founders", "startups", "companies", "teams", "owners", "brands",
 ]);
+/** Wortstämme der Kundschaft, auch in Zusammensetzungen und gebeugt: «Privatkunden», «Hausbesitzern», «Handwerksbetriebe», «Arbeitnehmende». */
+const KUNDSCHAFT_STAMM = /^(?:\p{L}*kund\p{L}*|\p{L}*besitzer\p{L}*|eigentümer\p{L}*|\p{L}*mitglied\p{L}*|\p{L}*betriebe[n]?|\p{L}*landwirt\p{L}*|\p{L}*handwerker\p{L}*|patient\p{L}*|mandant\p{L}*|selbständig\p{L}*|selbstständig\p{L}*|familie\p{L}*|sponsor\p{L}*|schüler\p{L}*|\p{L}*nehmende|\p{L}*gebende)$/u;
+/** Gross geschrieben ist es die Anrede («Sie», «Ihr Zuhause»); klein ist «sie» ein Pronomen im Plural, «ihr» ein Possessivpronomen. */
+const ANREDE_GROSS = new Set(["Sie", "Ihnen", "Ihr", "Ihre", "Ihren", "Ihrem", "Ihrer", "Ihres"]);
 
 /** Ob ein Text seine Kundschaft anspricht (Heuristik über Wörter, kein Urteil über den Inhalt). */
 export function sprichtKundschaftAn(text: string): boolean {
-  return (text.match(/\p{L}+/gu) ?? []).some((w) => w === "Sie" || KUNDSCHAFT_WOERTER.has(w.toLowerCase()));
+  return (text.match(/\p{L}+/gu) ?? []).some((w) => ANREDE_GROSS.has(w) || KUNDSCHAFT_WOERTER.has(w.toLowerCase()) || KUNDSCHAFT_STAMM.test(w.toLowerCase()));
 }
 
-/** Aufforderung oder Kontaktweg: Verbstamm am Wortanfang, Adresse, Telefonnummer oder Link. */
+/**
+ * Aufforderung oder Kontaktweg am Ende des Info-Texts: eine Bitte («Schreib mir», «Sprich mich an», «Ruf mich an», «Melde dich», «Nimm Kontakt auf»,
+ * «Kommt vorbei», «Termin vereinbaren», «Offerte anfordern»), ein Satz wie «Gerne berate ich Sie» oder «Ich freue mich auf deine Nachricht»,
+ * eine englische Bitte («Let's connect», «DM me») oder ein Weg zu der Person (Adresse, Link, Domain, Telefonnummer).
+ * Hauptwörter wie «Buchhaltung», «Kommunikation», «Termine» oder «Ruf in der Region» sind keine Aufforderung.
+ */
 const AUFRUF_RE = new RegExp(
-  `(?<![\\p{L}])(?:schreib|meld|ruf|kontakt|vereinbar|buch|frag|besuch|komm|anruf|anfrage|offerte|termin|erstgespräch|write|call)\\p{L}*|@|https?:|www\\.|\\+?\\d[\\d ]{7,}\\d`,
+  [
+    // Bitte an die Leserin oder den Leser: Befehlsform mit Gegenüber («Schreib mir», «Melde dich», «Sprich mich an»), nie das Hauptwort («Frage», «Ruf in der Region»)
+    "(?<![\\p{L}])(?:schreibe?|schreibt|meld(?:e|et)?|kontaktiere?|kontaktiert|sprich|sprecht|frag(?:e|t)?|vernetze?|vernetzt|bestelle?|bestellt|ruf(?:e|t)?)\\s+(?:mir|uns|mich|dich|dir|euch|deine|deinen|doch|einfach|gerne|mal|eine|ein|gleich|direkt|kurz|jederzeit)(?![\\p{L}])",
+    "(?<![\\p{L}])(?:sprechen|fragen|kontaktieren|schreiben|melden|bestellen|buchen|rufen|nehmen)\\s+sie(?![\\p{L}])|(?<![\\p{L}])vernetzen\\s+wir(?![\\p{L}])",
+    "(?<![\\p{L}])(?:nimm|nimmt|nehmt)\\s+kontakt|kontakt\\s+aufnehmen",
+    "(?<![\\p{L}])komm(?:e|en|t)?\\s+(?:\\p{L}+\\s+){0,3}vorbei(?![\\p{L}])|(?<![\\p{L}])komm(?:e|en|t)?\\s+zu\\s+(?:dir|ihnen|euch)(?![\\p{L}])",
+    "(?<![\\p{L}])(?:vereinbar(?:e|en|t)?|buch(?:e|en|t)?|fixier(?:e|en|t)?)\\s+(?:sie\\s+|dir\\s+|euch\\s+)?(?:einen\\s+|ein\\s+|jetzt\\s+)?(?:termin|gespräch|erstgespräch|besichtigung)",
+    "(?<![\\p{L}])(?:termine?|erstgespräche?|gespräche?|besichtigung(?:en)?)\\s+(?:jetzt\\s+)?(?:vereinbaren|buchen|ausmachen)",
+    "(?<![\\p{L}])(?:fordere?n?|hol(?:e|en|t)?)\\s+(?:dir\\s+|sie\\s+|euch\\s+)?(?:eine\\s+)?(?:offerte|offerten)|offerte\\s+(?:anfordern|einholen|anfragen)",
+    "(?<![\\p{L}])(?:anfragen?|nachrichten?|offerten?|anrufe?)\\s+(?:sind\\s+)?(?:jederzeit\\s+|gerne\\s+)?willkommen",
+    "(?<![\\p{L}])bei\\s+fragen(?![\\p{L}])|(?<![\\p{L}])wenn\\s+(?:sie|du|ihr)\\s+(?:\\p{L}+\\s+){0,3}fragen?\\s+(?:haben|hast|habt)(?![\\p{L}])",
+    // Sätze in der Ich- und Wir-Form
+    "(?<![\\p{L}])(?:berate|beraten)\\s+(?:ich|wir)\\s+(?:sie|dich|euch)|(?<![\\p{L}])(?:ich|wir)\\s+(?:berate|beraten)\\s+(?:sie|dich|euch)",
+    "freue(?:n)?\\s+(?:mich|uns)\\s+auf\\s+(?:ihre|deine|eure|ihren|deinen|euren)",
+    "(?<![\\p{L}])(?:erreichst\\s+du|erreichen\\s+sie|erreicht\\s+ihr)\\s+(?:mich|uns)|(?<![\\p{L}])lass(?:t)?\\s+uns",
+    // englisch
+    "let['’]s|let\\s+us\\s+connect|get\\s+in\\s+touch|dm\\s+me|(?:write|message|call|contact)\\s+(?:me|us)|reach\\s+out|connect\\s+with\\s+(?:me|us)",
+    // Weg zur Person: Adresse, Link, Domain, Telefonnummer
+    "@|https?:|www\\.|[a-z0-9-]+\\.(?:ch|com|de|net|org)(?![\\p{L}])|\\+?\\d[\\d ]{7,}\\d",
+  ].join("|"),
   "iu",
 );
 const AUFRUF_ENDE = 300;
@@ -209,6 +258,21 @@ export const KRITERIEN: readonly Kriterium[] = [
 
 export const KRITERIEN_IDS: readonly KriteriumId[] = KRITERIEN.map((k) => k.id);
 export const GEWICHT_SUMME = KRITERIEN.reduce((n, k) => n + k.gewicht, 0);
+/** So viele der 100 Punkte hängen an der Headline und am Info-Text. Wer nur einen der beiden Texte einfügt, kann den Rest nicht erreichen. */
+export const GEWICHT_STELLE: Record<Stelle, number> = {
+  Headline: KRITERIEN.filter((k) => k.stelle === "Headline").reduce((n, k) => n + k.gewicht, 0),
+  "Info-Text": KRITERIEN.filter((k) => k.stelle === "Info-Text").reduce((n, k) => n + k.gewicht, 0),
+};
+
+/** Ein Satz, wenn nur einer der beiden Texte eingefügt ist: Mehr als der Anteil dieser Stelle ist nicht möglich, die Stufe bleibt darum tiefer. Sonst null. */
+export function nurEinText(headline: string, about: string): string | null {
+  const h = headline.trim() !== "";
+  const a = about.trim() !== "";
+  if (h === a) return null;
+  const da = h ? "Headline" : "Info-Text";
+  const fehlt = h ? "Info-Text" : "Headline";
+  return `Du hast nur ${h ? "die Headline" : "den Info-Text"} eingefügt. ${h ? "Sie" : "Er"} kann höchstens ${GEWICHT_STELLE[da]} von 100 Punkten bringen, darum bleibt die Stufe tief. Füge ${h ? "auch den" : "auch die"} ${fehlt} ein, dann zählt das ganze Profil.`;
+}
 
 export function kriteriumOf(id: KriteriumId): Kriterium {
   return KRITERIEN.find((k) => k.id === id) ?? KRITERIEN[0];
@@ -462,6 +526,7 @@ export function documentParts(s: LinkedinState): DokumentTeile {
   vor.push(
     { type: "stat", label: "LinkedIn-Profil-Score", value: String(bew.score), of: "100", band: bew.stufe, note: "Richtwert von Alperna, keine Statistik" },
     { type: "paragraph", text: REGEL_HINWEIS },
+    ...(nurEinText(s.headline, s.about) ? [{ type: "paragraph" as const, text: nurEinText(s.headline, s.about) as string }] : []),
     {
       type: "bars",
       title: "Erreichte Punkte je Kriterium, in Prozent des Gewichts",
@@ -531,6 +596,13 @@ export function eingabeText(s: Pick<LinkedinState, "firma" | "branche" | "zielgr
 /** Das Dokument als Markdown fürs CRM und zum Kopieren. */
 export function reportMarkdown(s: LinkedinState): string {
   return toMarkdown(toDocument(s));
+}
+
+/** Der Text fürs CRM: Das Wichtigste (die Vorschläge der KI) steht vorn, weil der Server auf 1'900 Zeichen kürzt. Ansicht und Dateien bleiben, wie sie sind. */
+export function ausgabeText(s: LinkedinState): string {
+  const doc = toDocument(s);
+  const teile = documentParts(s);
+  return toMarkdown({ ...doc, blocks: teile.ki.length > 0 ? [...teile.ki, ...teile.vor, ...teile.nach] : doc.blocks });
 }
 
 // ---- Beispiel ----------------------------------------------------------------------------------

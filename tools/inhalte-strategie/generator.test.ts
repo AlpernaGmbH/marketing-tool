@@ -12,7 +12,9 @@ import {
   gewaehlterKanal,
   nenntBeitraege,
   normName,
+  normalizeStrategie,
   numbersIn,
+  ohneZeitangaben,
   outputTexts,
   promptData,
   saeulenGueltig,
@@ -247,8 +249,8 @@ describe("inhalte-strategie: checkStrategie", () => {
     expect(checkStrategie(mitErsterSaeule({ name: "Top 3 Fragen" }), input)).toBe("zahl");
     expect(checkStrategie(mitRollen([{ ...kanalrollen()[0], formate: ["Foto", "Reel in 15 Sekunden"] }, kanalrollen()[1]]), input)).toBe("zahl");
     expect(checkStrategie(mitSatz("Zwei Beiträge pro Woche, also 8 im Monat, auf Instagram und im Google-Beitrag."), input)).toBe("zahl");
-    expect(checkStrategie(mitPlan([{ ...plan()[0], schwerpunkt: "Aufbauen in den ersten 30 Tagen: Säulen festlegen." }, plan()[1], plan()[2]]), input)).toBe("zahl");
-    expect(checkStrategie(mitPlan([{ ...plan()[0], aufgaben: ["In Monat 1 die Säulen festhalten.", plan()[0].aufgaben[1], plan()[0].aufgaben[2]] }, plan()[1], plan()[2]]), input)).toBe("zahl");
+    expect(checkStrategie(mitPlan([{ ...plan()[0], schwerpunkt: "Aufbauen mit 30 Beiträgen: Säulen festlegen." }, plan()[1], plan()[2]]), input)).toBe("zahl");
+    expect(checkStrategie(mitPlan([{ ...plan()[0], aufgaben: ["Bis 2027 die Säulen festhalten.", plan()[0].aufgaben[1], plan()[0].aufgaben[2]] }, plan()[1], plan()[2]]), input)).toBe("zahl");
     expect(checkStrategie(output({ messung: ["Mehr als 20 Anfragen pro Monat zählen.", ...output().messung.slice(1)] }), input)).toBe("zahl");
     expect(checkStrategie(output({ niemals: ["Rabatte von 20 %, weil die Arbeit ihren Preis hat.", output().niemals[1]] }), input)).toBe("zahl");
   });
@@ -322,7 +324,7 @@ describe("inhalte-strategie: Generator mit checkGenerated", () => {
     expect(checkGenerated(strategieGenerator, mitErsterSaeule({ name: "Fassaden vorher" }), mitSaeulen)).toEqual({ ok: false, reason: "check", detail: "saeule" });
     expect(checkGenerated(strategieGenerator, mitPlan([plan()[1], plan()[0], plan()[2]]), input)).toEqual({ ok: false, reason: "check", detail: "plan" });
     expect(checkGenerated(strategieGenerator, mitSatz("Instagram trägt die Fassaden und das Team, der Google-Beitrag die Fragen aus dem Alltag."), input)).toEqual({ ok: false, reason: "check", detail: "rhythmus" });
-    expect(checkGenerated(strategieGenerator, output({ kernbotschaft: "Die Malerei Keller streicht in den ersten 90 Tagen Fassaden und Räume in Gossau, mit Terminen, die halten." }), input)).toEqual({ ok: false, reason: "check", detail: "zahl" });
+    expect(checkGenerated(strategieGenerator, output({ kernbotschaft: "Die Malerei Keller streicht seit 25 Jahren Fassaden und Räume in Gossau, mit Terminen, die halten." }), input)).toEqual({ ok: false, reason: "check", detail: "zahl" });
   });
   it("verwirft kaputte Form über das Schema, verbotene Wörter über die Regeln und die Stimme", () => {
     expect(checkGenerated(strategieGenerator, { kernbotschaft: output().kernbotschaft }, input)).toMatchObject({ ok: false, reason: "schema" });
@@ -354,7 +356,7 @@ describe("inhalte-strategie: Aufgabe und Nutzernachricht", () => {
     expect(system).toContain("der zweite wiederholt und verbessert");
     expect(system).toContain("der dritte prüft und passt an");
     expect(system).toContain("Wir-Form");
-    expect(system).toContain("«drei Monate» statt «90 Tage»");
+    expect(system).toContain("«Woche 2», «Tag 3», «Monat 1» und «2x pro Woche»");
     expect(system).not.toContain("Malerei Keller");
     expect(system).not.toContain("Gossau");
   });
@@ -377,12 +379,107 @@ describe("inhalte-strategie: Aufgabe und Nutzernachricht", () => {
   });
   it("trägt Slug, Obergrenze und Temperatur nach Auftrag", () => {
     expect(strategieGenerator.slug).toBe("inhalte-strategie");
-    expect(strategieGenerator.maxTokens).toBe(2200);
+    expect(strategieGenerator.maxTokens).toBe(3000);
     expect(strategieGenerator.temperature).toBe(0.5);
   });
   it("numbersIn findet Ziffernfolgen ohne Trennzeichen und ohne Listenmarken", () => {
     expect(numbersIn("CHF 1'200.- seit 1998")).toEqual(["1200", "1998"]);
     expect(numbersIn("1. Punkt\n2) Zweiter Punkt 2024")).toEqual(["2024"]);
     expect(numbersIn("zwei Beiträge, keine Ziffer")).toEqual([]);
+  });
+});
+
+describe("inhalte-strategie: Befunde der Launch-Prüfung", () => {
+  const mitAufgaben = (aufgaben: string[], schwerpunkt = plan()[0].schwerpunkt) => mitPlan([{ ...plan()[0], schwerpunkt, aufgaben }, plan()[1], plan()[2]]);
+  const drei = (a: string) => [a, plan()[0].aufgaben[1], plan()[0].aufgaben[2]];
+
+  // Befund 1: Kanalnamen
+  it("Befund 1: nimmt «Instagram-Kanal» und «Google-Beitrag/Profil» für gewählte Kanäle, lehnt fremde ab", () => {
+    expect(gewaehlterKanal("Instagram-Kanal", ["instagram", "google"])).toBe("instagram");
+    expect(gewaehlterKanal("Google-Profil", ["instagram", "google"])).toBe("google");
+    expect(gewaehlterKanal("Facebook-Kanal", ["instagram", "google"])).toBeNull();
+    expect(checkStrategie(mitRollen([{ ...kanalrollen()[0], kanal: "Instagram-Kanal" }, kanalrollen()[1]]), input)).toBeNull();
+    expect(checkStrategie(mitRollen([{ ...kanalrollen()[0], kanal: "Instagram-Kanal" }, { ...kanalrollen()[1], kanal: "Instagram" }]), input)).toBe("kanal");
+    expect(checkStrategie(mitRollen([kanalrollen()[0], { ...kanalrollen()[1], kanal: "Facebook-Seite" }]), input)).toBe("kanal");
+  });
+
+  // Befund 2: Token
+  it("Befund 2: maxTokens 3000 fasst die volle Antwort (3/3/5 Einträge, 6 Kanäle, 5 Aufgaben) mit 30 % längeren Texten", () => {
+    const x = (n: number) => "x".repeat(Math.round(n * 1.3));
+    const voll = {
+      kernbotschaft: x(150),
+      ziele: Array.from({ length: 3 }, () => ({ ziel: x(80), messgroesse: x(80) })),
+      zielgruppen: Array.from({ length: 3 }, () => ({ name: x(30), bedarf: x(140) })),
+      saeulen: Array.from({ length: 5 }, () => ({ name: x(25), rolle: x(140) })),
+      kanalrollen: Array.from({ length: 6 }, () => ({ kanal: x(18), rolle: x(120), formate: [x(15), x(15)] })),
+      rhythmus: { satz: x(150) },
+      plan90: Array.from({ length: 3 }, () => ({ monat: "Monat 1", schwerpunkt: x(100), aufgaben: Array.from({ length: 5 }, () => x(80)) })),
+      messung: Array.from({ length: 4 }, () => x(100)),
+      niemals: Array.from({ length: 4 }, () => x(80)),
+    };
+    expect(JSON.stringify(voll).length).toBeGreaterThan(7000);
+    expect(Math.ceil(JSON.stringify(voll).length / 3)).toBeLessThanOrEqual(strategieGenerator.maxTokens);
+    expect(strategieGenerator.maxTokens).toBe(3000);
+  });
+
+  // Befund 4: Zahlen im Plan
+  it("Befund 4: lässt «Woche 1», «Tag 3», «Monat 1», «Q2», «2. Woche», «30 Tage» und «2x pro Woche» durch", () => {
+    for (const a of [
+      "In Woche 1 zu jeder Säule drei Beitragsideen sammeln.",
+      "Bis Tag 3 das Profil ergänzen.",
+      "Ansehen, was seit Monat 1 gebracht hat.",
+      "Q2 planen und die Themen festlegen.",
+      "Jede 2. Woche die Statistik ansehen.",
+      "Nach 30 Tagen die Statistik ansehen.",
+      "Zweimal im Monat, also 2x pro Woche, einen Beitrag planen.",
+    ]) {
+      expect(checkStrategie(mitAufgaben(drei(a)), input), a).toBeNull();
+      expect(checkGenerated(strategieGenerator, mitAufgaben(drei(a)), input).ok, a).toBe(true);
+    }
+    expect(checkStrategie(mitSatz("Zwei Beiträge pro Woche: 2x pro Woche Instagram, die Fragen im Google-Beitrag."), input)).toBeNull();
+  });
+  it("Befund 4: lehnt Erfahrungsjahre, Zielzahlen, Prozente und Jahreszahlen weiter ab", () => {
+    for (const a of ["Seit 25 Jahren im Geschäft, das zeigen wir.", "Mindestens 10 Anfragen pro Monat zählen.", "Über 80 Prozent der Beiträge beantworten Fragen.", "Bis 2027 die Säulen festhalten.", "Den Anteil auf 30 % senken.", "In Woche 12026 prüfen."]) {
+      expect(checkStrategie(mitAufgaben(drei(a)), input), a).toBe("zahl");
+    }
+    // «2x pro Woche» ist nur eine Zeitangabe mit «pro», «im», «je»: «5 Beiträge» ist eine Zielzahl.
+    expect(checkStrategie(mitAufgaben(drei("Bis Ende Monat 2 mindestens 5 Beiträge veröffentlichen.")), input)).toBe("zahl");
+    expect(checkStrategie(mitAufgaben(drei("Jeden Tag 5x posten.")), input)).toBe("zahl");
+  });
+  it("Befund 4: ohneZeitangaben streicht nur die Zeitangaben", () => {
+    expect(numbersIn(ohneZeitangaben("Woche 2, Tag 3, Monat 1, 2x pro Woche"))).toEqual([]);
+    expect(numbersIn(ohneZeitangaben("Woche 2 und seit 25 Jahren"))).toEqual(["25"]);
+    expect(numbersIn(ohneZeitangaben("Monat 2026"))).toEqual(["2026"]);
+    expect(numbersIn(ohneZeitangaben("100 Tage"))).toEqual(["100"]);
+  });
+  it("Befund 4: die Anweisung nennt die Zahlregel gleich nach der Einleitung, mit Beispielen", () => {
+    const zeilen = strategieGenerator.instruction.split("\n");
+    expect(zeilen[1].startsWith("- Zahlen: Ziffern nur, wenn sie wörtlich in den Angaben stehen")).toBe(true);
+    for (const beispiel of ["«seit 25 Jahren»", "Prozente", "«10 Anfragen»", "«Woche 2»", "«Tag 3»", "«Monat 1»", "«2x pro Woche»"]) expect(zeilen[1]).toContain(beispiel);
+    expect(strategieGenerator.instruction).not.toContain("«90 Tage»");
+  });
+
+  // Befund 9: Doppelte, Schreibweisen
+  it("Befund 9: lehnt doppelte Zielgruppen und doppelte Säulen ab (Schreibweise egal)", () => {
+    const z = output().zielgruppen[0];
+    expect(checkStrategie(output({ zielgruppen: [z, { ...z, name: "HAUSBESITZER IN GOSSAU" }] }), input)).toBe("namedoppelt");
+    expect(checkStrategie(output({ zielgruppen: [z, { ...z, name: "Verwaltungen in Gossau" }] }), input)).toBeNull();
+    const dopp = output({ saeulen: [saeulen()[0], saeulen()[1], saeule({ name: "fragen aus dem alltag" })] });
+    expect(checkStrategie(dopp, input)).toBe("namedoppelt");
+    expect(checkGenerated(strategieGenerator, dopp, input)).toEqual({ ok: false, reason: "check", detail: "namedoppelt" });
+    // Mit angegebenen Säulen meldet die Prüfung zuerst die falschen Namen
+    expect(checkStrategie(dopp, mitSaeulen)).toBe("saeule");
+  });
+  it("Befund 9: liest «monat 1» und «Monat1» als Monat, lässt falsche Monate aber durchfallen", () => {
+    const roh = JSON.parse(JSON.stringify(output())) as { plan90: { monat: string }[] };
+    roh.plan90[0].monat = "monat 1";
+    roh.plan90[1].monat = "MONAT2";
+    const r = checkGenerated(strategieGenerator, roh, input);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.output.plan90.map((p) => p.monat)).toEqual(["Monat 1", "Monat 2", "Monat 3"]);
+    roh.plan90[2].monat = "Monat 4";
+    expect(checkGenerated(strategieGenerator, roh, input)).toMatchObject({ ok: false, reason: "schema" });
+    expect(normalizeStrategie({ ziele: [] })).toEqual({ ziele: [] });
+    expect(normalizeStrategie({ plan90: [null, { monat: 1 }] })).toEqual({ plan90: [null, { monat: 1 }] });
   });
 });

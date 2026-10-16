@@ -319,6 +319,9 @@ export const KAPITEL = {
   niemals: "Das lassen wir weg",
 } as const;
 
+/** Der Text ohne Punkt, Doppelpunkt und Strichpunkt am Ende (und ohne Leerraum an den Rändern). */
+export const ohneSchluss = (t: string): string => t.trim().replace(/[.:;]+$/, "");
+
 /** DocumentModel für Anzeige, PDF, Word und Markdown-Copy. */
 export function toDocument(output: StrategieOutput, input: StrategieInput): DocumentModel {
   const blocks: DocBlock[] = [
@@ -352,8 +355,9 @@ export function toDocument(output: StrategieOutput, input: StrategieInput): Docu
     { type: "paragraph", text: output.rhythmus.satz },
     { type: "heading", level: 1, text: KAPITEL.plan },
   ];
-  // Ein Schritt je Monat; die Aufgaben stehen untereinander (in der Datei durch Semikolon getrennt).
-  blocks.push({ type: "steps", items: output.plan90.map((p) => ({ title: `${p.monat}: ${p.schwerpunkt}`, text: p.aufgaben.join("\n") })) });
+  // Ein Schritt je Monat; die Aufgaben stehen untereinander (in der Datei durch Semikolon getrennt). Weder der Schwerpunkt noch
+  // eine Aufgabe endet auf einen Punkt: Sonst steht in der Datei «einüben.: Zu jeder …» und die Aufgaben laufen als Sätze zusammen.
+  blocks.push({ type: "steps", items: output.plan90.map((p) => ({ title: `${p.monat}: ${ohneSchluss(p.schwerpunkt)}`, text: p.aufgaben.map(ohneSchluss).join("\n") })) });
   blocks.push(
     { type: "heading", level: 1, text: KAPITEL.messung },
     { type: "paragraph", text: "Gemessen wird nur, was ihr selbst zählt. Legt die Richtwerte selbst fest; Vergleichswerte von aussen stehen hier nicht." },

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkGenerated, repairHint, systemPrompt } from "@/lib/generator";
+import { findingsOf } from "@/tools/textcheck/logic";
 import {
   HEADLINES,
   HEADLINE_MAX,
@@ -143,5 +144,25 @@ describe("linkedin-profil: Generator, Anweisung", () => {
     expect(prompt).not.toContain("@");
     expect(linkedinGenerator.slug).toBe("linkedin-profil");
     expect(linkedinGenerator.maxTokens).toBe(1100);
+  });
+});
+
+describe("linkedin-profil: Befund 6, Floskelwörter in der Anweisung", () => {
+  it("nennt «professionell», «zuverlässig», «nachhaltig» und «rund um» in der Anweisung", () => {
+    for (const wort of ["professionell", "zuverlässig", "nachhaltig", "rund um", "kompetent", "ganzheitlich"]) expect(linkedinGenerator.instruction, wort).toContain(`«${wort}»`);
+  });
+  it("jedes in der Anweisung genannte Wort lehnt die Prüfung auch wirklich ab (Anweisung und Prüfung bleiben gleich)", () => {
+    const genannt = [...linkedinGenerator.instruction.split("lehnt diese Wörter und Wendungen ab:")[1].split("Schreib stattdessen")[0].matchAll(/«([^»]+)»/g)].map((m) => m[1]);
+    expect(genannt.length).toBeGreaterThanOrEqual(10);
+    for (const wort of genannt) {
+      expect(findingsOf(`Wir sind ${wort} für Familien in Gossau.`).some((f) => f.kind === "floskel"), wort).toBe(true);
+    }
+  });
+  it("lehnt einen Vorschlag mit «professionell», «zuverlässig», «nachhaltig» oder «rund um» ab, nimmt eine Tatsache aber an", () => {
+    for (const wort of ["Professionelle Fassaden für Familien in Gossau", "Zuverlässige Fassaden für Familien in Gossau", "Nachhaltige Fassaden für Familien in Gossau", "Alles rund um Fassaden für Familien in Gossau"]) {
+      expect(checkLinkedin(mitHeadline(1, wort), input), wort).toBe("floskel");
+    }
+    expect(checkLinkedin(mitHeadline(1, "Fassaden für Familien in Gossau, mit Termin und Offerte"), input)).toBeNull();
+    expect(repairHint("check", "floskel")).toContain("Floskel");
   });
 });

@@ -19,6 +19,8 @@ export const MIN_PUNKTE = 1;
 export const MAX_PUNKTE = 3;
 /** Obergrenze der Summe aller Gewichte; mit 8 Kriterien zu 3 Punkten genau erreicht. */
 export const MAX_PUNKTE_SUMME = 24;
+/** So viele Kriterien dürfen das höchste Gewicht haben (Anweisung: «höchstens drei Kriterien mit drei Punkten»). */
+export const MAX_KRITERIEN_MIT_MAX_PUNKTEN = 3;
 
 export const icpInput = z.object({
   betrieb: z.string().trim().min(1).max(120),
@@ -79,7 +81,9 @@ export function outputTexts(output: IcpOutput): string[] {
 
 /**
  * Prüfung, die nur dieses Werkzeug kennt: keine Ziffer in den Texten, die nicht in den Angaben steht (auch nicht in
- * «kriterium» und «warum»), und die Summe der Punkte höchstens MAX_PUNKTE_SUMME.
+ * «kriterium» und «warum»), die Summe der Punkte höchstens MAX_PUNKTE_SUMME und die Gewichte so verteilt, wie die
+ * Anweisung es verlangt: höchstens drei Kriterien mit drei Punkten, nicht alle gleich. Die Summe allein fängt das nicht
+ * (acht Kriterien zu drei Punkten ergeben genau 24).
  * Gibt den Grund zurück («zahl», «punkte») oder null.
  */
 export function checkIcp(output: IcpOutput, input: IcpInput): string | null {
@@ -90,6 +94,9 @@ export function checkIcp(output: IcpOutput, input: IcpInput): string | null {
   );
   for (const n of numbersIn(outputTexts(output).join("\n"))) if (!known.has(n)) return "zahl";
   if (punkteSumme(output) > MAX_PUNKTE_SUMME) return "punkte";
+  const gewichte = output.punktekarte.map((k) => k.punkte);
+  if (gewichte.filter((p) => p === MAX_PUNKTE).length > MAX_KRITERIEN_MIT_MAX_PUNKTEN) return "punkte";
+  if (new Set(gewichte).size < 2) return "punkte";
   return null;
 }
 
@@ -103,7 +110,7 @@ const INSTRUCTION = `Schreib ein Idealkundenprofil (ICP) für ein Schweizer KMU 
 - «signale»: drei bis sechs Punkte, woran der Betrieb eine passende Anfrage erkennt: Wortwahl, Anliegen, Zeitpunkt, Weg der Anfrage.
 - «nichtIdeal»: zwei bis vier Punkte, welche Anfragen nicht passen. Nimm «nichtPassend» auf, wenn dort etwas steht.
 - «punktekarte»: sechs bis acht Kriterien, mit denen der Betrieb eine neue Anfrage bewertet. «punkte» ist das Gewicht als ganze Zahl 1, 2 oder 3 (3 = entscheidend, 2 = wichtig, 1 = schön zu haben). Nicht alle Kriterien gleich gewichten; höchstens drei Kriterien mit drei Punkten. «warum» begründet das Gewicht in einem Satz.
-- Ziffern nur, wenn sie wörtlich in den Angaben stehen (zum Beispiel ein Betrag aus «auftrag»). Fehlende Beträge, Jahre oder Mengen als Wort oder als Platzhalter wie [Betrag] oder [Jahre]. In «kriterium» und «warum» keine Ziffern.
+- Zahlen nur, wenn sie wörtlich in den Angaben stehen (zum Beispiel ein Betrag aus «auftrag»); auch Zahlwörter wie «zwanzig», «hundert» oder «tausend» zählen dazu. Fehlende Beträge, Jahre oder Mengen lass weg oder schreib sie als Platzhalter wie [Betrag] oder [Jahre]. In «kriterium» und «warum» keine Ziffern.
 - Sprich den Betrieb mit «du» an, wo es natürlich ist («Du erkennst …»). Keine Fachwörter aus dem Marketing, keine englischen Wörter, wo ein deutsches reicht.
 Form: {"segmentName": "…", "beschreibung": "…", "merkmale": ["…"], "ausloeser": ["…"], "einwaende": ["…"], "signale": ["…"], "nichtIdeal": ["…"], "punktekarte": [{"kriterium": "…", "punkte": 3, "warum": "…"}]}`;
 
@@ -113,8 +120,11 @@ export const icpGenerator = defineGenerator({
   output: icpOutput,
   instruction: INSTRUCTION,
   prompt: (i) => dataPrompt("Angaben zum Betrieb", i),
-  maxTokens: 1400,
+  // Eine Antwort an der Obergrenze des Schemas hat rund 2'100 bis 2'400 Token, eine typische 700 bis 850. 1'400 schnitt volle Antworten ab; 2'000 trägt drei Viertel der Obergrenze.
+  maxTokens: 2000,
   temperature: 0.4,
+  // Ziele und Wünsche der Kundschaft («wollen die Attraktivität ihres Hauses erhalten») sind kein Absichtssatz des Textes.
+  purposeRules: false,
   check: checkIcp,
 });
 

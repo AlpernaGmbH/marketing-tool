@@ -138,9 +138,37 @@ export type StrategieOutput = z.infer<typeof strategieOutput>;
 
 export { numbersIn };
 
+/**
+ * Zeitangaben des Plans, die keine erfundene Zahl sind: «Woche 2», «Tag 3», «Monat 1», «Q2», «2. Woche», «30 Tage», «6 Wochen»
+ * und die Häufigkeit «2x pro Woche» (nur mit «pro», «im», «je» oder «in der»). Sie fallen vor dem Zahlenvergleich weg.
+ * Erfahrungsjahre («seit 25 Jahren»), Zielzahlen («10 Anfragen»), Prozente und Jahreszahlen bleiben fremde Zahlen.
+ */
+const ZEITANGABE_RE =
+  /\b(?:Tag|Woche|Monat|Quartal|Q)\s?\d{1,2}\b|\b\d{1,2}\.\s?(?:Woche|Monat|Tag)\b|\b\d{1,2}\s?(?:Tage|Tagen|Wochen|Monate|Monaten)\b|\b\d{1,2}\s?(?:x|mal)\s+(?:pro|im|je|in\s+der|jede[nmrs]?)\b/gi;
+
+/** Der Text ohne die Zeitangaben des Plans (ZEITANGABE_RE), bereit für den Zahlenvergleich. */
+export function ohneZeitangaben(text: string): string {
+  return text.replace(ZEITANGABE_RE, " ");
+}
+
+/** `plan90[].monat` ohne Gross/Klein und Leerraum («monat 1», «Monat1»); alles andere bleibt, wie es ist, und fällt am Schema durch. */
+export function normalizeStrategie(value: Record<string, unknown>): Record<string, unknown> {
+  if (!Array.isArray(value.plan90)) return value;
+  return {
+    ...value,
+    plan90: value.plan90.map((p) => {
+      if (typeof p !== "object" || p === null || Array.isArray(p)) return p;
+      const r = p as Record<string, unknown>;
+      if (typeof r.monat !== "string") return p;
+      const k = r.monat.replace(/\s+/g, "").toLowerCase();
+      return { ...r, monat: MONATE.find((m) => m.replace(/\s+/g, "").toLowerCase() === k) ?? r.monat };
+    }),
+  };
+}
+
 // ---- Prüfungen ---------------------------------------------------------------------------------
 
-/** Welcher gewählte Kanal steckt hinter diesem Namen? Name oder Schlüssel, ohne Gross/Klein, Bindestrich und Leerzeichen. */
+/** Welcher gewählte Kanal steckt hinter diesem Namen? Name oder Schlüssel, ohne Gross/Klein, Bindestrich und Leerzeichen, auch «Instagram-Kanal» oder «Instagram/Facebook» als Schreibweise (kanalKey). */
 export function gewaehlterKanal(name: string, kanaele: readonly KanalKey[]): KanalKey | null {
   const k = kanalKey(name);
   return kanaele.find((key) => kanalKey(KANAL_LABELS[key]) === k || kanalKey(key) === k) ?? null;
@@ -195,9 +223,11 @@ export function outputTexts(o: StrategieOutput): string[] {
  * «kanal»: ein Kanal in den Kanalrollen ist nicht gewählt (Vergleich über Name oder Schlüssel, klein, ohne Bindestrich),
  * oder ein gewählter Kanal fehlt oder kommt doppelt vor;
  * «saeule»: sind Säulen angegeben, stimmen die Namen in der Antwort nicht in Anzahl und Schreibweise (klein) damit überein;
+ * «namedoppelt»: zwei Zielgruppen oder zwei Säulen heissen gleich (ohne Gross/Klein);
  * «plan»: der Plan hat nicht «Monat 1», «Monat 2», «Monat 3» in dieser Reihenfolge;
  * «rhythmus»: der Satz nennt die Zahl der Beiträge pro Woche nicht;
- * «zahl»: eine Ziffernfolge in einem Text der Antwort steht nicht in den Angaben (die Zahl der Beiträge zählt dazu);
+ * «zahl»: eine Ziffernfolge in einem Text der Antwort steht nicht in den Angaben (die Zahl der Beiträge zählt dazu); Zeitangaben
+ * des Plans wie «Woche 2», «Tag 3», «Monat 1» und «2x pro Woche» zählen nicht (ohneZeitangaben);
  * «sperrliste»: ein Text trifft eine harte Regel der Sperrliste (lib/brand-rules.ts).
  */
 export function checkStrategie(output: StrategieOutput, input: StrategieInput): string | null {
@@ -210,13 +240,17 @@ export function checkStrategie(output: StrategieOutput, input: StrategieInput): 
     if (gewollt.length !== geliefert.length || gewollt.some((n, i) => n !== geliefert[i])) return "saeule";
   }
 
+  for (const namen of [output.zielgruppen.map((z) => normName(z.name)), output.saeulen.map((x) => normName(x.name))]) {
+    if (new Set(namen).size !== namen.length) return "namedoppelt";
+  }
+
   if (output.plan90.some((p, i) => p.monat !== MONATE[i])) return "plan";
 
   if (!nenntBeitraege(output.rhythmus.satz, input.beitraegeProWoche)) return "rhythmus";
 
   const texte = outputTexts(output);
   const known = new Set(numbersIn(knownText(input)));
-  for (const n of numbersIn(texte.join("\n"))) if (!known.has(n)) return "zahl";
+  for (const n of numbersIn(ohneZeitangaben(texte.join("\n")))) if (!known.has(n)) return "zahl";
 
   for (const t of texte) if (brandHits(t).some((h) => h.level === "hart")) return "sperrliste";
   return null;
@@ -225,6 +259,7 @@ export function checkStrategie(output: StrategieOutput, input: StrategieInput): 
 // ---- Aufgabe an die KI -------------------------------------------------------------------------
 
 const INSTRUCTION = `Schreib eine Inhaltsstrategie für einen Schweizer Betrieb oder Verein aus den Angaben. Sie ist ein Dokument von zwei bis drei Seiten: wofür der Inhalt da ist, für wen, in welchen Themen, auf welchem Kanal mit welcher Rolle, in welchem Rhythmus, woran man merkt, ob es wirkt, und was in den ersten drei Monaten passiert.
+- Zahlen: Ziffern nur, wenn sie wörtlich in den Angaben stehen (dazu zählt die Zahl der Beiträge pro Woche). Keine Erfahrungsjahre wie «seit 25 Jahren», keine Prozente, keine Zielzahlen wie «10 Anfragen», keine Jahreszahlen: Schreib sie als Wort («seit vielen Jahren», «mehr Anfragen») oder lass sie weg. Erlaubt sind nur die Zeitangaben im Plan, zum Beispiel «Woche 2», «Tag 3», «Monat 1» und «2x pro Woche» (mit der Zahl aus «beitraegeProWoche»).
 - Anrede: Bei «organisationstyp» kmu sprichst du den Betrieb mit Du an, wo du ihn ansprichst, zum Beispiel bei Aufgaben im Plan («Richte … ein»). Bei verein schreibst du in der Wir-Form des Vereins und mit Vereinsbegriffen wie Mitglieder, Vorstand, Anlässe, Helferinnen und Helfer, Sponsoren statt Kundschaft und Aufträge.
 - Grundlage sind die Angaben: «betrieb», «organisationstyp», «branche», «ort», «ziel» (wofür der Inhalt da sein soll), «angebot» (Angebot und häufige Fragen), «besonders» (was den Betrieb besonders macht), «zielgruppe», «saeulen», «kanaele» (Namen der gewählten Kanäle), «beitraegeProWoche» und, falls vorhanden, «positionierung» und «tonalitaet» als Hintergrund, den du nicht wörtlich wiederholst. Leere Angaben füllst du nicht mit Erfundenem. Jede Aussage kommt aus «angebot», «besonders», «ort» oder «ziel»; keine Ratschläge, die auf jeden Betrieb passen.
 - «kernbotschaft»: 40 bis 240 Zeichen, ein Satz, der sagt, wofür der Betrieb steht und was die Kundschaft davon hat. Er passt zu «ziel» und «besonders». Keine Werbesprache.
@@ -238,7 +273,6 @@ const INSTRUCTION = `Schreib eine Inhaltsstrategie für einen Schweizer Betrieb 
 - «niemals»: 2 bis 4 Dinge, die nicht in diese Strategie gehören, je 10 bis 160 Zeichen, mit kurzem Grund.
 - Schweizer Bezug: Ort, Region, Jahreszeit, lokale Anlässe. Kennst du einen Namen oder Anlass nicht, schreib einen Platzhalter in eckigen Klammern, zum Beispiel [Anlass in deiner Gemeinde].
 - Keine Rechts- und Datenschutzaussagen, keine Versprechen über Reichweite, Umsatz oder Mitgliederzahlen. Schreib so, dass Kundschaft es versteht: keine Fachwörter aus dem Marketing, keine englischen Wörter, wo ein deutsches reicht.
-- Ziffern nur, wenn sie wörtlich in den Angaben stehen (dazu zählt die Zahl der Beiträge pro Woche). Alles andere schreib als Wort, zum Beispiel «drei Monate» statt «90 Tage». Keine Jahreszahlen.
 - Halte die Texte kurz: Jede Zelle ist ein bis zwei Sätze, damit die Antwort in die Obergrenze passt.
 Form: {"kernbotschaft": "…", "ziele": [{"ziel": "…", "messgroesse": "…"}], "zielgruppen": [{"name": "…", "bedarf": "…"}], "saeulen": [{"name": "…", "rolle": "…"}], "kanalrollen": [{"kanal": "Instagram", "rolle": "…", "formate": ["…"]}], "rhythmus": {"satz": "…"}, "plan90": [{"monat": "Monat 1", "schwerpunkt": "…", "aufgaben": ["…", "…", "…"]}, {"monat": "Monat 2", "schwerpunkt": "…", "aufgaben": ["…", "…", "…"]}, {"monat": "Monat 3", "schwerpunkt": "…", "aufgaben": ["…", "…", "…"]}], "messung": ["…", "…", "…"], "niemals": ["…", "…"]}`;
 
@@ -267,9 +301,10 @@ export const strategieGenerator = defineGenerator({
   output: strategieOutput,
   instruction: INSTRUCTION,
   prompt: (i) => dataPrompt("Angaben zum Betrieb", promptData(i)),
-  maxTokens: 2200,
+  maxTokens: 3000,
   temperature: 0.5,
   check: checkStrategie,
+  normalize: normalizeStrategie,
 });
 
 export { strategieGenerator as generator };

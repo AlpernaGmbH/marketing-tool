@@ -217,9 +217,48 @@ export function toDocument(output: BotschaftenOutput, input: BotschaftenInput): 
   };
 }
 
-/** Der Entwurf als Markdown fürs CRM und zum Kopieren. */
+/** Der Entwurf als Markdown zum Kopieren. */
 export function reportMarkdown(output: BotschaftenOutput, input: BotschaftenInput): string {
   return toMarkdown(toDocument(output, input));
+}
+
+/** Der Server kürzt den Text fürs CRM auf diese Länge (lib/lead.ts, CLIP_CHARS). */
+export const CRM_MAX = 1900;
+
+type CrmAbschnitt = { titel: string; zeilen: string[] };
+
+/**
+ * Setzt Abschnitte in der Reihenfolge ihrer Wichtigkeit zusammen (Titel als Markdown-Überschriften) und füllt bis CRM_MAX Zeichen,
+ * Zeile für Zeile. Was nicht mehr passt, fällt hinten weg; ein Abschnitt ohne eine passende Zeile entfällt samt Titel.
+ */
+function crmZusammen(abschnitte: CrmAbschnitt[], max = CRM_MAX): string {
+  let out = "";
+  for (const { titel, zeilen } of abschnitte) {
+    let text = out ? `${out}\n\n## ${titel}` : `# ${titel}`;
+    let n = 0;
+    for (const zeile of zeilen) {
+      const next = `${text}\n${zeile}`;
+      if (next.length > max) break;
+      text = next;
+      n++;
+    }
+    if (n > 0) out = text;
+  }
+  return out;
+}
+
+/**
+ * Der Entwurf fürs CRM. Der Server kürzt hinten; darum steht das Wichtigste vorn: Hauptbotschaft, die Botschaften je
+ * Zielgruppe (ohne Belege), «Das sagen wir nicht» und der Telefonsatz, zuletzt die Fassung je Kanal.
+ */
+export function ausgabeText(output: BotschaftenOutput, input: Pick<BotschaftenInput, "betrieb" | "anrede">): string {
+  return crmZusammen([
+    { titel: `Kernbotschaften für ${input.betrieb || "einen Betrieb"} (Anrede: ${anredeLabel(input.anrede)})`, zeilen: [`Hauptbotschaft: ${output.hauptbotschaft}`] },
+    { titel: "Botschaften je Zielgruppe oder Anlass", zeilen: output.botschaften.map((b) => `- ${b.fuer}: ${b.satz}`) },
+    { titel: "Das sagen wir nicht", zeilen: output.nichtSagen.map((n) => `- ${n}`) },
+    { titel: "Am Telefon oder am Stand", zeilen: [output.telefonsatz] },
+    { titel: "Fassung je Kanal", zeilen: KANAELE.map((k) => `- ${k.label}: ${output.kanaele[k.key]}`) },
+  ]);
 }
 
 /** Blöcke für den Bildschirm: ohne den KI-Hinweis, den die Karte selbst über dem Entwurf zeigt. */

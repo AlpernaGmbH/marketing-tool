@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { PositionierungInput, PositionierungOutput } from "./generator";
 import {
+  CRM_MAX,
   EMPTY_STATE,
   GEWICHTE,
   GRUPPEN,
   KI_HINWEIS,
   RICHTWERTE,
   RICHTWERT_HINWEIS,
+  ausgabeText,
   checkPositionierung,
   eingabeText,
   entwurfBodyBlocks,
@@ -14,6 +16,7 @@ import {
   hostOf,
   inputProblem,
   kantonName,
+  kuerzen,
   looksLikeWebsite,
   parseState,
   perspektiveOf,
@@ -360,5 +363,92 @@ describe("positionierung: gespeicherter Stand", () => {
     expect(parseState({ v: 1, form: { unterscheidung: "", beweise: "" }, input: stored, check, output: { kernsatz: "x" } })).toEqual({ v: 1, form: { unterscheidung: "", beweise: "" }, input: stored, check, output: null });
     const state = { v: 1 as const, form: { unterscheidung: "nur Fassaden", beweise: "" }, input: stored, check, output };
     expect(parseState(JSON.parse(JSON.stringify(state)))).toEqual(state);
+  });
+});
+
+describe("positionierung: Befunde der Launch-Prüfung", () => {
+  const seite = "Malerei Keller in Gossau. Für Hausbesitzer in Gossau und im Fürstenland streichen wir Fassaden. ";
+  const beweise = (text: string) => checkPositionierung(seite + text, context).kennzahlen.beweise;
+  const punkte = (text: string) => fundOf(checkPositionierung(seite + text, context), "beweise").punkte;
+
+  it("Befund 12: Zahlwörter zählen als Belege wie Ziffern, der Beispieltext der Seite stimmt mit der Logik überein", () => {
+    // das Beispiel in content/tools/positionierung.md: «Seit 1985, zwölf Mitarbeitende, drei Lernende» = 20 von 20
+    const worte = "Seit 1985 im Fürstenland, zwölf Mitarbeitende, drei Lernende. Wir freuen uns auf Ihre Anfrage.";
+    const ziffern = "Seit 1985 im Fürstenland, 12 Mitarbeitende, 3 Lernende. Wir freuen uns auf Ihre Anfrage.";
+    expect(punkte(worte)).toBe(20);
+    expect(beweise(worte)).toBe(beweise(ziffern));
+    expect(beweise(worte)).toBe(3);
+    // «seit über zwanzig Jahren» wie «seit über 20 Jahren»
+    expect(beweise("Seit über zwanzig Jahren streichen wir Fassaden.")).toBe(1);
+    expect(punkte("Seit über zwanzig Jahren streichen wir Fassaden.")).toBe(punkte("Seit über 20 Jahren streichen wir Fassaden."));
+    expect(beweise("Seit fünf Jahren im Dorf.")).toBe(1);
+    expect(beweise("Über hundert Kunden und achtzehn Standorte.")).toBe(2);
+    expect(beweise("Einundzwanzig Mitarbeitende im Team.")).toBe(1);
+    // Artikel und Wörter, die nur so aussehen, zählen nicht
+    expect(beweise("Wir sind ein Mitarbeiter und eine Lernende.")).toBe(0);
+    expect(beweise("Auch in der Nacht sind wir für Kunden da. Zwei Kinder spielen.")).toBe(0);
+    // gleich wie mit Ziffern, auch wo die Logik grosszügig ist («10 Jahre» zählt ebenfalls)
+    expect(beweise("Wir streichen Fassaden, die zehn Jahre halten.")).toBe(beweise("Wir streichen Fassaden, die 10 Jahre halten."));
+  });
+
+  it("Befund 12: fundeKurz kürzt an der Satz- oder Wortgrenze, nie mitten im Wort", () => {
+    const hinweis =
+      "Die Startseite redet fast nur über «uns». Sätze, die mit «Wir» beginnen, zählen dazu, auch mit «Sie» darin. Beginne mit dem Problem der Kundschaft, nicht mit dem Betrieb.";
+    const check = checkPositionierung(BEISPIEL_TEXT, context);
+    const lang = { ...check, funde: [{ ...fundOf(check, "kunde"), hinweis }, { ...fundOf(check, "kunde"), titel: "Kundenperspektive", hinweis: "Sehr lang ohne Satzende, " + "Wort ".repeat(60) }] };
+    const [erste, zweite] = fundeKurz(lang);
+    expect(erste.length).toBeLessThanOrEqual(160);
+    expect(erste.endsWith("darin.")).toBe(true);
+    expect(zweite.length).toBeLessThanOrEqual(160);
+    expect(zweite.endsWith("Wort…")).toBe(true);
+    expect(zweite).not.toMatch(/Wor…$/);
+    expect(kuerzen("kurz genug", 160)).toBe("kurz genug");
+    // fällt das Ende genau auf eine Wortgrenze, bleibt das letzte Wort ganz
+    expect(kuerzen("Eins zwei drei vier fünf sechs", 17)).toBe("Eins zwei drei…");
+    expect(kuerzen("Eins zwei drei vier fünf sechs", 20)).toBe("Eins zwei drei vier…");
+    expect(kuerzen("x".repeat(300), 160)).toHaveLength(160);
+  });
+
+  it("Befund 9: Der CRM-Text beginnt mit Punktzahl, Kernsatz und Varianten, die Funde stehen nur als Titel mit Punkten", () => {
+    const check = checkPositionierung(BEISPIEL_TEXT, context);
+    const a = { betrieb: "Malerei Keller", host: "malerei-keller.ch" };
+    const text = ausgabeText(check, output, a);
+    expect(text.length).toBeLessThanOrEqual(CRM_MAX);
+    expect(text.startsWith("# Positionierungs-Check: malerei-keller.ch\nPunktzahl: 55 von 100 (ausbaufähig)\n\n## Kernsatz\n")).toBe(true);
+    expect(text).toContain(`## Kernsatz\n${output.kernsatz}\n\n## Drei Varianten\n- Kurz: ${output.varianten[0].satz}\n- Konkret: `);
+    expect(text).toContain("## Funde\n- Für wen: 20 von 20\n- Unterscheidung: 0 von 20\n");
+    // der ganze Entwurf steht im Text, die Hinweise der Funde nicht
+    for (const teil of [output.fuerWen, output.wasAnders, output.naechsterSchritt, ...output.beweise, ...output.streichen]) expect(text).toContain(teil);
+    expect(text).not.toContain(fundOf(check, "unterscheidung").hinweis);
+    // Markdown dagegen wird hinten gekürzt: dort ginge der Entwurf verloren
+    expect(reportMarkdown(check, output, { ...a, title: "", ort: "", branche: "", kanton: "" }).slice(0, CRM_MAX)).not.toContain(output.naechsterSchritt);
+  });
+  it("Befund 9: An den Obergrenzen des Schemas bleiben Kernsatz und alle Varianten vor dem Schnitt; ohne Entwurf stehen die Hinweise der Lücken", () => {
+    const check = checkPositionierung(BEISPIEL_TEXT, context);
+    const voll: PositionierungOutput = {
+      kernsatz: "K".repeat(200),
+      fuerWen: "F".repeat(240),
+      wasAnders: "W".repeat(400),
+      beweise: Array.from({ length: 5 }, (_, i) => `${i}${"b".repeat(199)}`),
+      varianten: [
+        { stil: "kurz", satz: "a".repeat(220) },
+        { stil: "konkret", satz: "b".repeat(220) },
+        { stil: "persoenlich", satz: "c".repeat(220) },
+      ],
+      streichen: Array.from({ length: 6 }, (_, i) => `${i}${"s".repeat(199)}`),
+      naechsterSchritt: "N".repeat(300),
+    };
+    const text = ausgabeText(check, voll, { betrieb: "Malerei Keller", host: "" });
+    expect(text.length).toBeLessThanOrEqual(CRM_MAX);
+    expect(text.startsWith("# Positionierungs-Check: Malerei Keller\n")).toBe(true);
+    expect(text).toContain("K".repeat(200));
+    for (const v of voll.varianten) expect(text).toContain(v.satz);
+    expect(text).toContain("## Funde\n- Für wen: 20 von 20");
+    // ohne Entwurf: die Lücken mit Hinweis, gute Funde nur mit Punkten
+    const nur = ausgabeText(check, null, { betrieb: "Malerei Keller", host: "malerei-keller.ch" });
+    expect(nur).toContain("- Für wen: 20 von 20\n");
+    expect(nur).toContain(`- Unterscheidung: 0 von 20. ${fundOf(check, "unterscheidung").hinweis}`);
+    expect(nur).not.toContain("## Kernsatz");
+    expect(ausgabeText(check, null, { betrieb: "", host: "" }).startsWith("# Positionierungs-Check: Startseite\n")).toBe(true);
   });
 });

@@ -23,13 +23,13 @@ import {
   KI_HINWEIS,
   REIFEGRAD_SLUG,
   SLUG,
+  ausgabeText,
   charCount,
   eingabeText,
   faktenAus,
   folgerungenTabelle,
   inputProblem,
   parseState,
-  reportMarkdown,
   toDocument,
   toInput,
   type FormValues,
@@ -60,7 +60,7 @@ function SwotFlow() {
   const inputRef = useRef<SwotInput | null>(null);
   const gen = useGenerator(swotGenerator, {
     eingabe: eingabeText,
-    ausgabe: (o) => (inputRef.current ? reportMarkdown(o, inputRef.current) : ""),
+    ausgabe: (o) => (inputRef.current ? ausgabeText(o, inputRef.current) : ""),
   });
 
   // Änderungen am Formular leben im Entwurf, bis die Analyse entsteht; vorher gilt der gespeicherte Stand.

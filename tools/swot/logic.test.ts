@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Answers } from "@/components/tool/questionnaire";
 import { sampleResult } from "@/lib/check/fixtures";
+import { clipText } from "@/lib/lead";
 import { toMarkdown } from "@/lib/export/model";
 import { questions, type CheckInfo } from "@/tools/reifegrad-check/logic";
 import { MAX_FAKTEN, MAX_FAKT_CHARS, MAX_FELD_CHARS, MAX_ZIEL_CHARS, type SwotInput, type SwotOutput } from "./generator";
@@ -16,6 +17,7 @@ import {
   QUELLE_REIFEGRAD,
   REIFEGRAD_SLUG,
   SLUG,
+  ausgabeText,
   charCount,
   eingabeText,
   faktenAus,
@@ -398,6 +400,39 @@ describe("swot: Dokument", () => {
     expect(md).toContain("| Massnahme | Nutzt | Behebt | Aufwand |");
     expect(md).toContain("| Zufriedene Kundschaft um eine Bewertung bitten. | Stammkundschaft | – | klein |");
     expect(md).toContain(KI_HINWEIS);
+  });
+});
+
+describe("swot: Text fürs CRM", () => {
+  const vollePunkte = (n: number, was: string) => Array.from({ length: n }, (_, i) => punkt(`${was} Nummer ${i} mit einem ganzen Satz, der lang genug ist.`, "Das heisst fürs Marketing, dass die Kundschaft es sieht und sich merkt."));
+  const voll: SwotOutput = {
+    ...output,
+    staerken: vollePunkte(5, "Stärke"),
+    schwaechen: vollePunkte(5, "Schwäche"),
+    chancen: vollePunkte(5, "Chance"),
+    risiken: vollePunkte(4, "Risiko"),
+    folgerungen: Array.from({ length: 5 }, (_, i) => ({ massnahme: `Massnahme ${i}: das Google-Profil mit Fotos und Öffnungszeiten füllen.`, nutzt: "Saubere Baustellen", behebt: i === 1 ? "" : "Schwaches Google-Profil", aufwand: "klein" as const })),
+  };
+
+  it("Befund 8c: das ganze Dokument verliert beim Kürzen auf 1'900 Zeichen «Daraus folgt», der kurze Text nicht", () => {
+    const lang = reportMarkdown(voll, input);
+    expect(lang.length).toBeGreaterThan(2100);
+    expect(clipText(lang)).not.toContain("Massnahme 4");
+    const kurz = clipText(ausgabeText(voll, input));
+    expect(kurz).toContain("## Daraus folgt");
+    for (let i = 0; i < 5; i++) expect(kurz).toContain(`Massnahme ${i}`);
+    expect(kurz.indexOf("## Daraus folgt")).toBeLessThan(kurz.indexOf("## Stärken"));
+    expect(kurz).toContain("## Stärken");
+  });
+  it("Befund 8c: beginnt mit Titel, Betrieb und Lage, nennt je Folgerung Nutzen, Behobenes und Aufwand und führt die vier Felder auf", () => {
+    const lines = ausgabeText(output, input).split("\n");
+    expect(lines.slice(0, 4)).toEqual(["# SWOT-Analyse", "Marketing von Malerei Keller", `Lage: ${output.einSatz}`, "## Daraus folgt"]);
+    expect(lines[4]).toBe("- Google-Business-Profil bestätigen und mit Fotos füllen. (nutzt: Saubere Arbeit; behebt: Schwaches Google-Profil; Aufwand: klein)");
+    expect(lines[5]).toBe("- Zufriedene Kundschaft um eine Bewertung bitten. (nutzt: Stammkundschaft; behebt: –; Aufwand: klein)");
+    const text = lines.join("\n");
+    for (const f of FELDER) expect(text).toContain(`## ${f.label}`);
+    expect(text).toContain("- Offerte innert drei Arbeitstagen: Schnelle Antworten gewinnen Aufträge.");
+    expect(text).not.toMatch(/undefined|NaN|\[object|!|—|ß/);
   });
 });
 

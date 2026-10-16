@@ -9,6 +9,8 @@ import {
   anspruchsgruppenOutput,
   bekannteListe,
   checkAnspruchsgruppen,
+  nenntBekannte,
+  normalizeGruppen,
   type AnspruchsgruppenInput,
   type AnspruchsgruppenOutput,
   type VorgeschlageneGruppe,
@@ -154,5 +156,81 @@ describe("anspruchsgruppen: Generator, Anweisung", () => {
     expect(prompt).toContain("FC Trogen");
     expect(anspruchsgruppenGenerator.slug).toBe("anspruchsgruppen");
     expect(anspruchsgruppenGenerator.maxTokens).toBe(2200);
+  });
+});
+
+describe("anspruchsgruppen: Befunde der Launch-Prüfung", () => {
+  const kmu: AnspruchsgruppenInput = { ...input, betrieb: "Malerei Keller", typ: "kmu", rechtsform: "GmbH", branche: "Malerei", ort: "Gossau", finanzierung: ["Aufträge"], vorhaben: "Neue Website", bekannte: "" };
+  const mitName = (name: string, rest = output.gruppen) => mit([g(name, 2, 4), ...rest.slice(1)]);
+
+  // Befund 5: «bekannt» auch über Teilwörter ab sechs Buchstaben
+  it("Befund 5: nennt «Hausverwaltungen», «Hauptsponsor Raiffeisenbank» und «Vereinsmitglieder» über Teilwörter", () => {
+    expect(nenntBekannte("Verwaltungen und Eigentümer", "Hausverwaltungen")).toBe(true);
+    expect(nenntBekannte("Sponsoren", "Hauptsponsor Raiffeisenbank")).toBe(true);
+    expect(nenntBekannte("Mitglieder", "Vereinsmitglieder")).toBe(true);
+    expect(nenntBekannte("Elternrat der Junioren", "Eltern")).toBe(true);
+    expect(nenntBekannte("Gemeinde", "Gemeinderat")).toBe(true);
+  });
+  it("Befund 5: nennt Gruppen, die nichts miteinander zu tun haben, weiter nicht", () => {
+    expect(nenntBekannte("Eltern", "Sponsoren")).toBe(false);
+    expect(nenntBekannte("Gemeinde", "Verwaltungsrat")).toBe(false);
+    expect(nenntBekannte("Lieferanten", "Farben Müller AG")).toBe(false);
+    expect(nenntBekannte("Stammkundschaft", "Hausverwaltungen")).toBe(false);
+    expect(nenntBekannte("Mitglieder", "Vorstand")).toBe(false);
+    // Kürzer als sechs Buchstaben zählt nur der gemeinsame Wortanfang (nenntAngabe)
+    expect(nenntBekannte("Schule", "Hausschule")).toBe(true);
+    expect(nenntBekannte("Presse", "Pressespiegel")).toBe(true);
+    expect(nenntBekannte("Kunden", "Verwaltungsrat")).toBe(false);
+    expect(nenntBekannte("Presse", "Presto")).toBe(false);
+  });
+  it("Befund 5: die Prüfung nimmt «Verwaltungen und Eigentümer» für «Hausverwaltungen», lehnt aber eine fehlende Gruppe ab", () => {
+    const eingabe = { ...kmu, bekannte: "Hausverwaltungen, Hauptsponsor Raiffeisenbank" };
+    const gut = mit([g("Verwaltungen und Eigentümer", 4, 4), g("Sponsoren", 3, 5), ...output.gruppen.slice(2, 6)]);
+    expect(checkAnspruchsgruppen(gut, eingabe)).toBeNull();
+    expect(checkGenerated(anspruchsgruppenGenerator, gut, eingabe).ok).toBe(true);
+    const ohne = mit([g("Verwaltungen und Eigentümer", 4, 4), ...output.gruppen.slice(2, 7)]);
+    expect(checkAnspruchsgruppen(ohne, eingabe)).toBe("bekannt");
+    expect(checkGenerated(anspruchsgruppenGenerator, ohne, eingabe)).toEqual({ ok: false, reason: "check", detail: "bekannt" });
+  });
+  it("Befund 5: die Anweisung sagt, dass Bekannte wörtlich übernommen werden, auch Firmen", () => {
+    const text = anspruchsgruppenGenerator.instruction;
+    expect(text).toContain("übernimm jede wörtlich als Namen einer Gruppe, auch wenn es eine Firma ist");
+    expect(text).toContain("Ausnahme sind die Namen aus «bekannte»");
+    expect(text).toContain("ausser denen aus «bekannte»");
+  });
+
+  // Befund 9: Schreibweisen
+  it("Befund 9: liest «interesse: \"4\"» und «beziehung: Eng» als Zahl und als Beziehung", () => {
+    const roh = JSON.parse(JSON.stringify(output)) as { gruppen: Record<string, unknown>[] };
+    roh.gruppen[0].interesse = "4";
+    roh.gruppen[0].einfluss = " 5 ";
+    roh.gruppen[1].beziehung = "Eng";
+    roh.gruppen[2].beziehung = " LOSE ";
+    roh.gruppen[3].interesse = "4,0";
+    const r = checkGenerated(anspruchsgruppenGenerator, roh, input);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.output.gruppen[0]).toMatchObject({ interesse: 4, einfluss: 5 });
+      expect(r.output.gruppen[1].beziehung).toBe("eng");
+      expect(r.output.gruppen[2].beziehung).toBe("lose");
+      expect(r.output.gruppen[3].interesse).toBe(4);
+    }
+  });
+  it("Befund 9: Werte ausserhalb der Skala und Wörter statt Zahlen bleiben ein Fehler der Form", () => {
+    for (const wert of ["6", "0", "vier", "4.5", "", "12"]) {
+      const roh = JSON.parse(JSON.stringify(output)) as { gruppen: Record<string, unknown>[] };
+      roh.gruppen[0].interesse = wert;
+      expect(checkGenerated(anspruchsgruppenGenerator, roh, input), JSON.stringify(wert)).toMatchObject({ ok: false, reason: "schema" });
+    }
+    const roh = JSON.parse(JSON.stringify(output)) as { gruppen: Record<string, unknown>[] };
+    roh.gruppen[0].beziehung = "sehr eng";
+    expect(checkGenerated(anspruchsgruppenGenerator, roh, input)).toMatchObject({ ok: false, reason: "schema" });
+    expect(normalizeGruppen({})).toEqual({});
+    expect(normalizeGruppen({ gruppen: [null, "x"] })).toEqual({ gruppen: [null, "x"] });
+  });
+  it("Befund 9: zwei Gruppen mit demselben Namen fallen weiter durch, auch nach der Umformung", () => {
+    const roh = JSON.parse(JSON.stringify(mitName("Sponsoren"))) as { gruppen: Record<string, unknown>[] };
+    roh.gruppen[0].interesse = "4";
+    expect(checkGenerated(anspruchsgruppenGenerator, roh, input)).toEqual({ ok: false, reason: "check", detail: "namedoppelt" });
   });
 });

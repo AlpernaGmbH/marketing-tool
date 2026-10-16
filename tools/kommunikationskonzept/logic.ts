@@ -548,8 +548,10 @@ export function toDocument(output: KonzeptOutput, input: KonzeptInput): Document
       widths: [1.2, 2, 4],
       rows: kalenderSortiert(output.jahreskalender).map((e) => [monatName(e.monat), e.anlass, e.kommunikation]),
     });
-  } else {
+  } else if (input.anlaesse.length === 0) {
     blocks.push({ type: "paragraph", text: "Es sind keine Anlässe angegeben. Trag die Anlässe ein und erstelle das Konzept neu, dann entsteht ein Kalender." });
+  } else {
+    blocks.push({ type: "paragraph", text: "Zu deinen Anlässen enthält dieser Entwurf keine Einträge. Erstelle das Konzept neu, dann entsteht ein Kalender." });
   }
   blocks.push(
     { type: "heading", level: 1, text: "7. Rollenverteilung" },
@@ -578,9 +580,35 @@ export function screenBlocks(doc: DocumentModel): DocBlock[] {
   return doc.blocks.filter((b) => !(b.type === "paragraph" && b.text === KI_HINWEIS));
 }
 
-/** Der Entwurf als Markdown fürs CRM und zum Kopieren. */
+/** Der Entwurf als Markdown zum Kopieren. */
 export function reportMarkdown(output: KonzeptOutput, input: KonzeptInput): string {
   return toMarkdown(toDocument(output, input));
+}
+
+/**
+ * Der Entwurf fürs CRM, kurz und mit dem Wichtigsten zuerst: Kernbotschaft, Kanalplan, Ziele, Rollen. Der Server kürzt auf
+ * 1'900 Zeichen; das ganze Dokument verlöre dabei den Kanalplan. Die Ansicht und die Downloads bleiben vollständig.
+ */
+export function ausgabeText(output: KonzeptOutput, input: KonzeptInput): string {
+  const eine = (s: string) => s.replace(/\s+/g, " ").trim();
+  const kalender = kalenderSortiert(output.jahreskalender).map((e) => `${monatName(e.monat)}: ${eine(e.anlass)}`);
+  return [
+    "# Kommunikationskonzept",
+    `${input.betrieb}, ${WORTE[input.typ].untertitel}`,
+    `Kernbotschaft: ${eine(output.kernbotschaft)}`,
+    "## Kanalplan",
+    ...output.kanalplan.map((k) => `- ${eine(k.kanal)}: ${eine(k.zweck)} (${eine(k.rhythmus)}; ${orOffen(eine(k.verantwortlich))})`),
+    "## Ziele",
+    ...output.ziele.map((z) => `- ${eine(z.ziel)} (${eine(z.messgroesse)})`),
+    "## Rollen",
+    ...output.rollen.map((r) => `- ${eine(r.rolle)}: ${r.stundenProMonat} Stunden pro Monat`),
+    `Zielgruppen: ${output.zielgruppen.map((z) => eine(z.name)).join(", ")}`,
+    kalender.length > 0 ? `Jahreskalender: ${kalender.join("; ")}` : "",
+    "## Ausgangslage",
+    eine(output.ausgangslage),
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 // ---- Hinweis auf Alperna -----------------------------------------------------------------------

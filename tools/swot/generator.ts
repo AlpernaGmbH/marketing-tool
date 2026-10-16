@@ -58,6 +58,21 @@ export type SwotOutput = z.infer<typeof swotOutput>;
 
 export { numbersIn };
 
+/** «Klein», «MITTEL» und « gross » zählen als «klein», «mittel» und «gross»; fehlt «behebt», bleibt es leer, wie die Anweisung es sagt. */
+export function normalizeSwot(value: Record<string, unknown>): Record<string, unknown> {
+  if (!Array.isArray(value.folgerungen)) return value;
+  return {
+    ...value,
+    folgerungen: value.folgerungen.map((f) => {
+      if (typeof f !== "object" || f === null || Array.isArray(f)) return f;
+      const r = f as Record<string, unknown>;
+      const roh = typeof r.aufwand === "string" ? r.aufwand.trim().toLowerCase() : "";
+      const aufwand = AUFWAND_KEYS.find((k) => k === roh) ?? r.aufwand;
+      return { ...r, aufwand, behebt: r.behebt === undefined || r.behebt === null ? "" : r.behebt };
+    }),
+  };
+}
+
 /** Alle Texte der Angaben, aus denen Ziffern stammen dürfen. */
 export function knownText(input: SwotInput): string {
   return [input.betrieb, input.branche, input.ort, input.groesse, input.positionierung, input.ziel, input.staerken, input.schwaechen, input.chancen, input.risiken, ...input.fakten].join("\n");
@@ -84,8 +99,8 @@ const INSTRUCTION = `Schreib eine SWOT-Analyse fürs Marketing eines Schweizer K
 - Grundlage sind die Angaben der Person («staerken», «schwaechen», «chancen», «risiken», «ziel», «positionierung») und die «fakten» aus ihren Checks. Ordne sie den vier Feldern zu, schärfe die Formulierung und ergänze nur, was sich aus Angaben und Fakten ergibt. Erfinde nichts, was nicht in den Angaben oder Fakten steht.
 - Stärken und Schwächen liegen im Betrieb: Angebot, Team, Auftritt, Abläufe, Kundschaft, die schon da ist. Chancen und Risiken kommen von aussen: Region, Branche, Nachfrage, Mitbewerber, Regeln, Technik.
 - Beziehe Chancen und Risiken auf Ort, Region und Branche. Allgemeine Entwicklungen nur mit Platzhalter in eckigen Klammern, zum Beispiel [Bauprojekt in deiner Gemeinde], [Mitbewerber im Nachbardorf] oder [Anlass in deiner Region].
-- Jeder Punkt hat «punkt» (ein konkreter Satz) und «warum» (ein Satz: was das fürs Marketing heisst).
-- Fehlt Material für ein Feld, schreib wenige Punkte mit Platzhaltern statt erfundener Fakten. Mindestens drei Stärken, drei Schwächen, drei Chancen und zwei Risiken.
+- Je Feld drei oder vier Punkte, bei den Risiken mindestens zwei. Jeder Punkt hat «punkt» (ein konkreter Satz) und «warum» (ein Satz: was das fürs Marketing heisst); «punkt» und «warum» sind je höchstens 100 Zeichen lang.
+- Fehlt Material für ein Feld, schreib die Punkte mit Platzhaltern statt erfundener Fakten.
 - «folgerungen»: drei bis fünf Massnahmen, konkret und klein beginnend; die erste ist in einer Woche machbar, die letzte darf grösser sein. «nutzt» nennt die Stärke oder Chance, auf der die Massnahme aufbaut. «behebt» nennt die Schwäche oder das Risiko, das sie angeht, sonst bleibt es leer. «aufwand» ist klein, mittel oder gross. Ist ein Ziel angegeben, führen die Massnahmen dorthin.
 - «einSatz»: die Lage in einem Satz, ruhig, ohne Urteil und ohne Floskel.
 - Ziffern nur, wenn sie wörtlich in den Angaben oder Fakten stehen. Sonst schreib die Zahl als Wort oder lass sie weg.
@@ -97,9 +112,10 @@ export const swotGenerator = defineGenerator({
   output: swotOutput,
   instruction: INSTRUCTION,
   prompt: (i) => dataPrompt("Angaben und Fakten", i),
-  maxTokens: 1600,
+  maxTokens: 2400,
   temperature: 0.4,
   check: checkSwot,
+  normalize: normalizeSwot,
 });
 
 export { swotGenerator as generator };

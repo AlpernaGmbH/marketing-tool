@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { checkGenerated, placeholdersIn, systemPrompt } from "@/lib/generator";
-import { ANREDE_KEYS, LIMITS, checkMarke, hasDuForm, markenGenerator, markenInput, markenOutput, numbersIn, type MarkenInput, type MarkenOutput } from "./generator";
+import type { z } from "zod";
+import { checkGenerated, placeholdersIn, repairHint, systemPrompt } from "@/lib/generator";
+import { ANREDE_KEYS, LIMITS, checkMarke, hasDuForm, markenGenerator, markenInput, markenOutput, normalizeMarke, numbersIn, type MarkenInput, type MarkenOutput } from "./generator";
+
+type Node = { _def: { typeName: string; checks?: { kind: string; value: number }[]; type?: Node; maxLength?: { value: number } | null; exactLength?: { value: number } | null }; shape?: Record<string, Node> };
+
+/** Eine Antwort an der Obergrenze des Schemas (längste Texte, meiste Einträge), kompakt als JSON. */
+function maxAnswer(node: Node): unknown {
+  const def = node._def;
+  if (def.typeName === "ZodString") return "x".repeat(def.checks?.find((c) => c.kind === "max")?.value ?? 20);
+  if (def.typeName === "ZodArray") return Array.from({ length: def.maxLength?.value ?? def.exactLength?.value ?? 1 }, () => maxAnswer(def.type as Node));
+  if (def.typeName === "ZodObject") return Object.fromEntries(Object.entries(node.shape ?? {}).map(([k, v]) => [k, maxAnswer(v)]));
+  return "";
+}
+const maxJson = (schema: z.ZodTypeAny): string => JSON.stringify(maxAnswer(schema as unknown as Node));
 
 const input: MarkenInput = {
   betrieb: "Malerei Keller",
@@ -155,7 +168,9 @@ describe("markenplattform: Generator mit checkGenerated", () => {
     expect(checkGenerated(markenGenerator, output({ geschichte: output().geschichte.replace("1985", "1972") }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(markenGenerator, output({ tonalitaet: { ...output().tonalitaet, beispielSatz: "Gern schauen wir uns deine Fassade an und sagen dir, was sie braucht." } }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(markenGenerator, { versprechen: "x", werte: [] }, input)).toMatchObject({ ok: false, reason: "schema" });
-    expect(checkGenerated(markenGenerator, output({ woerter: { ...output().woerter, vermeiden: ["innovativ", "Premium", "exklusiv", "Lösung", "Aktion"] } }), input)).toMatchObject({ ok: false, reason: "stimme" });
+    // Wörter der Sperrliste stehen in «vermeiden» als Beispiele für Unpassendes und sind dort erlaubt; im übrigen Text nicht
+    expect(checkGenerated(markenGenerator, output({ woerter: { ...output().woerter, vermeiden: ["innovativ", "Premium", "exklusiv", "Lösung", "Aktion"] } }), input).ok).toBe(true);
+    expect(checkGenerated(markenGenerator, output({ persoenlichkeit: ["ruhig", "innovativ", "verbindlich"] }), input)).toMatchObject({ ok: false, reason: "stimme" });
     expect(checkGenerated(markenGenerator, output({ versprechen: "Wir streichen so, dass die Fassade hält und der Termin steht, versprochen!" }), input)).toMatchObject({ ok: false, reason: "regel" });
     expect(checkGenerated(markenGenerator, "Leider kann ich dazu nichts sagen.", input)).toEqual({ ok: false, reason: "json" });
   });
@@ -171,7 +186,97 @@ describe("markenplattform: Generator mit checkGenerated", () => {
     expect(prompt).toContain('"anrede":"sie"');
     expect(prompt).toContain('"woerterKundschaft":"zuverlässig, bodenständig, genau"');
     expect(markenGenerator.slug).toBe("markenplattform");
-    expect(markenGenerator.maxTokens).toBe(1600);
+    expect(markenGenerator.maxTokens).toBe(1900);
     expect(markenGenerator.temperature).toBe(0.5);
+  });
+});
+
+describe("markenplattform: Befunde der Launch-Prüfung", () => {
+  const mitVermeiden = (vermeiden: string[]) => output({ woerter: { ...output().woerter, vermeiden } });
+  const mitNichtSo = (nichtSo: string) => output({ tonalitaet: { ...output().tonalitaet, nichtSo } });
+
+  it("Befund 1: «vermeiden» und «nichtSo» dürfen übliche Werbewörter, Anglizismen und Floskeln nennen, auch mit Ziffern", () => {
+    expect(markenGenerator.negativeKeys).toEqual(["vermeiden", "nichtSo"]);
+    for (const liste of [
+      ["nur noch", "Nr. 1", "Best Practice", "Mindset", "Stakeholder"],
+      ["Win-win", "massgeschneidert", "Marktführer", "grundsätzlich", "ganzheitlich"],
+      ["jetzt", "garantiert", "Mehrwert", "Agentur", "24/7"],
+    ]) {
+      expect(checkGenerated(markenGenerator, mitVermeiden(liste), input), liste.join(", ")).toMatchObject({ ok: true });
+    }
+    // die «nie»-Angabe des Besuchers wörtlich zitiert, mit Wörtern der Sperrliste und einer Zahl
+    expect(checkGenerated(markenGenerator, mitNichtSo("Wir versprechen nie «garantiert Nr. 1» und sagen auch nicht «jetzt zuschlagen», keine 100 % Zufriedenheit."), input)).toMatchObject({ ok: true });
+    expect(checkMarke(mitNichtSo("Wir versprechen nie 100 % Zufriedenheit und keine Rabatte, die wir nicht halten."), input)).toBeNull();
+    // Zeichenregeln gelten weiter, die Wörter im übrigen Text bleiben verboten
+    expect(checkGenerated(markenGenerator, mitVermeiden(["Premium", "exklusiv", "Lösung", "Aktion", "Super!"]), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(markenGenerator, mitVermeiden(["Premium", "exklusiv", "Lösung", "Aktion", "www.fremd.ch"]), input)).toMatchObject({ ok: false, reason: "link" });
+    expect(checkGenerated(markenGenerator, mitNichtSo("Wir versprechen nie «garantiert» etwas und sagen nie «Das ist super!» zu einer Offerte."), input)).toMatchObject({ ok: false, reason: "regel" });
+    for (const wort of ["Mindset", "Win-win", "massgeschneidert"]) {
+      expect(checkGenerated(markenGenerator, output({ geschichte: `${output().geschichte.slice(0, 450)} Unser ${wort} hat sich bewährt.` }), input), wort).toMatchObject({ ok: false, reason: "stimme" });
+    }
+  });
+
+  it("Befund 2: Wörter aus den Angaben sind ausgebbar (Betrieb mit «Agentur», «Mehrwertsteuer», «Dein» im Namen)", () => {
+    const agentur: MarkenInput = { ...input, betrieb: "Zeller Versicherungsagentur", wofuer: "Versicherungen, Mehrwertsteuer-Beratung und persönliche Betreuung für Familien in Herisau.", ort: "Herisau" };
+    const o = output({
+      versprechen: "Die Zeller Versicherungsagentur betreut Familien in Herisau persönlich, auch bei der Mehrwertsteuer-Abrechnung.",
+      geschichte: "Die Zeller Versicherungsagentur betreut Familien in Herisau. [Name der Gründerin] hat den Betrieb aufgebaut, mit dem Grundsatz, dass jede Beratung persönlich bleibt. Daran hat sich bis heute nichts geändert.",
+    });
+    expect(checkGenerated(markenGenerator, o, agentur)).toMatchObject({ ok: true });
+    expect(checkGenerated(markenGenerator, o, { ...agentur, betrieb: "Zeller Versicherungen" })).toMatchObject({ ok: false, reason: "regel" });
+    // Betrieb «Dein Malerbetrieb» bei Anrede «Sie»: der Name ist keine Anrede
+    const dein: MarkenInput = { ...input, betrieb: "Dein Malerbetrieb" };
+    const beispiel = output({ tonalitaet: { ...output().tonalitaet, beispielSatz: "Hier ist Dein Malerbetrieb: Gern schauen wir uns Ihre Fassade an." } });
+    expect(checkMarke(beispiel, dein)).toBeNull();
+    expect(checkMarke(beispiel, input)).toBe("anrede");
+  });
+
+  it("Befund 3: «heutigerTon» fehlt oder ist null, die Zeichengrenzen stehen im System-Prompt", () => {
+    const { heutigerTon: _weg, ...ohne } = output();
+    void _weg;
+    for (const roh of [ohne, { ...ohne, heutigerTon: null }, { ...ohne, heutigerTon: undefined }]) {
+      const out = checkGenerated(markenGenerator, roh, { ...input, websiteText: "", headings: [] });
+      expect(out.ok).toBe(true);
+      if (out.ok) expect(out.output.heutigerTon).toBe("");
+    }
+    expect(normalizeMarke({ versprechen: "x" })).toEqual({ versprechen: "x", heutigerTon: "" });
+    expect(normalizeMarke({ heutigerTon: "Die Seite spricht per Sie." })).toEqual({ heutigerTon: "Die Seite spricht per Sie." });
+    // eine Zahl oder ein Objekt als «heutigerTon» ist keine Zeichenkette: auch sie werden leer, der Rest bleibt im Schema
+    expect(checkGenerated(markenGenerator, { ...ohne, heutigerTon: 7 }, input)).toMatchObject({ ok: true });
+    const system = systemPrompt(markenGenerator);
+    expect(system).toContain("versprechen: 30 bis 240 Zeichen");
+    expect(system).toContain("tonalitaet.nichtSo: 40 bis 400 Zeichen");
+    expect(system).toContain("woerter.vermeiden: 5 bis 10 Einträge");
+    expect(system).not.toContain("Nenne dort keine Wörter aus den Regeln oben");
+    // Ein Feld über der Grenze meldet Pfad und Grenze
+    expect(checkGenerated(markenGenerator, output({ geschichte: "g".repeat(601) }), input)).toEqual({ ok: false, reason: "schema", detail: "geschichte:too_big:600" });
+    expect(repairHint("schema", "geschichte:too_big:600")).toContain("höchstens 600");
+  });
+
+  it("Befund 4: Werte und Ziele («jedem Anliegen die gleiche Aufmerksamkeit schenken») sind erlaubt, Füllsätze nicht", () => {
+    expect(markenGenerator.purposeRules).toBe(false);
+    const wert = output({ werte: [{ name: "Aufmerksamkeit", satz: "Wir wollen jedem Anliegen die gleiche Aufmerksamkeit schenken und stärken so das Vertrauen." }, ...output().werte.slice(1)] });
+    expect(checkGenerated(markenGenerator, wert, input)).toMatchObject({ ok: true });
+    expect(checkGenerated({ ...markenGenerator, purposeRules: true }, wert, input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(markenGenerator, output({ versprechen: "Wir streichen so, dass die Fassade hält, denn Qualität spielt eine wichtige Rolle." }), input)).toMatchObject({ ok: false, reason: "stimme" });
+  });
+
+  it("Befund 6: Superlative über den Betrieb und erfundene Gründernamen", () => {
+    const superlativ = output({ versprechen: "Wir sind der beste und günstigste Malerbetrieb in Gossau und halten den Termin." });
+    expect(checkMarke(superlativ, input)).toBe("wertung");
+    expect(checkGenerated(markenGenerator, superlativ, input)).toEqual({ ok: false, reason: "check", detail: "wertung" });
+    expect(checkMarke(superlativ, { ...input, wofuer: `${input.wofuer} Wir sind der beste und günstigste Malerbetrieb in Gossau.` })).toBeNull();
+    // in «nichtSo» ist der Superlativ das Beispiel («nie der beste»)
+    expect(checkMarke(mitNichtSo("Wir sagen nie, dass wir der beste Malerbetrieb sind, und machen keine Versprechen, die wir nicht halten."), input)).toBeNull();
+    expect(checkMarke(output({ geschichte: output().geschichte.replace("[Name der Gründerin]", "Gründerin Frieda Keller") }), input)).toBe("erfunden");
+    expect(checkGenerated(markenGenerator, output({ geschichte: output().geschichte.replace("[Name der Gründerin]", "Inhaber Hans Keller") }), input)).toEqual({ ok: false, reason: "check", detail: "erfunden" });
+    expect(checkMarke(output(), input)).toBeNull();
+    expect(checkMarke(output({ geschichte: output().geschichte.replace("[Name der Gründerin]", "Gründerin Frieda Keller") }), { ...input, wofuer: `${input.wofuer} Gründerin Frieda Keller.` })).toBeNull();
+  });
+
+  it("Befund 11: maxTokens trägt mindestens drei Viertel einer Antwort an der Obergrenze des Schemas", () => {
+    const tokens = Math.ceil(maxJson(markenOutput).length / 3.5);
+    expect(tokens).toBeGreaterThan(1600);
+    expect(markenGenerator.maxTokens).toBeGreaterThanOrEqual(Math.ceil(tokens * 0.75));
   });
 });

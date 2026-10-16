@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { checkGenerated, placeholdersIn, systemPrompt } from "@/lib/generator";
+import { checkGenerated, placeholdersIn, repairHint, systemPrompt } from "@/lib/generator";
 import {
   ANTEIL_TOLERANZ,
+  ANTEIL_SKALIERUNG,
   BEITRAEGE_KEYS,
   KANAL_KEYS,
   KANAL_LABELS,
   TAGE,
   ZIEL_KEYS,
+  aufHundert,
   checkSaeulen,
   kanalKey,
+  normalizeSaeulen,
   numbersIn,
   saeulenGenerator,
   saeulenInput,
@@ -80,8 +83,12 @@ const output = (over: Partial<SaeulenOutput> = {}): SaeulenOutput => ({
   ...over,
 });
 
-/** Der Entwurf mit einer anderen ersten Säule; die übrigen drei bleiben. */
-const mitErster = (over: Partial<Saeule>): SaeulenOutput => output({ saeulen: [saeule(over), ...saeulen().slice(1)] });
+/** Der Entwurf mit einer anderen ersten Säule; die übrigen drei bleiben. Der Wochenplan nennt die Säule unter ihrem neuen Namen. */
+const mitErster = (over: Partial<Saeule>): SaeulenOutput => {
+  const erste = saeule(over);
+  const wochenplan = output().rhythmus.wochenplan.map((e) => (e.saeule === saeule().name ? { ...e, saeule: erste.name } : e));
+  return output({ saeulen: [erste, ...saeulen().slice(1)], rhythmus: { satz: output().rhythmus.satz, wochenplan } });
+};
 
 /** Der Entwurf mit einem anderen Wochenplan. */
 const mitPlan = (wochenplan: SaeulenOutput["rhythmus"]["wochenplan"], satz = output().rhythmus.satz): SaeulenOutput => output({ rhythmus: { satz, wochenplan } });
@@ -220,7 +227,7 @@ describe("inhalte-saeulen: checkSaeulen", () => {
     const drei = TAGE.slice(0, 3).map((tag) => ({ tag, saeule: "Fassaden vorher und nachher", kanal: "Instagram" }));
     expect(checkSaeulen(mitPlan(drei), { ...input, beitraegeProWoche: "3" })).toBe("zahl");
   });
-  it("prüft in der Reihenfolge Anteile, Wochenplan, Kanal, Zahl", () => {
+  it("prüft in der Reihenfolge Anteile, Säulennamen, Wochenplan, Säule im Plan, Kanal, Zahl", () => {
     const alles = output({
       saeulen: [saeule({ anteil: 10, name: "Top 3 Fragen" }), ...saeulen().slice(1)],
       rhythmus: { satz: output().rhythmus.satz, wochenplan: [{ tag: "Montag", saeule: "Fassaden", kanal: "LinkedIn" }] },
@@ -228,8 +235,12 @@ describe("inhalte-saeulen: checkSaeulen", () => {
     expect(checkSaeulen(alles, input)).toBe("anteil");
     const anteileOk = { ...alles, saeulen: [saeule({ name: "Top 3 Fragen" }), ...saeulen().slice(1)] };
     expect(checkSaeulen(anteileOk, input)).toBe("wochenplan");
-    expect(checkSaeulen(anteileOk, { ...input, beitraegeProWoche: "1" })).toBe("kanal");
-    expect(checkSaeulen(anteileOk, { ...input, beitraegeProWoche: "1", kanaele: ["linkedin"] })).toBe("zahl");
+    expect(checkSaeulen(anteileOk, { ...input, beitraegeProWoche: "1" })).toBe("saeule");
+    const saeuleOk = { ...anteileOk, rhythmus: { ...anteileOk.rhythmus, wochenplan: [{ tag: "Montag" as const, saeule: "Top 3 Fragen", kanal: "LinkedIn" }] } };
+    expect(checkSaeulen(saeuleOk, { ...input, beitraegeProWoche: "1" })).toBe("kanal");
+    expect(checkSaeulen(saeuleOk, { ...input, beitraegeProWoche: "1", kanaele: ["linkedin"] })).toBe("zahl");
+    const doppelt = { ...saeuleOk, saeulen: [saeule({ name: "Fassaden" }), saeule({ name: "fassaden", anteil: 25 }), ...saeulen().slice(2)] };
+    expect(checkSaeulen(doppelt, input)).toBe("namedoppelt");
   });
 });
 
@@ -261,7 +272,8 @@ describe("inhalte-saeulen: Generator mit checkGenerated", () => {
     }
   });
   it("verwirft falsche Anteile, fremde Kanäle und fremde Zahlen über die eigene Prüfung, kaputte Form über das Schema, verbotene Wörter über die Regeln", () => {
-    expect(checkGenerated(saeulenGenerator, mitErster({ anteil: 20 }), input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkGenerated(saeulenGenerator, mitErster({ anteil: 200 }), input)).toMatchObject({ ok: false, reason: "schema" });
+    expect(checkGenerated(saeulenGenerator, output({ saeulen: saeulen().map((s) => ({ ...s, anteil: 10 })) }), input)).toMatchObject({ ok: false, reason: "check", detail: "anteil" });
     expect(checkGenerated(saeulenGenerator, mitPlan([output().rhythmus.wochenplan[0], { tag: "Freitag", saeule: "Team und Lehre", kanal: "LinkedIn" }]), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(saeulenGenerator, output({ niemals: ["Rabatte von 20 %, weil die Arbeit ihren Preis hat.", "Preise ohne Besichtigung, weil jede Fassade anders ist."] }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(saeulenGenerator, { saeulen: saeulen().slice(0, 2) }, input)).toMatchObject({ ok: false, reason: "schema" });
@@ -282,7 +294,112 @@ describe("inhalte-saeulen: Generator mit checkGenerated", () => {
     expect(prompt).toContain('"beitraegeProWoche":"2"');
     expect(prompt).toContain("Ruth Hungerbühler");
     expect(saeulenGenerator.slug).toBe("inhalte-saeulen");
-    expect(saeulenGenerator.maxTokens).toBe(1600);
+    expect(saeulenGenerator.maxTokens).toBe(2200);
     expect(saeulenGenerator.temperature).toBe(0.5);
+  });
+});
+
+describe("inhalte-saeulen: Befunde der Launch-Prüfung", () => {
+  // Befund 1: Kanalnamen
+  it("Befund 1: nimmt «Instagram-Kanal», «Google-Beitrag/Profil» und «Instagram (neu)» als gewählte Kanäle, lehnt fremde ab", () => {
+    expect(kanalKey("Instagram-Kanal")).toBe("instagram");
+    expect(kanalKey("Gemeindeblatt/Anzeiger")).toBe("gemeindeblattoderanzeiger");
+    const mitKanal = (kanal: string) => mitPlan([output().rhythmus.wochenplan[0], { tag: "Freitag", saeule: "Fragen aus dem Alltag", kanal }]);
+    expect(checkSaeulen(mitKanal("Instagram-Kanal"), input)).toBeNull();
+    expect(checkSaeulen(mitKanal("Google-Profil"), input)).toBeNull();
+    expect(checkSaeulen(mitKanal("Facebook-Kanal"), input)).toBe("kanal");
+    expect(checkSaeulen(mitKanal("Instagram und Facebook"), input)).toBe("kanal");
+    expect(checkSaeulen(mitKanal("Google Unternehmensprofil"), input)).toBe("kanal");
+  });
+
+  // Befund 2 und 3: Token, Anteile
+  it("Befund 2: maxTokens 2200 fasst die volle Antwort (5 Säulen, 5 Beispiele, 5 Planeinträge) mit 30 % längeren Texten", () => {
+    const x = (n: number) => "x".repeat(Math.round(n * 1.3));
+    const voll = {
+      saeulen: Array.from({ length: 5 }, () => ({ name: x(22), beschreibung: x(150), ziel: "vertrauen", beispiele: Array.from({ length: 5 }, () => x(70)), anteil: 20 })),
+      rhythmus: { satz: x(150), wochenplan: Array.from({ length: 5 }, () => ({ tag: "Montag", saeule: x(22), kanal: "Instagram" })) },
+      niemals: Array.from({ length: 4 }, () => x(80)),
+    };
+    expect(Math.ceil(JSON.stringify(voll).length / 3)).toBeLessThanOrEqual(saeulenGenerator.maxTokens);
+    expect(saeulenGenerator.maxTokens).toBe(2200);
+  });
+  it("Befund 3: bringt Anteile mit der Summe 105, 90, 96 und 103 auf 100, statt den Entwurf zu verwerfen", () => {
+    const mitAnteilen = (...a: number[]) => output({ saeulen: saeulen().map((s, i) => ({ ...s, anteil: a[i] })) });
+    for (const a of [[37, 26, 21, 21], [32, 23, 18, 17], [34, 24, 19, 19], [36, 26, 21, 20]]) {
+      const summe = a.reduce((x, y) => x + y, 0);
+      const r = checkGenerated(saeulenGenerator, mitAnteilen(...a), input);
+      expect(r.ok, `Summe ${summe}`).toBe(true);
+      if (r.ok) expect(r.output.saeulen.reduce((x, y) => x + y.anteil, 0)).toBe(100);
+    }
+  });
+  it("Befund 3: aufHundert behält das Verhältnis, ergibt immer genau 100 und fasst eine Summe von 100 nicht an", () => {
+    expect(aufHundert([30, 25, 25, 20])).toEqual([30, 25, 25, 20]);
+    expect(aufHundert([35, 25, 25, 20])).toEqual([33, 24, 24, 19]);
+    expect(aufHundert([25, 25, 20, 15, 15, 5]).reduce((a, b) => a + b, 0)).toBe(100);
+    for (const a of [[20, 20, 20, 20, 20, 5], [33, 33, 33, 3], [10, 10, 10, 10, 10, 11], [40, 40, 40]]) expect(aufHundert(a).reduce((x, y) => x + y, 0)).toBe(100);
+    const [a, b, c, d] = aufHundert([45, 30, 20, 10]);
+    expect(a).toBeGreaterThan(b);
+    expect(b).toBeGreaterThan(c);
+    expect(c).toBeGreaterThan(d);
+  });
+  it("Befund 3: eine Summe ausserhalb von 50 bis 150 ist keine Rundung und bleibt abgelehnt", () => {
+    expect(ANTEIL_SKALIERUNG).toEqual({ min: 50, max: 150 });
+    expect(aufHundert([10, 10, 10, 10])).toEqual([10, 10, 10, 10]);
+    const r = checkGenerated(saeulenGenerator, output({ saeulen: saeulen().map((s) => ({ ...s, anteil: 10 })) }), input);
+    expect(r).toMatchObject({ ok: false, reason: "check", detail: "anteil" });
+    for (const k of ["anteil", "wochenplan", "saeule", "kanal", "namedoppelt"]) expect(repairHint("check", k), k).not.toContain("Eine Regel der Anweisung ist verletzt");
+  });
+  it("Befund 3: nennt in der Anweisung vier oder fünf Säulen mit Beispielanteilen und zeigt die Form mit zwei Säulen", () => {
+    const text = saeulenGenerator.instruction;
+    expect(text).toContain("genau vier oder fünf");
+    expect(text).toContain("Drei Säulen sind zu wenig");
+    expect(text).toContain("30, 25, 25, 20");
+    expect(text).toContain("25, 25, 20, 15, 15");
+    const form = text.slice(text.indexOf("Form (hier mit zwei Säulen"));
+    expect(form.match(/"anteil"/g)).toHaveLength(2);
+  });
+
+  // Befund 9: Doppelte und falsche Verweise, Schreibweisen
+  it("Befund 9: lehnt doppelte Säulennamen ab, auch mit anderer Gross/Klein-Schreibung", () => {
+    const doppelt = output({ saeulen: [saeule(), saeule({ name: "FASSADEN VORHER UND NACHHER", anteil: 25 }), ...saeulen().slice(2)] });
+    expect(checkSaeulen(doppelt, input)).toBe("namedoppelt");
+    expect(checkGenerated(saeulenGenerator, doppelt, input)).toMatchObject({ ok: false, reason: "check", detail: "namedoppelt" });
+    expect(checkSaeulen(output(), input)).toBeNull();
+  });
+  it("Befund 9: lehnt eine Säule im Wochenplan ab, die es unter «saeulen» nicht gibt, und nimmt jede Schreibweise einer vorhandenen", () => {
+    const mitSaeule = (saeule: string) => mitPlan([output().rhythmus.wochenplan[0], { tag: "Freitag", saeule, kanal: "Instagram" }]);
+    expect(checkSaeulen(mitSaeule("Fragen aus dem Alltag"), input)).toBeNull();
+    expect(checkSaeulen(mitSaeule("fragen aus dem alltag"), input)).toBeNull();
+    expect(checkSaeulen(mitSaeule("Hinter den Kulissen"), input)).toBe("saeule");
+    expect(checkSaeulen(mitSaeule("Fragen"), input)).toBe("saeule");
+    expect(checkGenerated(saeulenGenerator, mitSaeule("Hinter den Kulissen"), input)).toMatchObject({ ok: false, reason: "check", detail: "saeule" });
+  });
+  it("Befund 9: liest «Anfragen», «montag» und «30 %» richtig, lässt falsche Werte aber durchfallen", () => {
+    const roh = JSON.parse(JSON.stringify(output())) as { saeulen: Record<string, unknown>[]; rhythmus: { wochenplan: Record<string, unknown>[] } };
+    roh.saeulen[0].ziel = "Anfragen";
+    roh.saeulen[1].ziel = " VERTRAUEN ";
+    roh.saeulen[0].anteil = "35 %";
+    roh.rhythmus.wochenplan[0].tag = "dienstag";
+    roh.rhythmus.wochenplan[1].tag = "FREITAG";
+    const r = checkGenerated(saeulenGenerator, roh, input);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.output.saeulen[0].ziel).toBe("anfragen");
+      expect(r.output.saeulen[1].ziel).toBe("vertrauen");
+      expect(r.output.saeulen[0].anteil).toBe(35);
+      expect(r.output.rhythmus.wochenplan.map((e) => e.tag)).toEqual(["Dienstag", "Freitag"]);
+    }
+    roh.rhythmus.wochenplan[0].tag = "Di";
+    expect(checkGenerated(saeulenGenerator, roh, input)).toMatchObject({ ok: false, reason: "schema" });
+    roh.rhythmus.wochenplan[0].tag = "Dienstag";
+    roh.saeulen[0].ziel = "umsatz";
+    expect(checkGenerated(saeulenGenerator, roh, input)).toMatchObject({ ok: false, reason: "schema" });
+  });
+  it("Befund 9: normalizeSaeulen lässt eine kaputte Form unverändert, damit das Schema sie meldet", () => {
+    expect(normalizeSaeulen({})).toEqual({});
+    expect(normalizeSaeulen({ saeulen: "keine Liste" })).toEqual({ saeulen: "keine Liste" });
+    expect(normalizeSaeulen({ saeulen: [null, 3], rhythmus: { wochenplan: "x" } })).toEqual({ saeulen: [null, 3], rhythmus: { wochenplan: "x" } });
+    const roh = { saeulen: [{ anteil: "abc" }, { anteil: 20 }] };
+    expect(normalizeSaeulen(roh)).toEqual({ saeulen: [{ ziel: undefined, anteil: "abc" }, { ziel: undefined, anteil: 20 }] });
   });
 });

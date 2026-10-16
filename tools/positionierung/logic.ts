@@ -102,13 +102,23 @@ const BREIT_RE = /\bfür\s+(?:alle|jeden|jede|jedermann|jedes\s+budget|jeden\s+g
 const UNTERSCHEIDUNG_RE =
   /\banders als\b|\bim unterschied\b|\bim gegensatz\b|\beinzig(?:e|er|es|en)?\b|\bals einzige[rs]?\b|\bnur bei uns\b|\bnur wir\b|\bspezialist(?:in|en|innen)?\s+für\b|\bspezialisiert\s+auf\b|\bwas uns unterscheidet\b|\bunser(?:e|en)?\s+unterschied\b|\bdarum\s+(?:wir|zu uns)\b|\bdeshalb\s+(?:wir|zu uns)\b|\bfokus\s+auf\b|\bkonzentrier(?:en|t)\s+(?:wir\s+)?uns\s+auf\b|\bausschliesslich\b|\bstatt\s+(?:wie\s+)?(?:andere|üblich)(?![\p{L}])/giu;
 
+/**
+ * Zahlwörter, wie Websites sie schreiben: «zwölf Mitarbeitende», «seit über zwanzig Jahren». «ein» und «eine» zählen nicht,
+ * sie sind meist der Artikel. Ohne sie bekäme eine Seite für dieselbe Aussage in Worten keinen Punkt, in Ziffern die volle Zahl.
+ */
+const ZAHLWORT =
+  "(?:(?:ein|zwei|drei|vier|fünf|sechs|sieben|acht|neun)und)?(?:zwanzig|dreissig|vierzig|fünfzig|sechzig|siebzig|achtzig|neunzig)|(?:(?:zwei|drei|vier|fünf|sechs|sieben|acht|neun)(?:hundert|tausend)|hundert|tausend)|(?:drei|vier|fünf|sech|sieb|acht|neun)zehn|zehn|elf|zwölf|zwei|drei|vier|fünf|sechs|sieben|acht|neun";
+
 const BEWEIS_RES: RegExp[] = [
   /\bseit\s+(?:dem\s+jahr\s+)?(?:19|20)\d{2}\b/giu,
-  /\bseit\s+(?:über|mehr\s+als|rund|fast|gut)?\s*\d{1,3}\s+jahren\b/giu,
+  new RegExp(`\\bseit\\s+(?:über|mehr\\s+als|rund|fast|gut)?\\s*(?:\\d{1,3}|${ZAHLWORT})\\s+jahren\\b`, "giu"),
   /\b(?:gegründet|gründung|gründungsjahr)\s*(?::|im\s+jahr)?\s*(?:19|20)\d{2}\b/giu,
   /\b(?:19|20)\d{2}\s+gegründet\b/giu,
   /\bin\s+(?:\d+\.|zweiter|dritter|vierter|fünfter)\s+generation\b/giu,
-  /\b(?:über|mehr\s+als|rund|ca\.?|etwa|fast|gut)?\s*\d[\d'’.]*\s*(?:projekte|aufträge|kund(?:en|innen)|mitarbeitenden?|mitarbeiter(?:innen)?|angestellte|jahren?(?:\s+erfahrung)?|objekte|fahrzeuge|standorte|filialen|lehrlinge|lernende|bewertungen|rezensionen|sterne|m2|m²|quadratmeter|fassaden|wohnungen|häuser|betriebe|firmen|teilnehmende|mitglieder|einsätze|installationen|hochzeiten|anlässe|behandlungen|patient(?:en|innen))(?![\p{L}])/giu,
+  new RegExp(
+    `\\b(?:über|mehr\\s+als|rund|ca\\.?|etwa|fast|gut)?\\s*(?:\\d[\\d'’.]*|${ZAHLWORT})\\s*(?:projekte|aufträge|kund(?:en|innen)|mitarbeitenden?|mitarbeiter(?:innen)?|angestellte|jahren?(?:\\s+erfahrung)?|objekte|fahrzeuge|standorte|filialen|lehrlinge|lernende|bewertungen|rezensionen|sterne|m2|m²|quadratmeter|fassaden|wohnungen|häuser|betriebe|firmen|teilnehmende|mitglieder|einsätze|installationen|hochzeiten|anlässe|behandlungen|patient(?:en|innen))(?![\\p{L}])`,
+    "giu",
+  ),
   /\breferenz(?:en)?\b|\bkundenstimme(?:n)?\b|\bkundenmeinung(?:en)?\b|\bbewertung(?:en)?\b|\brezension(?:en)?\b/giu,
   /\bzertifikat(?:e)?\b|\bzertifiziert(?:e|er|es)?\b|\bzertifizierung(?:en)?\b|\bISO\s?\d{4,5}\b|\bminergie\b/giu,
   /\bmeisterbetrieb\b|\bmeisterprüfung\b|\bmeistertitel\b|\beidg\.?\s*(?:dipl\.?|diplom)|\beidgenössisch(?:e|er|es|en)?\s+(?:fachausweis|diplom|meister)|\bfachausweis\b/giu,
@@ -344,11 +354,25 @@ export const stufe = (score: number): string => scoreBand(score / 100).text;
 /** Prozent mit Leerzeichen (Harte Regel 2), zum Beispiel «40 %». */
 export const prozent = (anteil: number): string => `${Math.round(anteil * 100)} %`;
 
-/** Die Lücken des Checks als kurze Zeilen für die KI (höchstens MAX_FUNDE à 160 Zeichen). */
+/**
+ * Kürzt auf höchstens `max` Zeichen, nach Möglichkeit an einem Satzende, sonst an einer Wortgrenze mit «…». Nie mitten im Wort:
+ * Ein abgeschnittener Hinweis («…Beginne mit dem Probl») gäbe der KI eine halbe Lücke.
+ */
+export function kuerzen(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const kopf = text.slice(0, max);
+  const satzEnde = Math.max(0, ...[...kopf.matchAll(/[.?!](?=\s|$)/g)].map((m) => (m.index ?? 0) + 1));
+  if (satzEnde >= max / 2) return kopf.slice(0, satzEnde);
+  const knapp = text.slice(0, max - 1);
+  const wortEnde = /\s/.test(text[max - 1] ?? "") ? knapp.length : knapp.lastIndexOf(" ");
+  return `${(wortEnde >= max / 2 ? knapp.slice(0, wortEnde) : knapp).replace(/[\s,;:(–-]+$/, "")}…`;
+}
+
+/** Die Lücken des Checks als kurze Zeilen für die KI (höchstens MAX_FUNDE à 160 Zeichen, an der Satz- oder Wortgrenze gekürzt). */
 export function fundeKurz(check: PositionierungCheck): string[] {
   return check.funde
     .filter((f) => f.status !== "gut")
-    .map((f) => `${f.titel} (${f.punkte} von ${f.max}): ${f.hinweis}`.slice(0, 160))
+    .map((f) => kuerzen(`${f.titel} (${f.punkte} von ${f.max}): ${f.hinweis}`, 160))
     .slice(0, MAX_FUNDE);
 }
 
@@ -514,9 +538,62 @@ export function toDocument(check: PositionierungCheck, output: PositionierungOut
   };
 }
 
-/** Check und Entwurf als Markdown fürs CRM und zum Kopieren. */
+/** Check und Entwurf als Markdown zum Kopieren. */
 export function reportMarkdown(check: PositionierungCheck, output: PositionierungOutput | null, angaben: Angaben): string {
   return toMarkdown(toDocument(check, output, angaben));
+}
+
+/** Der Server kürzt den Text fürs CRM auf diese Länge (lib/lead.ts, CLIP_CHARS). */
+export const CRM_MAX = 1900;
+
+type CrmAbschnitt = { titel: string; zeilen: string[] };
+
+/**
+ * Setzt Abschnitte in der Reihenfolge ihrer Wichtigkeit zusammen (Titel als Markdown-Überschriften) und füllt bis CRM_MAX Zeichen,
+ * Zeile für Zeile. Was nicht mehr passt, fällt hinten weg; ein Abschnitt ohne eine passende Zeile entfällt samt Titel.
+ */
+function crmZusammen(abschnitte: CrmAbschnitt[], max = CRM_MAX): string {
+  let out = "";
+  for (const { titel, zeilen } of abschnitte) {
+    let text = out ? `${out}\n\n## ${titel}` : `# ${titel}`;
+    let n = 0;
+    for (const zeile of zeilen) {
+      const next = `${text}\n${zeile}`;
+      if (next.length > max) break;
+      text = next;
+      n++;
+    }
+    if (n > 0) out = text;
+  }
+  return out;
+}
+
+/**
+ * Check und Entwurf fürs CRM. Der Server kürzt hinten; darum steht das Wichtigste vorn: Punktzahl, Kernsatz und die drei
+ * Varianten, danach die Funde nur als Titel mit Punkten, dann der übrige Entwurf. Ohne Entwurf (er ist fehlgeschlagen)
+ * stehen die Funde mit ihrem Hinweis, soweit sie nicht schon gut sind.
+ */
+export function ausgabeText(check: PositionierungCheck, output: PositionierungOutput | null, angaben: Pick<Angaben, "host" | "betrieb">): string {
+  const kopf: CrmAbschnitt = {
+    titel: `Positionierungs-Check: ${angaben.host || angaben.betrieb || "Startseite"}`,
+    zeilen: [`Punktzahl: ${check.score} von 100 (${stufe(check.score)})`],
+  };
+  const funde = (mitHinweis: boolean): CrmAbschnitt => ({
+    titel: "Funde",
+    zeilen: check.funde.map((f) => `- ${f.titel}: ${f.punkte} von ${f.max}${mitHinweis && f.status !== "gut" ? `. ${f.hinweis}` : ""}`),
+  });
+  if (!output) return crmZusammen([kopf, funde(true)]);
+  return crmZusammen([
+    kopf,
+    { titel: "Kernsatz", zeilen: [output.kernsatz] },
+    { titel: "Drei Varianten", zeilen: output.varianten.map((v) => `- ${STIL_LABELS[v.stil]}: ${v.satz}`) },
+    funde(false),
+    { titel: "Für wen", zeilen: [output.fuerWen] },
+    { titel: "Was anders ist", zeilen: [output.wasAnders] },
+    { titel: "Beweise", zeilen: output.beweise.map((b) => `- ${b}`) },
+    { titel: "Streichen", zeilen: output.streichen.map((z) => `- ${z}`) },
+    { titel: "Nächster Schritt", zeilen: [output.naechsterSchritt] },
+  ]);
 }
 
 // ---- Profil --------------------------------------------------------------------------------------

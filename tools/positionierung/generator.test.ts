@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkGenerated, placeholdersIn, systemPrompt } from "@/lib/generator";
+import type { z } from "zod";
+import { checkGenerated, placeholdersIn, repairHint, systemPrompt } from "@/lib/generator";
 import {
   MAX_FREITEXT,
   MAX_FUNDE,
@@ -7,6 +8,7 @@ import {
   MAX_TEXT_CHARS,
   STIL_KEYS,
   checkPositionierungOutput,
+  normalizePositionierung,
   numbersIn,
   positionierungGenerator,
   positionierungInput,
@@ -15,6 +17,19 @@ import {
   type PositionierungOutput,
   type Variante,
 } from "./generator";
+
+type Node = { _def: { typeName: string; checks?: { kind: string; value: number }[]; type?: Node; maxLength?: { value: number } | null; exactLength?: { value: number } | null }; shape?: Record<string, Node> };
+
+/** Eine Antwort an der Obergrenze des Schemas (längste Texte, meiste Einträge), kompakt als JSON. */
+function maxAnswer(node: Node): unknown {
+  const def = node._def;
+  if (def.typeName === "ZodString") return "x".repeat(def.checks?.find((c) => c.kind === "max")?.value ?? 20);
+  if (def.typeName === "ZodEnum") return "kurz";
+  if (def.typeName === "ZodArray") return Array.from({ length: def.maxLength?.value ?? def.exactLength?.value ?? 1 }, () => maxAnswer(def.type as Node));
+  if (def.typeName === "ZodObject") return Object.fromEntries(Object.entries(node.shape ?? {}).map(([k, v]) => [k, maxAnswer(v)]));
+  return "";
+}
+const maxJson = (schema: z.ZodTypeAny): string => JSON.stringify(maxAnswer(schema as unknown as Node));
 
 const input: PositionierungInput = {
   betrieb: "Malerei Keller",
@@ -37,7 +52,7 @@ const varianten: Variante[] = [
 ];
 
 const output = (over: Partial<PositionierungOutput> = {}): PositionierungOutput => ({
-  kernsatz: "Für Hausbesitzer in Gossau und im Fürstenland: Fassaden, die zwanzig Jahre halten, in zwei Wochen fertig.",
+  kernsatz: "Für Hausbesitzer in Gossau und im Fürstenland: Fassaden, die halten, in zwei Wochen fertig.",
   fuerWen: "Eigentümer von Einfamilienhäusern in Gossau und Umgebung, deren Fassade lange nicht erneuert wurde.",
   wasAnders: "Die Malerei Keller macht nur Fassaden, keine Innenräume. Das Team ist in zwei Wochen fertig und gibt 5 Jahre Garantie.",
   beweise: ["Seit 1985 in Gossau.", "12 Mitarbeitende und 3 Lernende.", "5 Jahre Garantie auf Fassaden."],
@@ -161,5 +176,116 @@ describe("positionierung: Generator mit checkGenerated", () => {
     expect(positionierungGenerator.slug).toBe("positionierung");
     expect(positionierungGenerator.maxTokens).toBe(1400);
     expect(positionierungGenerator.temperature).toBe(0.4);
+  });
+});
+
+describe("positionierung: Befunde der Launch-Prüfung", () => {
+  const lage: PositionierungInput = {
+    ...input,
+    funde: [
+      "Unterscheidung (0 von 20): Kein Satz sagt, was du anders machst als andere Betriebe.",
+      "Beweise (10 von 20): Ein Beleg steht da. Ein zweiter macht die Aussage glaubwürdiger.",
+      "Kundenperspektive (5 von 15): Mehr Sätze reden über «uns» als über die Kundschaft.",
+    ],
+  };
+  const mitStreichen = (streichen: string[]) => output({ streichen });
+
+  it("Befund 5: Die Zahlen der Funde («0 von 20») sind keine Angaben des Betriebs", () => {
+    for (const erfunden of [
+      { kernsatz: "Für Hausbesitzer in Gossau: 20 Jahre Erfahrung an der Fassade, in zwei Wochen fertig." },
+      { beweise: ["Seit 1985 in Gossau.", "10 Mitarbeitende im Team.", "5 Jahre Garantie auf Fassaden."] },
+      { wasAnders: "Die Malerei Keller macht nur Fassaden, keine Innenräume, und gibt 15 % Rabatt auf die erste Offerte." },
+      { kernsatz: "Für Hausbesitzer in Gossau: Fassaden, die zwanzig Jahre halten, in zwei Wochen fertig." },
+    ]) {
+      expect(checkPositionierungOutput(output(erfunden), lage), JSON.stringify(erfunden)).toBe("zahl");
+      expect(checkGenerated(positionierungGenerator, output(erfunden), lage), JSON.stringify(erfunden)).toEqual({ ok: false, reason: "check", detail: "zahl" });
+    }
+    // Zahlen der Website und der eigenen Angaben bleiben erlaubt: 12 und 3 (Website), 5 (Beweise), 1985 (Website)
+    expect(checkPositionierungOutput(output(), lage)).toBeNull();
+    expect(checkGenerated(positionierungGenerator, output(), lage).ok).toBe(true);
+  });
+
+  it("Befund 1: «streichen» darf Wörter der Sperrliste nennen, der übrige Entwurf nicht", () => {
+    expect(positionierungGenerator.negativeKeys).toEqual(["streichen"]);
+    for (const streichen of [
+      ["nur noch", "Best Practice", "Mindset", "garantiert"],
+      ["Stakeholder", "Win-win", "massgeschneidert", "Marktführer", "grundsätzlich"],
+      ["Wir sind ganzheitlich und innovativ", "Eigenschaftswörter ohne Beleg wie kompetent"],
+    ]) {
+      expect(checkGenerated(positionierungGenerator, mitStreichen(streichen), input), streichen.join(", ")).toMatchObject({ ok: true });
+    }
+    for (const wort of ["Mindset", "massgeschneidert", "ganzheitlich"]) {
+      expect(checkGenerated(positionierungGenerator, output({ wasAnders: `Die Malerei Keller arbeitet ${wort}, keine Innenräume, und ist in zwei Wochen fertig.` }), input), wort).toMatchObject({ ok: false, reason: "stimme" });
+    }
+    // «Nr. 1» in «streichen» zählt für die Zahlen mit: Die Website sagt es nicht, also hat die KI es erfunden
+    expect(checkGenerated(positionierungGenerator, mitStreichen(["Nr. 1 in Gossau", "Wir sind kompetent"]), input)).toEqual({ ok: false, reason: "check", detail: "zahl" });
+    expect(checkGenerated(positionierungGenerator, mitStreichen(["Nr. 1 in Gossau", "Wir sind kompetent"]), { ...input, text: `${input.text} Nr. 1 in Gossau.` }).ok).toBe(true);
+  });
+  it("Befund 1: Ein wörtliches Zitat mit Ausrufezeichen ist erlaubt, ein erfundenes nicht", () => {
+    const seite: PositionierungInput = { ...input, text: `${input.text} Jetzt anfragen! Wir freuen uns auf Ihre Anfrage.` };
+    expect(checkGenerated(positionierungGenerator, mitStreichen(["Jetzt anfragen!", "Wir sind Ihr kompetenter Ansprechpartner"]), seite).ok).toBe(true);
+    expect(checkGenerated(positionierungGenerator, mitStreichen(["Jetzt anfragen!", "Wir sind Ihr kompetenter Ansprechpartner"]), input)).toMatchObject({ ok: false, reason: "regel" });
+    expect(checkGenerated(positionierungGenerator, mitStreichen(["Sehr gute Fassaden!", "Wir sind kompetent"]), seite)).toMatchObject({ ok: false, reason: "regel" });
+  });
+
+  it("Befund 2: Das Wort «Agentur» im Namen des Betriebs ist ausgebbar, sonst nicht", () => {
+    const agentur: PositionierungInput = { ...input, betrieb: "Zeller Versicherungsagentur", host: "zeller-versicherungen.ch", title: "Zeller Versicherungsagentur Herisau", ort: "Herisau" };
+    const o = output({ fuerWen: "Familien und Selbständige in Herisau, die ihre Versicherungen bei der Zeller Versicherungsagentur bündeln wollen." });
+    expect(checkGenerated(positionierungGenerator, o, agentur)).toMatchObject({ ok: true });
+    expect(checkGenerated(positionierungGenerator, o, input)).toMatchObject({ ok: false, reason: "regel" });
+  });
+
+  it("Befund 3: Die Zeichengrenzen stehen im System-Prompt, der Stil «persönlich» wird zu «persoenlich»", () => {
+    const system = systemPrompt(positionierungGenerator);
+    expect(system).toContain("kernsatz: 30 bis 200 Zeichen");
+    expect(system).toContain("varianten[].satz: 20 bis 220 Zeichen");
+    expect(system).toContain("varianten: genau 3 Einträge");
+    expect(system).not.toContain("Zitiere keine Wörter, die du selbst nicht verwenden darfst");
+    for (const stil of ["persönlich", "Persönlich", " PERSÖNLICH ", "persoenlich"]) {
+      const roh = { ...output(), varianten: [varianten[0], varianten[1], { stil, satz: "Ich streiche Fassaden im Fürstenland, seit 1985 und nur Fassaden." }] };
+      const out = checkGenerated(positionierungGenerator, roh, input);
+      expect(out.ok, stil).toBe(true);
+      if (out.ok) expect(out.output.varianten.map((v) => v.stil)).toEqual(["kurz", "konkret", "persoenlich"]);
+    }
+    expect(normalizePositionierung({ varianten: [{ stil: "Kurz", satz: "x" }, { stil: "Konkret" }, { stil: "lustig" }, "kein Objekt"] })).toEqual({ varianten: [{ stil: "kurz", satz: "x" }, { stil: "konkret" }, { stil: "lustig" }, "kein Objekt"] });
+    expect(normalizePositionierung({ kernsatz: "ohne Varianten" })).toEqual({ kernsatz: "ohne Varianten" });
+    // ein Stil, den es nicht gibt, bleibt ein Fehler der Form
+    expect(checkGenerated(positionierungGenerator, { ...output(), varianten: [varianten[0], varianten[1], { stil: "lustig", satz: "Ich streiche Fassaden im Fürstenland, seit 1985." }] }, input)).toMatchObject({ ok: false, reason: "schema" });
+  });
+
+  it("Befund 4: Kundenziele («möchte mehr Sichtbarkeit bei Google») sind erlaubt, Füllsätze nicht", () => {
+    expect(positionierungGenerator.purposeRules).toBe(false);
+    const ziel = output({ fuerWen: "Eigentümer in Gossau, die die Attraktivität ihres Hauses steigern wollen und mehr Sichtbarkeit bei Google möchten." });
+    expect(checkGenerated(positionierungGenerator, ziel, input)).toMatchObject({ ok: true });
+    expect(checkGenerated({ ...positionierungGenerator, purposeRules: true }, output({ fuerWen: "Eigentümer in Gossau; die Werbung soll die Sichtbarkeit bei Google erhöhen." }), input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(positionierungGenerator, output({ naechsterSchritt: "Das spielt heutzutage eine wichtige Rolle, also ersetze den ersten Satz der Startseite." }), input)).toMatchObject({ ok: false, reason: "stimme" });
+  });
+
+  it("Befund 6: Superlative über den Betrieb, erfundene Namen und Gedankenstriche", () => {
+    // «der beste und günstigste Malerbetrieb»
+    const superlativ = output({ kernsatz: "Für Hausbesitzer in Gossau: der beste und günstigste Malerbetrieb im Fürstenland." });
+    expect(checkPositionierungOutput(superlativ, input)).toBe("wertung");
+    expect(checkGenerated(positionierungGenerator, superlativ, input)).toEqual({ ok: false, reason: "check", detail: "wertung" });
+    // steht die Wendung in den Angaben, ist sie erlaubt; in «streichen» ist sie ein Zitat
+    expect(checkPositionierungOutput(superlativ, { ...input, unterscheidung: "Wir sind der beste und günstigste Malerbetrieb im Fürstenland." })).toBeNull();
+    expect(checkGenerated(positionierungGenerator, mitStreichen(["Wir sind der beste Malerbetrieb", "Eigenschaftswörter ohne Beleg"]), input).ok).toBe(true);
+    // «am besten» und «die beste Zeit» im Sinn von «am besten passt» sind keine Behauptung über den Betrieb
+    expect(checkPositionierungOutput(output({ wasAnders: "Die Malerei Keller macht nur Fassaden und sagt dir, wann es am besten passt, in zwei Wochen fertig." }), input)).toBeNull();
+    // erfundene Referenznamen mit Titel
+    const referenz = output({ beweise: ["Seit 1985 in Gossau.", "Referenz: Familie Meier in Flawil, Fassade 2023."] });
+    expect(checkPositionierungOutput(output({ beweise: ["Seit 1985 in Gossau.", "Referenz: Familie Meier in Flawil."] }), input)).toBe("erfunden");
+    expect(checkGenerated(positionierungGenerator, referenz, input)).toMatchObject({ ok: false, reason: "check" });
+    expect(checkPositionierungOutput(output({ beweise: ["Seit 1985 in Gossau.", "Referenz: [Name einer Referenz]"] }), input)).toBeNull();
+    expect(checkPositionierungOutput(output({ beweise: ["Seit 1985 in Gossau.", "Referenz: Familie Meier in Flawil."] }), { ...input, beweise: `${input.beweise} Referenz: Familie Meier in Flawil.` })).toBeNull();
+    // Gedankenstrich mit Leerzeichen wird zu einem Komma, der Entwurf geht durch
+    const strich = checkGenerated(positionierungGenerator, output({ wasAnders: "Die Malerei Keller macht nur Fassaden – keine Innenräume, in zwei Wochen fertig und mit Garantie." }), input);
+    expect(strich.ok).toBe(true);
+    if (strich.ok) expect(strich.output.wasAnders).toBe("Die Malerei Keller macht nur Fassaden, keine Innenräume, in zwei Wochen fertig und mit Garantie.");
+    expect(repairHint("check", "wertung")).toContain("wertendes Wort");
+  });
+
+  it("Befund 11: maxTokens trägt mindestens drei Viertel einer Antwort an der Obergrenze des Schemas", () => {
+    const tokens = Math.ceil(maxJson(positionierungOutput).length / 3.5);
+    expect(positionierungGenerator.maxTokens).toBeGreaterThanOrEqual(Math.ceil(tokens * 0.75));
   });
 });

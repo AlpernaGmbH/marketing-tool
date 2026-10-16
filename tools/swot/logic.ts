@@ -234,9 +234,25 @@ export function toDocument(output: SwotOutput, input: SwotInput): DocumentModel 
   };
 }
 
-/** Der Entwurf als Markdown fürs CRM und zum Kopieren. */
+/** Der Entwurf als Markdown zum Kopieren. */
 export function reportMarkdown(output: SwotOutput, input: SwotInput): string {
   return toMarkdown(toDocument(output, input));
+}
+
+/**
+ * Der Entwurf fürs CRM, kurz und mit dem Wichtigsten zuerst: die Lage in einem Satz und «Daraus folgt», dann die vier Felder.
+ * Der Server kürzt auf 1'900 Zeichen; das ganze Dokument verlöre dabei die Folgerungen. Ansicht und Downloads bleiben vollständig.
+ */
+export function ausgabeText(output: SwotOutput, input: SwotInput): string {
+  const eine = (s: string) => s.replace(/\s+/g, " ").trim();
+  return [
+    "# SWOT-Analyse",
+    `Marketing von ${input.betrieb}`,
+    `Lage: ${eine(output.einSatz)}`,
+    "## Daraus folgt",
+    ...output.folgerungen.map((f) => `- ${eine(f.massnahme)} (nutzt: ${eine(f.nutzt)}; behebt: ${eine(f.behebt) || "–"}; Aufwand: ${f.aufwand})`),
+    ...FELDER.flatMap((f) => [`## ${f.label}`, ...output[f.key].map((p) => `- ${eine(punktZeile(p))}`)]),
+  ].join("\n");
 }
 
 // ---- Gespeicherter Stand ---------------------------------------------------------------------------

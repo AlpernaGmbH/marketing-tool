@@ -21,6 +21,7 @@ import {
   inputProblem,
   isZielKey,
   kanalFieldId,
+  ohneSchluss,
   organisationstypVon,
   padSaeulen,
   parseState,
@@ -42,7 +43,7 @@ import {
   type ProfileFields,
   type StrategieForm,
 } from "./logic";
-import { input, mitSaeulen, output } from "./testdata";
+import { input, mitSaeulen, output, plan as planMonate } from "./testdata";
 
 const profile: ProfileFields = {
   organisationstyp: "kmu",
@@ -349,21 +350,35 @@ describe("inhalte-strategie: toDocument", () => {
     expect(plan.type).toBe("steps");
     if (plan.type !== "steps") throw new Error("steps erwartet");
     expect(plan.items).toHaveLength(3);
-    expect(plan.items[0]).toEqual({ title: `Monat 1: ${output().plan90[0].schwerpunkt}`, text: output().plan90[0].aufgaben.join("\n") });
-    expect(plan.items[2].title).toBe(`Monat 3: ${output().plan90[2].schwerpunkt}`);
+    expect(plan.items[0]).toEqual({ title: `Monat 1: ${ohneSchluss(output().plan90[0].schwerpunkt)}`, text: output().plan90[0].aufgaben.map(ohneSchluss).join("\n") });
+    expect(plan.items[2].title).toBe(`Monat 3: ${ohneSchluss(output().plan90[2].schwerpunkt)}`);
   });
   it("macht daraus in der Datei Listen mit «Name: Text», Aufgaben durch Semikolon getrennt, und lässt nichts weg", () => {
     const md = toMarkdown(doc);
     expect(md).toContain(`- Hausbesitzer in Gossau: ${output().zielgruppen[0].bedarf}`);
     for (const s of output().saeulen) expect(md).toContain(`- ${s.name}: ${s.rolle}`);
     for (const p of output().plan90) {
-      expect(md).toContain(`${p.monat}: ${p.schwerpunkt}`);
-      for (const a of p.aufgaben) expect(md).toContain(a);
+      expect(md).toContain(`${p.monat}: ${ohneSchluss(p.schwerpunkt)}`);
+      for (const a of p.aufgaben) expect(md).toContain(ohneSchluss(a));
     }
     // Der Schritt eines Monats bleibt eine Zeile
-    const zeile = md.split("\n").find((l) => l.includes(`${output().plan90[0].monat}: ${output().plan90[0].schwerpunkt}`))!;
+    const zeile = md.split("\n").find((l) => l.includes(`${output().plan90[0].monat}: ${ohneSchluss(output().plan90[0].schwerpunkt)}`))!;
     expect(zeile.startsWith("1. ")).toBe(true);
-    expect(zeile).toContain(output().plan90[0].aufgaben[0]);
+    expect(zeile).toContain(ohneSchluss(output().plan90[0].aufgaben[0]));
+  });
+  it("Befund 8a: setzt in der Datei weder «.:» noch Sätze, die zusammenlaufen: Aufgaben stehen mit Semikolon getrennt", () => {
+    const md = toMarkdown(doc);
+    expect(md).not.toMatch(/\.:|:\s*:|;;|\.;/);
+    const zeile = md.split("\n").find((l) => l.startsWith("1. Monat 1"))!;
+    expect(zeile).toBe(
+      "1. Monat 1: Aufbauen: Säulen festlegen und die ersten Beiträge veröffentlichen: Die Säulen im Team besprechen und festhalten; Das Google-Profil und das Instagram-Profil auf den neuesten Stand bringen; Die ersten Beiträge vorbereiten und einen festen Tag wählen",
+    );
+    // Auch mit «:» oder «;» am Ende des Schwerpunkts und Leerraum um die Aufgaben
+    const roh = output({ plan90: [{ ...planMonate()[0], schwerpunkt: " Aufbauen: ", aufgaben: [" Eins machen. ", "Zwei machen;", "Drei machen"] }, planMonate()[1], planMonate()[2]] });
+    const md2 = toMarkdown(toDocument(roh, input));
+    expect(md2).toContain("1. Monat 1: Aufbauen: Eins machen; Zwei machen; Drei machen");
+    expect(ohneSchluss("Satz mit Punkt.")).toBe("Satz mit Punkt");
+    expect(ohneSchluss("Frage?")).toBe("Frage?");
   });
   it("schliesst mit der Messung und «Das lassen wir weg» und sagt, dass die Richtwerte die Person festlegt", () => {
     const last = doc.blocks.slice(-4);

@@ -25,6 +25,7 @@ import {
   KI_HINWEIS,
   SLUG,
   TELEFON,
+  ausgabeText,
   charCount,
   eingabeText,
   hinweisNamen,
@@ -33,7 +34,6 @@ import {
   joinNamen,
   parseState,
   profilHinweise,
-  reportMarkdown,
   toDocument,
   toForm,
   toInput,
@@ -97,7 +97,7 @@ function BotschaftenFlow() {
   const inputRef = useRef<BotschaftenInput | null>(null);
   const gen = useGenerator(botschaftenGenerator, {
     eingabe: eingabeText,
-    ausgabe: (o) => (inputRef.current ? reportMarkdown(o, inputRef.current) : ""),
+    ausgabe: (o) => (inputRef.current ? ausgabeText(o, inputRef.current) : ""),
   });
 
   const [form, setForm] = useState<FormValues>(EMPTY_FORM);

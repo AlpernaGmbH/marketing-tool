@@ -95,7 +95,7 @@ const INSTRUCTION = `Du verbesserst Headline und Anfang des Info-Texts eines Lin
 - Schreib wie die Person selbst: in der Ich-Form, oder in der Wir-Form, wenn die Angaben so schreiben. Headlines dürfen neutral sein. Im Info-Text sprichst du die Kundschaft mit «du» an, ausser der heutige Text siezt: dann «Sie».
 - Die drei Headlines unterscheiden sich im Aufbau (zum Beispiel «Ich helfe … bei …», «… für …: …», eine Aussage mit Beleg) und keine gleicht der heutigen Headline. In «grund» steht je ein kurzer Satz (10 bis 140 Zeichen), was der Vorschlag besser macht.
 - Berücksichtige die «hinweise»: Was dort bemängelt wird, machst du besser.
-- Keine Floskeln, keine Hashtags, keine Emojis.
+- Keine Floskeln, keine Hashtags, keine Emojis. Die Prüfung lehnt diese Wörter und Wendungen ab: «professionell», «zuverlässig», «kompetent», «nachhaltig», «vielfältig», «rund um», «Rundum-sorglos», «individuelle Lösung», «ganzheitlich», «massgeschneidert», «innovativ», «Leidenschaft», «Mehrwert», «qualitativ hochwertig», «Der Kunde steht im Mittelpunkt», «Gerne beraten wir Sie». Schreib stattdessen, was die Person tut, für wen und wo.
 Form: {"headlines": [{"text": "…", "grund": "…"}, {"text": "…", "grund": "…"}, {"text": "…", "grund": "…"}], "infoAnfang": "…"}`;
 
 export const linkedinGenerator = defineGenerator({
