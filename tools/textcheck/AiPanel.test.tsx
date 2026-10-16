@@ -116,6 +116,32 @@ describe("Textcheck, Prüfung mit KI im Browser", () => {
     expect(crm.ausgabe).toContain("## Korrigierter Text");
   });
 
+  it("zeigt bei zwei Fehlern für dieselbe Stelle nur den früheren und zählt, was wirklich korrigiert ist", async () => {
+    const ueber: CheckOutput = {
+      gesamt: "Der Text ist verständlich, hat aber zwei Fehler.",
+      aenderungen: [
+        { art: "fehler", original: "ein ein", vorschlag: "ein", grund: "Das Wort steht doppelt." },
+        { art: "fehler", original: "ein Angebot", vorschlag: "das Angebot", grund: "Anderer Artikel." },
+        { art: "fehler", original: "Mallerei", vorschlag: "Malerei", grund: "Doppeltes l, richtig ist Malerei." },
+      ],
+    };
+    const m = mockApi([ok(ueber)]);
+    const u = userEvent.setup();
+    render(panel(TEXT));
+    await u.click(await screen.findByRole("button", { name: "Mit KI prüfen" }));
+    const box = await screen.findByTestId("ki-ergebnis");
+    const items = within(within(box).getByRole("region", { name: "Fehler" })).getAllByTestId("ki-aenderung");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("Original: ein ein");
+    expect(items[1]).toHaveTextContent("Original: Mallerei");
+    expect(within(box).getByRole("region", { name: "Korrigierter Text" })).toHaveTextContent("2 Stellen sind korrigiert.");
+    await waitFor(() => expect(m.count("/api/result")).toBe(1));
+    const crm = m.last("/api/result")?.body as { ausgabe: string };
+    expect(crm.ausgabe).toContain("1. «ein ein» → «ein»");
+    expect(crm.ausgabe).toContain("2. «Mallerei» → «Malerei»");
+    expect(crm.ausgabe).not.toContain("das Angebot");
+  });
+
   it("sagt bei einer leeren Liste, dass nichts gefunden wurde, und zeigt keinen korrigierten Text", async () => {
     mockApi([ok({ gesamt: "Der Text ist sauber geschrieben und gut lesbar.", aenderungen: [] })]);
     const u = userEvent.setup();

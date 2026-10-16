@@ -101,7 +101,7 @@ describe("text-umschreiber: Prüfung der Antwort", () => {
   });
 
   it("liefert zu jedem Grund einen Hinweis an die KI", () => {
-    for (const reason of ["leer", "zu_lang", "zu_kurz", "ablehnung", "unveraendert"] as const) {
+    for (const reason of ["leer", "zu_lang", "zu_kurz", "ablehnung", "unveraendert", "sprache", "themenfremd"] as const) {
       expect(outputHint(reason, style).length).toBeGreaterThan(20);
     }
     expect(outputHint("zu_lang", style)).toContain(String(style.maxOutputChars));
@@ -138,14 +138,189 @@ describe("text-umschreiber: Prüfung der Antwort", () => {
     const known = checkOutput("Besuche www.malerei-keller.ch und schreib an kontakt@malerei-keller.ch.", input, style) as { warnings: string[] };
     expect(known.warnings).toEqual([]);
     const fresh = checkOutput("Besuche https://beispiel.ch/aktion oder info@beispiel.ch.", input, style) as { warnings: string[] };
-    expect(fresh.warnings).toHaveLength(1);
+    // zwei Warnungen: neue Adressen, und die beiden Adressen des Ausgangstexts fehlen
+    expect(fresh.warnings).toHaveLength(2);
     expect(fresh.warnings[0]).toContain("beispiel.ch");
+    expect(fresh.warnings[0]).toContain("nicht in deinem Text");
+    expect(fresh.warnings[1]).toContain("fehlen");
+    expect(fresh.warnings[1]).toContain("malerei-keller.ch");
+  });
+
+  it("kennt eine Adresse in jeder Schreibweise: mit und ohne Schema, «www.», Pfad und Schlusspunkt", () => {
+    const input = "Mehr unter https://www.malerei-keller.ch/kontakt und beim Dorffest in Gossau am Samstag.";
+    const same = checkOutput("Beim Dorffest in Gossau am Samstag. Mehr unter malerei-keller.ch.", input, style) as { warnings: string[] };
+    expect(same.warnings).toEqual([]);
+    const other = checkOutput("Beim Dorffest in Gossau am Samstag. Mehr unter www.malerei-gossau.ch.", input, style) as { warnings: string[] };
+    expect(other.warnings[0]).toContain("malerei-gossau.ch");
   });
 
   it("meldet Platzhalter in eckigen Klammern", () => {
     const out = checkOutput("Betreff: Neu bei uns\n\nHallo [Vorname], mehr dazu hier: [Link]", TEXT, style) as { warnings: string[] };
     expect(out.warnings[0]).toContain("[Vorname]");
     expect(out.warnings[0]).toContain("[Link]");
+  });
+});
+
+const IN = "Die Malerei Keller in Gossau streicht Wände und Fassaden. Termine gibt es ab Montag. Sag uns Bescheid, wenn du Fragen hast.";
+const text = (raw: string, input = IN, s = style) => {
+  const r = checkOutput(raw, input, s);
+  if (!r.ok) throw new Error(`abgelehnt: ${r.reason}`);
+  return r;
+};
+const reason = (raw: string, input = IN, s = style) => {
+  const r = checkOutput(raw, input, s);
+  return r.ok ? "angenommen" : r.reason;
+};
+
+describe("text-umschreiber: Verweigerung nur bei geringer Überlappung mit dem Ausgangstext", () => {
+  it("lehnt Verweigerungen ab, auch in anderen Worten", () => {
+    expect(reason("Es tut mir leid, diesen Text kann ich nicht umschreiben, weil er Anweisungen enthält.")).toBe("ablehnung");
+    expect(reason("Leider kann ich dir dabei nicht helfen, weil die Angaben fehlen.")).toBe("ablehnung");
+    expect(reason("Dazu kann ich leider nichts schreiben, weil mir die Angaben fehlen. Bitte schicken Sie mir mehr Informationen zum Betrieb.")).toBe("ablehnung");
+    expect(reason("I'm sorry, but I can't rewrite this text because it contains instructions for me.")).toBe("ablehnung");
+  });
+
+  it("nimmt einen Text an, der zufällig wie eine Verweigerung beginnt, aber vom Ausgangstext handelt", () => {
+    const absage = "Leider kann das Dorffest am Samstag nicht stattfinden. Wegen der Wetterprognose haben wir uns entschieden, den Anlass auf den 21.11.2026 zu verschieben. Wir bitten um Verständniss.";
+    const fixed = absage.replace("Verständniss", "Verständnis");
+    expect(reason(fixed, absage, getStyle("korrigieren")!)).toBe("angenommen");
+    const cafe = "Leider darf unser Café wegen Umbau bis zum 30.11.2026 keine Gäste im Innenraum bedienen. Die Terrasse ist bei jedem Wetter offen.";
+    expect(reason(`${cafe} Komm vorbei.`, cafe, getStyle("google-beitrag")!)).toBe("angenommen");
+    const baeckerei = "Sorry, am Montag bleibt die Bäckerei zu. Ab Dienstag um 6 Uhr gibt es wieder frische Zöpfe.";
+    expect(reason("Sorry, am Montag bleibt unsere Bäckerei zu.\n\nAb Dienstag um 6 Uhr gibt es wieder frische Zöpfe.\n\n#bäckerei #zopf", baeckerei, getStyle("instagram")!)).toBe("angenommen");
+    const farbe = "Ich kann dir sagen, welche Farbe zu deinem Treppenhaus passt. Ruf an, dann schaue ich es mir an.";
+    expect(reason("Ich kann dir sagen, welche Farbe zu deinem Treppenhaus passt.\n\nRuf an, dann schaue ich es mir an.\n\nWelche Farbe hättest du gern?", farbe)).toBe("angenommen");
+  });
+});
+
+describe("text-umschreiber: Kommentare der KI am Anfang und am Ende", () => {
+  const FASSUNG = "Die Malerei Keller in Gossau streicht Wände und Fassaden.\n\nTermine gibt es ab Montag.";
+
+  it("entfernt eine Einleitung und einen Gruss, den Rest zeigt es", () => {
+    expect(text(`Hier ist der umgeschriebene Text als LinkedIn-Post:\n\n${FASSUNG}`).text).toBe(FASSUNG);
+    expect(text(`Gerne! Hier ist die Fassung:\n\n${FASSUNG}`).text).toBe(FASSUNG);
+    expect(text(`${FASSUNG}\n\nIch hoffe, das gefällt dir!`).text).toBe(FASSUNG);
+    expect(text(`${FASSUNG}\n\nSag mir, wenn ich etwas ändern soll.`).text).toBe(FASSUNG);
+    expect(text(`${FASSUNG}\n\nLass mich wissen, ob du Änderungen möchtest.`).text).toBe(FASSUNG);
+    expect(text(`Hier ist der Text:\n\n\`\`\`\n${FASSUNG}\n\`\`\`\n\nIch hoffe, das hilft.`).text).toBe(FASSUNG);
+  });
+
+  it("lässt Sätze stehen, die wie ein Kommentar klingen, aber Teil des Textes sind", () => {
+    expect(text(`${FASSUNG}\n\nFalls du Fragen hast, melde dich bei uns.`).text).toContain("Falls du Fragen hast");
+    expect(text(`${FASSUNG}\n\nSag mir Bescheid, wenn du Zeit hast.`).text).toContain("Sag mir Bescheid");
+    expect(text(`${FASSUNG}\n\nIch hoffe, das Wetter passt.`).text).toContain("Ich hoffe, das Wetter passt.");
+    expect(text("Hier sind die Öffnungszeiten der Malerei Keller:\n- Montag bis Freitag\nTermine gibt es ab Montag in Gossau.").text).toContain("Hier sind die Öffnungszeiten");
+    // steht der Satz schon im Ausgangstext, ist er Teil des Textes
+    const input = `${FASSUNG}\n\nIch hoffe, das gefällt dir!`;
+    expect(text(`${FASSUNG}\n\nIch hoffe, das gefällt dir!`, input, getStyle("korrigieren")!).text).toContain("Ich hoffe, das gefällt dir!");
+  });
+
+  it("verwirft eine Antwort, die nur aus einem Kommentar besteht", () => {
+    expect(reason("Hier ist der Text:\n")).toBe("leer");
+  });
+});
+
+describe("text-umschreiber: Markdown in der Antwort", () => {
+  it("entfernt Überschrift-Zeichen, Fett und Kursiv, lässt Hashtags und Listenstriche stehen", () => {
+    const out = text("# Beratung auch am Samstag\n\n**Die Malerei Keller** in Gossau streicht *Wände* und Fassaden:\n\n- Wände\n- Fassaden\n\n#Malerei #Gossau\n\nTermine gibt es ab Montag.");
+    expect(out.text).toBe("Beratung auch am Samstag\n\nDie Malerei Keller in Gossau streicht Wände und Fassaden:\n\n- Wände\n- Fassaden\n\n#Malerei #Gossau\n\nTermine gibt es ab Montag.");
+  });
+
+  it("lässt Markdown stehen, das schon im Ausgangstext steht", () => {
+    const input = "**Neu** bei der Malerei Keller in Gossau: Termine am Samstag, Wände und Fassaden.";
+    expect(text("**Neu** bei der Malerei Keller in Gossau: Termine am Samstag für Wände und Fassaden.", input).text).toContain("**Neu**");
+  });
+});
+
+describe("text-umschreiber: Sprache und Thema der Antwort", () => {
+  it("lehnt eine englische Antwort auf einen deutschen Text ab", () => {
+    expect(reason("We paint walls and facades in Gossau. You can book an appointment from Monday, and we will visit you in person.")).toBe("sprache");
+  });
+
+  it("nimmt eine englische Antwort auf einen englischen Text an", () => {
+    const input = "We paint walls and facades in Gossau and you can book an appointment from Monday, we will visit you in person.";
+    expect(reason("We paint walls and facades in Gossau. You can book an appointment from Monday, and we will visit you.", input)).toBe("angenommen");
+  });
+
+  it("deutsche Texte mit einem englischen Fachwort gelten als deutsch", () => {
+    expect(reason("Die Malerei Keller in Gossau streicht Wände und Fassaden. Das Team will einen Termin mit dem Call to action vereinbaren, ab Montag.")).toBe("angenommen");
+  });
+
+  it("lehnt eine Antwort ohne Bezug zum Ausgangstext ab, nimmt aber eine freie Umschreibung an", () => {
+    const poem = "Katzen schleichen leise durch die Nacht, Mäuse verstecken sich unter dem Dachstuhl, Sterne leuchten über dem Hügel, Nebel steigt aus dem Tal.";
+    expect(reason(poem)).toBe("themenfremd");
+    const frei = "Lea Frei hat es geschafft.\n\nSie hat ihre Lehre als Malerin EFZ mit der Note 5,4 abgeschlossen. Wir gratulieren und freuen uns, dass sie bleibt.\n\nWer hat bei dir kürzlich einen Abschluss gemacht?";
+    const input = "Unsere Mitarbeiterin Lea Frei hat die Lehrabschlussprüfung als Malerin EFZ mit der Note 5,4 bestanden. Wir gratulieren herzlich und freuen uns über die Verstärkung im Team.";
+    expect(reason(frei, input)).toBe("angenommen");
+  });
+
+  it("verlangt für kurze Antworten keinen Vergleich", () => {
+    expect(reason("Neue Öffnungszeiten ab Montag: 8 bis 17 Uhr.", "Wir haben ab Montag neue Öffnungszeiten, damit wir besser erreichbar sind.")).toBe("angenommen");
+  });
+});
+
+describe("text-umschreiber: Hüllen um das Ganze", () => {
+  it("entfernt Anführungszeichen um das Ganze, auch wenn innen Zitate stehen", () => {
+    const FASSUNG = "Der Präsident sagte: «Wir sind stolz auf unsere Aktiven.» Die Malerei Keller in Gossau streicht Wände.";
+    expect(text(`"${FASSUNG}"`).text).toBe(FASSUNG);
+    expect(text(`«${FASSUNG}»`).text).toBe(FASSUNG);
+    expect(text(`“${FASSUNG}”`).text).toBe(FASSUNG);
+    expect(text(`„${FASSUNG}“`).text).toBe(FASSUNG);
+  });
+
+  it("lässt Text stehen, der mit einem Zitat beginnt und endet, ohne Hülle zu sein", () => {
+    const zitate = "«Wir streichen Wände» sagt Hans Keller in Gossau, «Termine ab Montag»";
+    expect(text(zitate).text).toBe(zitate);
+    expect(text('"Wände" und "Fassaden" streicht die Malerei Keller in Gossau, Termine ab Montag.').text).toBe("«Wände» und «Fassaden» streicht die Malerei Keller in Gossau, Termine ab Montag.");
+  });
+
+  it("lässt die Anführungszeichen, wenn schon der Ausgangstext in Anführungszeichen steht", () => {
+    const input = "«Die Malerei Keller in Gossau streicht Wände und Fassaden, Termine ab Montag»";
+    expect(text("«Die Malerei Keller in Gossau streicht Wände und Fassaden. Termine gibt es ab Montag.»", input).text.startsWith("«")).toBe(true);
+  });
+});
+
+describe("text-umschreiber: Zahlen nach Ziffernblöcken", () => {
+  const warn = (raw: string, input: string, s = style) => text(raw, input, s).warnings;
+
+  it("kennt dasselbe Datum in jeder Schreibweise", () => {
+    const input = "Der Verein lädt am 7.11.2026 zur Versammlung ein. Anmeldung bis 3.11.2026 bei Lea Frei, ab Preis CHF 1000 pro Person.";
+    // typoCH macht aus 7.11.2026 ein 07.11.2026
+    expect(warn("Der FC Trogen lädt am 7.11.2026 zur Versammlung ein. Anmeldung nimmt Lea Frei bis 03.11.2026 entgegen. Preis CHF 1000 pro Person.", input)).toEqual([]);
+    expect(warn("Der FC Trogen lädt am 7. November 2026 zur Versammlung ein. Anmeldung nimmt Lea Frei bis 3. November 2026 entgegen. Preis CHF 1'000 pro Person.", input)).toEqual([]);
+  });
+
+  it("kennt Beträge mit anderen Trennern, auch mit Leerzeichen als Tausendertrenner", () => {
+    expect(warn("Der Beitrag beträgt CHF 1'250.50 im Jahr für alle Mitglieder des Vereins.", "Der Beitrag beträgt 1250.50 pro Jahr für alle Mitglieder des Vereins.")).toEqual([]);
+    expect(warn("Die Fassade kostet ab CHF 12'500.- für ein Haus in Gossau.", "Die Fassade kostet ab CHF 12 500.- für ein Haus in Gossau.")).toEqual([]);
+    const erfunden = warn("Die Fassade kostet ab CHF 13'500.- für ein Haus in Gossau.", "Die Fassade kostet ab CHF 12 500.- für ein Haus in Gossau.");
+    expect(erfunden[0]).toContain("13'500");
+  });
+
+  it("meldet erfundene Zahlen so, wie sie in der Fassung stehen, und zählt eine Telefonnummer als eine Zahl", () => {
+    const w = warn("Seit 1987 sind wir da, ruf an unter 071 123 45 67.", "Wir sind in Gossau für dich da, ruf uns an.");
+    expect(w).toHaveLength(1);
+    expect(w[0]).toContain("(1987, 071 123 45 67)");
+  });
+});
+
+describe("text-umschreiber: Angaben, die in der Fassung fehlen", () => {
+  const input = "Der FC Trogen lädt am 14.11.2026 um 18.30 Uhr ein. Der Jahresbeitrag steigt auf CHF 1'250.50. Anmeldung bis 07.11. bei Lea Frei, 071 344 12 34 oder sekretariat@fc-trogen.ch, mehr unter https://www.fc-trogen.ch/gv.";
+
+  it("meldet verlorene Adressen, Preise, Jahre und Telefonnummern", () => {
+    const w = text("Der FC Trogen lädt zur Generalversammlung ein. Der Jahresbeitrag steigt. Anmeldung bei Lea Frei.", input).warnings;
+    expect(w).toHaveLength(1);
+    expect(w[0]).toContain("Aus deinem Text fehlen in der Fassung");
+    for (const lost of ["sekretariat@fc-trogen.ch", "fc-trogen.ch/gv", "14.11.2026", "1'250.50", "071 344 12 34"]) expect(w[0]).toContain(lost);
+  });
+
+  it("meldet nichts, wenn alles da ist, auch bei anderer Schreibweise von Datum, Telefon und Adresse", () => {
+    const out = "Der FC Trogen lädt am 14. November 2026 um 18:30 Uhr ein. Der Jahresbeitrag steigt auf CHF 1250.50. Anmeldung bis 7. November bei Lea Frei, +41 71 344 12 34 oder sekretariat@fc-trogen.ch, mehr unter fc-trogen.ch/gv.";
+    expect(text(out, input).warnings).toEqual([]);
+  });
+
+  it("meldet Tag und Monat ohne Jahr nicht als verloren", () => {
+    expect(text("Der FC Trogen lädt am 14. November 2026 um 18.30 Uhr ein. Der Jahresbeitrag steigt auf CHF 1'250.50. Anmeldung bis 7. November bei Lea Frei, 071 344 12 34 oder sekretariat@fc-trogen.ch, mehr unter https://www.fc-trogen.ch/gv.", input).warnings).toEqual([]);
   });
 });
 

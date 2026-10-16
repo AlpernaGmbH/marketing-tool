@@ -60,7 +60,7 @@ Das legt der Verein fest, nicht das Werkzeug. Die Ampel vergleicht deinen Preis 
 Nenne sie nur mit ihrem Einverständnis und frag vorher nach. Die Namen stehen im Dossier und bleiben in deinem Browser, sie gehen weder an die KI noch an Alperna. Eine Rechtsauskunft gibt das Werkzeug nicht.
 
 ### Was geht an die KI?
-Nur, wenn du im Ergebnis «Texte von der KI schreiben lassen» wählst: Name des Vereins, Ort, Stichworte, Zielgruppe, Zahlen und Pakete. Nicht deine E-Mail-Adresse, nicht die Kontaktdaten, nicht die Referenzen. Unser Server speichert nichts. Das Dossier funktioniert auch ohne KI.
+Nur, wenn du im Ergebnis «Texte von der KI schreiben lassen» wählst: Name des Vereins, Ort, Stichworte, Zielgruppe, Zahlen und Pakete. Nicht deine E-Mail-Adresse, nicht die Kontaktdaten, nicht die Referenzen. Unser Server speichert nichts. Das Werkzeug lehnt KI-Texte ab, die Zahlen erfinden oder etwas zu Steuern, Spenden oder Verträgen sagen. Das Dossier funktioniert auch ohne KI.
 
 ### Brauche ich ein Konto?
 Nein. Vor dem Ergebnis gibst du deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Danach fragt ein Jahr lang kein Werkzeug erneut.

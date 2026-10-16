@@ -17,6 +17,8 @@ import {
   leadNenntWann,
   medienInput,
   medienOutput,
+  mindestWoerter,
+  richtwertHinweis,
   wordCount,
   zitatStimmt,
   type AnlassKey,
@@ -31,8 +33,12 @@ export const SLUG = "medienmitteilung";
 
 export const KI_HINWEIS = "Von einer KI formuliert. Prüfe Namen, Zahlen und Aussagen, bevor du den Text verwendest.";
 
-/** Die Grenzen für Lead und Länge sind keine Statistik. */
+/**
+ * Die Grenzen für Lead und Länge sind keine Statistik. Die Untergrenze der Länge richtet sich nach den Angaben
+ * (`richtwertHinweis`); diese Fassung gilt für ausführliche Angaben.
+ */
 export const RICHTWERT_HINWEIS = `Lead höchstens ${LEAD_MAX_WORDS} Wörter, Gesamtlänge ${LAENGE_MIN_WORDS} bis ${LAENGE_MAX_WORDS} Wörter: Richtwert von Alperna, keine Statistik.`;
+export { richtwertHinweis };
 
 export function anlassLabel(key: AnlassKey): string {
   return ANLASS_LABELS[key];
@@ -319,7 +325,7 @@ export type Pruefpunkt = { id: PruefId; ok: boolean; label: string; hinweis: str
 
 /** Steigerungsformen und Wertungen, die nach Werbung klingen. Ergänzt die Sperrliste aus lib/brand-rules.ts. */
 const SUPERLATIV_RE =
-  /\b(?:beste[nrms]?|grösste[nrms]?|schönste[nrms]?|günstigste[nrms]?|modernste[nrms]?|erfolgreichste[nrms]?|einzigartig\w*|einmalig\w*|sensationell\w*|revolutionär\w*|unschlagbar\w*|beispiellos\w*|spektakulär\w*|erstklassig\w*|weltklasse|spitzenklasse|nummer eins)\b/giu;
+  /(?<![\p{L}])(?:beste[nrms]?|grösste[nrms]?|schönste[nrms]?|günstigste[nrms]?|modernste[nrms]?|erfolgreichste[nrms]?|einzigartig\p{L}*|einmalig\p{L}*|sensationell\p{L}*|revolutionär\p{L}*|unschlagbar\p{L}*|beispiellos\p{L}*|spektakulär\p{L}*|erstklassig\p{L}*|weltklasse|spitzenklasse|nummer eins)(?![\p{L}])/giu;
 
 /** Texte der Mitteilung ohne das Zitat: Dort spricht die Person, nicht die Redaktion. */
 function sachtext(output: MedienOutput): string {
@@ -349,7 +355,8 @@ export function checkDraft(output: MedienOutput, input: MedienInput): Pruefpunkt
   const wannOk = leadNenntWann(output.lead, input);
   const fremd = fremdeZahlen(output, input);
   const laenge = gesamtWoerter(output);
-  const laengeOk = laenge >= LAENGE_MIN_WORDS && laenge <= LAENGE_MAX_WORDS;
+  const laengeMin = mindestWoerter(input);
+  const laengeOk = laenge >= laengeMin && laenge <= LAENGE_MAX_WORDS;
   const zitatOk = zitatStimmt(output, input);
   const superlative = superlativeIn(output);
 
@@ -383,8 +390,8 @@ export function checkDraft(output: MedienOutput, input: MedienInput): Pruefpunkt
     {
       id: "laenge",
       ok: laengeOk,
-      label: `Länge von ${LAENGE_MIN_WORDS} bis ${LAENGE_MAX_WORDS} Wörtern`,
-      hinweis: laengeOk ? `Die Mitteilung hat ${laenge} Wörter.` : `Die Mitteilung hat ${laenge} Wörter. ${laenge < LAENGE_MIN_WORDS ? "Ergänze Einzelheiten." : "Kürze sie."}`,
+      label: `Länge von ${laengeMin} bis ${LAENGE_MAX_WORDS} Wörtern`,
+      hinweis: laengeOk ? `Die Mitteilung hat ${laenge} Wörter.` : `Die Mitteilung hat ${laenge} Wörter. ${laenge < laengeMin ? "Ergänze Einzelheiten." : "Kürze sie."}`,
     },
     {
       id: "zitat",

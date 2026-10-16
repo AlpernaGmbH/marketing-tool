@@ -86,7 +86,7 @@ export function syllables(word: string): number {
 }
 
 const ABBREVIATIONS =
-  /\b(?:z\.\s?B|u\.\s?a|d\.\s?h|i\.\s?d\.\s?R|v\.\s?a|o\.\s?ä|ca|bzw|usw|etc|inkl|ggf|evtl|nr|tel|dr|prof|resp|vgl|max|min|mind|sog|std|mio|mrd|str|fr|hr|fa)\./gi;
+  /\b(?:z\.\s?B|u\.\s?a|d\.\s?h|i\.\s?d\.\s?R|v\.\s?a|o\.\s?ä|ca|bzw|usw|etc|inkl|ggf|evtl|nr|tel|dr|prof|resp|vgl|max|min|mind|sog|std|mio|mrd|str|fr|hr|fa|st|kt|lic|iur)\./gi;
 const MONTHS = "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember";
 
 /**
@@ -172,14 +172,16 @@ export function readability(text: string): Readability | null {
   const sentences = sentenceSpans(text).length || 1;
   const avgSentenceLength = words.length / sentences;
   const avgSyllables = words.reduce((n, w) => n + syllables(w), 0) / words.length;
-  const index = Math.round(180 - avgSentenceLength - 58.5 * avgSyllables);
+  // Die Formel kennt keine Grenzen: Sehr kurze Sätze ergeben über 100, Wortungetüme unter 0. Die Anzeige hält sich an «0 bis 100».
+  const index = Math.max(0, Math.min(100, Math.round(180 - avgSentenceLength - 58.5 * avgSyllables)));
   return { avgSentenceLength, avgSyllables, index, level: levelOf(index) };
 }
 
 // ---- Prüfregeln ------------------------------------------------------------------------------------
 
 const DOUBLE_WORD = /(^|[^\p{L}\p{N}])(\p{L}{2,40})(\s+)\2(?![\p{L}\p{N}])/giu;
-const SPACE_BEFORE_PUNCT = /([\p{L}\p{N}»)])([ \t]+)([,;!?]|[.:](?=\s|$))/gu;
+// Ein Doppelpunkt zwischen zwei Zahlen ist ein Spielstand oder eine Uhrzeit («3 : 1», «18 : 30 Uhr»), kein Fehler.
+const SPACE_BEFORE_PUNCT = /(?!\p{N}[ \t]+:[ \t]*\p{N})([\p{L}\p{N}»)])([ \t]+)([,;!?]|[.:](?=\s|$))/gu;
 const COMMA_NO_SPACE = /(\p{L})([,;])(?=\p{L})/gu;
 const DOUBLE_SPACE = /(\S)([ \t]{2,})(?=\S)/g;
 const PERCENT = /(\d)%/g;

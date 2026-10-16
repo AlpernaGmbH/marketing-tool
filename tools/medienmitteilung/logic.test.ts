@@ -21,6 +21,7 @@ import {
   parseEmpfaenger,
   parseState,
   reportMarkdown,
+  richtwertHinweis,
   superlativeIn,
   toDocument,
   toForm,
@@ -82,6 +83,9 @@ describe("medienmitteilung: Hilfen", () => {
     expect(RICHTWERT_HINWEIS).toContain("Richtwert von Alperna, keine Statistik");
     expect(RICHTWERT_HINWEIS).toContain("40 Wörter");
     expect(RICHTWERT_HINWEIS).toContain("150 bis 400 Wörter");
+    // Bei knappen Angaben gilt eine tiefere Untergrenze, und der Hinweis nennt sie.
+    expect(richtwertHinweis(input)).toBe(RICHTWERT_HINWEIS);
+    expect(richtwertHinweis({ ...input, was: "Die Malerei Keller feiert.", wo: "", wer: "", warum: "Der Betrieb bildet aus.", zitat: "", bild: "" })).toContain("Gesamtlänge 80 bis 400 Wörter");
   });
 });
 
@@ -291,6 +295,11 @@ describe("medienmitteilung: Superlative", () => {
   it("findet «Beste» im Titel", () => {
     expect(superlativeIn(output({ titel: "Die beste Malerei der Region feiert" }))).toEqual(["beste"]);
   });
+  it("findet auch «spektakulär» und «revolutionär» am Wortende, aber nicht «Bestehen»", () => {
+    expect(superlativeIn(output({ titel: "Ein spektakulär schönes Fest" }))).toEqual(["spektakulär"]);
+    expect(superlativeIn(output({ titel: "Eine revolutionär neue Farbe" }))).toEqual(["revolutionär"]);
+    expect(superlativeIn(output({ titel: "Das 40-jährige Bestehen wird gefeiert" }))).toEqual([]);
+  });
 });
 
 describe("medienmitteilung: checkDraft", () => {
@@ -331,6 +340,25 @@ describe("medienmitteilung: checkDraft", () => {
     const lang = punkt(output({ text: Array(5).fill(Array.from({ length: 80 }, () => "Gast").join(" ")) }), "laenge");
     expect(lang.ok).toBe(false);
     expect(lang.hinweis).toContain("Kürze sie.");
+  });
+  it("laenge: die Untergrenze folgt den Angaben, label und Hinweis nennen sie", () => {
+    const knapp: MedienInput = { ...input, was: "Die Malerei Keller feiert 40 Jahre mit einem Fest.", wo: "", wer: "", warum: "Der Betrieb bildet Lernende aus.", zitat: "", zitatVon: "", bild: "" };
+    const absatz = (k: number) => Array.from({ length: k }, () => "Gast").join(" ");
+    const basis = output({ titel: "Malerei Keller feiert 40 Jahre", zitat: "", bildzeile: "", boilerplate: "Malerei Keller ist ein Malerbetrieb in Gossau im Kanton St. Gallen und bildet Lernende aus.", text: [] });
+    const mit = (total: number): MedienOutput => {
+      const n = total - basis.titel.split(" ").length - basis.lead.split(" ").length - basis.boilerplate.split(" ").length;
+      return { ...basis, text: [absatz(Math.floor(n / 2)), absatz(n - Math.floor(n / 2))] };
+    };
+    const ok = punkt(mit(85), "laenge", knapp);
+    expect(ok.ok).toBe(true);
+    expect(ok.label).toBe("Länge von 80 bis 400 Wörtern");
+    expect(ok.hinweis).toBe("Die Mitteilung hat 85 Wörter.");
+    // Mit ausführlichen Angaben sind dieselben 85 Wörter zu kurz.
+    const kurz = punkt(mit(85), "laenge");
+    expect(kurz.ok).toBe(false);
+    expect(kurz.label).toBe("Länge von 150 bis 400 Wörtern");
+    expect(kurz.hinweis).toContain("Ergänze Einzelheiten.");
+    expect(punkt(mit(75), "laenge", knapp).ok).toBe(false);
   });
   it("zitat: meldet ein umformuliertes oder nicht angegebenes Zitat", () => {
     const umformuliert = punkt(output({ zitat: "Wir sind stolz auf unser Team und freuen uns auf viele Gäste im November." }), "zitat");

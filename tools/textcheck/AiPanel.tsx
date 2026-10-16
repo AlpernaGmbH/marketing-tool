@@ -10,6 +10,7 @@ import {
   TEXT_MAX,
   anwenden,
   kiReport,
+  ohneUeberdeckung,
   textcheckGenerator,
   type Aenderung,
   type Art,
@@ -73,9 +74,11 @@ export function AiPanel({ source }: { source: string }) {
     if (output) setShown({ text, output });
   }
 
-  const korrigiert = shown ? anwenden(shown.text, shown.output.aenderungen) : null;
-  const fehler = shown?.output.aenderungen.filter((a) => a.art === "fehler") ?? [];
-  const stil = shown?.output.aenderungen.filter((a) => a.art === "stil") ?? [];
+  // Überdecken sich zwei Änderungen derselben Art, zeigt die Liste nur die frühere (wie «Korrigierter Text» und der Bericht).
+  const liste = shown ? ohneUeberdeckung(shown.text, shown.output.aenderungen) : [];
+  const korrigiert = shown ? anwenden(shown.text, liste) : null;
+  const fehler = liste.filter((a) => a.art === "fehler");
+  const stil = liste.filter((a) => a.art === "stil");
   const veraltet = shown !== null && shown.text !== text;
 
   return (

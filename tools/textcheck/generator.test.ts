@@ -10,6 +10,8 @@ import {
   kiReport,
   locate,
   locateAll,
+  locateEvery,
+  ohneUeberdeckung,
   textcheckGenerator,
   type Aenderung,
   type CheckInput,
@@ -79,6 +81,23 @@ describe("textcheck: Stellen im Text", () => {
     expect(ueber[1]).toBeNull();
   });
 
+  it("findet ein Original auch, wenn die KI Striche oder die Auslassung anders schreibt", () => {
+    expect(locate("Mo – Fr geöffnet.", "Mo - Fr")).toEqual({ start: 0, end: 7 });
+    expect(locate("Mo - Fr geöffnet.", "Mo – Fr")).toEqual({ start: 0, end: 7 });
+    expect(locate("Von Mo—Fr geöffnet.", "Mo-Fr")).toEqual({ start: 4, end: 9 });
+    expect(locate("Wir sind da… und bleiben.", "da... und")).toEqual({ start: 9, end: 16 });
+    expect(locate("Wir sind da... und bleiben.", "da… und")).toEqual({ start: 9, end: 18 });
+    expect(locate("Wir sind da.. und bleiben.", "da... und")).toBeNull();
+    // ein einzelner Punkt und zwei Punkte sind keine Auslassung
+    expect(locate("Wir sind da. Und bleiben.", "da… und")).toBeNull();
+  });
+
+  it("zählt alle Stellen eines Originals, auch die überdeckten", () => {
+    expect(locateEvery("ein ein und ein ein", "ein ein")).toEqual([{ start: 0, end: 7 }, { start: 12, end: 19 }]);
+    expect(locateEvery(TEXT, "gibt es nicht")).toEqual([]);
+    expect(locateEvery(TEXT, "  ")).toEqual([]);
+  });
+
   it("verträgt Zeichen, die in regulären Ausdrücken etwas bedeuten", () => {
     expect(locate("Kosten (ca. 5 CHF) pro Monat", "(ca. 5 CHF)")).toEqual({ start: 7, end: 18 });
     expect(locate("a+b=c? ja", "a+b=c?")).toEqual({ start: 0, end: 6 });
@@ -115,15 +134,42 @@ describe("textcheck: Prüfung", () => {
     expect(checkTextcheck(mit([stilAenderung]), input)).toBeNull();
   });
 
-  it("nichtimtext: ein Original, das nicht im Text steht oder eine belegte Stelle meint, fällt durch", () => {
+  it("nichtimtext: ein Original, das nirgends im Text steht, fällt durch", () => {
     expect(checkTextcheck(mit([{ ...mallerei, original: "Malerrei" }]), input)).toBe("nichtimtext");
-    expect(checkTextcheck(mit([mallerei, mallerei]), input)).toBe("nichtimtext");
-    expect(checkTextcheck(mit([doppelt, { ...doppelt, original: "ein Angebot" }]), input)).toBe("nichtimtext");
+    expect(checkTextcheck(mit([mallerei, { ...doppelt, original: "ein  zwei" }]), input)).toBe("nichtimtext");
+  });
+
+  it("Überdeckung: Zwei Einträge für dieselbe Stelle lassen die Antwort nicht durchfallen, die spätere fällt weg", () => {
+    expect(checkTextcheck(mit([mallerei, mallerei]), input)).toBeNull();
+    expect(checkTextcheck(mit([doppelt, { ...doppelt, original: "ein Angebot" }]), input)).toBeNull();
+    expect(checkTextcheck(mit([stilAenderung, doppelt]), input)).toBeNull();
+    expect(ohneUeberdeckung(TEXT, [mallerei, mallerei])).toEqual([mallerei]);
+    expect(ohneUeberdeckung(TEXT, [doppelt, { ...doppelt, original: "ein Angebot" }])).toEqual([doppelt]);
+    // Zwei gleiche Fehler an zwei Stellen sind zwei Einträge
+    const text = "Das Hause steht. Das Hause ist alt.";
+    const haus: Aenderung = { art: "fehler", original: "Hause", vorschlag: "Haus", grund: "Falsche Endung." };
+    expect(ohneUeberdeckung(text, [haus, haus, haus])).toEqual([haus, haus]);
+  });
+
+  it("Überdeckung: Eine Verbesserung nimmt einer Fehler-Stelle den Platz nicht", () => {
+    // stilAenderung deckt «ein ein» ab, den doppelt behebt; beide bleiben, im korrigierten Text steht nur der Fehler
+    expect(ohneUeberdeckung(TEXT, [stilAenderung, doppelt])).toEqual([stilAenderung, doppelt]);
+    expect(anwenden(TEXT, [stilAenderung, doppelt])).toEqual({ text: TEXT.replace("ein ein", "ein"), angewendet: 1 });
   });
 
   it("gleich: ein Vorschlag, der nichts ändert, fällt durch", () => {
     expect(checkTextcheck(mit([{ ...mallerei, vorschlag: "Mallerei" }]), input)).toBe("gleich");
     expect(checkTextcheck(mit([{ ...doppelt, original: "ein  ein", vorschlag: "ein ein" }]), input)).toBe("gleich");
+  });
+
+  it("gleich: anderer Leerraum ist eine Änderung, wenn der Text ihn so hat", () => {
+    // «Gossau!  In» steht mit zwei Leerzeichen im Text: Der Vorschlag mit einem ist ein echter Fehler
+    const text = "Willkommen in Gossau!  In der Mitte steht ein Brunnen.";
+    const a: Aenderung = { art: "fehler", original: "Gossau!  In", vorschlag: "Gossau! In", grund: "Zwei Leerzeichen hintereinander." };
+    expect(checkTextcheck(mit([a]), { text })).toBeNull();
+    expect(checkTextcheck(mit([{ ...a, original: "Gossau! In" }]), { text })).toBeNull();
+    expect(checkTextcheck(mit([a]), { text: "Willkommen in Gossau! In der Mitte steht ein Brunnen." })).toBe("gleich");
+    expect(anwenden(text, [a]).text).toBe("Willkommen in Gossau! In der Mitte steht ein Brunnen.");
   });
 
   it("zahl: ein Vorschlag mit einer Ziffernfolge, die im Original fehlt, fällt durch", () => {
@@ -134,6 +180,17 @@ describe("textcheck: Prüfung", () => {
     expect(checkTextcheck(mit([{ ...a, original: "haben 12 Mitarbeitende", vorschlag: "beschäftigen 12 Mitarbeitende" }]), { text })).toBeNull();
   });
 
+  it("zahl: Datum, Uhrzeit, Tausendertrenner und führende Nullen sind keine neue Zahl (Ziffernblöcke)", () => {
+    const text = "Anmeldung bis 7.11. um 18:30 Uhr, Beitrag CHF 12 500 pro Jahr, Betrag 1250.50.";
+    const a = (original: string, vorschlag: string): Aenderung => ({ art: "fehler", original, vorschlag, grund: "Schweizer Schreibweise." });
+    expect(checkTextcheck(mit([a("bis 7.11.", "bis 07.11.")]), { text })).toBeNull();
+    expect(checkTextcheck(mit([a("um 18:30 Uhr", "um 18.30 Uhr")]), { text })).toBeNull();
+    expect(checkTextcheck(mit([a("CHF 12 500", "CHF 12'500")]), { text })).toBeNull();
+    expect(checkTextcheck(mit([a("Betrag 1250.50", "Betrag 1'250.50")]), { text })).toBeNull();
+    expect(checkTextcheck(mit([a("bis 7.11.", "bis 17.11.")]), { text })).toBe("zahl");
+    expect(checkTextcheck(mit([a("CHF 12 500", "CHF 13'500")]), { text })).toBe("zahl");
+  });
+
   it("vorschlag: ein Vorschlag mit Ausrufezeichen, Eszett oder fremdem Link fällt durch, ausser das Original hat es auch", () => {
     expect(checkTextcheck(mit([{ ...mallerei, vorschlag: "Malerei!" }]), input)).toBe("vorschlag");
     expect(checkTextcheck(mit([{ ...mallerei, vorschlag: "Malerei ß" }]), input)).toBe("vorschlag");
@@ -141,6 +198,27 @@ describe("textcheck: Prüfung", () => {
     expect(checkTextcheck(mit([{ art: "stil", original: "Wir bieten jetzt einen Gratis-Termin an!", vorschlag: "Wir bieten jetzt einen Termin an!", grund: "Gratis ist überflüssig." }]), input)).toBeNull();
     expect(checkTextcheck(mit([{ art: "stil", original: "Wir bieten jetzt einen Gratis-Termin an!", vorschlag: "Wir bieten einen Termin an.", grund: "Ruhiger formuliert." }]), input)).toBeNull();
     expect(checkTextcheck(mit([{ ...strasse, vorschlag: "Straße (Hauptstrasse)" }]), input)).toBeNull();
+  });
+
+  it("vorschlag: Die Regeln des Vorschlags müssen Teil der Regeln des Originals sein, auch wenn es mehrere sind", () => {
+    const text = "Wir freuen uns auf euer Kommen !! Melde dich jetzt bei uns.";
+    const a = (original: string, vorschlag: string): Aenderung => ({ art: "fehler", original, vorschlag, grund: "Zeichensetzung." });
+    // «Kommen !!» verletzt zwei Regeln (Leerzeichen vor Satzzeichen, Ausrufezeichen); «Kommen!» nur noch eine
+    expect(checkTextcheck(mit([a("Kommen !!", "Kommen!")]), { text })).toBeNull();
+    expect(checkTextcheck(mit([a("Kommen !!", "Kommen.")]), { text })).toBeNull();
+    // ein Wort, das das Original nicht hat, ist neu, auch wenn es an anderer Stelle im Text steht
+    expect(checkTextcheck(mit([a("Kommen !!", "Kommen jetzt!")]), { text })).toBe("vorschlag");
+    expect(checkTextcheck(mit([a("Melde dich jetzt bei", "Melde dich jetzt bei")]), { text })).toBe("gleich");
+    expect(checkTextcheck(mit([a("Melde dich jetzt bei uns", "Melde dich bei uns")]), { text })).toBeNull();
+    // ein Vorschlag mit einem Ausrufezeichen, wo das Original keines hat
+    expect(checkTextcheck(mit([a("Melde dich", "Melde dich!")]), { text })).toBe("vorschlag");
+  });
+
+  it("vorschlag: ein Link, der im Text steht, darf bleiben, ein anderer nicht", () => {
+    const text = "Mehr dazu auf www.malerei-keller.ch oder bei uns im Laden, wir freuen uns.";
+    const a = (vorschlag: string): Aenderung => ({ art: "stil", original: "www.malerei-keller.ch oder bei uns", vorschlag, grund: "Klarer ausgedrückt." });
+    expect(checkTextcheck(mit([a("malerei-keller.ch oder im Laden")]), { text })).toBeNull();
+    expect(checkTextcheck(mit([a("www.malerei-gossau.ch oder im Laden")]), { text })).toBe("vorschlag");
   });
 
   it("stil: mehr als fünf Verbesserungen fallen durch", () => {
@@ -166,10 +244,24 @@ describe("textcheck: gemeinsame Prüfung", () => {
     }
   });
 
-  it("prüft Gesamteindruck und Grund weiter gegen Stimme und Regeln und gegen das Schema", () => {
+  it("prüft den Gesamteindruck weiter gegen Stimme und Regeln, den Grund gegen die Zeichenregeln, beide gegen das Schema", () => {
     expect(checkGenerated(textcheckGenerator, { ...output, gesamt: "Ein guter Text, jetzt noch verbessern!" }, input)).toMatchObject({ ok: false, reason: "regel" });
-    expect(checkGenerated(textcheckGenerator, mit([{ ...mallerei, grund: "Das ist ein ganzheitlicher Fehler." }]), input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(textcheckGenerator, { ...output, gesamt: "Der Text ist grundsätzlich gut verständlich." }, input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(textcheckGenerator, mit([{ ...mallerei, grund: "Das ist ein Fehler, richtig!" }]), input)).toMatchObject({ ok: false, reason: "regel" });
     expect(checkGenerated(textcheckGenerator, { gesamt: "x" }, input)).toMatchObject({ ok: false, reason: "schema" });
+  });
+
+  it("der Grund darf Wörter nennen, die die Stimme sonst verbietet: «Prozent», «führende Null», eine Floskel", () => {
+    const text = "Wir geben 5% Rabatt bis zum 7.11. und sind in der heutigen Zeit für dich da.";
+    const raw = {
+      gesamt: "Der Text ist verständlich, hat aber zwei Formfehler und eine Floskel.",
+      aenderungen: [
+        { art: "fehler", original: "5% Rabatt", vorschlag: "5 % Rabatt", grund: "Zwischen Zahl und Prozent steht ein Leerzeichen." },
+        { art: "fehler", original: "bis zum 7.11.", vorschlag: "bis zum 07.11.", grund: "Das Datum bekommt eine führende Null." },
+        { art: "stil", original: "in der heutigen Zeit", vorschlag: "heute", grund: "«In der heutigen Zeit» ist eine Floskel ohne Aussage." },
+      ],
+    };
+    expect(checkGenerated(textcheckGenerator, raw, { text }).ok).toBe(true);
   });
 
   it("verwirft ein Original, das nicht im Text steht, mit der Kennung «nichtimtext»", () => {
@@ -218,5 +310,7 @@ describe("textcheck: Anweisung", () => {
     expect(textcheckGenerator.slug).toBe("textcheck");
     expect(textcheckGenerator.maxTokens).toBe(2600);
     expect(textcheckGenerator.verbatimKeys).toEqual(["original", "vorschlag"]);
+    expect(textcheckGenerator.negativeKeys).toEqual(["grund"]);
+    expect(system).toContain("Jede Stelle nur einmal");
   });
 });

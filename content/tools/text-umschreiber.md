@@ -19,7 +19,7 @@ Der Text-Umschreiber macht aus einem Text, den du schon hast, die Fassung für d
 - **Jeder Kanal liest anders:** Auf LinkedIn und Instagram zählt die erste Zeile, eine Medienmitteilung beginnt mit den Fakten, ein Newsletter mit dem Nutzen.
 - **Die Zeit fehlt:** Im Handwerksbetrieb in Gossau oder im Vorstand des FC Trogen schreibt niemand dieselbe Neuigkeit fünfmal.
 - **Die KI ist keine Autorin:** Sie kennt deinen Betrieb nicht und kann Plausibles erfinden.
-- **Darum Leitplanken:** Sie darf keine Zahlen, Namen, Zitate oder Links hinzufügen. Fehlt eine Angabe, setzt sie einen Platzhalter, und das Werkzeug meldet Neues.
+- **Darum Leitplanken:** Sie darf keine Zahlen, Namen, Zitate oder Links hinzufügen. Fehlt eine Angabe, setzt sie einen Platzhalter, und das Werkzeug meldet Neues und Fehlendes.
 
 => Gleich darunter: fünf Schritte vom Entwurf zum Beitrag.
 
@@ -64,7 +64,7 @@ Nichts. Du gibst deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alpern
 Der Text geht an unseren Server und von dort an unseren KI-Anbieter, der die Fassung schreibt; unser Server speichert ihn nicht. Text und Fassung gehen mit deiner E-Mail-Adresse an Alperna, damit wir dir bei Fragen weiterhelfen können. Gib nichts Vertrauliches ein.
 
 ### Erfindet die KI Inhalte?
-Sie hat die Anweisung, nichts zu erfinden, und das Werkzeug warnt bei neuen Zahlen und Links. Ein Fehler bleibt möglich, zum Beispiel bei einer Aussage, die im Ausgangstext nur angedeutet war. Lies die Fassung darum immer selbst, bevor du sie veröffentlichst.
+Sie hat die Anweisung, nichts zu erfinden, und das Werkzeug warnt bei neuen und bei fehlenden Zahlen und Links. Ein Fehler bleibt möglich, zum Beispiel bei einer Aussage, die im Ausgangstext nur angedeutet war. Lies die Fassung darum immer selbst, bevor du sie veröffentlichst.
 
 ### Welche Stile gibt es?
 Nur korrigieren, einfacher und kürzer, LinkedIn-Post, Instagram-Caption, Google-Beitrag, Medienmitteilung, Newsletter und Website-Text. Weitere Stile folgen.

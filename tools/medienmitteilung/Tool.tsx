@@ -33,6 +33,7 @@ import {
   parseEmpfaenger,
   parseState,
   reportMarkdown,
+  richtwertHinweis,
   toDocument,
   toForm,
   toInput,
@@ -450,7 +451,7 @@ function MedienFlow() {
                 </li>
               ))}
             </ul>
-            <p className="mt-2 text-sm text-muted-foreground">{RICHTWERT_HINWEIS}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{savedInput ? richtwertHinweis(savedInput) : RICHTWERT_HINWEIS}</p>
           </div>
 
           <div className="rounded-xl border border-line p-4 md:p-5" data-testid="mitteilung">

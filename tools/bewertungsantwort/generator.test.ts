@@ -8,6 +8,11 @@ import {
   bewertungInput,
   bewertungOutput,
   bewertungsantwortGenerator,
+  BELEIDIGUNG_RE,
+  GEGENANGRIFF_RE,
+  HERR_FRAU_NAME_RE,
+  SCHULD_RE,
+  VERSPRECHEN_RE,
   checkBewertung,
   containsWord,
   hasSieForm,
@@ -150,6 +155,13 @@ describe("bewertungsantwort: checkBewertung", () => {
     const mitZahl = { ...input, unterschrift: "Ruth Keller, Malerei Keller AG 9200" };
     expect(checkBewertung(output({ text: v1.text.replace(SIGN, "Ruth Keller, Malerei Keller AG 9200") }, { text: v2.text.replace(SIGN, "Ruth Keller, Malerei Keller AG 9200") }), mitZahl)).toBeNull();
   });
+  it("verwirft Zahlwörter ab «zwanzig», die nicht in der Bewertung stehen, und lässt sie zu, wenn die Bewertung sie nennt", () => {
+    expect(checkBewertung(output({ text: v1.text.replace("Es freut uns", "Fünfzig Minuten Wartezeit tun uns leid. Es freut uns") }), input)).toBe("zahl");
+    expect(checkBewertung(output({ text: v1.text.replace("Es freut uns", "Zwei Tage Verspätung tun uns leid. Es freut uns") }), input)).toBeNull();
+    const mit50 = { ...input, bewertung: `${input.bewertung} Wir mussten 50 Minuten warten.` };
+    expect(checkBewertung(output({ text: v1.text.replace("Es freut uns", "Fünfzig Minuten Wartezeit tun uns leid. Es freut uns") }), mit50)).toBeNull();
+    expect(systemPrompt(bewertungsantwortGenerator)).toContain("«zwanzig», «fünfzig», «hundert» zählen genauso");
+  });
   it("verwirft bei Sie ein «du», «dich», «dir» oder «dein»", () => {
     expect(checkBewertung(output({ text: v1.text.replace("Wir sprechen gern mit Ihnen", "Wir sprechen gern mit dir") }), input)).toBe("anrede");
     expect(checkBewertung(output({}, { text: v2.text.replace("Rufen Sie uns gern an", "Ruf uns an, wenn du magst") }), input)).toBe("anrede");
@@ -198,6 +210,150 @@ describe("bewertungsantwort: checkBewertung", () => {
     expect(checkBewertung(output(alles(`Guten Tag perfekt Rabatt, wir melden uns bei Ihnen gern, danke sehr`)), input)).toBe("vermeiden");
     expect(checkBewertung(output(alles(`Guten Tag Rabatt, wir melden uns bei Ihnen gern, danke sehr`)), input)).toBe("unterschrift");
     expect(checkBewertung(output(alles(`Guten Tag Rabatt, wir melden uns bei Ihnen gern, danke sehr\n${SIGN}`)), input)).toBe("versprechen");
+  });
+});
+
+describe("bewertungsantwort: Zusagen, Schuld, Gegenangriff, Beleidigung und Namen", () => {
+  /** Eingabe mit gewählter Anrede und Bewertung; die Unterschrift bleibt die von oben. */
+  const mitAnrede = (anrede: "du" | "sie", bewertung: string, over: Partial<BewertungInput> = {}): BewertungInput => ({ ...input, anrede, bewertung, regeln: [], vermeiden: [], ...over });
+  /** Zwei Varianten, die sonst alle Prüfungen bestehen; `text` ersetzt den Hauptsatz der ersten Variante. */
+  const antwort = (anrede: "du" | "sie", text: string, gruss = anrede === "du" ? "Hallo" : "Guten Tag"): BewertungOutput => ({
+    varianten: [
+      { ton: "ruhig", text: `${gruss}\n${text}\nFreundliche Grüsse\n${SIGN}` },
+      { ton: "sachlich", text: `${gruss}\nWir haben Ihre Rückmeldung gelesen und nehmen sie ernst, ${PLATZHALTER}.\nFreundliche Grüsse\n${SIGN}`.replace(/Ihre|Sie/g, anrede === "du" ? "deine" : "Ihre") },
+    ],
+  });
+
+  // Gute Antworten aus der Prüfung vom 16.10.2026 (W1 bis W6 und zwei Sätze des Bedauerns): Sie müssen durchgehen.
+  const gute: [string, "du" | "sie", string, string][] = [
+    ["W1 Lob", "du", "Super Arbeit, pünktlich und sauber. Das Treppenhaus sieht aus wie neu.", "Vielen Dank für deine schöne Bewertung. Es freut uns sehr, dass das Treppenhaus für dich wie neu aussieht und dass du Pünktlichkeit und Sauberkeit schätzt."],
+    ["W2 Lob mit Hinweis", "sie", "Gute Arbeit an der Fassade in Gossau. Einziger Abzug: Die Gerüstbauer standen zwei Tage im Weg.", "Dass das Gerüst Ihnen zwei Tage im Weg stand, nehmen wir als Hinweis mit. Wir schauen beim nächsten Auftrag, wie wir das mit den Gerüstbauern besser abstimmen."],
+    ["W3 Kritik", "du", "Die Handwerker waren zwei Stunden zu spät und haben vorher nicht angerufen.", "Wir bedauern, dass du zwei Stunden warten musstest und keinen Anruf bekommen hast. Gern sprechen wir mit dir darüber."],
+    ["W4 Kritik Rechnung", "sie", "Die Rechnung war deutlich höher als die Offerte.", "Wir bedauern, dass die Rechnung für Sie anders ausgefallen ist. Wir möchten das gern mit Ihnen anschauen und klären, wie es dazu kam. Wir melden uns persönlich bei Ihnen."],
+    ["W5 Kritik Wartezeit", "du", "Marco hat sich nie gemeldet. Drei Wochen gewartet.", "Es tut uns leid, dass du drei Wochen auf eine Rückmeldung gewartet hast. Wir möchten gern verstehen, was bei dir passiert ist."],
+    ["W6 Beleidigung in der Bewertung", "sie", "Ihr seid alles Idioten und Betrüger!", "Wir bedauern, dass Ihr Eindruck von uns so schlecht ist. Wir nehmen Ihren Ärger ernst."],
+    ["Entschuldigung für das Erlebte", "du", "Die Wartezeit war sehr lang.", "Wir entschuldigen uns, dass die Wartezeit so lang war. Wir nehmen die Rückmeldung mit ins Team."],
+    ["Missverständnis", "du", "Es gab ein Missverständnis.", "Wir bedauern, dass es zu einem Missverständnis kam. Wir sind für dich da."],
+  ];
+  it("lässt gute Antworten durch, auch ein Bedauern und eine Entschuldigung für das Erlebte", () => {
+    for (const [name, anrede, bewertung, text] of gute) {
+      expect(checkBewertung(antwort(anrede, text), mitAnrede(anrede, bewertung)), name).toBeNull();
+    }
+  });
+
+  it("schuld: verwirft Eingeständnisse und Haftung, auch mit Umlaut am Wortanfang", () => {
+    const schlecht = [
+      "Das war unser Fehler, wir haben die Wand beschädigt. Wir übernehmen die Verantwortung und die Kosten.",
+      "Wir haben einen Fehler gemacht und entschuldigen uns dafür.",
+      "Es ist uns ein Fehler unterlaufen.",
+      "Das war unser Versäumnis.",
+      "Wir tragen die Schuld daran.",
+      "Wir übernehmen die Verantwortung für die Wand.",
+      "Dafür übernehmen wir die Kosten.",
+      "Hier greift unsere Haftung.",
+      "Da haben Sie recht.",
+      "Ihre Kritik ist berechtigt.",
+      "Das ist berechtigte Kritik.",
+      "Das hätte nicht passieren dürfen.",
+      "Wir haben versagt.",
+    ];
+    for (const text of schlecht) expect(checkBewertung(antwort("sie", text), mitAnrede("sie", "Die Wand ist beschädigt.")), text).toBe("schuld");
+    expect(checkBewertung(antwort("du", "Du hast recht, das war nicht gut."), mitAnrede("du", "Die Wand ist beschädigt.")), "du hast recht").toBe("schuld");
+    expect(SCHULD_RE.test("Wir bedauern, dass der Termin für Sie so verlaufen ist.")).toBe(false);
+    expect(SCHULD_RE.test("Der Maler hat die Wand gestrichen. Wir haben das Recht auf Rückfragen.")).toBe(false);
+  });
+
+  it("versprechen: verwirft auch Erstattung, Entschädigung, kostenlose Leistung, Nachbesserung und Garantie", () => {
+    for (const text of [
+      "Wir reparieren die Wand selbstverständlich kostenlos.",
+      "Wir zahlen dir eine Entschädigung für den Schaden.",
+      "Wir prüfen eine Erstattung der Rechnung.",
+      "Die Rückerstattung läuft über uns.",
+      "Wir bessern die Wand auf unsere Kosten aus.",
+      "Die Nachbesserung ist selbstverständlich.",
+      "Es gilt unsere Garantie.",
+      "Als Geste der Kulanz melden wir uns.",
+      "Wir schreiben dir eine Gutschrift.",
+    ]) expect(checkBewertung(antwort("du", text), mitAnrede("du", "Die Wand ist beschädigt.")), text).toBe("versprechen");
+    expect(VERSPRECHEN_RE.test("Wir bedauern den Eindruck und sprechen gern mit dir.")).toBe(false);
+  });
+
+  it("gegenangriff: verwirft Zweifel an der Person oder an der Bewertung", () => {
+    for (const text of [
+      "Wir können deine Bewertung nicht nachvollziehen und wissen nicht, ob du überhaupt bei uns Kunde warst. Die Wand war vorher schon beschädigt.",
+      "Das stimmt so nicht.",
+      "Die Behauptung ist unwahr.",
+      "Die Bewertung ist erfunden.",
+      "Wir können das so nicht bestätigen.",
+      "Das ist eine falsche Behauptung.",
+      "Wir wissen nicht, ob du wirklich bei uns warst.",
+    ]) expect(checkBewertung(antwort("du", text), mitAnrede("du", "Die Wand ist beschädigt.")), text).toBe("gegenangriff");
+    // Dank und Bedauern mit «wirklich» oder «nachvollziehen» sind keine Zweifel.
+    expect(GEGENANGRIFF_RE.test("Es freut uns, dass Sie wirklich zufrieden waren. Wir können Ihren Ärger gut nachvollziehen.")).toBe(false);
+    expect(GEGENANGRIFF_RE.test("Wir bedauern, dass du den Eindruck hast, nicht gehört worden zu sein.")).toBe(false);
+  });
+
+  it("beleidigung: verwirft Schimpfwörter und Vorwürfe, auch aus der Bewertung, ausser in Betrieb und Unterschrift", () => {
+    for (const text of ["Du bist ein Idiot und lügst.", "Wir wollen dich nicht als Kunde, du Lügner.", "Das ist eine blöde Bewertung.", "Wir sind keine Betrüger.", "Das ist Schwachsinn."]) {
+      expect(checkBewertung(antwort("du", text), mitAnrede("du", "Ihr seid Idioten und Betrüger.")), text).toBe("beleidigung");
+    }
+    expect(BELEIDIGUNG_RE.test("Wir bedauern deinen Eindruck.")).toBe(false);
+    // «Spinnerei» ist ein Ortsname und ein Gebäude im Fürstenland, kein Schimpfwort.
+    expect(BELEIDIGUNG_RE.test("Wir freuen uns, dass dir der Besuch in der Spinnerei gefallen hat.")).toBe(false);
+    // Der Name des Betriebs und die Unterschrift sind vorgegeben.
+    const dumm = { betrieb: "Dummermuth Malerei", unterschrift: "Ruth Dummermuth, Dummermuth Malerei" };
+    const ok = antwort("du", "Wir bedauern deinen Eindruck und sprechen gern mit dir.");
+    ok.varianten = ok.varianten.map((v) => ({ ...v, text: v.text.replace(SIGN, dumm.unterschrift) }));
+    expect(checkBewertung(ok, mitAnrede("du", "Die Wand ist beschädigt.", dumm))).toBeNull();
+  });
+
+  it("anrede-name: «Herr» oder «Frau» mit Name nie in der Anrede, sonst nur, wenn die Angaben die Nennung enthalten", () => {
+    const bewertung = "Katastrophe. Mit freundlichen Grüssen, Hans Müller. Frau Meier von der Firma war unfreundlich.";
+    const i = mitAnrede("sie", bewertung);
+    // In der Anrede nie, auch nicht, wenn der Name in der Bewertung steht (es kann auch ein Mitarbeitender sein).
+    expect(checkBewertung(antwort("sie", "Wir bedauern Ihren Eindruck und sprechen gern mit Ihnen.", "Guten Tag Herr Müller"), i)).toBe("anrede-name");
+    expect(checkBewertung(antwort("sie", "Wir bedauern Ihren Eindruck.", "Sehr geehrte Frau Meier"), i)).toBe("anrede-name");
+    // Im Text: nur, wenn dieselbe Nennung in den Angaben steht.
+    expect(checkBewertung(antwort("sie", "Wir bedauern, dass Frau Meier Ihnen unfreundlich begegnet ist."), i)).toBeNull();
+    expect(checkBewertung(antwort("sie", "Wir bedauern, dass Frau Meier Ihnen unfreundlich begegnet ist."), mitAnrede("sie", "frau meier war unfreundlich."))).toBeNull();
+    expect(checkBewertung(antwort("sie", "Wir bedauern, dass Frau Keller Ihnen unfreundlich begegnet ist."), mitAnrede("sie", "Es war unfreundlich."))).toBe("anrede-name");
+    // Anrede ohne Namen und Anrede mit «Frau und Herr» ohne Namen sind in Ordnung.
+    expect(checkBewertung(antwort("sie", "Wir bedauern Ihren Eindruck."), i)).toBeNull();
+    expect("Guten Tag Herr Müller".match(HERR_FRAU_NAME_RE)).toEqual(["Herr Müller"]);
+    expect("Liebe Frau und Herr, ihr Chef".match(HERR_FRAU_NAME_RE)).toBeNull();
+    // Die Unterschrift darf «Frau» oder «Herr» mit Namen enthalten: Sie ist vorgegeben.
+    const sig = "Frau Ruth Keller, Malerei Keller";
+    const o = antwort("sie", "Wir bedauern Ihren Eindruck.");
+    o.varianten = o.varianten.map((v) => ({ ...v, text: v.text.replace(SIGN, sig) }));
+    expect(checkBewertung(o, mitAnrede("sie", "Es war unfreundlich.", { unterschrift: sig }))).toBeNull();
+  });
+
+  it("prüft die neuen Regeln nach «versprechen», in fester Reihenfolge", () => {
+    const i = mitAnrede("du", "Die Wand ist beschädigt.");
+    const alle = antwort("du", "Das war unser Fehler, du Idiot, das stimmt so nicht, Herr Müller, gratis.", "Hallo Herr Müller");
+    expect(checkBewertung(alle, i)).toBe("versprechen");
+    const ohneZusage = antwort("du", "Das war unser Fehler, du Idiot, das stimmt so nicht, Herr Müller.", "Hallo Herr Müller");
+    expect(checkBewertung(ohneZusage, i)).toBe("schuld");
+    expect(checkBewertung(antwort("du", "Du Idiot, das stimmt so nicht, Herr Müller.", "Hallo Herr Müller"), i)).toBe("gegenangriff");
+    expect(checkBewertung(antwort("du", "Du Idiot, Herr Müller.", "Hallo Herr Müller"), i)).toBe("beleidigung");
+    expect(checkBewertung(antwort("du", "Wir bedauern deinen Eindruck.", "Hallo Herr Müller"), i)).toBe("anrede-name");
+  });
+
+  it("gibt über checkGenerated «check» mit der Kennung zurück", () => {
+    const i = mitAnrede("du", "Die Wand ist beschädigt.");
+    expect(checkGenerated(bewertungsantwortGenerator, antwort("du", "Das war unser Fehler. Wir bedauern es."), i)).toMatchObject({ ok: false, reason: "check", detail: "schuld" });
+    expect(checkGenerated(bewertungsantwortGenerator, antwort("du", "Wir bedauern, dass es zu einem Missverständnis kam."), i)).toMatchObject({ ok: true });
+  });
+
+  it("sagt der KI in der Anweisung, was erlaubt und was verboten ist", () => {
+    const system = systemPrompt(bewertungsantwortGenerator);
+    expect(system).toContain("«Wir entschuldigen uns, dass die Wartezeit so lang war»");
+    expect(system).toContain("«unser Fehler»");
+    expect(system).toContain("Erstattungen");
+    expect(system).toContain("«nicht nachvollziehbar»");
+    expect(system).toContain("Wiederhole keine Beleidigungen");
+    expect(system).toContain("nie «Herr» oder «Frau» mit Name");
+    expect(system).toContain("nie «Lass uns»");
   });
 });
 

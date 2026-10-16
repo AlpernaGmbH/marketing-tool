@@ -4,15 +4,18 @@ import { BEISPIEL_INPUT, BEISPIEL_OUTPUT } from "./beispiel";
 import {
   ANLASS_KEYS,
   ANLASS_LABELS,
+  LAENGE_FLOOR_WORDS,
   LAENGE_MAX_WORDS,
   LAENGE_MIN_WORDS,
   LEAD_MAX_WORDS,
+  WERTUNG_STAEMME,
   betriebKern,
   checkMitteilung,
   fremdeWertungen,
   fremdeZahlen,
   fuellSatz,
   gesamtWoerter,
+  laengeZiel,
   leadNenntBetrieb,
   leadNenntOrt,
   leadNenntWann,
@@ -20,8 +23,11 @@ import {
   medienInput,
   medienOutput,
   metaSatz,
+  mindestWoerter,
   numbersIn,
+  ohneWebsiteVerweis,
   ortSchluessel,
+  richtwertHinweis,
   wannSchluessel,
   wordCount,
   zitatStimmt,
@@ -136,8 +142,20 @@ describe("medienmitteilung: Anweisung und Rückmeldung zu Meta- und Füllsätzen
     expect(system).toContain("stösst auf grosses Interesse");
     expect(system).toContain("wertenden Wörter");
   });
+  it("nennt in der Anweisung die Wertungswörter der Prüfung, die Zahlenregel, den Satz «Mehr unter» und die Länge", () => {
+    const system = systemPrompt(medienGenerator);
+    for (const stamm of WERTUNG_STAEMME) expect(system, stamm).toContain(`«${stamm}»`);
+    expect(system).toContain("«beste», «grösste», «schönste», «einzigartig»");
+    expect(system).toContain("«herzlich eingeladen»");
+    expect(system).toContain("Mehr unter <Adresse aus website>.");
+    expect(system).toContain("Zahlen nur, wenn sie in den Angaben stehen");
+    expect(system).not.toContain("als Wort oder lass sie weg");
+    expect(system).toContain("unter «Gesamtlänge»");
+    expect(system).not.toContain(`${LAENGE_MIN_WORDS + 30} bis`);
+  });
   it("gibt der KI bei jeder neuen Kennung eine eigene Rückmeldung ohne Teile des Entwurfs", () => {
-    for (const kennung of ["meta", "fuell", "wertung"]) {
+    // Alle Kennungen, die checkMitteilung liefert, haben in lib/generator.ts einen festen Satz.
+    for (const kennung of ["lead", "w-fragen", "zahl", "meta", "fuell", "wertung", "laenge", "zitat"]) {
       const hint = repairHint("check", kennung);
       expect(hint).toContain("Dein Entwurf hat die Prüfung nicht bestanden.");
       expect(hint).not.toContain("Kennung:");
@@ -195,6 +213,22 @@ describe("medienmitteilung: checkMitteilung", () => {
     // Ein Datum am Anfang der Angabe zählt nicht als Listenmarke.
     expect(fremdeZahlen(output(), { ...input, wann: "14. November 2026, 10 bis 16 Uhr" })).toEqual([]);
   });
+  it("zahl: Daten, Uhrzeiten und Zahlwörter gleicht numbersIn aus", () => {
+    // Ein Entwurf ohne weitere Zahlen, damit nur die Schreibweise von Datum und Uhrzeit zählt.
+    const o = (lead: string) => output({ titel: "Malerei Keller lädt zum Tag der offenen Tür", lead, text: ["Die Werkstatt in Gossau steht offen.".repeat(3), "Das Team zeigt die Arbeit der Malerei.".repeat(3)], zitat: "", boilerplate: BEISPIEL_OUTPUT.boilerplate.replace(/zwölf|drei|Mehr.*$/g, "") });
+    const mit = (wann: string, lead: string) => fremdeZahlen(o(lead), { ...input, wann, was: "Tag der offenen Tür in der Werkstatt.", wer: "", warum: "Der Betrieb bildet Lernende aus.", zitat: "", bild: "" });
+    // 5.9.2026 = 05.09.2026, 14.11. = 14. November, 18 Uhr = 18.00 Uhr
+    expect(mit("Samstag, 5.9.2026, 18 Uhr", "Die Malerei Keller in Gossau lädt am 05.09.2026 um 18.00 Uhr zum Tag der offenen Tür in die Werkstatt ein.")).toEqual([]);
+    expect(mit("Samstag, 14.11., 19:30 Uhr", "Die Malerei Keller in Gossau lädt am 14. November um 19.30 Uhr zum Tag der offenen Tür ein.")).toEqual([]);
+    expect(mit("Samstag, 14. November, 19.30 Uhr", "Die Malerei Keller in Gossau lädt am 14.11. um 19:30 Uhr zum Tag der offenen Tür ein.")).toEqual([]);
+    // Ein anderer Tag bleibt fremd.
+    expect(mit("Samstag, 14.11.2026", "Die Malerei Keller in Gossau lädt am 21. November 2026 ein.")).toEqual(["21"]);
+    // Zahlwörter ab «zwanzig» zählen wie Ziffern: erfunden fällt auf, aus den Angaben bleibt erlaubt.
+    expect(fremdeZahlen(output({ lead: "Die Malerei Keller in Gossau arbeitet seit über fünfzig Jahren in der Region." }), input)).toEqual(["50"]);
+    expect(fremdeZahlen(output({ lead: "Die Malerei Keller in Gossau arbeitet seit fünfzig Jahren in der Region." }), { ...input, was: `${input.was} Der Betrieb besteht seit 50 Jahren.` })).toEqual([]);
+    // Ein Datum am Anfang eines Textes zählt nicht als Listenmarke.
+    expect(fremdeZahlen(output({ text: ["14. November 2026: Tag der offenen Tür in der Werkstatt der Malerei Keller in Gossau mit Führungen für alle Gäste aus der Region.", ...BEISPIEL_OUTPUT.text.slice(1)] }), input)).toEqual([]);
+  });
   it("laenge: 149 und 401 Wörter fallen durch, 150 und 400 passen", () => {
     expect(gesamtWoerter(mitLaenge(150))).toBe(LAENGE_MIN_WORDS);
     expect(checkMitteilung(mitLaenge(LAENGE_MIN_WORDS), input)).toBeNull();
@@ -203,6 +237,38 @@ describe("medienmitteilung: checkMitteilung", () => {
     expect(checkMitteilung(mitLaenge(LAENGE_MAX_WORDS + 1), input)).toBe("laenge");
     expect(checkMitteilung(mitLaenge(140), input)).toBe("laenge");
     expect(checkMitteilung(mitLaenge(410), input)).toBe("laenge");
+  });
+  it("laenge: die Untergrenze richtet sich nach den Angaben (80 bis 150 Wörter)", () => {
+    // Knappe Angaben: 9 + 5 Wörter plus 50 ergeben 64, es gilt die Untergrenze von 80.
+    const knapp: MedienInput = { ...input, was: "Die Malerei Keller feiert 40 Jahre mit einem Fest.", wo: "", wer: "", warum: "Der Betrieb bildet Lernende aus.", zitat: "", zitatVon: "", bild: "" };
+    expect(mindestWoerter(knapp)).toBe(LAENGE_FLOOR_WORDS);
+    const kurz = (total: number): MedienOutput => {
+      const basis = output({ titel: "Malerei Keller feiert 40 Jahre", zitat: "", bildzeile: "", boilerplate: "Malerei Keller ist ein Malerbetrieb in Gossau im Kanton St. Gallen und bildet Lernende aus.", text: [] });
+      const n = total - gesamtWoerter(basis);
+      const absatz = (k: number) => Array.from({ length: k }, () => "Gast").join(" ");
+      return { ...basis, text: [absatz(Math.floor(n / 2)), absatz(n - Math.floor(n / 2))] };
+    };
+    expect(gesamtWoerter(kurz(80))).toBe(80);
+    expect(checkMitteilung(kurz(80), knapp)).toBeNull();
+    expect(checkMitteilung(kurz(79), knapp)).toBe("laenge");
+    // Dieselbe knappe Mitteilung ist bei ausführlichen Angaben zu kurz.
+    expect(checkMitteilung(kurz(100), input)).toBe("laenge");
+    // Mittlere Angaben: Wörter der Angaben plus 50.
+    const mittel: MedienInput = { ...knapp, wer: Array.from({ length: 24 }, () => "Beat").join(" ") };
+    expect(mindestWoerter(mittel)).toBe(9 + 5 + 24 + 50);
+    expect(checkMitteilung(kurz(87), mittel)).toBe("laenge");
+    expect(checkMitteilung(kurz(88), mittel)).toBeNull();
+    // Nach oben bleibt es bei 400, nach unten bei 150.
+    expect(mindestWoerter(input)).toBe(LAENGE_MIN_WORDS);
+    expect(checkMitteilung(kurz(LAENGE_MAX_WORDS + 1), knapp)).toBe("laenge");
+  });
+  it("laenge: die Nutzernachricht nennt die Länge, die zu den Angaben passt", () => {
+    expect(laengeZiel(input)).toEqual({ von: LAENGE_MIN_WORDS + 30, bis: LAENGE_MAX_WORDS - 40 });
+    const knapp = { ...input, was: "Die Malerei Keller feiert 40 Jahre mit einem Fest.", wo: "", wer: "", warum: "Der Betrieb bildet Lernende aus.", zitat: "", bild: "" };
+    expect(medienGenerator.prompt(knapp)).toContain("Gesamtlänge: 110 bis 360 Wörter.");
+    expect(medienGenerator.prompt(input)).toContain("Gesamtlänge: 180 bis 360 Wörter.");
+    expect(richtwertHinweis(input)).toBe("Lead höchstens 40 Wörter, Gesamtlänge 150 bis 400 Wörter: Richtwert von Alperna, keine Statistik.");
+    expect(richtwertHinweis(knapp)).toContain("Gesamtlänge 80 bis 400 Wörter");
   });
   it("zitat: ein erfundenes Zitat fällt durch, auch ein umformuliertes", () => {
     const ohneZitat = { ...input, zitat: "", zitatVon: "" };
@@ -273,6 +339,42 @@ describe("medienmitteilung: checkMitteilung", () => {
     // Der Beispiel-Entwurf enthält keine fremde Wertung
     expect(fremdeWertungen(BEISPIEL_OUTPUT, input)).toEqual([]);
   });
+  it("wertung: Superlative sind ohne Angabe verboten, ganze Wörter zählen («Bestehen» nicht)", () => {
+    const mit = (satz: string) => output({ text: [`${BEISPIEL_OUTPUT.text[0]} ${satz}`, ...BEISPIEL_OUTPUT.text.slice(1)] });
+    const o = mit("Die Malerei Keller ist die beste Malerei der Region.");
+    expect(checkMitteilung(o, input)).toBe("wertung");
+    expect(fremdeWertungen(o, input)).toEqual(["beste"]);
+    expect(checkMitteilung(mit("Der grösste Betrieb im Quartier feiert."), input)).toBe("wertung");
+    expect(checkMitteilung(mit("Die Mitteilung sagt nichts Einzigartiges."), input)).not.toBeNull();
+    expect(fremdeWertungen(mit("Das Bestehen des Betriebs wird gefeiert."), input)).toEqual([]);
+    // Steht das Wort in den Angaben, ist es kein Fehler des Entwurfs.
+    expect(fremdeWertungen(o, { ...input, positionierung: "Die beste Malerei der Region." })).toEqual([]);
+    // «einmalig» ist eine Zeitangabe.
+    expect(fremdeWertungen(mit("Der Tag der offenen Tür findet einmalig statt."), input)).toEqual([]);
+  });
+  it("wertung: «herzlich eingeladen» und «herzlich willkommen» sind Höflichkeit, «herzlich» sonst eine Wertung", () => {
+    const mit = (satz: string) => output({ text: [`${BEISPIEL_OUTPUT.text[0]} ${satz}`, ...BEISPIEL_OUTPUT.text.slice(1)] });
+    expect(checkMitteilung(mit("Alle Interessierten sind herzlich eingeladen."), input)).toBeNull();
+    expect(checkMitteilung(mit("Gäste sind herzlich willkommen."), input)).toBeNull();
+    expect(checkMitteilung(mit("Es gibt einen herzlichen Empfang."), input)).toBe("wertung");
+    expect(fremdeWertungen(mit("Das Team ist herzlich und offen."), input)).toEqual(["herzlich"]);
+  });
+  it("meta: der Verweis auf die eigene Website am Ende der Boilerplate ist erlaubt, wenn die Adresse aus den Angaben stammt", () => {
+    const mitBoiler = (satz: string) => output({ boilerplate: `${BEISPIEL_OUTPUT.boilerplate.replace(/ Mehr Informationen gibt es unter malerei-keller\.ch\./, "")} ${satz}` });
+    for (const satz of ["Mehr unter malerei-keller.ch.", "Weitere Informationen unter malerei-keller.ch.", "Weitere Informationen finden Sie unter https://www.malerei-keller.ch", "Weitere Details gibt es unter malerei-keller.ch."]) {
+      expect(metaSatz(mitBoiler(satz), input), satz).toBeNull();
+    }
+    expect(checkMitteilung(mitBoiler("Weitere Informationen unter malerei-keller.ch."), input)).toBeNull();
+    // Ohne diese Adresse in den Angaben bleibt es ein Hinweis auf weitere Informationen.
+    expect(metaSatz(mitBoiler("Weitere Informationen unter malerei-keller.ch."), { ...input, website: "" })).toBe("Hinweis auf Rückfragen oder weitere Informationen");
+    expect(metaSatz(mitBoiler("Weitere Informationen unter andere-firma.ch."), input)).toBe("Hinweis auf Rückfragen oder weitere Informationen");
+    // Andere Hinweise bleiben Metasätze, auch in der Boilerplate und im Haupttext.
+    expect(metaSatz(mitBoiler("Bei Rückfragen erreichen Sie uns unter malerei-keller.ch."), input)).toBe("Hinweis auf Rückfragen oder weitere Informationen");
+    const text = [`${BEISPIEL_OUTPUT.text[0]} Weitere Informationen unter malerei-keller.ch.`, ...BEISPIEL_OUTPUT.text.slice(1)];
+    expect(metaSatz(output({ text }), input)).toBe("Hinweis auf Rückfragen oder weitere Informationen");
+    expect(ohneWebsiteVerweis("Er streicht. Mehr unter malerei-keller.ch.", "https://www.malerei-keller.ch/kontakt")).toBe("Er streicht.  ");
+    expect(ohneWebsiteVerweis("Mehr unter malerei-keller.ch.", "")).toBe("Mehr unter malerei-keller.ch.");
+  });
   it("meldet meta, fuell und wertung vor der Länge", () => {
     const o = output({ text: ["Diese Medienmitteilung informiert über den Tag der offenen Tür in Gossau und seine Gäste. ".repeat(2), "y".repeat(100)] });
     expect(checkMitteilung(o, input)).toBe("meta");
@@ -281,6 +383,63 @@ describe("medienmitteilung: checkMitteilung", () => {
     const lang = `${BEISPIEL_OUTPUT.lead} ${Array.from({ length: 12 }, () => "Gossau").join(" ")} 99`;
     expect(checkMitteilung(output({ lead: lang, text: ["x".repeat(100), "y".repeat(100)] }), input)).toBe("lead");
     expect(checkMitteilung(output({ titel: "Malerei Keller feiert 99 Jahre", text: ["x".repeat(100), "y".repeat(100)] }), input)).toBe("zahl");
+  });
+});
+
+describe("medienmitteilung: gute Entwürfe aus der Prüfung vom 16.10.2026", () => {
+  // Drei Entwürfe, wie eine KI sie liefern kann: ausführlich mit Zitat und Website, knapp bei drei Fakten, knapp mit Platzhaltern.
+  const ausfuehrlich = {
+    titel: "Malerei Keller lädt zum Tag der offenen Tür",
+    lead: "Die Malerei Keller in Gossau feiert ihr 40-jähriges Bestehen und lädt am Samstag, 14. November 2026, 10 bis 16 Uhr, zu einem Tag der offenen Tür in ihre Werkstatt ein.",
+    text: [
+      "Besucherinnen und Besucher erhalten Führungen durch die Werkstatt und eine Farbberatung für Fassaden und Innenräume. Eine Ausstellung zeigt alte Werkzeuge des Handwerks. Die Lernenden zeigen, wie man eine Wand streicht. Für Kaffee und Kuchen ist gesorgt.",
+      "Anna Keller, Inhaberin, leitet den Betrieb mit einem Team von zwölf Malerinnen und Malern. Dazu kommen drei Lernende. Die Malerei Keller bildet seit Jahren Lernende aus Gossau und Umgebung aus und streicht Häuser im Fürstenland und im Appenzellerland.",
+      "Der Betrieb ist bei Vereinen und Schulen in der Gemeinde bekannt. Mit dem Tag der offenen Tür möchte er der Kundschaft danken und zeigen, wie die Malerinnen und Maler arbeiten. Alle Interessierten sind herzlich eingeladen.",
+    ],
+    zitat: "Wir wollen den Leuten zeigen, wie wir arbeiten, und uns bei der Kundschaft bedanken.",
+    boilerplate: "Die Malerei Keller ist ein Malerbetrieb in Gossau im Kanton St. Gallen. Sie arbeitet für Privatkundschaft, Vereine und Schulen und streicht Fassaden und Innenräume. Der Betrieb hält seine Termine. Weitere Informationen unter malerei-keller.ch.",
+    bildzeile: "Fotos der Werkstatt und des Teams, aufgenommen von Lea Meier, sind auf Anfrage in Druckqualität erhältlich.",
+  };
+  const knapp = {
+    titel: "Malerei Keller bietet Fassadenanstriche mit Mineralfarbe an",
+    lead: "Die Malerei Keller in Gossau bietet ab 1. März 2027 neu Fassadenanstriche mit mineralischer Farbe an.",
+    text: [
+      "Mit dem neuen Angebot streicht der Betrieb Fassaden mit mineralischer Farbe. Das Angebot gilt ab 1. März 2027 und richtet sich an Hausbesitzerinnen und Hausbesitzer in Gossau und Umgebung.",
+      "Für die Region ist das Angebot von Bedeutung, weil Mineralfarbe länger hält und weniger Unterhalt braucht. Das erspart Hausbesitzern im Kanton St. Gallen Aufwand bei der Pflege ihrer Fassade.",
+    ],
+    zitat: "",
+    boilerplate: "Die Malerei Keller ist ein Malerbetrieb in Gossau im Kanton St. Gallen. Der Betrieb streicht Fassaden und Innenräume.",
+    bildzeile: "",
+  };
+  const knappInput = { ...input, website: "", positionierung: "", anlass: "angebot" as const, was: "Wir bieten neu Fassadenanstriche mit mineralischer Farbe an.", wann: "ab 1. März 2027", wo: "", wer: "", warum: "Mineralfarbe hält länger und braucht weniger Unterhalt.", zitat: "", zitatVon: "", bild: "" };
+  const personell = {
+    titel: "Lea Inauen leitet neu die Buchhaltung der Treuhand Sutter",
+    lead: "Die Treuhand Sutter AG in Appenzell stellt Lea Inauen per 1. Januar 2027 als neue Leiterin der Buchhaltung vor.",
+    text: [
+      "Lea Inauen übernimmt per 1. Januar 2027 die Leitung der Buchhaltung bei der Treuhand Sutter AG in Appenzell. Sie folgt auf den bisherigen Leiter, der in Pension geht. [Bisherige Tätigkeit von Lea Inauen] [Ausbildung von Lea Inauen]",
+      "Für die Kundschaft im Kanton Appenzell Innerrhoden ist die Nachfolge von Bedeutung: Die Buchhaltung bleibt in der Hand einer Fachperson, die den Betrieb kennt. [Zahl der betreuten Kundinnen und Kunden]",
+    ],
+    zitat: "",
+    boilerplate: "Die Treuhand Sutter AG ist ein Treuhandbetrieb in Appenzell im Kanton Appenzell Innerrhoden. Sie betreut Buchhaltungen und Steuerfragen. [Angebot und Gründungsjahr ergänzen]",
+    bildzeile: "",
+  };
+  const personellInput = { ...input, betrieb: "Treuhand Sutter AG", ort: "Appenzell", kanton: "Appenzell Innerrhoden", website: "", positionierung: "", anlass: "personelles" as const, was: "Lea Inauen übernimmt die Leitung der Buchhaltung.", wann: "per 1. Januar 2027", wo: "", wer: "Lea Inauen", warum: "Der bisherige Leiter geht in Pension.", zitat: "", zitatVon: "", bild: "" };
+
+  it("lässt einen ausführlichen Entwurf mit «Weitere Informationen unter …» und «herzlich eingeladen» durch", () => {
+    expect(checkGenerated(medienGenerator, ausfuehrlich, input)).toMatchObject({ ok: true });
+    expect(checkMitteilung(ausfuehrlich, input)).toBeNull();
+  });
+  it("lässt kurze Entwürfe zu wenigen Fakten durch (99 und 117 Wörter), auch mit Platzhaltern", () => {
+    expect(gesamtWoerter(knapp)).toBe(99);
+    expect(mindestWoerter(knappInput)).toBe(LAENGE_FLOOR_WORDS);
+    expect(checkGenerated(medienGenerator, knapp, knappInput)).toMatchObject({ ok: true });
+    expect(gesamtWoerter(personell)).toBe(117);
+    const out = checkGenerated(medienGenerator, personell, personellInput);
+    expect(out).toMatchObject({ ok: true });
+    if (out.ok) expect(placeholdersIn(out.output)).toHaveLength(4);
+  });
+  it("verlangt von denselben kurzen Entwürfen nicht mehr, aber von ausführlichen Angaben weiterhin 150 Wörter", () => {
+    expect(checkMitteilung(knapp, input)).not.toBeNull();
   });
 });
 

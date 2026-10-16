@@ -67,7 +67,7 @@ Betrieb, Ort, Kanton, Website, Anlass, deine Angaben zur Meldung, das Zitat mit 
 Nein. Du gibst vor dem Ergebnis deine E-Mail-Adresse an. Das Häkchen für Kontakt durch Alperna ist freiwillig. Deine Angaben und der Entwurf gehen mit der Adresse an Alperna, Kontaktdaten und Empfänger nicht. Danach fragt ein Jahr lang kein Werkzeug erneut.
 
 ### Erfindet die KI Zahlen oder Zitate?
-Sie soll nicht, und das Werkzeug prüft nach: Steht eine Ziffer nicht in deinen Angaben oder stammt das Zitat nicht von dir, zeigt es keinen Entwurf. Fehlt eine Angabe, steht ein Platzhalter in eckigen Klammern.
+Sie soll nicht, und das Werkzeug prüft nach: Steht eine Zahl nicht in deinen Angaben, stammt das Zitat nicht von dir oder lobt sich der Text mit einem Superlativ selbst, zeigt es keinen Entwurf. Fehlt eine Angabe, steht ein Platzhalter in eckigen Klammern.
 
 ## Alperna
 problem: Die Mitteilung ist verschickt, aber auf deiner eigenen Website findet niemand die Meldung.

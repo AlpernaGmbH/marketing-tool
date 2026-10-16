@@ -46,7 +46,12 @@ export const LIMITS = {
 
 /** Richtwerte von Alperna, keine Statistik: Lead und Gesamtlänge einer Medienmitteilung. */
 export const LEAD_MAX_WORDS = 40;
+/** Höchste Untergrenze der Gesamtlänge: Sie gilt bei ausführlichen Angaben. Bei knappen Angaben gilt `mindestWoerter`. */
 export const LAENGE_MIN_WORDS = 150;
+/** Niedrigste Untergrenze: Titel, Lead, zwei Absätze und Boilerplate ergeben auch bei wenigen Fakten gut 80 Wörter. */
+export const LAENGE_FLOOR_WORDS = 80;
+/** So viele Wörter kommen zu den Wörtern der Angaben dazu (Titel, Lead, Boilerplate und Verbindendes). */
+export const LAENGE_PLUS_WORDS = 50;
 export const LAENGE_MAX_WORDS = 400;
 
 export const medienInput = z.object({
@@ -97,6 +102,20 @@ export function laengeText(output: MedienOutput): string {
 
 export function gesamtWoerter(output: MedienOutput): number {
   return wordCount(laengeText(output));
+}
+
+/**
+ * Untergrenze der Gesamtlänge in Wörtern: Wörter der Angaben (was, wo, wer, warum, Zitat, Bild) plus 50, aber höchstens 150 und
+ * mindestens 80. Eine gute Mitteilung zu drei Fakten ist kurz; ohne diese Staffelung würde sie abgelehnt oder mit Füllsätzen gestreckt.
+ */
+export function mindestWoerter(input: Pick<MedienInput, "was" | "wo" | "wer" | "warum" | "zitat" | "bild">): number {
+  const angaben = wordCount([input.was, input.wo, input.wer, input.warum, input.zitat, input.bild].join(" "));
+  return Math.min(LAENGE_MIN_WORDS, Math.max(LAENGE_FLOOR_WORDS, angaben + LAENGE_PLUS_WORDS));
+}
+
+/** Der Satz zu den Grenzen für Lead und Länge, mit der Untergrenze, die zu diesen Angaben gehört. */
+export function richtwertHinweis(input: Pick<MedienInput, "was" | "wo" | "wer" | "warum" | "zitat" | "bild">): string {
+  return `Lead höchstens ${LEAD_MAX_WORDS} Wörter, Gesamtlänge ${mindestWoerter(input)} bis ${LAENGE_MAX_WORDS} Wörter: Richtwert von Alperna, keine Statistik.`;
 }
 
 const norm = (s: string) => s.normalize("NFC").toLowerCase().replace(/\s+/g, " ").trim();
@@ -161,21 +180,14 @@ export function leadNenntWann(lead: string, input: Pick<MedienInput, "wann">): b
 }
 
 /**
- * Trennt Datum und Uhrzeit in einzelne Zahlen («14.11.2026» → «14 11 2026», «10.00 Uhr» → «10 00 Uhr»), damit eine
- * andere Schreibweise desselben Datums (14. November 2026) keine fremde Zahl ergibt.
+ * Ziffernfolgen im Entwurf, die nicht in den Angaben stehen. `numbersIn` gleicht Schreibweisen von Datum und Uhrzeit aus
+ * («14.11.2026» und «14. November 2026», «10.00 Uhr» und «10 Uhr») und zählt Zahlwörter ab «zwanzig» wie Ziffern.
  */
-function splitDatum(text: string): string {
-  return text
-    .replace(/(?<![\d.])(\d{1,2})\.(\d{1,2})\.(\d{2,4})(?![\d])/g, "$1 $2 $3")
-    .replace(/(\d{1,2})[.:](\d{2})(?=\s*(?:Uhr|h)\b)/g, "$1 $2");
-}
-
-/** Ziffernfolgen im Entwurf, die nicht in den Angaben stehen (ohne Nullen wie die «00» in «10.00 Uhr»). */
 export function fremdeZahlen(output: MedienOutput, input: MedienInput): string[] {
-  // Jede Angabe für sich und mit einem Wort davor: «14. November» am Zeilenanfang gilt für numbersIn sonst als Listenmarke.
-  const known = new Set(Object.values(input).flatMap((value) => numbersIn(splitDatum(`x ${value}`))));
-  const found = numbersIn(splitDatum(collectStrings(output).join("\n"))).filter((n) => !/^0+$/.test(n) && !known.has(n));
-  return [...new Set(found)];
+  // Jeder Text für sich und mit einem Wort davor: «14. November» am Anfang eines Textes gilt für numbersIn sonst als Listenmarke.
+  const zahlen = (text: string) => numbersIn(`x ${text}`);
+  const known = new Set(Object.values(input).flatMap(zahlen));
+  return [...new Set(collectStrings(output).flatMap(zahlen).filter((n) => !known.has(n)))];
 }
 
 const SATZZEICHEN = /[«»"„“”'‹›.,;:!?()[\]]/g;
@@ -244,10 +256,27 @@ export const WERTUNG_STAEMME = [
 /** Die Texte der Mitteilung ohne Zitat und Bildzeile; nur dort gelten die Regeln gegen Meta- und Füllsätze. */
 const berichtsTexte = (o: MedienOutput): string[] => [o.titel, o.lead, ...o.text, o.boilerplate];
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Der Verweis auf die eigene Website am Ende der Boilerplate («Mehr unter malerei-keller.ch.», «Weitere Informationen unter …») ist
+ * üblich und kein Metasatz, solange die Adresse aus «website» stammt. Der Satz fällt hier aus dem Text, bevor die Metasätze
+ * geprüft werden; ob die Adresse erlaubt ist, prüft der Link-Vergleich in lib/generator.ts.
+ */
+export function ohneWebsiteVerweis(text: string, website: string): string {
+  const host = website.trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").split(/[/?#\s]/)[0];
+  if (!host) return text;
+  const re = new RegExp(
+    `\\b(?:mehr|weitere (?:informationen|infos|details))(?: (?:gibt es|finden (?:sie|interessierte)|erhalten sie))? unter (?:https?://)?(?:www\\.)?${escapeRe(host)}\\S*`,
+    "gi",
+  );
+  return text.replace(re, " ");
+}
+
 /** Erste Fundstelle eines Musters, die nicht wörtlich in den Angaben steht (was die Person selbst schreibt, ist kein Fehler des Entwurfs). */
-function ersteFundstelle(output: MedienOutput, muster: { re: RegExp; was: string }[], input?: MedienInput): string | null {
+function ersteFundstelle(output: MedienOutput, muster: { re: RegExp; was: string }[], input?: MedienInput, texte: string[] = berichtsTexte(output)): string | null {
   const angaben = input ? norm(Object.values(input).join("\n")) : "";
-  for (const t of berichtsTexte(output)) {
+  for (const t of texte) {
     for (const m of muster) {
       const hit = m.re.exec(t);
       if (hit && !(angaben && angaben.includes(norm(hit[0])))) return m.was;
@@ -258,7 +287,9 @@ function ersteFundstelle(output: MedienOutput, muster: { re: RegExp; was: string
 
 /** Bezeichnung des ersten Metasatzes im Entwurf; null, wenn keiner da ist. */
 export function metaSatz(output: MedienOutput, input?: MedienInput): string | null {
-  return ersteFundstelle(output, META_MUSTER, input);
+  const texte = berichtsTexte(output);
+  if (input?.website) texte[texte.length - 1] = ohneWebsiteVerweis(output.boilerplate, input.website);
+  return ersteFundstelle(output, META_MUSTER, input, texte);
 }
 
 /** Bezeichnung des ersten Füllsatzes im Entwurf; null, wenn keiner da ist. */
@@ -266,19 +297,31 @@ export function fuellSatz(output: MedienOutput, input?: MedienInput): string | n
   return ersteFundstelle(output, FUELL_MUSTER, input);
 }
 
-/** Wertende Wörter im Entwurf, die in den Angaben nicht stehen (Wortanfang, ohne Gross- und Kleinschreibung). */
+/** Höflichkeitsformeln mit «herzlich»: «Alle sind herzlich eingeladen» wertet den Betrieb nicht. */
+const HOEFLICHKEIT_RE = /(?<![\p{L}])herzlich(?=\s+(?:eingeladen|willkommen)(?![\p{L}]))/gu;
+
+/** Superlative und Werbewörter im Bericht. «einmalig» fehlt hier: «einmalig am Samstag» ist eine Zeitangabe. */
+const SUPERLATIV_RE =
+  /(?<![\p{L}])(?:beste[nrms]?|grösste[nrms]?|schönste[nrms]?|günstigste[nrms]?|modernste[nrms]?|erfolgreichste[nrms]?|einzigartig\p{L}*|sensationell\p{L}*|revolutionär\p{L}*|unschlagbar\p{L}*|beispiellos\p{L}*|spektakulär\p{L}*|erstklassig\p{L}*|weltklasse|spitzenklasse)(?![\p{L}])/giu;
+
+/**
+ * Wertende Wörter und Superlative im Entwurf, die in den Angaben nicht stehen (Wortanfang bei den Wertungen, ganze Wörter bei
+ * den Superlativen, ohne Gross- und Kleinschreibung). Was die Person selbst schreibt, ist kein Fehler des Entwurfs.
+ */
 export function fremdeWertungen(output: MedienOutput, input: MedienInput): string[] {
   const angaben = norm(Object.values(input).join("\n"));
-  const text = norm(berichtsTexte(output).join("\n"));
-  return WERTUNG_STAEMME.filter((stamm) => new RegExp(`(?<![\\p{L}])${stamm}`, "u").test(text) && !new RegExp(`(?<![\\p{L}])${stamm}`, "u").test(angaben));
+  const text = norm(berichtsTexte(output).join("\n")).replace(HOEFLICHKEIT_RE, " ");
+  const stamm = WERTUNG_STAEMME.filter((s) => new RegExp(`(?<![\\p{L}])${s}`, "u").test(text) && !new RegExp(`(?<![\\p{L}])${s}`, "u").test(angaben));
+  const superlative = [...new Set(Array.from(text.matchAll(SUPERLATIV_RE), (m) => m[0]))].filter((w) => !new RegExp(`(?<![\\p{L}])${w}(?![\\p{L}])`, "u").test(angaben));
+  return [...stamm, ...superlative];
 }
 
 /**
  * Prüfung, die nur dieses Werkzeug kennt. Gibt den Grund zurück oder null:
- * «lead» (mehr als 40 Wörter), «w-fragen» (Betrieb oder Ort fehlt im Lead), «zahl» (Ziffer ohne Angabe),
+ * «lead» (mehr als 40 Wörter), «w-fragen» (Betrieb oder Ort fehlt im Lead), «zahl» (Zahl ohne Angabe: Ziffer oder Zahlwort ab «zwanzig»),
  * «meta» (Satz über die Mitteilung selbst, die Redaktion oder Rückfragen), «fuell» (Füllsatz oder Werbesprache),
- * «wertung» (wertendes Wort, das nicht in den Angaben steht),
- * «laenge» (Gesamtlänge ausserhalb von 150 bis 400 Wörtern), «zitat» (Zitat nicht aus den Angaben).
+ * «wertung» (wertendes Wort oder Superlativ, das nicht in den Angaben steht),
+ * «laenge» (Gesamtlänge ausserhalb von `mindestWoerter` (80 bis 150, je nach Angaben) und 400 Wörtern), «zitat» (Zitat nicht aus den Angaben).
  */
 export function checkMitteilung(output: MedienOutput, input: MedienInput): string | null {
   if (wordCount(output.lead) > LEAD_MAX_WORDS) return "lead";
@@ -288,9 +331,17 @@ export function checkMitteilung(output: MedienOutput, input: MedienInput): strin
   if (fuellSatz(output, input)) return "fuell";
   if (fremdeWertungen(output, input).length > 0) return "wertung";
   const n = gesamtWoerter(output);
-  if (n < LAENGE_MIN_WORDS || n > LAENGE_MAX_WORDS) return "laenge";
+  if (n < mindestWoerter(input) || n > LAENGE_MAX_WORDS) return "laenge";
   if (!zitatStimmt(output, input)) return "zitat";
   return null;
+}
+
+/** Die wertenden Wörter, die die Prüfung ablehnt, als Aufzählung für die Anweisung («beliebt», «traditionsreich», …). */
+const WERTUNG_LISTE = WERTUNG_STAEMME.map((w) => `«${w}»`).join(", ");
+
+/** Gesamtlänge, die die Nutzernachricht der KI nennt: etwas über der Untergrenze der Prüfung, bis 40 Wörter unter dem Höchstwert. */
+export function laengeZiel(input: Pick<MedienInput, "was" | "wo" | "wer" | "warum" | "zitat" | "bild">): { von: number; bis: number } {
+  return { von: mindestWoerter(input) + 30, bis: LAENGE_MAX_WORDS - 40 };
 }
 
 const INSTRUCTION = `Schreib eine Medienmitteilung für Schweizer Lokalmedien aus den Angaben.
@@ -299,11 +350,11 @@ const INSTRUCTION = `Schreib eine Medienmitteilung für Schweizer Lokalmedien au
 - «titel»: eine Schlagzeile, 20 bis 90 Zeichen, die sagt, was passiert; ohne Doppelpunkt-Kette und ohne Wertung.
 - «lead»: höchstens ${LEAD_MAX_WORDS} Wörter, 40 bis 320 Zeichen. Er beantwortet wer (Betrieb aus «betrieb», mit seinem Namen), was, wann («wann», so geschrieben, wie angegeben) und wo (Ort aus «ort» oder «wo»).
 - «text»: 2 bis 5 Absätze, je 80 bis 600 Zeichen. Absatz 1: Einzelheiten zu was, wann, wo und wer («wer»). Absatz 2: warum es für die Region von Bedeutung ist («warum»). Weitere Absätze: Hintergrund, ausschliesslich aus den Angaben. Nenne Ort und Kanton, wo es passt.
-- Nur Fakten aus den Angaben. Schreib keine Sätze über die Mitteilung selbst («Diese Medienmitteilung informiert …», «Wir freuen uns auf Ihre Berichterstattung», «Bei Rückfragen …», «Bildmaterial steht zur Verfügung»): Kontakt und Bildangebot setzt das Dokument selbst ein. Schreib keine Füllsätze und keine Werbesprache («stösst auf grosses Interesse», «für jeden etwas dabei», «verspricht ein Highlight», «bietet Raum für Begegnungen»). Schreib keine wertenden Wörter («beliebt», «traditionsreich», «erfolgreich», «bekannt», «wichtig», «spannend»), die nicht wörtlich in den Angaben stehen. Behauptungen über Nachfrage, Publikum oder Wirkung gibt es nur, wenn die Angaben sie nennen.
-- Gesamtlänge: «titel», «lead», «text», «zitat» und «boilerplate» zusammen ${LAENGE_MIN_WORDS + 30} bis ${LAENGE_MAX_WORDS - 40} Wörter. Fehlt der Stoff dafür, schreib keine Füllsätze und erfinde keine Einzelheiten; setz stattdessen einen Platzhalter in eckigen Klammern, zum Beispiel [Zahl der Gäste].
-- Ziffern nur, wenn sie wörtlich in den Angaben stehen. Datum und Uhrzeit schreib genau so, wie sie in «wann» stehen. Sonst schreib die Zahl als Wort oder lass sie weg.
+- Nur Fakten aus den Angaben. Schreib keine Sätze über die Mitteilung selbst («Diese Medienmitteilung informiert …», «Wir freuen uns auf Ihre Berichterstattung», «Bei Rückfragen …», «Bildmaterial steht zur Verfügung»): Kontakt und Bildangebot setzt das Dokument selbst ein. Schreib keine Füllsätze und keine Werbesprache («stösst auf grosses Interesse», «für jeden etwas dabei», «verspricht ein Highlight», «bietet Raum für Begegnungen»). Schreib keine wertenden Wörter und keine Superlative, die nicht wörtlich in den Angaben stehen: ${WERTUNG_LISTE} (auch mit Endungen, etwa «beliebte» oder «spannendes») und «beste», «grösste», «schönste», «einzigartig»; meide auch «erfolgreich», «bekannt» und «wichtig». Erlaubt sind «herzlich eingeladen» und «herzlich willkommen». Behauptungen über Nachfrage, Publikum oder Wirkung gibt es nur, wenn die Angaben sie nennen.
+- Gesamtlänge: «titel», «lead», «text», «zitat» und «boilerplate» zusammen so viele Wörter, wie die Nutzernachricht unter «Gesamtlänge» nennt. Sie richtet sich nach dem Umfang der Angaben: Wenige Fakten ergeben eine kurze Mitteilung. Fehlt der Stoff dafür, schreib keine Füllsätze und erfinde keine Einzelheiten; setz stattdessen einen Platzhalter in eckigen Klammern, zum Beispiel [Zahl der Gäste].
+- Zahlen nur, wenn sie in den Angaben stehen, als Ziffer oder als Wort («fünfzig», «hundert» zählen auch). Rechne nichts aus und runde nichts. Datum und Uhrzeit schreib so, wie sie in «wann» stehen. Sonst lass die Zahl weg oder setz einen Platzhalter.
 - «zitat»: nur, wenn «zitat» in den Angaben nicht leer ist: der Wortlaut aus den Angaben, höchstens leicht geglättet (Gross- und Kleinschreibung, Satzzeichen, offensichtliche Tippfehler), ohne Anführungszeichen, ohne Namen der Person. Nicht erfinden und nicht umformulieren. Das Zitat steht nur in «zitat», nicht im Haupttext. Ist «zitat» leer, ist auch dieses Feld ein leerer String.
-- «boilerplate»: drei Sätze über den Betrieb, der erste beginnt mit dem Namen des Betriebs (ohne Artikel). Nimm «positionierung» als Grundlage, wenn sie da ist. Fehlt sie, schreib die Sätze aus «betrieb», «ort», «website» und dem, was die Angaben über das Angebot sagen. Ohne erfundene Zahlen.
+- «boilerplate»: drei Sätze über den Betrieb, der erste beginnt mit dem Namen des Betriebs (ohne Artikel). Nimm «positionierung» als Grundlage, wenn sie da ist. Fehlt sie, schreib die Sätze aus «betrieb», «ort», «website» und dem, was die Angaben über das Angebot sagen. Ohne erfundene Zahlen. Steht «website» in den Angaben, folgt nach den drei Sätzen ein vierter, kurzer Satz: «Mehr unter <Adresse aus website>.» Schreib die Adresse genau so, wie sie in «website» steht. Ist «website» leer, gibt es diesen Satz nicht.
 - «bildzeile»: nur, wenn «bild» nicht leer ist: eine Zeile, die das Bildangebot nennt (was zu sehen ist, wer fotografiert hat, dass es zur Verfügung steht), ausschliesslich aus «bild». Ist «bild» leer, ist dieses Feld ein leerer String.
 Form: {"titel": "…", "lead": "…", "text": ["…"], "zitat": "…", "boilerplate": "…", "bildzeile": "…"}`;
 
@@ -312,7 +363,10 @@ export const medienGenerator = defineGenerator({
   input: medienInput,
   output: medienOutput,
   instruction: INSTRUCTION,
-  prompt: (i) => dataPrompt("Angaben zur Mitteilung", i),
+  prompt: (i) => {
+    const ziel = laengeZiel(i);
+    return `${dataPrompt("Angaben zur Mitteilung", i)}\n\nGesamtlänge: ${ziel.von} bis ${ziel.bis} Wörter.`;
+  },
   maxTokens: 1400,
   temperature: 0.4,
   check: checkMitteilung,

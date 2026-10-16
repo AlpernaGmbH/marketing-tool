@@ -76,6 +76,25 @@ describe("textcheck: Silben und Lesbarkeit", () => {
     expect(analyzeText(text).sentences).toBe(4);
   });
 
+  it("beendet Sätze auch nicht an «St.», «Kt.», «lic.» und «iur.»", () => {
+    expect(analyzeText("Wir sind in St. Gallen und in Zürich. Unsere Werkstatt liegt in St. Margrethen, nahe der Grenze zu Österreich. Wir freuen uns.").sentences).toBe(3);
+    expect(analyzeText("Der Kt. Appenzell Ausserrhoden liegt im Osten. Unser Berater lic. iur. Hans Keller hilft dir weiter. Wir sind seit 1948 hier.").sentences).toBe(3);
+    // das Wort «ist.» am Satzende bleibt ein Satzende
+    expect(analyzeText("Das Haus ist. Das Dach ist alt.").sentences).toBe(2);
+  });
+
+  it("hält den Lesbarkeitsindex zwischen 0 und 100", () => {
+    const kurz = "Das ist gut. Wir sind da. Du bist da. Ich bin da. Es ist so. Wir sind es. Sie ist da. Er ist da. Es ist gut. Wir sind hier. Du bist es. Ich bin es. Es geht. Wir gehen. Ja, ja. Ok, ok.";
+    expect(readability(kurz)!.index).toBe(100);
+    expect(readability(kurz)!.level).toBe("sehr leicht");
+    const wort = "Verwaltungsrechtsschutzversicherungsgesellschaftsvertreterversammlung";
+    const schwer = readability(`${Array(32).fill(wort).join(" ")}.`)!;
+    expect(schwer.index).toBe(0);
+    expect(schwer.level).toBe("sehr schwer");
+    // die Mittelwerte bleiben ungekürzt
+    expect(schwer.avgSyllables).toBeGreaterThan(10);
+  });
+
   it("zählt Zeilenumbrüche als Satzgrenze (Überschriften, Listen)", () => {
     expect(analyzeText("Unsere Leistungen\nMalen\nTapezieren\nDann folgt ein ganzer Satz.").sentences).toBe(4);
   });
@@ -95,6 +114,15 @@ describe("textcheck: Fehler", () => {
     expect(count("Innen ,und aussen.", "leerzeichen-vor-satzzeichen")).toBe(1);
     expect(count("Hallo,Welt;gut", "komma-ohne-leerzeichen")).toBe(2);
     expect(count("Es kostet 8,5 Franken.", "komma-ohne-leerzeichen")).toBe(0);
+  });
+
+  it("hält «3 : 1» und «18 : 30 Uhr» für Spielstand und Uhrzeit, nicht für einen Fehler", () => {
+    expect(count("Der FC Trogen gewinnt 3 : 1 gegen Teufen. Treffpunkt 18 : 30 Uhr.", "leerzeichen-vor-satzzeichen")).toBe(0);
+    expect(cleanText("Der FC Trogen gewinnt 3 : 1 gegen Teufen. Treffpunkt 18 : 30 Uhr.")).toBe("Der FC Trogen gewinnt 3 : 1 gegen Teufen. Treffpunkt 18 : 30 Uhr.");
+    // ein Leerzeichen vor dem Doppelpunkt bleibt ein Fehler, wo kein Spielstand steht
+    expect(count("Unsere Preise : ab 5 Franken.", "leerzeichen-vor-satzzeichen")).toBe(1);
+    expect(cleanText("Unsere Preise : ab 5 Franken.")).toBe("Unsere Preise: ab 5 Franken.");
+    expect(cleanText("Wirklich ? Ja !")).toBe("Wirklich? Ja!");
   });
 
   it("findet mehrere Leerzeichen und wiederholte Satzzeichen", () => {

@@ -63,7 +63,7 @@ Richtwert von Alperna, keine Statistik: Antworte auf jede Kritik und auf Lob, so
 Der Text der Bewertung, die Sterne, dein Betrieb, Anrede, Länge, Unterschrift und deine Regeln, dazu Werte und zu vermeidende Wörter aus deinem Profil. Nicht deine E-Mail-Adresse. Unser Server speichert nichts. Gib die Bewertung ohne den Namen der Person ein.
 
 ### Darf die KI Namen nennen?
-Nein. Sie nennt nur, was in der Bewertung steht, und erfindet keine Namen, Gründe oder Abläufe. Das Werkzeug prüft ausserdem, dass keine Zahl im Entwurf steht, die nicht in deinen Angaben vorkommt.
+Nein. Sie nennt nur, was in der Bewertung steht, und erfindet keine Namen, Gründe oder Abläufe. Das Werkzeug lehnt einen Entwurf ab, wenn eine Zahl nicht in deinen Angaben steht, die Anrede «Herr» oder «Frau» mit Namen enthält, eine Schuld eingestanden, etwas versprochen oder die Person angegriffen wird.
 
 ### Was, wenn die Bewertung falsch ist?
 Antworte ruhig, bedauere den Eindruck, ohne Schuld einzugestehen, und biete ein Gespräch an. Das Werkzeug gibt keine Rechtsauskunft. Bei Fragen zu einer Bewertung, die du für unwahr hältst, wende dich an eine Fachperson.

@@ -274,6 +274,7 @@ describe("numbersIn: Daten, Uhrzeiten und Zahlwörter", () => {
     expect(numbersIn("seit 50 Jahren")).toEqual(["50"]);
     expect(numbersIn("Tausend Dank für deine Bewertung")).toEqual([]);
     expect(numbersIn("hundertprozentig zufrieden")).toEqual([]);
+    expect(numbersIn("im letzten Jahrhundert und Jahrtausend")).toEqual([]);
   });
 });
 

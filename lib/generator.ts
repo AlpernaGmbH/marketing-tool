@@ -396,7 +396,7 @@ const CHECK_HINWEISE: Record<string, string> = {
   doppelt: "Zwei Headline-Vorschläge sind gleich oder ein Vorschlag gleicht der heutigen Headline. Schreib drei verschiedene Headlines mit unterschiedlichem Aufbau.",
   ichbin: "Der Anfang des Info-Texts beginnt mit «Ich bin» oder «Mein Name». Beginne mit dem Nutzen für die Kundschaft und stell die Person danach vor.",
   floskel: "Ein Vorschlag enthält eine Floskel (zum Beispiel «ganzheitlich», «Lösungen», «mit Leidenschaft», «Rundum-Service»). Ersetze sie durch eine Tatsache aus den Angaben oder streich sie.",
-  nichtimtext: "Mindestens ein «original» steht nicht Buchstabe für Buchstabe im Text der Person (oder zwei Einträge meinen dieselbe Stelle). Kopiere jede Stelle genau aus dem Text, mit Fehlern und Sonderzeichen, und nimm nur Stellen, die dort stehen.",
+  nichtimtext: "Mindestens ein «original» steht nicht Buchstabe für Buchstabe im Text der Person. Kopiere jede Stelle genau aus dem Text, mit Fehlern und Sonderzeichen, und nimm nur Stellen, die dort stehen.",
   gleich: "Bei mindestens einem Eintrag ist der Vorschlag gleich dem Original. Lass solche Einträge weg.",
   vorschlag: "Ein Vorschlag bringt ein verbotenes Zeichen, ein verbotenes Wort oder einen Link mit, den das Original nicht hat. Ändere nur, was nötig ist, und füg nichts Neues ein.",
   namedoppelt: "Zwei Gruppen heissen gleich. Gib jeder Gruppe einen eigenen Namen und lass doppelte weg.",
@@ -435,6 +435,12 @@ const CHECK_HINWEISE: Record<string, string> = {
   "firma-nicht-im-text": "Der Name der Firma steht nicht im Text der Website. Lass das Feld leer, wenn du ihn dort nicht findest, und schreib ihn sonst genau so, wie er dort steht.",
   emoji: "Der Entwurf enthält Emojis, obwohl die Person keine will. Streich alle Emojis.",
   anteil: "Die Anteile der Säulen ergeben nicht hundert. Verteile genau hundert Prozent auf die Säulen.",
+  recht: "Der Entwurf enthält eine Aussage über Steuern, Abzüge, Spenden, Gemeinnützigkeit, Verträge oder Gesetze. Streich sie: Das Dokument macht keine Rechtsaussagen, der Verein klärt das im Gespräch.",
+  wirkung: "Der Entwurf verspricht dem Betrieb eine Wirkung («sicher mehr Kundschaft», «Rendite») oder nutzt einen Superlativ. Beschreibe nur, was der Verein bietet.",
+  schuld: "Die Antwort gesteht ein Verschulden ein oder übernimmt Verantwortung, Haftung oder Kosten («unser Fehler», «Sie haben recht»). Bedauere nur das Erlebte («Es tut uns leid, dass …») und biete ein Gespräch an.",
+  gegenangriff: "Die Antwort zweifelt die Person oder die Bewertung an («nicht nachvollziehbar», «stimmt nicht»). Bedauere den Eindruck und erkläre nicht, wer recht hat.",
+  beleidigung: "Die Antwort enthält ein Schimpfwort oder einen Vorwurf aus der Bewertung. Wiederhole nichts davon und antworte ruhig.",
+  "anrede-name": "Die Antwort nennt «Herr» oder «Frau» mit Namen. Beginne mit «Hallo» oder «Guten Tag» ohne Namen.",
   kanal: "Ein Kanal im Entwurf gehört nicht zu den gewählten Kanälen. Nimm jeden gewählten Kanal einmal mit seinem Namen aus den Angaben auf und keinen anderen.",
 };
 
@@ -480,8 +486,8 @@ const ZAHLWOERTER: [RegExp, string][] = [
   [/\b\p{L}*siebzig\b/giu, "70"],
   [/\b\p{L}*achtzig\b/giu, "80"],
   [/\b\p{L}*neunzig\b/giu, "90"],
-  [/\b\p{L}*hundert\b/giu, "100"],
-  [/\b\p{L}*tausend\b(?!\s+danke?\b)/giu, "1000"],
+  [/\b(?!jahr)\p{L}*hundert\b/giu, "100"],
+  [/\b(?!jahr)\p{L}*tausend\b(?!\s+danke?\b)/giu, "1000"],
 ];
 
 /**
