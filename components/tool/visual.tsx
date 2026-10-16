@@ -310,8 +310,14 @@ export function Slides({ title, items }: Omit<Of<"slides">, "type">) {
         aria-label={`${title ?? "Karten"}, Pfeiltasten blättern`}
         onScroll={onScroll}
         onKeyDown={(e) => {
-          if (e.key === "ArrowRight") (e.preventDefault(), go(active + 1));
-          if (e.key === "ArrowLeft") (e.preventDefault(), go(active - 1));
+          if (e.key === "ArrowRight") {
+            e.preventDefault();
+            go(active + 1);
+          }
+          if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            go(active - 1);
+          }
         }}
         className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:none] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring [&::-webkit-scrollbar]:hidden"
       >

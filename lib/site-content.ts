@@ -13,6 +13,7 @@ export const SITE_DIR = path.join(CONTENT_DIR, "site");
 export const SITE_FILES = {
   categories: [...CATEGORY_PAGES] as string[],
   warumKostenlos: "warum-kostenlos",
+  ueber: "ueber",
   marketingSchweiz: "marketing-schweiz",
   faqStartseite: "faq-startseite",
 } as const;

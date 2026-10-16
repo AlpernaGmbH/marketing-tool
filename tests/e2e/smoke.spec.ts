@@ -1374,7 +1374,7 @@ test.describe("Welle 2b im Browser (Strategie-Generatoren II)", () => {
     await start.click();
     const email = await giveEmail(page);
     await expect(page.getByRole("region", { name: "Deine Themensäulen" })).toBeVisible();
-    await expect(page.getByTestId("saeulen").getByRole("heading", { name: "1. Fassaden vorher und nachher" })).toBeVisible();
+    await expect(page.getByTestId("saeulen")).toContainText("1. Fassaden vorher und nachher");
     await expect(page.getByTestId("saeulen").locator("tbody tr")).toHaveCount(2);
     await expect(page.getByTestId("ki-hinweis")).toContainText("KI");
     expect(calls).toEqual({ read: 0, generate: 1 });

@@ -12,7 +12,7 @@ import { LEGAL_IGNORED, checkLegalFile } from "@/lib/legal-rules";
 import { loadBausteine } from "@/lib/pitch";
 import { getTools } from "@/lib/registry";
 import { SITE_FILES, readCategory, readSimple, siteFile } from "@/lib/site-content";
-import { checkCategory, checkFaqStartseite, checkMarketingSchweiz, checkWarumKostenlos } from "@/lib/site-rules";
+import { checkCategory, checkFaqStartseite, checkMarketingSchweiz, checkUeber, checkWarumKostenlos } from "@/lib/site-rules";
 import { toolComponents } from "@/tools/components";
 
 const strict = process.argv.includes("--strict");
@@ -62,6 +62,7 @@ if (fs.existsSync(dir)) {
 const siteChecks: [string, (name: string) => Issue[]][] = [
   ...SITE_FILES.categories.map((c): [string, (n: string) => Issue[]] => [c, (n) => checkCategory(readCategory(n))]),
   [SITE_FILES.warumKostenlos, (n) => checkWarumKostenlos(readSimple(n))],
+  [SITE_FILES.ueber, (n) => checkUeber(readSimple(n))],
   [SITE_FILES.marketingSchweiz, (n) => checkMarketingSchweiz(readSimple(n))],
   [SITE_FILES.faqStartseite, (n) => checkFaqStartseite(readSimple(n))],
 ];

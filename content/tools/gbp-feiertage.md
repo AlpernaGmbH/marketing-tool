@@ -14,7 +14,7 @@ ablauf:
   - "Liste abtippen, Kalender laden"
 ---
 ## Warum das wichtig ist
-Das Google-Unternehmensprofil zeigt deine normalen Öffnungszeiten, bis du Sonderzeiten einträgst. Dieses Werkzeug erstellt dafür die Liste «Feiertage Öffnungszeiten»: eine Zeile je Feiertag deines Kantons, dazu deine Woche als Raster.
+Öffnungszeiten an Feiertagen gehören ins Google-Unternehmensprofil, sonst zeigt es deine normalen Zeiten. Dieses Werkzeug erstellt dafür die Liste «Feiertage Öffnungszeiten»: eine Zeile je Feiertag deines Kantons, dazu deine Woche als Raster.
 
 - **Jeder Kanton anders:** Allerheiligen steht in St. Gallen im Ruhetagsgesetz, der 1. Mai in Zürich und im Thurgau, der Josefstag in Schwyz und Uri (Quelle: kantonale Ruhetagsgesetze, Stand 05.10.2026).
 - **Beweglich:** Karfreitag, Ostermontag, Auffahrt und Pfingstmontag wandern mit Ostern.
@@ -28,7 +28,7 @@ Das Google-Unternehmensprofil zeigt deine normalen Öffnungszeiten, bis du Sonde
 2. **Kalender laden.** Importiere die Kalenderdatei in deinen Kalender, damit dich der Termin vor jedem Feiertag erinnert.
 3. **Ortsübliche Tage prüfen.** Frag bei deiner Gemeinde nach, ob ein Tag an deinem Standort gilt.
 4. **Brückentage ergänzen.** Schliesst du am Freitag nach Auffahrt, trag den Tag von Hand dazu.
-5. **Jedes Jahr wiederholen.** Erstelle die Liste im Herbst für das nächste Jahr.
+5. **Jedes Jahr wiederholen.** Erstelle die Öffnungszeiten an Feiertagen im Herbst für das nächste Jahr.
 
 => Gleich unten: drei Fehler bei Sonderzeiten.
 

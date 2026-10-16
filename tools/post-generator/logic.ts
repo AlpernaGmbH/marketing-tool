@@ -21,8 +21,6 @@ import {
   FORMAT_KEYS,
   LIMITS,
   PLATTFORM_KEYS,
-  KATEGORIE_KEYS,
-  ZIEL_KEYS,
   postInput,
   postOutput,
   type AnredeKey,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
   PROFILE_AT_KEY,
   PROFILE_EXPIRED_KEY,
@@ -32,7 +32,7 @@ export function useProfile() {
   const { value: stored, ready, set: rawSet } = useLocalJson<Profile>(PROFILE_KEY, sanitizeProfile);
   const savedAt = parseSavedAt(useLocalRaw(PROFILE_AT_KEY));
   const expired = ready && profileExpired(savedAt);
-  const profile = expired ? {} : stored;
+  const profile = useMemo<Profile>(() => (expired ? {} : stored), [expired, stored]);
 
   /** Schreibt das Profil und vermerkt den Zeitpunkt. */
   const set = useCallback(

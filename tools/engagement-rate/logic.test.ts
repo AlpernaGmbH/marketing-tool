@@ -4,7 +4,6 @@ import { styleIssues } from "@/lib/content-rules";
 import { toMarkdown } from "@/lib/export/model";
 import { isToolDone } from "@/lib/progress";
 import {
-  BENCHMARKS,
   CSV_BOM,
   EMPTY_STATE,
   LIMITS,
@@ -14,7 +13,6 @@ import {
   NUTZUNG,
   PLATTFORMEN,
   SAMPLE,
-  SAMPLE_KURZ,
   addPost,
   chartLabel,
   chartSvg,
@@ -23,10 +21,7 @@ import {
   eingabeText,
   emptyPost,
   interactions,
-  isBlankKurz,
   isBlankPost,
-  loadBenchmarks,
-  benchmarkFor,
   markedPost,
   modusOf,
   niceScale,
@@ -46,7 +41,6 @@ import {
   validate,
   type FormState,
   type Input,
-  type KurzForm,
   type PostForm,
 } from "./logic";
 

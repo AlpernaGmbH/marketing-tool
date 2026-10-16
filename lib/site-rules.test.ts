@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SITE_FILES, parseCategory, parseSimple, readCategory, readSimple } from "@/lib/site-content";
-import { MARKETING_TOPICS, checkCategory, checkFaqStartseite, checkMarketingSchweiz, checkWarumKostenlos } from "@/lib/site-rules";
+import { MARKETING_TOPICS, checkCategory, checkFaqStartseite, checkMarketingSchweiz, checkUeber, checkWarumKostenlos } from "@/lib/site-rules";
 import { words } from "@/tests/fixtures";
 
 const codes = (issues: { level: string; code: string }[]) => issues.filter((i) => i.level === "error").map((i) => i.code);
@@ -125,6 +125,16 @@ describe("checkFaqStartseite", () => {
 describe("echte Seitentexte (content/site)", () => {
   it.each(SITE_FILES.categories)("Kategorie «%s» besteht die Prüfung", (name) => {
     expect(checkCategory(readCategory(name)).filter((i) => i.level === "error")).toEqual([]);
+  });
+  it("ueber besteht und sagt, dass es kein Konto gibt", () => {
+    const ueber = readSimple(SITE_FILES.ueber);
+    expect(checkUeber(ueber).filter((i) => i.level === "error")).toEqual([]);
+    expect(ueber.body).toContain("kein Konto");
+  });
+  it("warum-kostenlos beschreibt den Zugang mit E-Mail-Adresse und nicht mehr den alten Weg", () => {
+    const body = readSimple(SITE_FILES.warumKostenlos).body;
+    expect(body).toContain("E-Mail-Adresse");
+    expect(body).not.toMatch(/erstes Ergebnis|Angaben zu dir und deiner Firma|ersten Durchlauf/i);
   });
   it("warum-kostenlos, marketing-schweiz und faq-startseite bestehen", () => {
     expect(checkWarumKostenlos(readSimple(SITE_FILES.warumKostenlos)).filter((i) => i.level === "error")).toEqual([]);

@@ -71,6 +71,17 @@ export function checkWarumKostenlos(c: SimpleContent): Issue[] {
   return issues;
 }
 
+/** «Über diese Werkzeuge»: vier Absätze, Kopfdaten mit Titel und Beschreibung. */
+export function checkUeber(c: SimpleContent): Issue[] {
+  const issues: Issue[] = [...metaIssues(c.front, false)];
+  if (c.paragraphs.length < 3 || c.paragraphs.length > 5) issues.push(err("paragraphs", `Es gibt ${c.paragraphs.length} Absätze (3 bis 5)`));
+  c.paragraphs.forEach((p, i) => {
+    if (countWords(p) < 30) issues.push(err("words", `Absatz ${i + 1} ist zu kurz (${countWords(p)} Wörter, mindestens 30)`));
+  });
+  issues.push(...todoIssues(c.body, Object.values(c.front)), ...styleIssues(c.body));
+  return issues;
+}
+
 /** Pflichtthemen des SEO-Abschnitts «Marketing in der Schweiz». */
 export const MARKETING_TOPICS = ["Sprachregion", "Gemeinde", "Verein", "Google Business Profil", "WhatsApp", "UWG", "revDSG", "PBV"] as const;
 

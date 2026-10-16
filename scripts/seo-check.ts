@@ -1,6 +1,6 @@
 /* SEO-Prüfung über alle Werkzeuge (Etappe 7, Launch): Titel, Beschreibung, eine H1,
- * Keyword in H1 und erstem Absatz, interne Links. Nicht Teil von `npm run check`,
- * weil «mindestens drei verwandte Werkzeuge» erst mit dem vollständigen Katalog erfüllbar ist.
+ * Keyword in H1 und erstem Absatz, interne Links. Teil von `npm run check`
+ * (seit 16.10.2026, Launch-Prüfung; vorher fehlte der vollständige Katalog).
  */
 import { readToolContent } from "@/lib/content";
 import { getNextStep, getRelated, getTools } from "@/lib/registry";
