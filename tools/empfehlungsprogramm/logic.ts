@@ -53,7 +53,7 @@ export type Begriffe = {
   kundschaftHilfe: string;
   /** «neue Kundinnen und Kunden» im Modell. */
   neu: string;
-  /** «Kundin» im Satz «Eine gewonnene … bringt dir». */
+  /** Mit Artikel, am Satzanfang: «Eine gewonnene Kundin», «Ein gewonnenes Mitglied». */
   gewonnen: string;
 };
 
@@ -71,7 +71,7 @@ export function begriffe(verein: boolean): Begriffe {
         kundschaftFeld: "Mitglieder insgesamt (freiwillig)",
         kundschaftHilfe: "Damit rechnen wir drei Szenarien. Ohne Angabe rechnen wir mit 100 Mitgliedern als Beispiel.",
         neu: "neue Mitglieder",
-        gewonnen: "gewonnenes Mitglied",
+        gewonnen: "Ein gewonnenes Mitglied",
       }
     : {
         betrieb: "Betrieb",
@@ -85,7 +85,7 @@ export function begriffe(verein: boolean): Begriffe {
         kundschaftFeld: "Kundinnen und Kunden pro Jahr (freiwillig)",
         kundschaftHilfe: "Damit rechnen wir drei Szenarien. Ohne Angabe rechnen wir mit 100 Kundinnen und Kunden als Beispiel.",
         neu: "neue Kundinnen und Kunden",
-        gewonnen: "gewonnene Kundin",
+        gewonnen: "Eine gewonnene Kundin",
       };
 }
 
@@ -292,7 +292,8 @@ export function rechne(input: Eingabe): Rechnung {
   if (seiteMax < RUNDEN) return { ...base, zuKlein: true };
 
   const proSeite: Range = { min: Math.max(roundTo(rawMin / teil), RUNDEN), max: seiteMax };
-  const gesamt: Range = { min: Math.max(roundTo(rawMin), RUNDEN), max: roundTo(rawMax) };
+  // Beide Seiten bekommen gleich viel: Die Gesamtspanne ist genau das Doppelte der Spanne je Seite (sonst widersprechen sich die Zahlen).
+  const gesamt: Range = { min: proSeite.min * teil, max: proSeite.max * teil };
   const mitte = Math.min(Math.max(roundTo((proSeite.min + proSeite.max) / 2), proSeite.min), proSeite.max);
   return { ...base, wirksam: input.anreiz, gesamt, proSeite, mitte };
 }
@@ -373,7 +374,7 @@ export function modellBlocks(r: Rechnung, kundschaft: number | null, verein = fa
       : `Deckungsbeitrag in ${m.jahre} Jahren ${chf(m.deckungsbeitrag)}. Der Anreiz kostet kein Geld, nur etwas Zeit.`;
   return [
     { type: "heading", level: 1, text: "Was es dir bringt" },
-    { type: "stat", label: `Eine ${b.gewonnen} bringt dir netto`, value: chf(m.netto), band: `in ${m.jahre} Jahren`, note },
+    { type: "stat", label: `${b.gewonnen} bringt dir netto`, value: chf(m.netto), band: `in ${m.jahre} Jahren`, note },
     {
       type: "bars",
       title: `Drei Szenarien für ein Jahr, ${m.beispiel ? `Beispiel mit ${m.kundschaft} ${verein ? "Mitgliedern" : "Kundinnen und Kunden"}` : `bei ${m.kundschaft} ${verein ? "Mitgliedern" : "Kundinnen und Kunden"}`}`,
@@ -626,7 +627,7 @@ export function hinweise(o: { kanal: KanalKey; verein: boolean }): string[] {
     o.verein
       ? "Frag bei jedem Anlass. Ein Programm, das nicht erwähnt wird, bleibt unbekannt."
       : "Frag nach jedem Auftrag. Ein Programm, das nicht erwähnt wird, bleibt unbekannt.",
-    "Zähle nach drei Monaten nach: Wie viele Empfehlungen, wie viele Aufträge? Passe den Betrag danach an.",
+    `Zähle nach drei Monaten nach: Wie viele Empfehlungen, wie viele ${o.verein ? "Beitritte" : "Aufträge"}? Passe den Betrag danach an.`,
   ];
   if (o.kanal === "email") out.push(emailHinweis(o.verein));
   return out;
@@ -809,7 +810,7 @@ export function eingabeText(form: FormFields, kontext: Pick<Kontext, "verein" | 
     `Website: ${kontext.website.trim() || "keine Angabe"}`,
     `${b.wert}: ${kw !== null ? chf(kw) : form.kundenwert.trim() || "keine Angabe"}`,
     `Marge: ${marge !== null ? pctCH(marge) : form.marge.trim() || "keine Angabe"}`,
-    `Kundschaft pro Jahr: ${form.kundschaft.trim() || "keine Angabe (Beispiel mit 100)"}`,
+    `${kontext.verein ? "Mitglieder insgesamt" : "Kundschaft pro Jahr"}: ${form.kundschaft.trim() || "keine Angabe (Beispiel mit 100)"}`,
     `Anreiz: ${isAnreizKey(form.anreiz) ? anreizLabel(form.anreiz, kontext.verein) : "keine Angabe"}`,
     `Beide Seiten belohnen: ${form.beide ? "ja" : "nein"}`,
     `Kanal: ${isKanalKey(form.kanal) ? kanalLabel(form.kanal, kontext.verein) : "keine Angabe"}`,

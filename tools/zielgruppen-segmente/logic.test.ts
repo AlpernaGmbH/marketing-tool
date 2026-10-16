@@ -301,6 +301,9 @@ describe("zielgruppen-segmente: Auswertung und Empfehlung", () => {
     expect(k.attraktivitaet + k.erreichbarkeit).toBeGreaterThan(b.attraktivitaet + b.erreichbarkeit);
     expect(r.empfehlung.primaer?.name).toBe("Aufbauen");
     expect(r.empfehlung.satz).toContain("Baue zuerst einen Weg dorthin");
+    // «Konzentriere dich zuerst» steht nur bei einem Segment, das attraktiv ist und gut erreichbar.
+    expect(r.empfehlung.satz).toMatch(/^Am meisten bringt dir «Aufbauen»/);
+    expect(r.empfehlung.satz).not.toContain("Konzentriere dich zuerst");
     expect(r.empfehlung.zurueck.map((s) => s.name)).toEqual(["Knapp darunter"]);
   });
   it("lässt Segmente über dem Sekundärsegment unter «vorerst nicht im Fokus» stehen", () => {

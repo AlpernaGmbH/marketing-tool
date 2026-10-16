@@ -261,7 +261,7 @@ export function signatureOf(plain: string): string | null {
 
 const ANREDE_RE = /\b(?:hallo|hoi|grüezi|grüessech|guten tag|guten morgen|guten abend|salü|sali|liebe[rs]?|sehr geehrte[rs]?|werte[rs]?|geschätzte[rs]?)\b([^\n.!?;:]{0,60})/giu;
 const GENERIC_RE =
-  /^(?:zusammen|alle\b|miteinander|mitenand|zäme|kund(?:e|en|in|innen|schaft)\b|leser(?:in|innen|schaft)?\b|mitglieder|freund(?:e|innen)\b|interessierte|damen und herren|abonnent|newsletter|gäste|vereinsmitglieder|sportfreund|eltern|team\b|partner|geschäftsfreund|fans|nachbar|besucher|gönner|sponsor|familie|community|kolleg)/iu;
+  /^(?:zusammen|alle\b|miteinander|mitenand|zäme|kund(?:e|en|in|innen|schaft)\b|leser(?:in|innen|schaft)?\b|mitglieder|freund(?:e|innen)\b|interessierte|damen und herren|abonnent|newsletter|gäste|vereinsmitglieder|sportfreund|eltern|team\b|partner|geschäftsfreund|fans|nachbar|besucher|gönner|sponsor|familie|community|kolleg|turner|sportler|spieler|helfer|schüler|läufer|musiker|sänger|vereinsfreund|gönner|mitstreiter|jugendliche|senioren|nachbarn|\p{L}+innen\b)/iu;
 
 export type AnredeKind = "persoenlich" | "allgemein" | "keine";
 

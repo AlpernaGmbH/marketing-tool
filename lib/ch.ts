@@ -131,3 +131,8 @@ export const KANTONE = [
 ] as const;
 
 export type KantonCode = (typeof KANTONE)[number][0];
+
+/** Kürzt um ein Zeichen, ohne ein Emoji (zwei UTF-16-Einheiten) zu halbieren. */
+export function dropLastChar(s: string): string {
+  return Array.from(s).slice(0, -1).join("");
+}

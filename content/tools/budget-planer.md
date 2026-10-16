@@ -42,7 +42,7 @@ Ein Marketing-Budget, das vor dem Jahr steht, entscheidet ruhiger als die Rechnu
 ## Beispiel
 Malerei Keller, Gossau, gibt CHF 900'000.- Jahresumsatz an, Phase «Etabliert», Ziel «Leicht wachsen», Anteil 3 %, fünf Kanäle und 20 Stunden Eigenleistung pro Monat zu CHF 80.-.
 
-> **Geldbudget:** CHF 27'000.- im Jahr, CHF 2'251.- pro Monat.
+> **Geldbudget:** CHF 27'000.- im Jahr, CHF 2'250.- pro Monat.
 >
 > - Website: 28 %, CHF 7'560.- im Jahr, ganz Fremdkosten
 > - Google-Unternehmensprofil: 27 %, CHF 7'290.-, ganz Fremdkosten
@@ -54,7 +54,7 @@ Malerei Keller, Gossau, gibt CHF 900'000.- Jahresumsatz an, Phase «Etabliert»,
 >
 > **Eigenleistung:** CHF 1'600.- pro Monat, CHF 19'200.- im Jahr; nicht Teil des Geldbudgets.
 
-Der Betrieb sieht: Die eigene Zeit kostet fast so viel wie alle Kanäle zusammen.
+Der Betrieb sieht: Die eigene Zeit kostet mit CHF 19'200.- fast so viel wie die Fremdkosten aller Kanäle (CHF 19'710.-).
 
 ## Häufige Fragen
 ### Wie viel Prozent vom Umsatz sind üblich?

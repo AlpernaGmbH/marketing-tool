@@ -111,7 +111,8 @@ describe("empfehlungsprogramm: Rechnung", () => {
 
   it("halbiert die Spanne je Seite, wenn beide Seiten belohnt werden", () => {
     const r = rechnung({ beide: true });
-    expect(r.gesamt).toEqual({ min: 75, max: 150 });
+    // Die Gesamtspanne ist genau das Doppelte der Spanne je Seite, nicht die einzeln gerundeten Rohwerte.
+    expect(r.gesamt).toEqual({ min: 80, max: 150 });
     expect(r.proSeite).toEqual({ min: 40, max: 75 });
     expect(r.mitte).toBe(60);
     expect(anreizZeile(r)).toBe("CHF 40.- bis CHF 75.- je Seite");
@@ -398,6 +399,8 @@ describe("empfehlungsprogramm: Mechanik", () => {
     expect(JSON.stringify(s)).not.toMatch(/Auftrag|Kundschaft/);
     expect(begriffe(true).wert).toBe("Jahresbeitrag pro Mitglied");
     expect(begriffe(true).betrieb).toBe("Verein");
+    expect(`${begriffe(true).gewonnen} bringt dir netto`).toBe("Ein gewonnenes Mitglied bringt dir netto");
+    expect(`${begriffe(false).gewonnen} bringt dir netto`).toBe("Eine gewonnene Kundin bringt dir netto");
     expect(begriffe(false).wert).toBe("Kundenwert pro Jahr");
     expect(kanalLabel("karte", true)).toBe("Karte beim Anlass");
     expect(kanalLabel("karte")).toBe("Karte beim Auftrag");

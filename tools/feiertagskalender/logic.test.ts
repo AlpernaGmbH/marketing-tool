@@ -57,6 +57,7 @@ import {
   toDocument,
   toIso,
   weekdayIndex,
+  defaultYear,
   yearOptions,
   type Calendar,
   type Input,
@@ -837,6 +838,10 @@ describe("feiertagskalender: Auswahl aus dem Profil", () => {
   it("bietet das laufende und das nächste Jahr an", () => {
     expect(yearOptions(new Date("2026-10-05T10:00:00Z"))).toEqual([2026, 2027]);
     expect(yearOptions(new Date("2027-01-02T10:00:00Z"))).toEqual([2027, 2028]);
+    // Bis Ende September ist das laufende Jahr vorgewählt, ab dem 1. Oktober das nächste.
+    expect(defaultYear(new Date(2026, 8, 30, 12))).toBe(2026);
+    expect(defaultYear(new Date(2026, 9, 1, 12))).toBe(2027);
+    expect(defaultYear(new Date(2027, 0, 2, 12))).toBe(2027);
   });
 });
 

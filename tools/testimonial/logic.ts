@@ -90,6 +90,7 @@ export function satzForm(text: string): string {
 const ABKUERZUNGEN = new Set([
   "z", "bzw", "ca", "evtl", "ggf", "inkl", "exkl", "usw", "etc", "nr", "st", "dr", "prof", "hr", "hrn", "fr", "frl", "vgl", "mio", "mrd",
   "tel", "str", "max", "min", "mind", "ev", "std", "kt", "abs", "art", "jh", "bsp", "ing", "dipl", "lic", "pkt", "resp", "sog", "ua",
+  "jan", "feb", "mär", "apr", "jun", "jul", "aug", "sep", "sept", "okt", "nov", "dez", "fam", "med", "gebr", "eidg", "techn", "kfm", "iur", "fa",
 ]);
 
 /** Einzelbuchstaben, ein- oder zweistellige Zahlen (Ordnungszahlen, Aufzählungen) und Kürzel beenden keinen Satz. */
@@ -393,14 +394,14 @@ function textKurz(c: Ctx): string {
   const liste = numbered(c.fragen);
   return c.du
     ? `Hallo ${c.n}\nDanke für ${c.l}. Magst du mir in zwei, drei Sätzen schreiben, wie es für dich war? Diese Fragen helfen dir:\n${liste}\n${c.fq}\nGrüsse, ${c.firma}`
-    : `Guten Tag ${c.n}\nDanke für ${c.l}. Mögen Sie mir in zwei, drei Sätzen schreiben, wie es für Sie war? Diese Fragen helfen Ihnen:\n${liste}\n${c.fq}\nFreundliche Grüsse, ${c.firma}`;
+    : `Guten Tag ${c.n}\nDanke für ${c.l}. Würden Sie mir in zwei, drei Sätzen schreiben, wie es für Sie war? Diese Fragen helfen Ihnen:\n${liste}\n${c.fq}\nFreundliche Grüsse, ${c.firma}`;
 }
 
 function textPersoenlich(c: Ctx): string {
   const liste = numbered(c.fragen);
   return c.du
     ? `Betreff: Darf ich dich um ein Zitat bitten?\n\nHallo ${c.n}\n\nDanke für ${c.l}. Ich hoffe, alles ist so, wie du es dir vorgestellt hast.\n\nMagst du mir in zwei, drei Sätzen schreiben, wie es für dich war? Ich würde deine Worte gern anderen zeigen, so wie du sie schreibst. Diese Fragen können dir helfen:\n\n${liste}\n\n${c.fq}\n\nWenn es gerade nicht passt, ist das in Ordnung.\n\nHerzliche Grüsse\n${c.firma}`
-    : `Betreff: Darf ich Sie um ein Zitat bitten?\n\nGuten Tag ${c.n}\n\nDanke für ${c.l}. Ich hoffe, alles ist so, wie Sie es sich vorgestellt haben.\n\nMögen Sie mir in zwei, drei Sätzen schreiben, wie es für Sie war? Ich würde Ihre Worte gern anderen zeigen, so wie Sie sie schreiben. Diese Fragen können Ihnen helfen:\n\n${liste}\n\n${c.fq}\n\nWenn es gerade nicht passt, ist das in Ordnung.\n\nHerzliche Grüsse\n${c.firma}`;
+    : `Betreff: Darf ich Sie um ein Zitat bitten?\n\nGuten Tag ${c.n}\n\nDanke für ${c.l}. Ich hoffe, alles ist so, wie Sie es sich vorgestellt haben.\n\nWürden Sie mir in zwei, drei Sätzen schreiben, wie es für Sie war? Ich würde Ihre Worte gern anderen zeigen, so wie Sie sie schreiben. Diese Fragen können Ihnen helfen:\n\n${liste}\n\n${c.fq}\n\nWenn es gerade nicht passt, ist das in Ordnung.\n\nHerzliche Grüsse\n${c.firma}`;
 }
 
 function textFoermlich(c: Ctx): string {

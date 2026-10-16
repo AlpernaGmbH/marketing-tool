@@ -598,17 +598,29 @@ export function begruendung(k: Kanal, i: Geprueft): string {
   const ziel = zielOf(i.ziel)?.label ?? "";
   const stufen = { ziel: stufe(t.ziel, 2), kundschaft: stufe(t.kundschaft, 2), suche: stufe(t.suche, 2), gebiet: stufe(t.gebiet, 2) };
 
+  const AKTIV = "wird gefunden, wenn Leute aktiv suchen";
+  const WECKEN = "weckt Aufmerksamkeit bei Leuten, die dich noch nicht kennen";
+  // Bei «Beides» nennt der Satz nur, was der Kanal tatsächlich trägt.
   const sucheSatz =
     i.suche === "aktiv"
-      ? "wird gefunden, wenn Leute aktiv suchen"
+      ? AKTIV
       : i.suche === "wecken"
-        ? "weckt Aufmerksamkeit bei Leuten, die dich noch nicht kennen"
-        : "passt dazu, dass Leute dich suchen oder erst auf dich aufmerksam werden müssen";
+        ? WECKEN
+        : k.suche.aktiv >= 2 && k.suche.wecken >= 2
+          ? "passt dazu, dass Leute dich suchen oder erst auf dich aufmerksam werden müssen"
+          : k.suche.aktiv >= 2
+            ? AKTIV
+            : WECKEN;
+  const privatKey = i.typ === "verein" ? "mitglieder" : "privat";
+  const kundschaftSatz =
+    i.kundschaft === "beides" && !(k.kundschaft[privatKey] >= 2 && k.kundschaft.firmen >= 2)
+      ? KUNDSCHAFT_SATZ[i.typ][k.kundschaft.firmen >= 2 ? "firmen" : "privat"]
+      : KUNDSCHAFT_SATZ[i.typ][i.kundschaft];
   const gebietSatz = { ort: "passt zu deinem Ort und der Umgebung", region: "passt zu deiner Region", schweiz: "passt zur ganzen Schweiz" }[i.gebiet];
 
   const gut: string[] = [];
   if (stufen.ziel === "hoch") gut.push(`passt zu deinem Ziel «${ziel}»`);
-  if (stufen.kundschaft === "hoch") gut.push(`erreicht ${KUNDSCHAFT_SATZ[i.typ][i.kundschaft]}`);
+  if (stufen.kundschaft === "hoch") gut.push(`erreicht ${kundschaftSatz}`);
   if (stufen.suche === "hoch") gut.push(sucheSatz);
   if (stufen.gebiet === "hoch") gut.push(gebietSatz);
 

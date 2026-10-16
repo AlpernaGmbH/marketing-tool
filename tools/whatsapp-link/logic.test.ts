@@ -86,6 +86,7 @@ describe("whatsapp-link: Vorlagen", () => {
     expect(messageFor("anfrage")).toBe("Guten Tag, ich habe eine Frage zu …");
     expect(messageFor("offerte", "")).toBe("Guten Tag, ich hätte gern eine Offerte für …");
     expect(messageFor("eigener", "Malerei Keller")).toBe("");
+    expect(messageFor("anfrage", "Keller $& Söhne")).toBe("Guten Tag Keller $& Söhne, ich habe eine Frage zu …");
   });
 
   it("hat fünf Vorlagen mit Label, alle unter der Höchstlänge", () => {
@@ -117,6 +118,11 @@ describe("whatsapp-link: buildWaLink", () => {
 
   it("kürzt auf die Höchstlänge", () => {
     expect(cleanText("x".repeat(MAX_TEXT + 50))).toHaveLength(MAX_TEXT);
+    // Ein Emoji an der Grenze wird ganz weggelassen und nie halb abgeschnitten.
+    const mitEmoji = cleanText("x".repeat(MAX_TEXT - 1) + "😀😀");
+    expect(Array.from(mitEmoji)).toHaveLength(MAX_TEXT);
+    expect(mitEmoji.endsWith("😀")).toBe(true);
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(mitEmoji)).toBe(false);
   });
 });
 

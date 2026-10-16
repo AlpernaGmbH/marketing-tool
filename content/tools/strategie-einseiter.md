@@ -18,8 +18,8 @@ Eine Marketingstrategie auf einer Seite ist die einzige, die im Betrieb gelesen 
 
 - **Die Ergebnisse liegen verstreut:** Positionierung, Persona und SWOT sind je ein Dokument; auf einer Seite sieht man, ob sie zusammenpassen.
 - **Lücken werden sichtbar:** Der Zähler «x von 8 Bausteinen» zeigt, was fehlt, vom Nutzenversprechen bis zum Budget.
-- **Eine Seite reicht für die Sitzung:** Niemand in Gossau oder Herisau liest zwanzig Seiten vor der Entscheidung.
-- **Massnahmen stehen dabei:** Die Folgerungen der SWOT-Analyse und die nächsten Schritte der schwächsten Reifegrad-Dimension stehen auf Seite zwei.
+- **Wenige Seiten reichen für die Sitzung:** Niemand in Gossau oder Herisau liest zwanzig Seiten vor der Entscheidung.
+- **Massnahmen stehen dabei:** Die Folgerungen der SWOT-Analyse und die nächsten Schritte der schwächsten Reifegrad-Dimension stehen am Ende des Dokuments.
 
 => Gleich darunter: was du mit der Seite in der nächsten Sitzung machst.
 
@@ -35,7 +35,7 @@ Eine Marketingstrategie auf einer Seite ist die einzige, die im Betrieb gelesen 
 ## Häufige Fehler
 - **Du wartest, bis alle acht Bausteine stehen.** Erstelle die Seite mit dem, was da ist; die Platzhalter sind die Aufgabenliste.
 - **Du überspringst das Firmenprofil.** Ohne Firma, Ort und Branche fehlt der Kopf der Seite; zwei Minuten unter «Mein Profil» reichen.
-- **Du liest nur Seite eins.** Die Massnahmen auf Seite zwei sind der Teil, der etwas verändert.
+- **Du liest nur die Übersicht.** Die Massnahmen am Ende des Dokuments sind der Teil, der etwas verändert.
 - **Du behandelst die Seite als fertig.** Eine Marketingstrategie ändert sich mit dem Betrieb; stell sie nach jedem Quartal neu zusammen.
 
 ## Beispiel

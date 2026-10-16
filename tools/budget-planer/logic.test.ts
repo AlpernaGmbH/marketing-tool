@@ -215,10 +215,10 @@ describe("budget-planer: Eingabe", () => {
 });
 
 describe("budget-planer: Rechnung", () => {
-  it("zwoelfMonate: elf gleiche Beträge, der Dezember trägt den Rest, Summe stimmt", () => {
+  it("zwoelfMonate: elf gleiche, abgerundete Beträge, der Dezember trägt den Rest, Summe stimmt", () => {
     expect(zwoelfMonate(27000)).toEqual([...Array<number>(11).fill(2250), 2250]);
     expect(zwoelfMonate(1000)).toEqual([...Array<number>(11).fill(83), 87]);
-    expect(zwoelfMonate(1006)).toEqual([...Array<number>(11).fill(84), 82]);
+    expect(zwoelfMonate(1006)).toEqual([...Array<number>(11).fill(83), 93]);
     expect(zwoelfMonate(5)).toEqual([...Array<number>(11).fill(0), 5]);
     for (const total of [0, 5, 999, 1000, 123457, 30_000_000]) expect(zwoelfMonate(total).reduce((a, b) => a + b, 0)).toBe(total);
   });
@@ -246,15 +246,15 @@ describe("budget-planer: Rechnung", () => {
       ["gbp", 27, 7290, 608, 602, 7290, 0],
       ["instagram", 18, 4860, 405, 405, 2430, 2430],
       ["print", 18, 4860, 405, 405, 0, 4860],
-      ["empfehlungen", 9, 2430, 203, 197, 2430, 0],
+      ["empfehlungen", 9, 2430, 202, 208, 2430, 0],
     ]);
-    expect(r.summe).toEqual({ anteil: 100, jahr: 27000, monat: 2251, fremd: 19710, werbe: 7290 });
+    expect(r.summe).toEqual({ anteil: 100, jahr: 27000, monat: 2250, fremd: 19710, werbe: 7290 });
     expect(r.eigenleistung).toEqual({ stunden: 20, satz: 80, monat: 1600, jahr: 19200 });
     expect(r.rahmen).toBeNull();
     const plan = monatsplan(r);
     expect(plan.map((z) => z.monat)).toEqual([...MONATE]);
-    expect(plan[0]).toEqual({ monat: "Januar", betrag: 2251, kumuliert: 2251 });
-    expect(plan[11]).toEqual({ monat: "Dezember", betrag: 2239, kumuliert: 27000 });
+    expect(plan[0]).toEqual({ monat: "Januar", betrag: 2250, kumuliert: 2250 });
+    expect(plan[11]).toEqual({ monat: "Dezember", betrag: 2250, kumuliert: 27000 });
   });
   it("Summe der Kanäle ist das Jahresbudget, Summe der Monate je Kanal ist der Kanalbetrag, Anteile ergeben 100", () => {
     const faelle: BudgetInput[] = [
@@ -303,6 +303,25 @@ describe("budget-planer: Rechnung", () => {
     expect(gross.jahr).toBe(30_000_000);
     expect(gross.monat).toBe(2_500_000);
   });
+  it("kleines Budget ohne negative Monatsbeträge: jeder Kanal- und Monatsbetrag ist >= 0, die Monate ergeben das Jahr", () => {
+    const r = budget({ ...beispiel, umsatz: 1000, anteil: 0.5, kanaele: ["website", "gbp", "instagram", "facebook", "linkedin", "print", "anlaesse"] }, OHNE_DATEN);
+    for (const k of r.kanaele) {
+      expect(Math.min(...k.monate)).toBeGreaterThanOrEqual(0);
+      expect(k.monate.reduce((s, m) => s + m, 0)).toBe(k.jahr);
+    }
+    expect(Math.min(...r.monate)).toBeGreaterThanOrEqual(0);
+    expect(r.monate.reduce((s, m) => s + m, 0)).toBe(r.jahr);
+  });
+  it("Vereine lesen «Jahresbudget» statt «Umsatz» und bekommen keinen Vergleich mit US-Firmen", () => {
+    const verein = { ...beispiel, organisationstyp: "verein" as const };
+    const r = budget(verein, MIT_DATEN);
+    const text = rahmenText(r, verein.phase, MIT_DATEN, true);
+    expect(text).not.toMatch(/Umsatz|KMU|US-Firmen/);
+    expect(text).toMatch(/Jahresbudget/);
+    const md = reportMarkdown(r, verein, MIT_DATEN);
+    expect(md).toMatch(/Anteil vom Jahresbudget/);
+    expect(md).not.toMatch(/Anteil vom Umsatz/);
+  });
   it("Eigenleistung: ohne Stunden, mit Stunden ohne Satz, mit Satz", () => {
     expect(budget({ ...beispiel, stunden: 0, stundensatz: null }, OHNE_DATEN).eigenleistung).toEqual({ stunden: 0, satz: null, monat: null, jahr: null });
     expect(budget({ ...beispiel, stunden: 12.5, stundensatz: null }, OHNE_DATEN).eigenleistung).toEqual({ stunden: 12.5, satz: null, monat: null, jahr: null });
@@ -349,14 +368,14 @@ describe("budget-planer: Dokument, CSV und CRM", () => {
       expect(kanal.header).toEqual(["Kanal", "Anteil", "pro Monat", "pro Jahr", "Fremdkosten", "Werbebudget"]);
       expect(kanal.rows).toHaveLength(6);
       expect(kanal.rows[0]).toEqual(["Website", "28 %", "CHF 630.-", "CHF 7'560.-", "CHF 7'560.-", "CHF 0.-"]);
-      expect(kanal.rows[5]).toEqual(["Summe", "100 %", "CHF 2'251.-", "CHF 27'000.-", "CHF 19'710.-", "CHF 7'290.-"]);
+      expect(kanal.rows[5]).toEqual(["Summe", "100 %", "CHF 2'250.-", "CHF 27'000.-", "CHF 19'710.-", "CHF 7'290.-"]);
     }
     const monate = tables[1];
     if (monate.type === "table") {
       expect(monate.header).toEqual(["Monat", "Geldbudget", "Kumuliert"]);
       expect(monate.rows).toHaveLength(12);
-      expect(monate.rows[0]).toEqual(["Januar", "CHF 2'251.-", "CHF 2'251.-"]);
-      expect(monate.rows[11]).toEqual(["Dezember", "CHF 2'239.-", "CHF 27'000.-"]);
+      expect(monate.rows[0]).toEqual(["Januar", "CHF 2'250.-", "CHF 2'250.-"]);
+      expect(monate.rows[11]).toEqual(["Dezember", "CHF 2'250.-", "CHF 27'000.-"]);
     }
     const list = doc.blocks.at(-1);
     expect(list).toEqual({ type: "list", ordered: true, items: HINWEISE });
@@ -380,11 +399,11 @@ describe("budget-planer: Dokument, CSV und CRM", () => {
     expect(rows).toHaveLength(1 + 5 * 12 + 12);
     expect(rows[1]).toBe("Website;Fundament;Januar;630;630;0");
     expect(rows[12]).toBe("Website;Fundament;Dezember;630;630;0");
-    // Instagram halb und halb: 405 → 203 Werbebudget (gerundet), 202 Fremdkosten.
-    expect(rows[25]).toBe("Instagram;Reichweite;Januar;405;202;203");
+    // Instagram halb und halb: das Werbebudget ist ein Zwölftel von 2'430 (abgerundet 202), der Rest 203 sind Fremdkosten.
+    expect(rows[25]).toBe("Instagram;Reichweite;Januar;405;203;202");
     expect(rows[37]).toBe("Print und Anzeiger;Reichweite;Januar;405;0;405");
-    expect(rows.at(-12)).toBe("Summe;;Januar;2251;1643;608");
-    expect(rows.at(-1)).toBe("Summe;;Dezember;2239;1631;608");
+    expect(rows.at(-12)).toBe("Summe;;Januar;2250;1643;607");
+    expect(rows.at(-1)).toBe("Summe;;Dezember;2250;1637;613");
     expect(csv).not.toMatch(/\d'\d/);
     expect(csv).not.toContain("\n\n");
     expect(csvFilename(beispiel)).toBe("marketing-budget-malerei-keller.csv");
@@ -415,7 +434,7 @@ describe("budget-planer: Dokument, CSV und CRM", () => {
     const md = reportMarkdown(result, beispiel, OHNE_DATEN);
     expect(md.startsWith("# Marketing-Budget für zwölf Monate\n")).toBe(true);
     expect(md).toMatch(/\| Kanal \| Anteil \| pro Monat \| pro Jahr \| Fremdkosten \| Werbebudget \|/);
-    expect(md).toMatch(/\| Dezember \| CHF 2'239\.- \| CHF 27'000\.- \|/);
+    expect(md).toMatch(/\| Dezember \| CHF 2'250\.- \| CHF 27'000\.- \|/);
     expect(md).toMatch(/Ohne Richtwert, eigener Anteil/);
   });
 });

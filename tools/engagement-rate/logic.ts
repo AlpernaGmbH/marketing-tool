@@ -423,7 +423,15 @@ function abstand(post: PostResult, schnitt: number): Abstand {
 }
 
 const beitraege = (nrs: number[]) =>
-  `Beitrag ${nrs.length <= 1 ? String(nrs[0]) : `${nrs.slice(0, -1).join(", ")} und ${nrs[nrs.length - 1]}`}`;
+  nrs.length <= 1 ? `Beitrag ${String(nrs[0])}` : `Beiträge ${nrs.slice(0, -1).join(", ")} und ${nrs[nrs.length - 1]}`;
+
+/** «Impressionen» und «Aufrufe» stehen im Plural, «Reichweite» im Singular. */
+const reichweitePlural = (plattform: Pick<Plattform, "reichweiteLabel">) => plattform.reichweiteLabel !== "Reichweite";
+const istSind = (plattform: Pick<Plattform, "reichweiteLabel">) => (reichweitePlural(plattform) ? "sind" : "ist");
+const fehltFehlen = (plattform: Pick<Plattform, "reichweiteLabel">) => (reichweitePlural(plattform) ? "fehlen" : "fehlt");
+/** «5'000 Impressionen» oder «einer Reichweite von 5'000». */
+const reichweiteMit = (plattform: Pick<Plattform, "reichweiteLabel">, zahl: string) =>
+  reichweitePlural(plattform) ? `${zahl} ${plattform.reichweiteLabel}` : `einer ${plattform.reichweiteLabel} von ${zahl}`;
 
 /** Hinweise im Kurzmodus: ohne Nummern einzelner Beiträge, weil es nur den Durchschnittsbeitrag gibt. */
 function hinweiseKurz(plattform: Plattform, follower: number, avg: PostResult | undefined, anzahl: number): string[] {
@@ -433,7 +441,7 @@ function hinweiseKurz(plattform: Plattform, follower: number, avg: PostResult | 
   if (avg.interaktionen === 0) out.push("Die Summen ergeben 0 Interaktionen. Prüfe, ob du die Zahlen aus der richtigen Spalte der Statistik übernommen hast.");
   if (anzahl < RICHTWERT.hinweisUnter) out.push(`Mit weniger als drei Beiträgen sagt der Schnitt wenig (${RICHTWERT_NOTE}).`);
   if (avg.rateReichweite !== null && avg.rateReichweite > 100) out.push(`Die Interaktionen sind grösser als die ${plattform.reichweiteLabel}. Prüfe die ${plattform.reichweiteLabel}.`);
-  if (avg.reichweite === 0 && avg.interaktionen > 0) out.push(`Die ${plattform.reichweiteLabel} ist 0, obwohl es Interaktionen gibt. Prüfe die ${plattform.reichweiteLabel}.`);
+  if (avg.reichweite === 0 && avg.interaktionen > 0) out.push(`Die ${plattform.reichweiteLabel} ${istSind(plattform)} 0, obwohl es Interaktionen gibt. Prüfe die ${plattform.reichweiteLabel}.`);
   if (follower > 0 && avg.interaktionen > follower) {
     out.push("Im Schnitt gibt es mehr Interaktionen je Beitrag als Follower. Das ist möglich, wenn Beiträge weit über deine Follower hinaus verteilt wurden. Prüfe die Zahlen trotzdem.");
   }
@@ -456,7 +464,7 @@ function hinweiseFor(plattform: Plattform, follower: number, posts: PostResult[]
   if (ueber.length > 0) out.push(`Bei ${beitraege(ueber)} sind die Interaktionen grösser als die ${plattform.reichweiteLabel}. Prüfe die ${plattform.reichweiteLabel}.`);
   const nullReichweite = posts.filter((p) => p.reichweite === 0 && p.interaktionen > 0).map((p) => p.nr);
   if (nullReichweite.length > 0) {
-    out.push(`Bei ${beitraege(nullReichweite)} ist die ${plattform.reichweiteLabel} 0, obwohl es Interaktionen gibt. Prüfe die ${plattform.reichweiteLabel}.`);
+    out.push(`Bei ${beitraege(nullReichweite)} ${istSind(plattform)} die ${plattform.reichweiteLabel} 0, obwohl es Interaktionen gibt. Prüfe die ${plattform.reichweiteLabel}.`);
   }
   const mehrAlsFollower = posts.filter((p) => follower > 0 && p.interaktionen > follower).map((p) => p.nr);
   if (mehrAlsFollower.length > 0) {
@@ -468,7 +476,7 @@ function hinweiseFor(plattform: Plattform, follower: number, posts: PostResult[]
   if (posts.length > 0 && ohne.length === posts.length) {
     out.push(`Ohne ${plattform.reichweiteLabel} rechnet nur die Formel auf Follower.`);
   } else if (ohne.length > 0) {
-    out.push(`Bei ${beitraege(ohne.map((p) => p.nr))} fehlt die ${plattform.reichweiteLabel}, darum gibt es dort keine Rate auf ${plattform.reichweiteLabel}.`);
+    out.push(`Bei ${beitraege(ohne.map((p) => p.nr))} ${fehltFehlen(plattform)} die ${plattform.reichweiteLabel}, darum gibt es dort keine Rate auf ${plattform.reichweiteLabel}.`);
   }
   return out;
 }
@@ -590,7 +598,8 @@ function benchmarkBlocks(s: Summary): DocBlock[] {
     {
       type: "bars",
       title: `Rate auf Follower in %, nach der Formel von ${v.quelle}`,
-      unit: " %",
+      unit: "%",
+      decimals: 2,
       items: [
         { label: "Deine Beiträge", value: du, highlight: true },
         { label: `Durchschnitt internationaler Marken, ${v.jahr}`, value: ueblich },
@@ -716,7 +725,7 @@ export function toDocument(s: Summary, kopf: Kopf = {}): DocumentModel {
     const reich = mit.reduce((a, x) => a + (x.reichweite ?? 0), 0);
     blocks.push({
       type: "paragraph",
-      text: `Summe durch Summe: ${numberCH(interaktionen, 0)} Interaktionen bei ${numberCH(reich, 0)} ${reichweite} ergeben ${pctCH(s.summenRate, 2)}. Der Schnitt der Raten (${rate(s.schnittReichweite)}) kann davon abweichen; die Erklärung steht unten.`,
+      text: `Summe durch Summe: ${numberCH(interaktionen, 0)} Interaktionen bei ${reichweiteMit(p, numberCH(reich, 0))} ergeben ${pctCH(s.summenRate, 2)}. Der Schnitt der Raten (${rate(s.schnittReichweite)}) kann davon abweichen; die Erklärung steht unten.`,
     });
   }
 

@@ -1,5 +1,6 @@
 // Gemeinsames Dokumentmodell für PDF, DOCX und Markdown-Copy (CLAUDE.md, DocumentExport).
 // Ein Tool baut ein DocumentModel; die Ausgabeformate kümmern sich um Layout.
+import { numberCH } from "@/lib/ch";
 
 /** Grundbausteine: Das können PDF, Word und Markdown. */
 export type BasicBlock =
@@ -20,7 +21,7 @@ export type VisualBlock =
   /** Grosse Kennzahl, zum Beispiel 72 von 100 mit Einstufung. */
   | { type: "stat"; label: string; value: string; of?: string; band?: string; note?: string }
   /** Balken mit Beschriftung; `max` ist das Ende der Skala (Standard: der grösste Wert). */
-  | { type: "bars"; title?: string; unit?: string; max?: number; items: { label: string; value: number; note?: string; /** Hebt einen Balken hervor (Gold), zum Beispiel die schwächste Dimension. */ highlight?: boolean }[] }
+  | { type: "bars"; title?: string; unit?: string; /** Nachkommastellen der Werte (Standard 1; 2 für Raten wie 0,48 %). */ decimals?: number; max?: number; items: { label: string; value: number; note?: string; /** Hebt einen Balken hervor (Gold), zum Beispiel die schwächste Dimension. */ highlight?: boolean }[] }
   /** Nummerierte Schritte als Karten. */
   | { type: "steps"; title?: string; items: { title: string; text: string }[] }
   /** Karten in einem Raster, optional mit Marke (zum Beispiel Format oder Aufwand). */
@@ -41,7 +42,10 @@ export type VisualBlock =
 
 export type DocBlock = BasicBlock | VisualBlock;
 
-const num = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
+/** Einheit hinter einem Wert: «%» mit Leerzeichen davor (8,1 %), sonst die Einheit ohne doppelte Leerzeichen; ohne Einheit nichts. */
+export const unitSuffix = (unit?: string): string => (unit === "%" ? " %" : unit?.trim() ? ` ${unit.trim()}` : "");
+/** Zahl für Balken und Tabellen: gerundet, Komma als Dezimalzeichen, Apostroph als Tausendertrenner («1'234,5»). */
+export const num = (n: number, decimals = 1) => numberCH(Math.round(n * 10 ** decimals) / 10 ** decimals, decimals);
 /** Zeilenumbrüche in Texten von Karten und Schritten werden in Datei und Liste zu einem Leerzeichen (eine Listenzeile bleibt eine Zeile). */
 const oneLine = (s: string) => s.replace(/([.!?:;])\s*\n+\s*/g, "$1 ").replace(/\s*\n+\s*/g, "; ");
 
@@ -61,7 +65,7 @@ export function flattenBlocks(blocks: DocBlock[]): BasicBlock[] {
         out.push({
           type: "table",
           header: ["", b.unit === "%" ? "Anteil" : "Wert"],
-          rows: b.items.map((it) => [it.label, `${num(it.value)}${b.unit === "%" ? " %" : b.unit ? ` ${b.unit}` : ""}${it.note ? `, ${it.note}` : ""}`]),
+          rows: b.items.map((it) => [it.label, `${num(it.value, b.decimals)}${unitSuffix(b.unit)}${it.note ? `, ${it.note}` : ""}`]),
           widths: [2, 1],
         });
         break;

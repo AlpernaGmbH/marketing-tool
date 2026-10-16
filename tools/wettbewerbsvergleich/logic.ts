@@ -247,7 +247,8 @@ export function failedSite(site: Site, message: string): SiteSummary {
   return { host: site.host, name: site.name, own: site.own, score: null, categories: [], error: message };
 }
 
-export type Diff = { id: CheckCategoryId; title: string; own: number; best: number; bestHost: string; delta: number };
+/** `angenommen`: Die Punkte des Bereichs sind eine Annahme (Google-Profil ohne Abfrage), keine Messung. */
+export type Diff = { id: CheckCategoryId; title: string; own: number; best: number; bestHost: string; delta: number; angenommen?: boolean };
 
 export type Comparison = {
   /** Vergleich möglich: eigenes Ergebnis und mindestens ein erreichbarer Mitbewerber. */
@@ -289,7 +290,7 @@ export function compare(sites: SiteSummary[]): Comparison {
       if (best === null || c.score > best.score) best = { score: c.score, host: s.host };
     }
     if (!best) continue;
-    diffs.push({ id: cat.id, title: cat.title, own: cat.score, best: best.score, bestHost: best.host, delta: cat.score - best.score });
+    diffs.push({ id: cat.id, title: cat.title, own: cat.score, best: best.score, bestHost: best.host, delta: cat.score - best.score, ...(cat.verified === false ? { angenommen: true } : {}) });
   }
   return {
     ...base,
@@ -304,9 +305,10 @@ const punkte = (n: number) => `${n} ${n === 1 ? "Punkt" : "Punkte"}`;
 
 /** Feste Sätze für Vorsprung und Rückstand, ohne Erfindung. */
 export const diffText = (d: Diff): string =>
-  d.delta > 0
+  (d.delta > 0
     ? `${d.title}: du ${d.own}, bester Mitbewerber ${d.best} (${d.bestHost}). Vorsprung ${punkte(d.delta)}.`
-    : `${d.title}: du ${d.own}, bester Mitbewerber ${d.best} (${d.bestHost}). Rückstand ${punkte(-d.delta)}.`;
+    : `${d.title}: du ${d.own}, bester Mitbewerber ${d.best} (${d.bestHost}). Rückstand ${punkte(-d.delta)}.`) +
+  (d.angenommen ? " Das ist eine Annahme aus der Startseite, keine Messung." : "");
 
 export const stepText = (s: StepSummary): string => `${s.titel} (Wirkung ${s.wirkung}, Aufwand ${s.aufwand})`;
 
@@ -368,7 +370,7 @@ export function toDocument(result: ComparisonResult): DocumentModel {
   ];
 
   if (own.score === null) {
-    blocks.push({ type: "paragraph", text: `Deine Website ${own.host} konnte nicht geprüft werden: ${own.error ?? "nicht erreichbar"}. Die Tabelle zeigt nur die Mitbewerber.` });
+    blocks.push({ type: "paragraph", text: `Deine Website ${own.host} konnte nicht geprüft werden: ${(own.error ?? "nicht erreichbar").replace(/[.\s]+$/, "")}. Die Tabelle zeigt nur die Mitbewerber.` });
   } else if (cmp.bestScore !== null && cmp.bestHost) {
     blocks.push({
       type: "paragraph",

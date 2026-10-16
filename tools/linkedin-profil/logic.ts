@@ -465,7 +465,7 @@ export function documentParts(s: LinkedinState): DokumentTeile {
     {
       type: "bars",
       title: "Erreichte Punkte je Kriterium, in Prozent des Gewichts",
-      unit: " %",
+      unit: "%",
       max: 100,
       items: bew.zeilen.map((z) => ({
         label: `${z.stelle}: ${z.kurz}`,

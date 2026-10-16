@@ -528,6 +528,13 @@ function ortNachStrasse(rest: string, strasse: string): string | null {
   return null;
 }
 
+/** «CH-9200 Gossau» und «9200 Gossau, Schweiz» sind dieselbe Adresse wie «9200 Gossau»; das Länderkennzeichen zählt nicht. */
+const ohneLand = (s: string): string =>
+  s
+    .replace(/(?<![\p{L}\d])CH[-\s]?(?=\d{4}(?!\d))/gu, "")
+    .replace(/[,;\s]+(?:Schweiz|Switzerland|Suisse|Svizzera|CH)\s*$/iu, "")
+    .trim();
+
 function compareAdresse(e: Eintrag, f0: string): Abweichung[] {
   const f = clean(f0);
   const m = e.adresse;
@@ -536,7 +543,7 @@ function compareAdresse(e: Eintrag, f0: string): Abweichung[] {
   const out: Abweichung[] = [];
 
   if (hasEszett(f) && !hasEszett(m)) out.push(make("ss-eszett", "hinweis", "Dort steht «ß». In der Schweiz schreibst du «ss»."));
-  let g = eszettToSs(f);
+  let g = ohneLand(eszettToSs(f));
 
   const abkDort = STR_ABK.test(g);
   const abkSoll = STR_ABK.test(m);
@@ -554,7 +561,7 @@ function compareAdresse(e: Eintrag, f0: string): Abweichung[] {
   const caseDiff = !abkDort && !abkSoll && keepCase(g) !== keepCase(m) && keepCase(g).toLowerCase() === keepCase(m).toLowerCase();
 
   g = g.replace(STR_ABK_ALL, "strasse");
-  const mE = m.replace(STR_ABK_ALL, "strasse");
+  const mE = ohneLand(m).replace(STR_ABK_ALL, "strasse");
 
   let rest = g;
   if (plzRe(e.plz).test(g)) {
@@ -750,7 +757,7 @@ export function einheitBlocks(aufgaben: Aufgabe[]): DocBlock[] {
   if (!einheit) return [];
   return [
     { type: "stat", label: "Einheitlichkeit der Einträge", value: String(einheit.punkte), of: "100", note: "Richtwert von Alperna, keine Statistik" },
-    { type: "bars", title: "Einheitlichkeit je Verzeichnis", unit: " von 100", max: 100, items: einheit.je.map((x) => ({ label: x.verzeichnis, value: x.punkte })) },
+    { type: "bars", title: "Einheitlichkeit je Verzeichnis", unit: "von 100", max: 100, items: einheit.je.map((x) => ({ label: x.verzeichnis, value: x.punkte })) },
     { type: "paragraph", text: EINHEITLICHKEIT_NOTE },
   ];
 }

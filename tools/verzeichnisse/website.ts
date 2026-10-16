@@ -19,7 +19,7 @@ const KEINE_STRASSE = new Set([
   "ab", "bis", "von", "um", "uhr", "chf", "fr", "nr", "no", "nummer", "plz", "und", "oder", "für",
 ]);
 /** Wörter, die zu einem Strassennamen gehören können und vor dem eigentlichen Namen stehen («Im Dorf», «Obere Mühlestrasse»). */
-const VORWORT = new Set(["im", "am", "auf", "an", "in", "zur", "zum", "beim", "vor", "hinter", "unter", "ob", "bei", "der", "dem", "den", "obere", "untere", "alte", "neue", "grosse", "kleine", "hintere", "vordere", "mittlere"]);
+const VORWORT = new Set(["st.", "sankt", "im", "am", "auf", "an", "in", "zur", "zum", "beim", "vor", "hinter", "unter", "ob", "bei", "der", "dem", "den", "obere", "untere", "alte", "neue", "grosse", "kleine", "hintere", "vordere", "mittlere"]);
 const STRASSEN_ENDUNG = /(?:strasse|str\.|gasse|weg|platz|allee|rain|ring|quai|hof|graben|halde|matte|acker|bühl|steig|pfad|zeile|park|markt|damm|brücke|berg|büel|moos|feld|egg|tobel|wiese|garten|mühle)$/i;
 /** Wörter nach der PLZ, die nicht mehr zum Ort gehören. */
 const ORT_ENDE = new Set(["tel", "telefon", "fon", "fax", "mail", "email", "e-mail", "schweiz", "switzerland", "suisse", "svizzera", "ch", "öffnungszeiten", "impressum", "kontakt", "datenschutz", "agb", "www"]);

@@ -519,7 +519,9 @@ export function toDocument(plan: Plan, firma?: string): DocumentModel {
   // Bildschirm: Wochenansicht und Verteilung der Säulen. In PDF, Word und Markdown werden sie zu Tabellen.
   if (plan.wochen.some((w) => w.beitraege.length > 0)) blocks.push(wochenraster(plan));
   if (plan.saeulen.length > 1 && plan.saeulen.some((s) => s.anzahl > 0)) {
-    blocks.push({ type: "split", title: "Verteilung auf die Säulen", items: plan.saeulen.map((s) => ({ label: s.name, value: s.anzahl })) });
+    // Anteile in Prozent, damit Text, PDF, Word und CRM «33,3 %» statt der Anzahl «4 %» nennen.
+    const total = plan.saeulen.reduce((n, s) => n + s.anzahl, 0);
+    blocks.push({ type: "split", title: "Verteilung auf die Säulen", items: plan.saeulen.map((s) => ({ label: s.name, value: (s.anzahl / total) * 100 })) });
   }
   if (plan.kontrollen.length > 0) {
     blocks.push({ type: "heading", level: 2, text: "Zu beachten" }, { type: "list", items: plan.kontrollen });

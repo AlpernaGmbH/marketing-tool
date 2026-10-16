@@ -1,3 +1,4 @@
+import { csvCell } from "@/lib/csv";
 import { chf, numberCH } from "@/lib/ch";
 import { safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
 
@@ -961,8 +962,6 @@ export function monatsSpalten(heute: string): string[] {
   const start = p ? p.m - 1 : 0;
   return Array.from({ length: 12 }, (_, i) => MONATS_KUERZEL[(start + i) % 12]);
 }
-
-const csvCell = (s: string) => (/[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
 
 /**
  * CSV-Vorlage für die monatliche Erfassung: Semikolon, UTF-8 mit BOM, Zeilenende CRLF. Spalten KPI;Zielwert;Quelle und zwölf

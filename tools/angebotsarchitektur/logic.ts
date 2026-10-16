@@ -345,6 +345,12 @@ function stufeText(form: FormKey, s: Stufe): string {
   return s.vorschlag ? `${label} (Vorschlag)` : `${label} «${s.name}»`;
 }
 
+/** Marge und Ziel auf eine Dezimale; wären beide Texte gleich, obwohl die Marge unter dem Ziel liegt, auf zwei Dezimalen. */
+function margeVsZiel(marge: number, ziel: number): [string, string] {
+  const eins: [string, string] = [pctCH(marge, 1), pctCH(ziel, 1)];
+  return eins[0] === eins[1] ? [pctCH(marge, 2), pctCH(ziel, 2)] : eins;
+}
+
 /** Warnungen und Hinweise zur Rechnung: Marge unter Ziel, falsche Reihenfolge, Abstand ausserhalb der Faustregel, Satz 0, Vorschläge. */
 export function warnungen(st: Stufen, ab: Abstand, input: Pick<AngebotInput, "satz" | "zielmarge" | "form">): Warnung[] {
   const out: Warnung[] = [];
@@ -352,10 +358,11 @@ export function warnungen(st: Stufen, ab: Abstand, input: Pick<AngebotInput, "sa
     const s = st[key];
     if (!s.unterZiel || s.preisFuerZiel === null) continue;
     const verlust = s.db < 0 ? " Der Deckungsbeitrag ist negativ: Dieses Angebot kostet dich mehr, als es einbringt." : "";
+    const [margeStr, zielStr] = margeVsZiel(s.margePct, input.zielmarge);
     out.push({
       art: "marge",
       stufe: key,
-      text: `${stufeText(input.form, s)}: Die Marge liegt bei ${pctCH(s.margePct)}, deine Zielmarge ist ${pctCH(input.zielmarge)}.${verlust} Der Preis, der die Zielmarge erreicht: ${chf(s.preisFuerZiel)}${s.vorschlag ? " (Rechenannahme)" : ""}.`,
+      text: `${stufeText(input.form, s)}: Die Marge liegt bei ${margeStr}, deine Zielmarge ist ${zielStr}.${verlust} Der Preis, der die Zielmarge erreicht: ${chf(s.preisFuerZiel)}${s.vorschlag ? " (Rechenannahme)" : ""}.`,
     });
   }
   const falsch: Partial<Record<StufeKey, boolean>> = {};

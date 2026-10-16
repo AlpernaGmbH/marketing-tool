@@ -432,7 +432,9 @@ export function empfehlung(rangfolge: readonly Bewertet[]): Empfehlung {
     return { primaer, sekundaer: null, zurueck: [], satz, danach, zurueckSatz, text: satz };
   }
   if (primaer) {
-    satz = `Konzentriere dich zuerst auf ${quoted(primaer.name)}: ${zahlenText(primaer)}. ${GRUND[primaer.feld]}`;
+    // «Konzentriere dich zuerst» gilt nur für ein Segment, das attraktiv ist und das du gut erreichst.
+    const anfang = primaer.feld === "zuerst" ? "Konzentriere dich zuerst auf" : primaer.feld === "aufbauen" ? "Am meisten bringt dir" : "Am besten erreichst du";
+    satz = `${anfang} ${quoted(primaer.name)}: ${zahlenText(primaer)}. ${GRUND[primaer.feld]}`;
     if (sekundaer) danach = `Danach folgt ${quoted(sekundaer.name)} (${zahlenText(sekundaer)}).`;
     if (zurueck.length > 0) zurueckSatz = `Vorerst nicht im Fokus: ${zurueck.map((s) => quoted(s.name)).join(", ")}.`;
   } else {

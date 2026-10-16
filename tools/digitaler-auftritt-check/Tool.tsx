@@ -149,11 +149,11 @@ function CheckFlow() {
       set({ v: 1, phase: "result", step: 0, answers: {}, form: keepForm, result: outcome.result });
       update(profilePatch(profile, outcome.result));
       setDraft(null);
-      const socials = SOCIAL_NETWORKS.map((n) => (keepForm.socials[n.key].url ? `${n.label}: ${keepForm.socials[n.key].url} (${keepForm.socials[n.key].freq || "keine Angabe"})` : ""))
+      const socials = SOCIAL_NETWORKS.map((n) => (keepForm.socials[n.key].url ? `${n.label}: ${keepForm.socials[n.key].url} (${POSTING_FREQUENCIES.find((f) => f.key === keepForm.socials[n.key].freq)?.label ?? "keine Angabe"})` : ""))
         .filter(Boolean)
         .join("\n");
       void ctx.sendResult({
-        eingabe: [`Website: ${input.website}`, `Betrieb: ${input.company}`, `Ort: ${input.city}`, `Branche: ${INDUSTRY_LABELS[keepForm.industry as IndustryKey] ?? keepForm.industry}`, socials].filter(Boolean).join("\n"),
+        eingabe: [`Website: ${input.website}`, `Betrieb: ${input.company}`, input.city ? `Ort: ${input.city}` : "", `Branche: ${INDUSTRY_LABELS[keepForm.industry as IndustryKey] ?? keepForm.industry}`, socials].filter(Boolean).join("\n"),
         ausgabe: toMarkdown(toDocument(outcome.result)),
       });
     } finally {

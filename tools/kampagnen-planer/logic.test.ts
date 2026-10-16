@@ -126,9 +126,19 @@ describe("kampagnen-planer: Phasen", () => {
     expect(f(3)).toEqual([1, 0, 1, 1]);
     expect(f(4)).toEqual([1, 1, 1, 1]);
     expect(f(8)).toEqual([1, 2, 4, 1]);
-    expect(f(10)).toEqual([2, 2, 4, 2]); // 1,5 wird aufgerundet
+    expect(f(10)).toEqual([2, 2, 5, 1]); // je 1,5 Wochen für Vorbereitung und Nachfassen: die Vorbereitung bekommt die zweite
     expect(f(12)).toEqual([2, 2, 6, 2]);
-    expect(f(16)).toEqual([2, 3, 9, 2]);
+    expect(f(16)).toEqual([3, 3, 8, 2]);
+  });
+
+  it("die Hauptphase wird mit jeder zusätzlichen Woche nie kürzer, und die Summe stimmt", () => {
+    let davor = 0;
+    for (let w = 1; w <= 52; w++) {
+      const n = phaseWochen(w);
+      expect(n.vorbereitung + n.anlauf + n.haupt + n.nachfassen).toBe(w);
+      expect(n.haupt).toBeGreaterThanOrEqual(davor);
+      davor = n.haupt;
+    }
   });
 
   it("lässt Phasen ohne Wochen weg und reiht die übrigen lückenlos aneinander", () => {

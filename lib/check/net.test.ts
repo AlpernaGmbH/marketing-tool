@@ -24,6 +24,9 @@ describe("isPrivateAddress", () => {
     "::ffff:127.0.0.1",
     "::ffff:7f00:1", // dieselbe Adresse in Hex-Schreibweise
     "::ffff:a9fe:a9fe", // 169.254.169.254 in Hex
+    "::ffff:0:7f00:1", // IPv4-übersetzt (RFC 2765): 127.0.0.1
+    "::ffff:0:a9fe:a9fe", // IPv4-übersetzt: 169.254.169.254
+    "0:0:0:0:ffff:0:a00:1", // IPv4-übersetzt: 10.0.0.1, ausgeschrieben
     "2001:db8::1",
     "0:0:0:0:0:0:0:1", // nicht gekürzte Schreibweisen von ::1
     "0000:0000:0000:0000:0000:0000:0000:0001",
@@ -45,7 +48,7 @@ describe("isPrivateAddress", () => {
     expect(isPrivateAddress(ip)).toBe(true);
   });
 
-  it.each(["93.184.216.34", "172.32.0.1", "8.8.8.8", "2606:4700:4700::1111", "::ffff:8.8.8.8", "2a00:1450:4001:81b::200e", "64:ff9b::808:808", "2002:808:808::1"])("%s ist öffentlich", (ip) => {
+  it.each(["93.184.216.34", "172.32.0.1", "8.8.8.8", "2606:4700:4700::1111", "::ffff:8.8.8.8", "::ffff:0:808:808", "2a00:1450:4001:81b::200e", "64:ff9b::808:808", "2002:808:808::1"])("%s ist öffentlich", (ip) => {
     expect(isPrivateAddress(ip)).toBe(false);
   });
 });
@@ -59,6 +62,7 @@ describe("assertPublicUrl", () => {
     "http://169.254.169.254/latest/meta-data/",
     "http://10.0.0.5/",
     "http://[::ffff:127.0.0.1]/",
+    "http://[::ffff:0:a9fe:a9fe]/",
     "http://intern.local/",
     "http://db.internal/",
     "http://8.8.8.8:8080/", // fremder Port

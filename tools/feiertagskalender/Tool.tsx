@@ -51,6 +51,7 @@ import {
   parseState,
   removeTermin,
   toDocument,
+  defaultYear,
   yearOptions,
   type Calendar,
   type CkState,
@@ -311,7 +312,7 @@ function CalendarFlow() {
 
   // Eingabe: gespeicherte Wahl, sonst Vorbelegung aus dem Profil.
   const years = useMemo(() => (ready ? yearOptions(new Date()) : []), [ready]);
-  const jahr = saved.jahr !== null && years.includes(saved.jahr) ? saved.jahr : (years[0] ?? null);
+  const jahr = saved.jahr !== null && years.includes(saved.jahr) ? saved.jahr : years.length > 0 ? defaultYear(new Date()) : null;
   const branche = saved.branche ?? brancheAusProfil(profile);
   const kanaeleList = saved.kanaele ?? kanaeleVorschlag(profile);
   const kanton = profile.kanton ?? "";

@@ -281,19 +281,44 @@ export type PhaseRow = {
   letzteWoche: number;
 };
 
-const runde = (wochen: number, prozent: number): number => Math.max(1, Math.round((wochen * prozent) / 100));
-
-/** Wochen je Phase (Richtwert von Alperna): bei 4 und mehr Wochen 15 % Vorbereitung, 20 % Anlauf, 15 % Nachfassen, der Rest Hauptphase. */
+/**
+ * Wochen je Phase (Richtwert von Alperna): bei 4 und mehr Wochen 15 % Vorbereitung, 20 % Anlauf, 50 % Hauptphase,
+ * 15 % Nachfassen. Der Rest der abgerundeten Anteile geht an die grössten Bruchteile (bei Gleichstand in der Reihenfolge
+ * der Phasen); jede Phase hat mindestens eine Woche. So wird die Hauptphase mit mehr Wochen nie kürzer.
+ */
 export function phaseWochen(weeks: number): Record<PhaseKey, number> {
   const w = Number.isFinite(weeks) ? Math.floor(weeks) : 0;
   if (w < 1) return { vorbereitung: 0, anlauf: 0, haupt: 0, nachfassen: 0 };
   if (w === 1) return { vorbereitung: 0, anlauf: 0, haupt: 1, nachfassen: 0 };
   if (w === 2) return { vorbereitung: 1, anlauf: 0, haupt: 1, nachfassen: 0 };
   if (w === 3) return { vorbereitung: 1, anlauf: 0, haupt: 1, nachfassen: 1 };
-  const vorbereitung = runde(w, 15);
-  const nachfassen = runde(w, 15);
-  const anlauf = runde(w, 20);
-  return { vorbereitung, anlauf, haupt: Math.max(1, w - vorbereitung - nachfassen - anlauf), nachfassen };
+  const anteile: [PhaseKey, number][] = [
+    ["vorbereitung", 15],
+    ["anlauf", 20],
+    ["haupt", 50],
+    ["nachfassen", 15],
+  ];
+  const out: Record<PhaseKey, number> = { vorbereitung: 0, anlauf: 0, haupt: 0, nachfassen: 0 };
+  const rest: { key: PhaseKey; bruch: number }[] = [];
+  for (const [key, prozent] of anteile) {
+    const genau = (w * prozent) / 100;
+    out[key] = Math.floor(genau + 1e-9);
+    rest.push({ key, bruch: genau - out[key] });
+  }
+  let offen = w - Object.values(out).reduce((a, b) => a + b, 0);
+  for (const r of [...rest].sort((a, b) => b.bruch - a.bruch)) {
+    if (offen <= 0) break;
+    out[r.key] += 1;
+    offen -= 1;
+  }
+  // Mindestens eine Woche je Phase: Fehlendes kommt aus der Hauptphase.
+  for (const key of ["vorbereitung", "anlauf", "nachfassen"] as const) {
+    if (out[key] < 1) {
+      out[key] = 1;
+      out.haupt -= 1;
+    }
+  }
+  return out;
 }
 
 /** Die Phasen in Reihenfolge, nur die mit mindestens einer Woche; die Summe der Wochen ist `weeks`. */

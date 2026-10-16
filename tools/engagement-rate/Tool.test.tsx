@@ -138,7 +138,7 @@ describe("Engagement-Rate-Rechner im Browser", () => {
     expect(within(table).getByRole("row", { name: /^Schnitt 69,4 5,6 % 4,79 %$/ })).toBeInTheDocument();
     // das Diagramm steht über der Tabelle, die Tabelle ist seine Textalternative
     expect(chart.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(card).getByText(/Summe durch Summe: 347 Interaktionen bei 7'020 Reichweite ergeben 4,94 %/)).toBeInTheDocument();
+    expect(within(card).getByText(/Summe durch Summe: 347 Interaktionen bei einer Reichweite von 7'020 ergeben 4,94 %/)).toBeInTheDocument();
     expect(within(card).getByText(/Bester Beitrag: Beitrag 3/)).toBeInTheDocument();
     expect(within(card).getByText(/Schwächster Beitrag: Beitrag 4/)).toBeInTheDocument();
     expect(within(card).getByText(/Der Durchschnitt internationaler Marken lag 2025 bei 0,48 % \(Socialinsider, nicht Schweiz\)/)).toBeInTheDocument();

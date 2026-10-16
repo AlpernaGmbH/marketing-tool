@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { cn } from "cn";
 import { Contours } from "@/components/site/Contours";
-import type { VisualBlock } from "@/lib/export/model";
+import { num, unitSuffix, type VisualBlock } from "@/lib/export/model";
 
 // Bildschirm-Bausteine für Ergebnisse (Beschluss vom 09.10.2026): grosse Zahlen, Balken, Karten, Kuchen, Raster und Folien statt
 // Fliesstext. Reine SVG und CSS ohne Bibliothek, in den Farben von Alperna (Tinte, Gold, Grautöne). Jeder Baustein trägt seinen Inhalt
@@ -11,7 +11,7 @@ import type { VisualBlock } from "@/lib/export/model";
 
 type Of<T extends VisualBlock["type"]> = Extract<VisualBlock, { type: T }>;
 
-const nf = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
+const nf = (n: number, decimals = 1) => num(n, decimals);
 
 function BlockTitle({ text }: { text?: string }) {
   return text ? <h5 className="font-heading font-medium">{text}</h5> : null;
@@ -50,9 +50,9 @@ export function Stat({ label, value, of, band, note }: Omit<Of<"stat">, "type">)
 }
 
 /** Waagrechte Balken mit Beschriftung und Wert. */
-export function Bars({ title, unit, max, items }: Omit<Of<"bars">, "type">) {
+export function Bars({ title, unit, decimals, max, items }: Omit<Of<"bars">, "type">) {
   const top = max ?? Math.max(1, ...items.map((i) => i.value));
-  const suffix = unit === "%" ? " %" : unit ? ` ${unit}` : "";
+  const suffix = unitSuffix(unit);
   return (
     <div className="grid gap-3" data-testid="visual-bars">
       <BlockTitle text={title} />
@@ -62,7 +62,7 @@ export function Bars({ title, unit, max, items }: Omit<Of<"bars">, "type">) {
             <div className="flex items-baseline justify-between gap-4">
               <span>{it.label}</span>
               <span className="font-mono text-sm">
-                {nf(it.value)}
+                {nf(it.value, decimals)}
                 {suffix}
               </span>
             </div>
@@ -72,7 +72,7 @@ export function Bars({ title, unit, max, items }: Omit<Of<"bars">, "type">) {
               aria-valuemin={0}
               aria-valuemax={top}
               aria-valuenow={Math.min(Math.max(it.value, 0), top)}
-              aria-valuetext={`${nf(it.value)}${suffix}`}
+              aria-valuetext={`${nf(it.value, decimals)}${suffix}`}
               className="h-2.5 w-full overflow-hidden rounded-full bg-line"
             >
               <div className={cn("h-full rounded-full", it.highlight ? "border border-ink bg-yellow" : "bg-ink")} style={{ width: `${Math.min(Math.max(it.value / top, 0), 1) * 100}%` }} />

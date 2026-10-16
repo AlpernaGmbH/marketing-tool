@@ -2,7 +2,9 @@
 // Farbkontrast als reine Funktionen (ohne DOM, testbar), dazu die Browser-Teile (Schriften laden, Bild lesen, Canvas zu PNG).
 // Alles bleibt im Browser: Bilder der Besucher werden nie hochgeladen (Harte Regel 1).
 
+import { dropLastChar } from "@/lib/ch";
 import { FONT_PATHS } from "@/lib/export/fonts";
+import { safeFilename } from "@/lib/export/model";
 
 // ---- Formate ---------------------------------------------------------------------------------------------------------
 
@@ -20,15 +22,9 @@ export const IMAGE_FORMATS: readonly ImageFormat[] = [
 export const isImageFormatKey = (v: unknown): v is ImageFormatKey => typeof v === "string" && IMAGE_FORMATS.some((f) => f.key === v);
 export const imageFormat = (key: ImageFormatKey): ImageFormat => IMAGE_FORMATS.find((f) => f.key === key) ?? IMAGE_FORMATS[0];
 
-/** Dateiname: `<basis>-<format>.png`, ohne Sonderzeichen. */
+/** Dateiname: `<basis>-<format>.png`, ohne Sonderzeichen; Umlaute wie im ZIP und in den anderen Dateien («Gerüst» wird «geruest»). */
 export function pngFilename(base: string, format: ImageFormatKey): string {
-  const slug = base
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
+  const slug = safeFilename(base, "grafik").slice(0, 40).replace(/-+$/, "");
   return `${slug || "grafik"}-${format}.png`;
 }
 
@@ -74,7 +70,7 @@ export function wrapByWidth(text: string, maxWidth: number, measure: (s: string)
   if (lines.length <= maxLines) return lines;
   const kept = lines.slice(0, maxLines);
   let last = kept[maxLines - 1];
-  while (last.length > 1 && measure(`${last}…`) > maxWidth) last = last.slice(0, -1).trimEnd();
+  while (last.length > 1 && measure(`${last}…`) > maxWidth) last = dropLastChar(last).trimEnd();
   kept[maxLines - 1] = `${last}…`;
   return kept;
 }

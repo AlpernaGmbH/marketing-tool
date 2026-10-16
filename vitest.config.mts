@@ -11,5 +11,8 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["**/*.test.{ts,tsx}"],
     exclude: ["node_modules/**", ".next/**", "tests/e2e/**"],
+    // Komponenten-Tests mit PDF, Dateien und vielen Feldern brauchen auf einem ausgelasteten Rechner (CI, parallele Läufe) mehr als 5 s.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });

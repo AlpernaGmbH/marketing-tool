@@ -405,6 +405,18 @@ describe("posting-plan: Prüfung der Eingabe", () => {
 describe("posting-plan: Dokument, CSV und CRM", () => {
   const plan = buildPlan(keller);
 
+  it("Verteilung auf die Säulen steht in Datei und CRM als Prozent, nicht als Anzahl", () => {
+    const split = plan.saeulen.length > 1 ? toDocument(plan, "Malerei Keller").blocks.find((b) => b.type === "split") : undefined;
+    expect(split).toBeDefined();
+    if (split?.type !== "split") return;
+    expect(split.items.reduce((n, i) => n + i.value, 0)).toBeCloseTo(100, 5);
+    const md = toMarkdown(toDocument(plan, "Malerei Keller"));
+    const total = plan.saeulen.reduce((n, s) => n + s.anzahl, 0);
+    const erste = plan.saeulen[0];
+    const prozent = String(Math.round(((erste.anzahl / total) * 100) * 10) / 10).replace(".", ",");
+    expect(md).toContain(`${erste.name} | ${prozent} %`);
+  });
+
   it("Dokument: Überblick, Zu beachten, vier Wochen, Produktionsblock, Annahmen und genau drei Hinweise", () => {
     const doc = toDocument(plan, "Malerei Keller");
     expect(doc.title).toBe("Posting-Plan für vier Wochen");

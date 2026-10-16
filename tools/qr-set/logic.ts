@@ -1,4 +1,5 @@
 import { safeFilename } from "@/lib/export/model";
+import { normalizePhone as normalizeWaPhone } from "@/tools/whatsapp-link/logic";
 
 // QR-Set: reine Funktionen, kein React, kein DOM, keine Bibliothek (CLAUDE.md, Harte Regel 3). Alles, was die Bibliotheken
 // qrcode, jszip und pdf-lib braucht, steht in export.ts (Browser). Hier: Arten der Ziele, Normalisierung und Prüfung,
@@ -67,20 +68,12 @@ export function defaultLabel(kind: TargetKind): string {
 export type Phone = { e164: string; display: string };
 
 /**
- * Schweizer Nummer in E.164 ohne Plus («41791234567»), aus 079 123 45 67, 0791234567, +41 79 123 45 67 oder 0041791234567,
- * mit Leerzeichen, Punkten, Schrägstrichen, Bindestrichen oder Klammern. Nur Landesvorwahl 41 und danach neun Ziffern,
- * die erste nicht 0. Eigene minimale Fassung; tools/whatsapp-link/logic.ts kann sie später ersetzen.
+ * Schweizer Nummer in E.164 ohne Plus («41791234567») und in internationaler Schreibweise; die Regeln liegen im
+ * WhatsApp-Werkzeug (tools/whatsapp-link/logic.ts), damit beide Werkzeuge dieselben Nummern annehmen.
  */
 export function normalizePhone(input: string): Phone | null {
-  const raw = (input ?? "").trim();
-  if (!raw || /[^\d\s+().\/-]/.test(raw)) return null;
-  let digits = raw.replace(/[^\d+]/g, "");
-  if (digits.startsWith("+")) digits = digits.slice(1);
-  else if (digits.startsWith("00")) digits = digits.slice(2);
-  else if (digits.startsWith("0")) digits = `41${digits.slice(1)}`;
-  if (!/^41[1-9]\d{8}$/.test(digits)) return null;
-  const n = digits.slice(2);
-  return { e164: digits, display: `+41 ${n.slice(0, 2)} ${n.slice(2, 5)} ${n.slice(5, 7)} ${n.slice(7, 9)}` };
+  const p = normalizeWaPhone((input ?? "").trim());
+  return p ? { e164: p.e164, display: p.displayInternational } : null;
 }
 
 /** wa.me-Link; ein vorausgefüllter Text bleibt als text-Parameter erhalten. */
@@ -139,6 +132,8 @@ export function normalizeTarget(kind: TargetKind, input: string): NormalizedTarg
         const u = parseHttpUrl(raw);
         if (!u || !hostIs(u.hostname, ["instagram.com"])) return null;
         handle = u.pathname.split("/").filter(Boolean)[0] ?? "";
+        // Links auf einzelne Beiträge, Reels oder Stories sind kein Profil.
+        if (/^(?:p|reel|reels|tv|stories|explore|accounts|direct)$/i.test(handle)) return null;
       } else {
         handle = raw.replace(/^@/, "");
       }

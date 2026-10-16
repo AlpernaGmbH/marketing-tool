@@ -88,6 +88,7 @@ function ipv6Private(ip: string): boolean {
   const [a, b] = g;
   if (g.slice(0, 6).every((x) => x === 0)) return true; // ::, ::1 und IPv4-kompatible Adressen ::a.b.c.d
   if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) return ipv4Private(v4Of(g[6], g[7])); // ::ffff:a.b.c.d
+  if (g.slice(0, 4).every((x) => x === 0) && g[4] === 0xffff && g[5] === 0) return ipv4Private(v4Of(g[6], g[7])); // ::ffff:0:a.b.c.d (IPv4-übersetzt, RFC 2765)
   if (a === 0x64 && b === 0xff9b) return g.slice(2, 6).every((x) => x === 0) ? ipv4Private(v4Of(g[6], g[7])) : true; // NAT64
   if (a === 0x2002) return ipv4Private(v4Of(g[1], g[2])); // 6to4 trägt eine IPv4-Adresse
   return (

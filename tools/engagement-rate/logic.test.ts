@@ -492,7 +492,7 @@ describe("engagement-rate: Dokument", () => {
 
   it("Kennzahlen, Summe durch Summe, bester und schwächster Beitrag in Worten", () => {
     const text = JSON.stringify(doc.blocks);
-    expect(text).toContain("Summe durch Summe: 347 Interaktionen bei 7'020 Reichweite ergeben 4,94 %");
+    expect(text).toContain("Summe durch Summe: 347 Interaktionen bei einer Reichweite von 7'020 ergeben 4,94 %");
     expect(text).toContain("Bester Beitrag: Beitrag 3: Vorher nachher Treppenhaus mit 9,92 % auf Follower (123 Interaktionen). Er liegt 4,32 Prozentpunkte über deinem Schnitt, das sind 77 % mehr.");
     expect(text).toContain("Schwächster Beitrag: Beitrag 4: Farbtrends Herbst mit 3,06 % auf Follower (38 Interaktionen). Er liegt 2,53 Prozentpunkte unter deinem Schnitt, das sind 45 % weniger.");
     expect(doc.blocks[2]).toEqual({

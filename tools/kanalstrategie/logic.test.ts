@@ -544,6 +544,16 @@ describe("Kanalstrategie: Verein statt Betrieb", () => {
     expect(facts?.type === "facts" && facts.items.map((f) => f.label)).toEqual(expect.arrayContaining(["Verein", "Tätigkeit", "Zielgruppe"]));
   });
 
+  it("bei «Beides» nennt die Begründung nur die Kundschaft und das Suchverhalten, die der Kanal wirklich trägt", () => {
+    const a = werte(mit(KELLER, { kundschaft: "beides", suche: "beides", faehigkeiten: ALLE, zeit: 4 }));
+    const linkedin = [...a.basis, ...a.kanaele].find((k) => k.key === "linkedin");
+    expect(linkedin?.begruendung).toContain("erreicht Firmen");
+    expect(linkedin?.begruendung).not.toContain("Privatpersonen und Firmen");
+    const instagram = [...a.basis, ...a.kanaele].find((k) => k.key === "instagram");
+    expect(instagram?.begruendung).toContain("weckt Aufmerksamkeit");
+    expect(instagram?.begruendung).not.toContain("dich suchen oder erst auf dich aufmerksam");
+  });
+
   it("verwendet für Vereine Anmeldungen, Mitglieder und das Vereinsverzeichnis", () => {
     const a = werte(FC_TROGEN);
     expect(a.hinweise[2]).toContain("Anfragen und Anmeldungen");

@@ -50,7 +50,7 @@ Malerei Keller, Gossau, baut eine Vorher-Nachher-Collage von der Fassade eines M
 > - Beschriftung: Vorher und Nachher
 > - Format: Story 9:16, 1'080 × 1'920 Pixel
 > - Logo: ja, unten rechts, 14 % der Breite
-> - Datei: malerei-keller-story.png
+> - Datei: malerei-keller-gossau-story.png
 
 Links der Trennlinie steht das alte Grau, rechts der neue Farbton. Dieselbe Collage gibt es als Feed 1:1 für LinkedIn.
 

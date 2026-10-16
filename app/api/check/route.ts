@@ -28,18 +28,17 @@ export async function POST(req: NextRequest) {
     return respond(ROUTE, 400, { error: "invalid", message: e instanceof CheckError ? e.message : "Bitte gib eine gültige Website an." }, "invalid_body");
   }
 
-  // Ohne GATE_SECRET lässt sich weder zählen noch signieren. Wir sperren dann niemanden aus (wie /api/access).
+  // Ohne GATE_SECRET lässt sich weder begrenzen noch signieren: wie bei allen Routen 503 (CLAUDE.md, Ausfälle), nie ein offener Abruf fremder Server.
   const secret = gateSecret();
-  if (secret) {
-    const hash = ipHash(clientIp(req.headers), secret);
-    // Der Check ruft fremde Server ab. Deshalb ein eigenes, engeres Limit als bei /api/access.
-    if (!(await withinLimit("check", 8, "1 h", hash))) {
-      return respond(ROUTE, 429, { error: "rate_limited", message: "Das waren viele Prüfungen in kurzer Zeit. Bitte versuche es später wieder." }, "rate_limited");
-    }
-    // Zugang v3: Ergebnisse gibt es gegen eine E-Mail-Adresse (Cookie mt_gate).
-    if (!readGateCookie(req, secret)) {
-      return respond(ROUTE, 403, { error: "gate", message: "Bitte gib zuerst deine E-Mail-Adresse an." }, "gate_used");
-    }
+  if (!secret) return respond(ROUTE, 503, { error: "gate_unconfigured", message: "Der Check ist gerade nicht erreichbar. Bitte versuche es später noch einmal." }, "gate_unconfigured");
+  const hash = ipHash(clientIp(req.headers), secret);
+  // Der Check ruft fremde Server ab. Deshalb ein eigenes, engeres Limit als bei /api/access.
+  if (!(await withinLimit("check", 8, "1 h", hash))) {
+    return respond(ROUTE, 429, { error: "rate_limited", message: "Das waren viele Prüfungen in kurzer Zeit. Bitte versuche es später wieder." }, "rate_limited");
+  }
+  // Zugang v3: Ergebnisse gibt es gegen eine E-Mail-Adresse (Cookie mt_gate).
+  if (!readGateCookie(req, secret)) {
+    return respond(ROUTE, 403, { error: "gate", message: "Bitte gib zuerst deine E-Mail-Adresse an." }, "gate_used");
   }
 
   const encoder = new TextEncoder();
@@ -59,8 +58,8 @@ export async function POST(req: NextRequest) {
           onStep: (id, state) => send({ type: "step", id, state }),
           gbp: { placesKey: process.env.GOOGLE_PLACES_API_KEY },
         });
-        // Mit Signatur, damit /api/ai nur echte Ergebnisse annimmt. Ohne GATE_SECRET gibt es keine KI.
-        send({ type: "result", result: secret ? signResult(result, secret) : result });
+        // Mit Signatur, damit /api/ai nur echte Ergebnisse annimmt.
+        send({ type: "result", result: signResult(result, secret) });
         logStatus(ROUTE, 200, "check_ok");
       } catch (e) {
         const err = e instanceof CheckError ? e : new CheckError("Der Check ist fehlgeschlagen. Bitte versuche es später noch einmal.", "failed");

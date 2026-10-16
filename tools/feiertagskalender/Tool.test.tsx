@@ -17,6 +17,9 @@ const profile = { organisationstyp: "kmu", firma: "Malerei Keller", ort: "Gossau
 let posts: { url: string; body: Record<string, string> }[] = [];
 
 beforeEach(() => {
+  // Nur die Uhr ist fest (Juni 2026), damit das vorgewählte Jahr nicht vom Tag der Testausführung abhängt.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(2026, 5, 15, 12));
   clearAllLocal();
   posts = [];
   downloads.length = 0;
@@ -29,11 +32,19 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   vi.unstubAllGlobals();
 });
 
 describe("feiertagskalender: Werkzeug im Browser", () => {
+  it("wählt ab dem 1. Oktober das nächste Jahr vor", async () => {
+    vi.setSystemTime(new Date(2026, 9, 16, 12));
+    writeLocal(PROFILE_KEY, JSON.stringify(profile));
+    render(<Tool />);
+    await waitFor(() => expect(screen.getByTestId("ck-jahr")).toHaveValue("2027"));
+  });
+
   it("fragt zuerst die Adresse, zeigt dann den Kalender und schickt Eingabe und Ausgabe ans CRM", async () => {
     writeLocal(PROFILE_KEY, JSON.stringify(profile));
     render(<Tool />);

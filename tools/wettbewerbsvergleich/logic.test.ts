@@ -147,7 +147,9 @@ describe("compare", () => {
     expect(cmp.possible).toBe(true);
     const by = (list: typeof cmp.ahead, id: string) => list.find((d) => d.id === id);
     expect(by(cmp.behind, "seo")).toMatchObject({ best: 90, bestHost: "a.ch", delta: me.categories[0].score - 90 });
-    expect(by(cmp.behind, "gbp")).toMatchObject({ best: 60, bestHost: "b.ch" });
+    expect(by(cmp.behind, "gbp")).toMatchObject({ best: 60, bestHost: "b.ch", angenommen: true });
+    expect(diffText(by(cmp.behind, "gbp")!)).toMatch(/Rückstand \d+ Punkte?\. Das ist eine Annahme aus der Startseite, keine Messung\.$/);
+    expect(diffText(by(cmp.behind, "seo")!)).not.toContain("Annahme");
     expect(by(cmp.ahead, "social")).toMatchObject({ own: social, best: social - 1, bestHost: "b.ch", delta: 1 });
     expect(by(cmp.even, "sea")).toMatchObject({ own: 0, best: 0 });
     expect(by(cmp.even, "newsletter")).toBeDefined();

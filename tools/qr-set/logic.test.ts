@@ -85,6 +85,10 @@ describe("qr-set: Instagram", () => {
 
   it("lehnt Handles mit Sonderzeichen, zu langen Namen oder fremder Domain ab", () => {
     expect(normalizeTarget("instagram", "@malerei keller")).toBeNull();
+    // Ein einzelner Beitrag, ein Reel oder eine Story ist kein Profil.
+    expect(normalizeTarget("instagram", "https://www.instagram.com/p/Cxyz123/")).toBeNull();
+    expect(normalizeTarget("instagram", "https://www.instagram.com/reel/Cxyz123/")).toBeNull();
+    expect(normalizeTarget("instagram", "instagram.com/stories/malereikeller/123")).toBeNull();
     expect(normalizeTarget("instagram", "maler/keller")).toBeNull();
     expect(normalizeTarget("instagram", "a".repeat(31))).toBeNull();
     expect(normalizeTarget("instagram", "@")).toBeNull();

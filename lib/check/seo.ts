@@ -15,11 +15,17 @@ export type SeoExtras = { robots: boolean; sitemap: boolean };
 
 export type SeoResult = { score: number; items: CheckItem[]; title: string; description: string };
 
-const LOCAL_TYPES =
-  "LocalBusiness|Restaurant|Store|Hotel|Dentist|MedicalBusiness|HealthAndBeautyBusiness|HairSalon|BeautySalon|AutoRepair|ProfessionalService|HomeAndConstructionBusiness|FoodEstablishment|Organization";
-/** `"@type": "LocalBusiness"` und die Liste `"@type": ["Store", "LocalBusiness"]`. */
-const LOCAL_BUSINESS_SINGLE = new RegExp(`"@type"\\s*:\\s*"?(${LOCAL_TYPES})`, "i");
-const LOCAL_BUSINESS_LIST = new RegExp(`"@type"\\s*:\\s*\\[[^\\]]{0,300}?"(${LOCAL_TYPES})"`, "i");
+const LOCAL_TYPES = [
+  "LocalBusiness", "Organization", "Restaurant", "Store", "Hotel", "Dentist", "MedicalBusiness", "HealthAndBeautyBusiness", "HairSalon", "BeautySalon",
+  "AutoRepair", "ProfessionalService", "HomeAndConstructionBusiness", "FoodEstablishment", "Electrician", "Plumber", "HousePainter", "RoofingContractor",
+  "GeneralContractor", "Locksmith", "MovingCompany", "HVACBusiness", "Bakery", "CafeOrCoffeeShop", "BarOrPub", "Physician", "Optician", "Pharmacy",
+  "VeterinaryCare", "DaySpa", "HealthClub", "SportsClub", "GymOrFitnessCenter", "AccountingService", "LegalService", "Attorney", "Notary", "RealEstateAgent",
+  "InsuranceAgency", "FinancialService", "TravelAgency", "AutoDealer", "AutoBodyShop", "AutoWash", "ChildCare", "Florist", "FurnitureStore", "ClothingStore",
+  "GroceryStore", "HardwareStore", "NGO", "SportsOrganization", "Corporation", "LodgingBusiness", "EntertainmentBusiness", "EmploymentAgency", "Library",
+].join("|");
+/** `"@type": "LocalBusiness"`, `"@type": "https://schema.org/LocalBusiness"` und die Liste `"@type": ["Store", "LocalBusiness"]`. */
+const LOCAL_BUSINESS_SINGLE = new RegExp(`"@type"\\s*:\\s*"?(?:https?:\\/\\/schema\\.org\\/)?(?:${LOCAL_TYPES})`, "i");
+const LOCAL_BUSINESS_LIST = new RegExp(`"@type"\\s*:\\s*\\[[^\\]]{0,300}?"(?:https?:\\/\\/schema\\.org\\/)?(?:${LOCAL_TYPES})"`, "i");
 
 export function checkSeo(page: SeoPage, extras: SeoExtras): SeoResult {
   const html = page.body;

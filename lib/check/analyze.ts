@@ -129,12 +129,12 @@ export async function analyze(input: CheckInput, options: AnalyzeOptions = {}): 
 
   step("detect", "start");
   const t = found.tracking;
-  const analytics = t.ga4 || t.gtm;
+  const analytics = t.ga4 || t.gtm || t.andere;
   const sea: CheckItem[] = [
     {
       id: "sea.analytics",
       ok: analytics,
-      label: "Web-Analyse (Google Analytics oder Tag Manager)",
+      label: "Web-Analyse (zum Beispiel Google Analytics, Matomo oder Plausible)",
       detail: analytics ? "Eingebunden, Besucherzahlen werden gemessen" : "Nicht gefunden. Der Erfolg der Website ist nicht messbar",
     },
     {

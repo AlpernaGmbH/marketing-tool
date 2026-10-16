@@ -15,6 +15,17 @@ const XML_FORBIDDEN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g;
 
 const NAMED: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " " };
 
+// Buchstaben und Zeichen, die Schweizer Seiten oft als benannte Entität schreiben. Gross und klein unterscheiden sich
+// («&Auml;» ist Ä, «&auml;» ist ä), darum wird zuerst genau so gesucht, wie die Entität geschrieben ist.
+const NAMED_EXACT: Record<string, string> = {
+  Auml: "Ä", auml: "ä", Ouml: "Ö", ouml: "ö", Uuml: "Ü", uuml: "ü", szlig: "ß",
+  Eacute: "É", eacute: "é", Egrave: "È", egrave: "è", Ecirc: "Ê", ecirc: "ê", Agrave: "À", agrave: "à", Acirc: "Â", acirc: "â",
+  Ccedil: "Ç", ccedil: "ç", icirc: "î", ocirc: "ô", ucirc: "û", ugrave: "ù", iuml: "ï", euml: "ë", oelig: "œ", aelig: "æ",
+  laquo: "«", raquo: "»", lsaquo: "‹", rsaquo: "›", lsquo: "‘", rsquo: "’", sbquo: "‚", ldquo: "“", rdquo: "”", bdquo: "„",
+  ndash: "–", mdash: "—", hellip: "…", bull: "•", middot: "·", euro: "€", pound: "£", copy: "©", reg: "®", trade: "™",
+  deg: "°", plusmn: "±", sect: "§", times: "×", shy: "",
+};
+
 export function decode(s = ""): string {
   return s
     .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) => {
@@ -22,7 +33,7 @@ export function decode(s = ""): string {
         const code = e[1].toLowerCase() === "x" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
         return Number.isFinite(code) && code > 0 && code < 0x110000 && !(code >= 0xd800 && code <= 0xdfff) ? String.fromCodePoint(code) : m;
       }
-      return NAMED[e.toLowerCase()] ?? m;
+      return NAMED_EXACT[e] ?? NAMED[e.toLowerCase()] ?? m;
     })
     .replace(XML_FORBIDDEN, "")
     .replace(/\s+/g, " ")

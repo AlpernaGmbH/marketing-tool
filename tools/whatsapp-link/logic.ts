@@ -103,19 +103,25 @@ export const TEMPLATES: Record<TemplateKey, { label: string; text: string }> = {
   eigener: { label: "Eigener Text", text: "" },
 };
 
+/** Höchstens `max` Zeichen; ein Emoji (zwei UTF-16-Einheiten) wird nie in der Mitte getrennt. */
+export function cutText(text: string, max: number): string {
+  return Array.from(text).slice(0, max).join("");
+}
+
 export const isTemplateKey = (v: unknown): v is TemplateKey => typeof v === "string" && (TEMPLATE_KEYS as readonly string[]).includes(v);
 
 /** Der Text einer Vorlage mit der Firma aus dem Profil; «Eigener Text» ist leer. */
 export function messageFor(key: TemplateKey, firma?: string): string {
   const f = (firma ?? "").replace(/\s+/g, " ").trim();
-  return TEMPLATES[key].text.replace("{firma}", f ? ` ${f}` : "");
+  // Funktion statt Text als Ersatz: «$&» oder «$1» im Firmennamen bleiben, wie sie sind.
+  return TEMPLATES[key].text.replace("{firma}", () => (f ? ` ${f}` : ""));
 }
 
 // ---- Link und Schnipsel ------------------------------------------------------------------------
 
 /** Nachricht bereinigt: Windows-Zeilenenden vereinheitlicht, Leerraum an den Enden weg, höchstens MAX_TEXT Zeichen. */
 export function cleanText(text: string): string {
-  return text.replace(/\r\n?/g, "\n").trim().slice(0, MAX_TEXT);
+  return cutText(text.replace(/\r\n?/g, "\n").trim(), MAX_TEXT);
 }
 
 /** https://wa.me/<E.164>, mit ?text= nur bei einer Nachricht. Zeilenumbrüche bleiben als %0A erhalten. */
@@ -272,7 +278,7 @@ export function parseState(raw: unknown): WaState {
   if (r.v !== 1) return EMPTY_STATE;
   const nummer = typeof r.nummer === "string" ? r.nummer.slice(0, 40) : "";
   const vorlage = isTemplateKey(r.vorlage) ? r.vorlage : "anfrage";
-  const text = typeof r.text === "string" ? r.text.slice(0, MAX_TEXT) : "";
+  const text = typeof r.text === "string" ? cutText(r.text, MAX_TEXT) : "";
   const phase = r.phase === "result" && normalizePhone(nummer) ? "result" : "edit";
   return { v: 1, phase, nummer, vorlage, text };
 }

@@ -1,4 +1,4 @@
-import { numberCH, pctCH } from "@/lib/ch";
+import { dropLastChar, numberCH, pctCH } from "@/lib/ch";
 import { safeFilename } from "@/lib/export/model";
 import { IMAGE_FORMATS, coverCrop, pngFilename, type ImageFormat, type Rect } from "@/lib/export/png";
 
@@ -329,7 +329,7 @@ function fitPille(text: string, maxW: number, basis: number, breite: (t: string,
   const f = basis * PILLE.minSchrift;
   const room = Math.max(0, maxW - innen(f));
   let t = text;
-  while (t.length > 1 && breite(`${t}…`, f) > room) t = t.slice(0, -1).trimEnd();
+  while (t.length > 1 && breite(`${t}…`, f) > room) t = dropLastChar(t).trimEnd();
   const shown = t === text ? text : `${t}…`;
   return { text: shown, schrift: f, breite: Math.min(maxW, breite(shown, f) + innen(f)) };
 }

@@ -62,7 +62,7 @@ Der 1. August ist der einzige eidgenössische Feiertag (Quelle: SECO, «Freizeit
 Google zeigt dann deine normalen Öffnungszeiten. Zu weiteren Folgen haben wir keine Quelle und sagen darum nichts. Wie du spezielle Öffnungszeiten festlegst, beschreibt die Hilfe von Google.
 
 ### Woher kommen die Daten?
-Aus den Ruhetagsgesetzen und Merkblättern von 18 Kantonen, geöffnet am 05.10.2026. Quelle und Stand stehen im Ergebnis. Für Freiburg, Genf, Jura, Neuenburg, Solothurn, Tessin, Waadt und Wallis haben wir noch keine geprüfte Liste und zeigen nur Neujahr, Auffahrt, den 1. August und Weihnachten.
+Aus den Ruhetagsgesetzen und Merkblättern aller 26 Kantone, geöffnet am 05.10.2026 und am 09.10.2026. Quelle und Stand stehen im Ergebnis. Fehlt für einen Kanton die Liste, zeigt das Werkzeug nur Neujahr, Auffahrt, den 1. August und Weihnachten.
 
 ### Wie rechnet das Werkzeug Karfreitag und Auffahrt?
 Vom Ostersonntag aus nach der Gauss-Osterformel: Karfreitag zwei Tage davor, Ostermontag einen Tag danach, Auffahrt 39 und Pfingstmontag 50 Tage danach. 2027 ist Ostern am 28. März.

@@ -422,7 +422,8 @@ export function yearOptions(now: Date): number[] {
   const y = now.getFullYear();
   return [y, y + 1];
 }
-export const defaultYear = (now: Date): number => yearOptions(now)[0];
+/** Vorgewählt ist das laufende Jahr, ab dem 1. Oktober das nächste: Dann planen die meisten schon das kommende Jahr. */
+export const defaultYear = (now: Date): number => yearOptions(now)[now.getMonth() >= 9 ? 1 : 0];
 
 /** Titel eines Termins: Leerraum zusammengefasst, Steuerzeichen entfernt, auf 60 Zeichen gekürzt. */
 export function cleanTitel(s: string): string {

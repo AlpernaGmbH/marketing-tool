@@ -35,8 +35,11 @@ describe("Formate", () => {
   });
   it("bildet saubere Dateinamen", () => {
     expect(pngFilename("Angebot der Woche: Fassade!", "story")).toBe("angebot-der-woche-fassade-story.png");
-    expect(pngFilename("Käse & Brot, Zürich", "feed")).toBe("kase-brot-zurich-feed.png");
+    expect(pngFilename("Käse & Brot, Zürich", "feed")).toBe("kaese-brot-zuerich-feed.png");
     expect(pngFilename("   ", "gbp")).toBe("grafik-gbp.png");
+    expect(pngFilename("Gerüst", "feed")).toBe("geruest-feed.png");
+    // Der Schnitt bei 40 Zeichen lässt keinen Bindestrich am Ende stehen.
+    expect(pngFilename(`${"a".repeat(39)} b`, "story")).toBe(`${"a".repeat(39)}-story.png`);
     expect(pngFilename("x".repeat(100), "feed").length).toBeLessThanOrEqual(50);
   });
 });

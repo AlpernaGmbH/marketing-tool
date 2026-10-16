@@ -85,6 +85,28 @@ describe("Erkennung ohne Fehlalarme", () => {
     expect(t.gads).toBe(false);
   });
 
+  it("erkennt Firmendaten in JSON-LD auch für Handwerksberufe und mit vollem Schema-Namen", () => {
+    const ld = (t: string) => `<script type="application/ld+json">${t}</script>`;
+    const schema = (body: string) => seo(body).items.find((i) => i.id === "seo.schema")?.ok;
+    expect(schema(ld('{"@context":"https://schema.org","@type":"HousePainter","name":"Malerei Keller"}'))).toBe(true);
+    expect(schema(ld('{"@type":"https://schema.org/LocalBusiness","name":"Keller"}'))).toBe(true);
+    expect(schema(ld('{"@type":["Thing","Plumber"]}'))).toBe(true);
+    expect(schema(ld('{"@type":"Person","name":"Keller"}'))).toBe(false);
+  });
+
+  it("erkennt Web-Analyse ohne Google: Plausible, Matomo, Fathom, Umami, Cloudflare", () => {
+    for (const html of [
+      '<script defer data-domain="keller.ch" src="https://plausible.io/js/script.js"></script>',
+      '<script src="https://stats.keller.ch/matomo.js"></script>',
+      '<script src="https://cdn.usefathom.com/script.js" data-site="ABCDEFG"></script>',
+      '<script defer src="https://cloud.umami.is/script.js" data-website-id="abc"></script>',
+      '<script defer src="https://static.cloudflareinsights.com/beacon.min.js"></script>',
+    ]) {
+      expect(detectTracking(html).andere).toBe(true);
+    }
+    expect(detectTracking("<p>Wir messen nichts. Matomo ist ein Wort.</p>").andere).toBe(false);
+  });
+
   it("erkennt echte Kennungen", () => {
     const t = detectTracking(`<script async src="https://www.googletagmanager.com/gtag/js?id=G-ABC123DEF4"></script><script>gtag('config','AW-1234567890')</script>GTM-ABCD123`);
     expect(t).toMatchObject({ ga4: true, gads: true, gtm: true });

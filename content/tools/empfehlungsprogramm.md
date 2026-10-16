@@ -43,7 +43,7 @@ Malerei Keller, Gossau, rechnet mit einem Kundenwert von CHF 3'000.- im Jahr und
 
 > **Deckungsbeitrag:** CHF 750.- im Jahr.
 >
-> **Anreiz:** CHF 75.- bis CHF 150.- zusammen, je Seite CHF 40.- bis CHF 75.-. In den Texten steht die Mitte, CHF 60.-.
+> **Anreiz:** CHF 80.- bis CHF 150.- zusammen, je Seite CHF 40.- bis CHF 75.-. In den Texten steht die Mitte, CHF 60.-.
 >
 > **Was es bringt:** Eine gewonnene Kundin bringt in drei Jahren CHF 2'250.- Deckungsbeitrag, nach CHF 120.- Anreiz bleiben CHF 2'130.-. Der Anreiz ist nach 2 Monaten zurückverdient. Im Beispiel mit 100 Kundinnen und Kunden pro Jahr bleiben im realistischen Szenario (5 % empfehlen) CHF 10'650.-.
 >

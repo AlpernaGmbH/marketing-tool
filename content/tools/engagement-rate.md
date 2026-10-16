@@ -39,7 +39,7 @@ Die Engagement-Rate zeigt, bei welchen Beiträgen deine Follower reagieren. Das 
 ## Beispiel
 Malerei Keller, Gossau, wertet fünf Instagram-Beiträge aus, bei 1'240 Followern. Beim ersten Beitrag sind 62 Likes, 8 Kommentare, 5 Mal geteilt und 11 Mal gespeichert zusammen 86 Interaktionen. 86 geteilt durch 1'240 Follower, mal 100, ergibt 6,94 %. 86 geteilt durch 1'520 Reichweite ergibt 5,66 %.
 
-- **Schnitt:** 5,6 % auf Follower, 4,79 % auf Reichweite. Summe durch Summe: 347 Interaktionen bei 7'020 Reichweite ergeben 4,94 %.
+- **Schnitt:** 5,6 % auf Follower, 4,79 % auf Reichweite. Summe durch Summe: 347 Interaktionen bei einer Reichweite von 7'020 ergeben 4,94 %.
 - **Bester Beitrag:** Vorher nachher Treppenhaus, 4,32 Prozentpunkte über dem Schnitt. **Schwächster:** Farbtrends Herbst, 2,53 Prozentpunkte darunter.
 - **Kurzmodus:** Mit den Summen (245 Likes, 30 Kommentare, 24 Mal geteilt, 48 Mal gespeichert, 7'020 Reichweite) kommt sie auf dieselben 5,6 %.
 - **Vergleich:** Nur Likes und Kommentare gerechnet, so wie die Quelle, sind es 4,44 %. Der Durchschnitt internationaler Marken lag 2025 bei 0,48 % (Socialinsider, nicht Schweiz).

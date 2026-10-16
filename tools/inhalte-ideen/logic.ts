@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { csvCell } from "@/lib/csv";
 import ideenData from "@/data/branchen-ideen.json";
 import { brancheOf } from "@/lib/branchen";
 import { safeFilename } from "@/lib/export/model";
@@ -492,10 +493,6 @@ export function merklisteMarkdown(ideen: readonly Idea[], opts: { kompakt?: bool
 // ---- Export: CSV und Kalender-Entwurf ------------------------------------------------------------
 
 export const CSV_HEADER = ["Titel", "Beschrieb", "Hook", "Format", "Ziel", "Aufwand", "Monate"] as const;
-
-function csvCell(v: string): string {
-  return /[;"\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-}
 
 /** CSV für Excel (Schweiz): Semikolon, Zeilenende CRLF, UTF-8 mit BOM, damit Umlaute stimmen. */
 export function buildCsv(ideen: readonly Idea[]): string {

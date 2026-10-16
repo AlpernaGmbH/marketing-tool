@@ -415,13 +415,37 @@ describe("strategie-einseiter: collect", () => {
     expect(inhaltOf(e, "zielgruppe").segment).toBe("Hausbesitzer im Fürstenland");
     expect(inhaltOf(e, "marke")).toMatchObject({ werte: ["Nah", "Genau"], tonalitaet: "Per Sie, kurz.", woerter: ["Termin", "sauber"], versprechen: MARKE.output.versprechen });
     expect(inhaltOf(e, "kanaele").kanaele).toEqual(["Instagram", "Newsletter"]);
-    expect(inhaltOf(e, "budget")).toMatchObject({ jahr: 15000, monat: 1000 });
+    // Hat der Budget-Planer ein Ergebnis, kommen Jahr, Monat und Kanäle alle von dort (sonst stünde 15'000 neben Beträgen, die zu 12'000 gerechnet sind).
+    expect(inhaltOf(e, "budget")).toMatchObject({ jahr: 12000, monat: 1000 });
+    expect(inhaltOf(e, "zielgruppe").merkmale).toEqual([]);
     const q = Object.fromEntries(e.bausteine.map((b) => [b.key, b.quellen]));
     expect(q.positionierung).toEqual([QUELLE_PROFIL]);
     expect(q.zielgruppe).toEqual([QUELLE_PROFIL, quelleWerkzeug(WERKZEUG_NAMEN.persona)]);
     expect(q.marke).toEqual([QUELLE_PROFIL, quelleWerkzeug(WERKZEUG_NAMEN.marke)]);
     expect(q.kanaele).toEqual([QUELLE_PROFIL, quelleWerkzeug(WERKZEUG_NAMEN.saeulen)]);
-    expect(q.budget).toEqual([QUELLE_PROFIL, quelleWerkzeug(WERKZEUG_NAMEN.budget)]);
+    expect(q.budget).toEqual([quelleWerkzeug(WERKZEUG_NAMEN.budget)]);
+  });
+
+  it("Budget: ohne Planer-Stand zählt das Jahr aus dem Profil, mit Stand nie ein Gemisch aus beidem", () => {
+    const ohne = collect(() => null, { budgetJahr: 15000 });
+    expect(inhaltOf(ohne, "budget")).toMatchObject({ jahr: 15000, monat: null, kanaele: [] });
+    expect(ohne.bausteine.find((b) => b.key === "budget")?.quellen).toEqual([QUELLE_PROFIL]);
+    const mit = collect(reader({ [toolStateKey(BUDGET_SLUG)]: BUDGET }), { budgetJahr: 20000 });
+    const b = inhaltOf(mit, "budget");
+    expect(b.jahr).toBe(12000);
+    expect(b.monat).toBe(1000);
+    // die grössten Kanäle des Planers, nicht des Profils
+    expect(b.kanaele[0]).toMatchObject({ label: "Website", jahr: 4800 });
+  });
+
+  it("Zielgruppe: Merkmale des ICP-Builders nur zum selben Segment", () => {
+    const gleich = collect(reader({ [toolStateKey(ICP_SLUG)]: ICP }), {});
+    expect(inhaltOf(gleich, "zielgruppe").merkmale.length).toBeGreaterThan(0);
+    const segmentName = inhaltOf(gleich, "zielgruppe").segment;
+    const dasselbe = collect(reader({ [toolStateKey(ICP_SLUG)]: ICP }), { primaersegment: segmentName.toUpperCase() });
+    expect(inhaltOf(dasselbe, "zielgruppe").merkmale.length).toBeGreaterThan(0);
+    const anderes = collect(reader({ [toolStateKey(ICP_SLUG)]: ICP }), { primaersegment: "Liegenschaftsverwaltungen" });
+    expect(inhaltOf(anderes, "zielgruppe")).toMatchObject({ segment: "Liegenschaftsverwaltungen", merkmale: [] });
   });
 
   it("Zielgruppe: erste Zielgruppe und Persona aus dem Profil reichen, auch ohne Werkzeug-Stand", () => {
@@ -547,7 +571,7 @@ describe("strategie-einseiter: toDocument", () => {
     expect(md).toContain("Website CHF 4'800.- (40 %)");
     expect(md).toContain("Säule Fassaden vorher und nachher (35 % der Beiträge)");
     expect(md).toContain("Kanäle: Instagram, Google-Beitrag");
-    expect(md).toContain("Ruth Hungerbühler: Ruth Hungerbühler, zwischen 45 und 60");
+    expect(md).toContain("Persona:** Ruth Hungerbühler, zwischen 45 und 60");
     expect(md).toContain("35 von 100, Stufe «Aufbau»; stärkste Dimension «Auftritt» (56), schwächste «Steuerung» (11)");
     expect(md).toContain("38 von 100 (malerei-keller.ch, geprüft am 03.10.2026)");
     const table = doc.blocks.find((b) => b.type === "table") as { header: string[]; rows: string[][] };

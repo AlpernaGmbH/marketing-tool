@@ -216,11 +216,11 @@ export const TEMPLATES: Record<Anrede, Record<Kanal, string>> = {
       "Betreff: Wie war es bei uns, [Name]?\n\nHallo [Name]\n\nDanke für deinen Auftrag ([Auftrag]). Wir hoffen, alles ist so, wie du es dir vorgestellt hast.\n\nMagst du uns auf Google bewerten? Das dauert eine Minute und hilft anderen aus der Region bei der Wahl. Eine ehrliche Bewertung reicht uns, auch wenn nicht alles perfekt war: {link}\n\nFreundliche Grüsse\n{firma}",
   },
   sie: {
-    sms: "Guten Tag [Name], danke für Ihren Auftrag. Mögen Sie uns auf Google bewerten? Ehrlich reicht: {link} Grüsse, {firma}",
+    sms: "Guten Tag [Name], danke für Ihren Auftrag. Würden Sie uns auf Google bewerten? {link} Freundliche Grüsse, {firma}",
     whatsapp:
-      "Guten Tag [Name]\nDanke für Ihren Auftrag ([Auftrag]). Wir hoffen, Sie sind zufrieden.\nMögen Sie uns auf Google bewerten? Das dauert eine Minute und hilft anderen aus der Region bei der Wahl: {link}\nEine ehrliche Bewertung reicht uns.\nFreundliche Grüsse, {firma}",
+      "Guten Tag [Name]\nDanke für Ihren Auftrag ([Auftrag]). Wir hoffen, Sie sind zufrieden.\nWürden Sie uns auf Google bewerten? Das dauert eine Minute und hilft anderen aus der Region bei der Wahl: {link}\nEine ehrliche Bewertung reicht uns.\nFreundliche Grüsse, {firma}",
     email:
-      "Betreff: Wie war es bei uns, [Name]?\n\nGuten Tag [Name]\n\nDanke für Ihren Auftrag ([Auftrag]). Wir hoffen, alles ist so, wie Sie es sich vorgestellt haben.\n\nMögen Sie uns auf Google bewerten? Das dauert eine Minute und hilft anderen aus der Region bei der Wahl. Eine ehrliche Bewertung reicht uns, auch wenn nicht alles perfekt war: {link}\n\nFreundliche Grüsse\n{firma}",
+      "Betreff: Wie war es bei uns, [Name]?\n\nGuten Tag [Name]\n\nDanke für Ihren Auftrag ([Auftrag]). Wir hoffen, alles ist so, wie Sie es sich vorgestellt haben.\n\nWürden Sie uns auf Google bewerten? Das dauert eine Minute und hilft anderen aus der Region bei der Wahl. Eine ehrliche Bewertung reicht uns, auch wenn nicht alles perfekt war: {link}\n\nFreundliche Grüsse\n{firma}",
   },
 };
 

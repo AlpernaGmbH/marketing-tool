@@ -90,13 +90,18 @@ export type Detected = {
   mapsLink: boolean;
 };
 
-export type Tracking = { ga4: boolean; gtm: boolean; gads: boolean; meta: boolean; linkedin: boolean; tiktok: boolean };
+/** `andere`: eine datensparsame Messung ohne Google, etwa Matomo, Plausible, Fathom, Umami oder Cloudflare Web Analytics. */
+export type Tracking = { ga4: boolean; gtm: boolean; andere: boolean; gads: boolean; meta: boolean; linkedin: boolean; tiktok: boolean };
+
+const ANDERE_ANALYSE =
+  /plausible\.io\/js|\/matomo\.js|matomo\.php|\/piwik\.js|piwik\.php|cdn\.usefathom\.com|usefathom\.com\/script|umami\.is|data-website-id\s*=|static\.cloudflareinsights\.com|simpleanalyticscdn\.com|scripts\.simpleanalytics\.io|counter\.dev|goatcounter\.com\/count|gc\.zgo\.at/i;
 
 export function detectTracking(html: string): Tracking {
   return {
     // Kennungen stehen nie mitten in einem Wort: «TRAINING-CENTER» ist kein GA4, «SAW-1234567» kein Ads-Konto.
     ga4: /(?<![A-Za-z0-9_-])G-[A-Z0-9]{6,12}(?![A-Za-z0-9])/.test(html),
     gtm: /(?<![A-Za-z0-9_-])GTM-[A-Z0-9]{4,9}(?![A-Za-z0-9])/.test(html),
+    andere: ANDERE_ANALYSE.test(html),
     gads: /(?<![A-Za-z0-9_-])AW-\d{6,12}(?!\d)|googleadservices\.com|googleads\.g\.doubleclick\.net|google_conversion_id/i.test(html),
     meta: /connect\.facebook\.net\/[^"']*fbevents|fbq\(\s*['"]init/i.test(html),
     linkedin: /snap\.licdn\.com|_linkedin_partner_id/i.test(html),

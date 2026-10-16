@@ -209,7 +209,7 @@ function reifegradKurz(reifegradRaw: unknown, checkRaw: unknown): ReifegradKurz 
 function checkKurz(checkRaw: unknown): CheckKurz | null {
   const saved = parseCheckState(checkRaw);
   if (saved.phase !== "result" || !saved.result) return null;
-  return { score: Math.round(saved.result.score), host: host(saved.result.url), datum: dateCH(saved.result.checkedAt) };
+  return { score: Math.min(100, Math.max(0, Math.round(saved.result.score))), host: host(saved.result.url), datum: dateCH(saved.result.checkedAt) };
 }
 
 /**
@@ -238,7 +238,9 @@ export function collect(read: Read, profile: Profile): Einseiter {
   const segment = segmentProfil || str(icp.output?.segmentName, 200);
   const personaProfil = (Array.isArray(profile.personas) ? profile.personas : []).map((p) => (isObject(p) ? { name: str(p.name, 60), kurz: str(p.kurz, 300) } : null)).find((p) => p?.name);
   const persona: Persona | null = personaProfil ? personaProfil : personaState.output ? { name: str(personaState.output.name, 60), kurz: str(personaState.output.kurz, 300) } : null;
-  const zielgruppe: InhaltVon<"zielgruppe"> = { key: "zielgruppe", segment, merkmale: strings(icp.output?.merkmale, MAX_EINTRAEGE), persona };
+  // Die Merkmale des ICP-Builders gehören zu seinem Segment: Steht im Profil ein anderes Segment, wären sie die falschen (Eigentümer statt Verwaltungen).
+  const gleichesSegment = segment !== "" && segment.toLowerCase() === str(icp.output?.segmentName, 200).toLowerCase();
+  const zielgruppe: InhaltVon<"zielgruppe"> = { key: "zielgruppe", segment, merkmale: gleichesSegment ? strings(icp.output?.merkmale, MAX_EINTRAEGE) : [], persona };
   const zielQuellen = [
     segmentProfil || personaProfil ? QUELLE_PROFIL : "",
     !segmentProfil && icp.output ? quelleWerkzeug(WERKZEUG_NAMEN.icp) : "",
@@ -294,13 +296,15 @@ export function collect(read: Read, profile: Profile): Einseiter {
   // 7. Budget
   const budgetState = parseBudget(state(BUDGET_SLUG));
   const jahrProfil = num(profile.budgetJahr);
+  // Hat der Budget-Planer ein Ergebnis, kommen Jahr, Monat und Kanäle zusammen aus ihm; sonst stünde ein Jahresbudget aus dem Profil neben Beträgen, die zu
+  // einem anderen Jahresbudget gerechnet sind.
   const budget: InhaltVon<"budget"> = {
     key: "budget",
-    jahr: jahrProfil ?? budgetState?.jahr ?? null,
+    jahr: budgetState ? budgetState.jahr : jahrProfil,
     monat: budgetState?.monat ?? null,
     kanaele: [...(budgetState?.kanaele ?? [])].sort((a, b) => b.jahr - a.jahr).slice(0, MAX_EINTRAEGE),
   };
-  const budgetQuellen = [jahrProfil !== null ? QUELLE_PROFIL : "", budgetState ? quelleWerkzeug(WERKZEUG_NAMEN.budget) : ""].filter(Boolean);
+  const budgetQuellen = budgetState ? [quelleWerkzeug(WERKZEUG_NAMEN.budget)] : jahrProfil !== null ? [QUELLE_PROFIL] : [];
 
   // 8. Lage und Massnahmen
   const swot = parseSwot(state(SWOT_SLUG));
@@ -377,7 +381,15 @@ function reifegradText(r: ReifegradKurz): string {
   return `${gesamt}; stärkste Dimension «${r.staerkste.name}» (${r.staerkste.score}), schwächste «${r.schwaechste.name}» (${r.schwaechste.score})`;
 }
 
-/** DocumentModel für Anzeige, PDF, Word und Markdown-Copy. Seite 1 kompakt in Blöcken, Seite 2 die Massnahmen. */
+/** «Name: Kurzbeschreibung»; beginnt die Beschreibung schon mit dem Namen, steht er nicht doppelt da. */
+const personaText = (p: { name: string; kurz: string }): string => {
+  const name = p.name.trim();
+  const kurz = p.kurz.trim();
+  if (!kurz) return name;
+  return kurz.toLowerCase().startsWith(name.toLowerCase()) ? kurz : `${name}: ${kurz}`;
+};
+
+/** DocumentModel für Anzeige, PDF, Word und Markdown-Copy. Zuerst die Übersicht in Blöcken, am Ende die Massnahmen. */
 export function toDocument(einseiter: Einseiter, now: Date = new Date()): DocumentModel {
   const { betrieb } = einseiter;
   const datum = dateCH(now);
@@ -411,7 +423,7 @@ export function toDocument(einseiter: Einseiter, now: Date = new Date()): Docume
       type: "facts",
       items: [
         { label: "Segment", value: oder(ziel.segment, WERKZEUG_NAMEN.icp) },
-        { label: "Persona", value: ziel.persona ? [ziel.persona.name, ziel.persona.kurz].filter(Boolean).join(": ") : offen(WERKZEUG_NAMEN.persona) },
+        { label: "Persona", value: ziel.persona ? personaText(ziel.persona) : offen(WERKZEUG_NAMEN.persona) },
       ],
     },
   ];

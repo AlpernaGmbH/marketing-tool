@@ -125,6 +125,9 @@ describe("newsletter-check: Prüfpunkte", () => {
     expect(anredeOf("Hallo {{Vorname}}\n\nText").kind).toBe("persoenlich");
     expect(anredeOf("Hallo zusammen,\n\nText").kind).toBe("allgemein");
     expect(anredeOf("Liebe Mitglieder\n\nText").kind).toBe("allgemein");
+    expect(anredeOf("Liebe Turnerinnen und Turner\n\nText").kind).toBe("allgemein");
+    expect(anredeOf("Hallo Sportlerinnen\n\nText").kind).toBe("allgemein");
+    expect(anredeOf("Liebe Anna\n\nText").kind).toBe("persoenlich");
     expect(anredeOf("Sehr geehrte Damen und Herren\n\nText").kind).toBe("allgemein");
     expect(anredeOf("Wir lieben Farben. Hier gibt es keine Anrede.").kind).toBe("keine");
     expect(anredeOf("Kurz. Liebe Grüsse\nAnna").kind).toBe("keine");

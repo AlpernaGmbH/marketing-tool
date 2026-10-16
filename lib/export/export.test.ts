@@ -242,6 +242,23 @@ describe("Bildschirm-Bausteine in den Dateien", () => {
     { type: "paragraph", text: "Normaler Absatz." },
   ];
 
+  it("bars: Nachkommastellen und Einheit stimmen (0,48 % bleibt 0,48 %, keine doppelten Leerzeichen)", () => {
+    const rate = flattenBlocks([{ type: "bars", unit: "%", decimals: 2, items: [{ label: "Du", value: 4.4 }, { label: "Üblich", value: 0.48 }, { label: "Facebook", value: 0.15 }] }]);
+    expect(rate).toContainEqual({ type: "table", header: ["", "Anteil"], rows: [["Du", "4,4 %"], ["Üblich", "0,48 %"], ["Facebook", "0,15 %"]], widths: [2, 1] });
+    // ohne Angabe bleibt es bei einer Stelle
+    expect(flattenBlocks([{ type: "bars", unit: "%", items: [{ label: "A", value: 0.48 }] }])).toContainEqual(
+      expect.objectContaining({ rows: [["A", "0,5 %"]] }),
+    );
+    // grosse Zahlen mit Apostroph als Tausendertrenner
+    expect(flattenBlocks([{ type: "bars", unit: "CHF", items: [{ label: "A", value: 12345.6 }, { label: "B", value: 1000 }] }])).toContainEqual(
+      expect.objectContaining({ rows: [["A", "12'345,6 CHF"], ["B", "1'000 CHF"]] }),
+    );
+    // eine Einheit mit führendem Leerzeichen gibt nie zwei Leerzeichen
+    const von = flattenBlocks([{ type: "bars", unit: " von 100", items: [{ label: "A", value: 50 }] }]);
+    expect(JSON.stringify(von)).toContain("50 von 100");
+    expect(JSON.stringify(von)).not.toContain("50  von 100");
+  });
+
   it("flattenBlocks macht aus jedem Baustein Grundbausteine und lässt Grundbausteine unverändert", () => {
     const flat = flattenBlocks(visual);
     expect(flat.every((b) => ["heading", "paragraph", "list", "table", "facts"].includes(b.type))).toBe(true);

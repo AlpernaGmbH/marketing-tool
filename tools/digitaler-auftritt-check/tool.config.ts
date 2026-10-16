@@ -9,7 +9,7 @@ export default defineTool({
   keyword: "Digitaler Auftritt",
   related: ["gbp-check", "bewertungs-kit", "positionierung"],
   needsServer: true,
-  usesProfile: ["firma", "website", "ort", "branche", "kanaele"],
+  usesProfile: ["firma", "website", "ort", "branche"],
   writesProfile: ["firma", "website", "ort", "branche", "kanaele"],
   outputs: ["pdf", "docx", "copy"],
   estimatedMinutes: 2,

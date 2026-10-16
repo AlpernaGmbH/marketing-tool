@@ -585,7 +585,7 @@ describe("angebotsgrafik: Beispiel aus dem Seitentext", () => {
 describe("angebotsgrafik: Dateinamen", () => {
   it("benennt PNG und ZIP ohne Sonderzeichen", () => {
     expect(pngFilename("Herbstaktion Fassadenanstrich", "feed")).toBe("herbstaktion-fassadenanstrich-feed.png");
-    expect(pngFilename("Käse & Brot!", "story")).toBe("kase-brot-story.png");
+    expect(pngFilename("Käse & Brot!", "story")).toBe("kaese-brot-story.png");
     expect(pngFilename("", "gbp")).toBe("grafik-gbp.png");
     expect(zipName("Herbstaktion Fassadenanstrich")).toBe("angebotsgrafik-herbstaktion-fassadenanstrich.zip");
     expect(zipName("Küche & Bäder")).toBe("angebotsgrafik-kueche-baeder.zip");

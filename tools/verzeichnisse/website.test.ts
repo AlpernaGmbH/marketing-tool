@@ -12,6 +12,7 @@ describe("verzeichnisse: Adressen aus dem Text der Website", () => {
 
   it("nimmt Strassen mit Vorwort, mit Buchstabe an der Nummer und ohne Komma", () => {
     expect(adressenAus("Im Dorf 5 9100 Herisau")).toEqual([{ strasse: "Im Dorf 5", plz: "9100", ort: "Herisau" }]);
+    expect(adressenAus("St. Jakobstrasse 12, 9000 St. Gallen")).toEqual([{ strasse: "St. Jakobstrasse 12", plz: "9000", ort: "St. Gallen" }]);
     expect(adressenAus("Obere Mühlestrasse 5a, 9000 St. Gallen")).toEqual([{ strasse: "Obere Mühlestrasse 5a", plz: "9000", ort: "St. Gallen" }]);
     expect(adressenAus("Rosenberg 12, CH-9200 Gossau")).toEqual([{ strasse: "Rosenberg 12", plz: "9200", ort: "Gossau" }]);
   });

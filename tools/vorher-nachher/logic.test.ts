@@ -456,7 +456,7 @@ describe("hitImage", () => {
 describe("Dateinamen", () => {
   it("benennt PNG nach der Firma oder, ohne Firma, nach dem Werkzeug", () => {
     expect(pngName("Malerei Keller", "feed")).toBe("malerei-keller-feed.png");
-    expect(pngName("  Bäckerei Müller & Söhne, Gossau ", "story")).toBe("backerei-muller-sohne-gossau-story.png");
+    expect(pngName("  Bäckerei Müller & Söhne, Gossau ", "story")).toBe("baeckerei-mueller-soehne-gossau-story.png");
     expect(pngName(undefined, "portrait")).toBe("vorher-nachher-portrait.png");
     expect(pngName("   ", "feed")).toBe("vorher-nachher-feed.png");
   });

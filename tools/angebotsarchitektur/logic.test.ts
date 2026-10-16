@@ -267,6 +267,11 @@ describe("angebotsarchitektur: Warnungen", () => {
     expect(r.stufen.kern.unterZiel).toBe(false);
     expect(r.warnungen.filter((w) => w.art === "marge")).toHaveLength(0);
   });
+  it("knapp unter dem Ziel zeigt die Warnung zwei Dezimalen, damit Marge und Ziel nicht gleich aussehen", () => {
+    const r = rechnen(input({ leistungen: [L("a", "Knapp", 1000, 0, 700.4)], kernId: "a", einstiegId: null, premiumId: null }));
+    const w = r.warnungen.find((x) => x.art === "marge" && x.stufe === "kern");
+    expect(w?.text).toContain("Die Marge liegt bei 29,96 %, deine Zielmarge ist 30 %");
+  });
   it("ein negativer Deckungsbeitrag steht im Text", () => {
     const r = rechnen(input({ leistungen: [L("a", "Zu billig", 500, 10, 100)], kernId: "a", einstiegId: null, premiumId: null }));
     const w = r.warnungen.find((x) => x.art === "marge" && x.stufe === "kern");

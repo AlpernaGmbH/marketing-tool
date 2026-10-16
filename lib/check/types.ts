@@ -56,17 +56,17 @@ export type PostingFrequency = (typeof POSTING_FREQUENCIES)[number]["key"];
 
 const social = z
   .object({
-    url: z.string().trim().max(300).optional(),
-    freq: z.enum(["none", "rare", "monthly", "weekly", "several"]).optional(),
+    url: z.string().trim().max(300, "Ein Link zu einem Kanal ist zu lang (höchstens 300 Zeichen).").optional(),
+    freq: z.enum(["none", "rare", "monthly", "weekly", "several"], { message: "Bitte wähle, wie oft du auf dem Kanal veröffentlichst." }).optional(),
   })
   .optional();
 
 /** Eingabe des Checks. Unbekannte Branchen werden zu «other». */
 export const checkInputSchema = z.object({
-  company: z.string().trim().min(1, "Bitte gib den Firmennamen an.").max(200),
-  city: z.string().trim().max(100).optional(),
-  industry: z.string().trim().max(40).optional(),
-  website: z.string().trim().min(3, "Bitte gib eine Website an.").max(300),
+  company: z.string().trim().min(1, "Bitte gib den Firmennamen an.").max(200, "Der Firmenname ist zu lang (höchstens 200 Zeichen)."),
+  city: z.string().trim().max(100, "Der Ort ist zu lang (höchstens 100 Zeichen).").optional(),
+  industry: z.string().trim().max(40, "Die Branche ist ungültig.").optional(),
+  website: z.string().trim().min(3, "Bitte gib eine Website an.").max(300, "Die Adresse der Website ist zu lang (höchstens 300 Zeichen)."),
   /** Fremde Website (Wettbewerbsvergleich): robots.txt wird beachtet; verbietet sie den Abruf, bleibt die Seite ungelesen. */
   respectRobots: z.boolean().optional(),
   socials: z

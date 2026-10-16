@@ -100,9 +100,17 @@ describe("POST /api/check", () => {
     await ok.text();
   });
 
-  it("sperrt niemanden aus, wenn GATE_SECRET fehlt", async () => {
+  it("antwortet 503 und ruft keinen fremden Server ab, wenn GATE_SECRET fehlt", async () => {
     delete process.env.GATE_SECRET;
-    expect((await POST(post("/api/check", body, { ip: IP }))).status).toBe(200);
+    let fetched = 0;
+    net.fetch = async () => {
+      fetched += 1;
+      throw new CheckError("darf nicht aufgerufen werden", "failed");
+    };
+    const res = await POST(post("/api/check", body, { ip: IP }));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toMatchObject({ error: "gate_unconfigured" });
+    expect(fetched).toBe(0);
   });
 
   it("meldet nicht erreichbare Websites als Fehler-Ereignis im Stream", async () => {

@@ -582,6 +582,13 @@ describe("verzeichnisse: Aufgaben", () => {
     expect(aufgabeFor(buch, e, withStatus(buch.id, "ja", { name: "  " })).aktion).toBe("pruefen");
   });
 
+  it("«CH-» vor der PLZ und «Schweiz» am Ende sind keine abweichende Adresse", () => {
+    for (const dort of ["Wilerstrasse 24, CH-9200 Gossau", "Wilerstrasse 24, 9200 Gossau, Schweiz", "Wilerstrasse 24, CH 9200 Gossau, CH"]) {
+      const a = aufgabeFor(buch, e, withStatus(buch.id, "ja", { adresse: dort }));
+      expect(a.abweichungen.filter((x) => x.stufe === "warnung"), dort).toEqual([]);
+    }
+  });
+
   it("«Ja» mit Abweichungen heisst Angleichen, ohne Abweichungen In Ordnung", () => {
     const a = aufgabeFor(buch, e, withStatus(buch.id, "ja", { adresse: "Wilerstr. 24, 9200 Gossau" }));
     expect(a.aktion).toBe("angleichen");

@@ -101,6 +101,7 @@ describe("testimonial: Satzteilung", () => {
   it("teilt nach Punkt, Fragezeichen und Ausrufezeichen, wenn ein Grossbuchstabe folgt", () => {
     expect(splitSaetze("Wie schnell ging das? Erstaunlich schnell! Wirklich.")).toEqual(["Wie schnell ging das?", "Erstaunlich schnell!", "Wirklich."]);
     expect(splitSaetze("Test… Zweiter Satz.")).toEqual(["Test…", "Zweiter Satz."]);
+    expect(splitSaetze("Seit dem 12. Okt. Wohnen wir hier. Fam. Keller ist zufrieden.")).toEqual(["Seit dem 12. Okt. Wohnen wir hier.", "Fam. Keller ist zufrieden."]);
   });
 
   it("teilt nicht nach Kürzeln: Dr., Nr., z. B., ca., St. Gallen", () => {
@@ -460,7 +461,7 @@ describe("testimonial: Weg 1, Leitfragen und Fassungen", () => {
       expect(f.text).toContain("Ihr Zitat");
     }
     expect(res.fragen).toEqual(["Was hat Sie überzeugt, uns zu beauftragen?", "Was würden Sie jemandem sagen, der zögert?", "Würden Sie uns weiterempfehlen, und warum?"]);
-    expect(res.fassungen[0].text).toContain("Mögen Sie mir");
+    expect(res.fassungen[0].text).toContain("Würden Sie mir");
   });
 
   it("baut die Du-Fassungen ohne «Sie» und «Ihr»", () => {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import budgetData from "@/data/budget-richtwerte.json";
+import { csvCell } from "@/lib/csv";
 import { chf, numberCH, pctCH } from "@/lib/ch";
 import { safeFilename, toMarkdown, type DocBlock, type DocumentModel } from "@/lib/export/model";
 import type { Profile, ProfileKey } from "@/lib/profile";
@@ -255,7 +256,7 @@ export function formProblem(form: FormFields, profile: ProfileFields, data: Budg
   if (!isZielKey(form.ziel)) return "Wähle das Ziel für dieses Jahr.";
   const anteil = effectiveAnteil(form, data);
   if (Number.isNaN(anteil) || anteil < LIMITS.anteil.min || anteil > LIMITS.anteil.max) {
-    return `Der Anteil vom Umsatz muss zwischen ${pctCH(LIMITS.anteil.min)} und ${pctCH(LIMITS.anteil.max)} liegen.`;
+    return `Der Anteil vom ${typ === "verein" ? "Jahresbudget" : "Umsatz"} muss zwischen ${pctCH(LIMITS.anteil.min)} und ${pctCH(LIMITS.anteil.max)} liegen.`;
   }
   if (normalizeKanaele(effectiveKanaele(form, profile)).length === 0) return "Wähle mindestens einen Kanal.";
   const stunden = form.stunden.trim() === "" ? 0 : parseNumber(form.stunden);
@@ -346,10 +347,27 @@ export type BudgetResult = {
   rahmen: Rahmen | null;
 };
 
-/** Verteilt `total` auf zwölf Monate: elf gleiche, auf Franken gerundete Beträge, der Dezember trägt den Rest. */
+/**
+ * Verteilt `total` auf zwölf Monate: elf gleiche, auf Franken abgerundete Beträge, der Dezember trägt den Rest. Abgerundet, damit der Dezember
+ * nie kleiner als ein anderer Monat und nie negativ wird (bei CHF 5 im Jahr gäbe Runden elf mal CHF 0 und CHF 5, bei CHF 10 elf mal CHF 1 und CHF -1).
+ */
 export function zwoelfMonate(total: number): number[] {
-  const monat = Math.round(total / 12);
+  const monat = Math.floor(total / 12);
   return [...Array<number>(11).fill(monat), total - 11 * monat];
+}
+
+/** Verteilt `total` ganzzahlig nach Prozent (Summe der Prozent 100): abgerundet, der Rest geht an die grössten Nachkommaanteile. Nie negativ, Summe genau `total`. */
+function verteile(total: number, prozent: number[]): number[] {
+  const raw = prozent.map((p) => (total * p) / 100);
+  const out = raw.map((r) => Math.floor(r));
+  let rest = total - out.reduce((s, v) => s + v, 0);
+  const order = raw.map((r, i) => ({ i, frac: r - Math.floor(r) })).sort((a, b) => b.frac - a.frac || a.i - b.i);
+  for (const { i } of order) {
+    if (rest <= 0) break;
+    out[i] += 1;
+    rest -= 1;
+  }
+  return out;
 }
 
 /** Ganze Prozent je gewähltem Kanal nach Gewicht, Summe 100; der Rundungsrest geht zum Kanal mit dem grössten Gewicht. */
@@ -370,15 +388,19 @@ export function budget(input: BudgetInput, data: BudgetData = DATA): BudgetResul
   const monate = zwoelfMonate(jahr);
   const parts = anteile(input.kanaele);
 
-  const kanaele: KanalBudget[] = parts.map(({ key, anteil }) => {
+  // Die Jahresbeträge je Kanal: abgerundet, der Rest an die grössten Nachkommaanteile (nie ein negativer Betrag, Summe genau das Jahresbudget).
+  const jahre = verteile(jahr, parts.map((p) => p.anteil));
+  const kanaele: KanalBudget[] = parts.map(({ key, anteil }, i) => {
     const k = kanalByKey(key);
-    return { key, label: k.label, rolle: k.rolle, gewicht: k.gewicht, anteil, jahr: Math.round((jahr * anteil) / 100), monat: 0, monate: [], fremd: 0, werbe: 0 };
+    return { key, label: k.label, rolle: k.rolle, gewicht: k.gewicht, anteil, jahr: jahre[i], monat: 0, monate: [], fremd: 0, werbe: 0 };
   });
-  // Rundungsrest der Jahresbeträge zum grössten Kanal, damit die Summe das Jahresbudget ist.
-  const biggest = kanaele.reduce((best, k, i) => (k.gewicht > kanaele[best].gewicht ? i : best), 0);
-  if (kanaele.length > 0) kanaele[biggest].jahr += jahr - kanaele.reduce((s, k) => s + k.jahr, 0);
-  for (const k of kanaele) {
-    k.monate = zwoelfMonate(k.jahr);
+  // Der Monatsbetrag (Jahr durch zwölf, abgerundet) wird wie das Jahr auf die Kanäle verteilt: Die Kanalbeträge ergeben zusammen genau den Monatsbetrag oben.
+  // Der Dezember gleicht den Rest aus; würde er dabei negativ (winziges Budget), gilt die einfache Verteilung des Kanals.
+  const monatsBetrag = Math.floor(jahr / 12);
+  const monatsAnteile = verteile(monatsBetrag, parts.map((p) => p.anteil));
+  for (const [i, k] of kanaele.entries()) {
+    const dezember = k.jahr - 11 * monatsAnteile[i];
+    k.monate = dezember >= 0 ? [...Array<number>(11).fill(monatsAnteile[i]), dezember] : zwoelfMonate(k.jahr);
     k.monat = k.monate[0];
     k.werbe = Math.round(k.jahr * kanalByKey(k.key).werbeanteil);
     k.fremd = k.jahr - k.werbe;
@@ -395,7 +417,8 @@ export function budget(input: BudgetInput, data: BudgetData = DATA): BudgetResul
   const eigenMonat = satz === null ? null : Math.round(input.stunden * satz);
   const eigenleistung: Eigenleistung = { stunden: input.stunden, satz, monat: eigenMonat, jahr: eigenMonat === null ? null : eigenMonat * 12 };
 
-  return { umsatz: input.umsatz, anteil: input.anteil, jahr, monat: monate[0], monate, kanaele, summe, eigenleistung, rahmen: rahmen(input.phase, data) };
+  // «Pro Monat» ist die Summe der Kanalbeträge (Januar bis November); so stimmt die Zahl oben mit der Tabelle überein.
+  return { umsatz: input.umsatz, anteil: input.anteil, jahr, monat: kanaele.length > 0 ? summe.monat : monate[0], monate, kanaele, summe, eigenleistung, rahmen: rahmen(input.phase, data) };
 }
 
 export type MonatZeile = { monat: string; betrag: number; kumuliert: number };
@@ -424,13 +447,15 @@ export function eigenleistungText(e: Eigenleistung): string {
 }
 
 /** Absatz zum Rahmen: Spanne aus den Daten mit Quelle oder «ohne Richtwert, eigener Anteil», dazu der Vergleich. */
-export function rahmenText(result: Pick<BudgetResult, "rahmen" | "anteil" | "umsatz" | "jahr">, phase: PhaseKey, data: BudgetData = DATA): string {
+export function rahmenText(result: Pick<BudgetResult, "rahmen" | "anteil" | "umsatz" | "jahr">, phase: PhaseKey, data: BudgetData = DATA, verein = false): string {
+  const bezug = verein ? "Jahresbudget" : "Umsatz";
   const anteil = `Dein Anteil: ${pctCH(result.anteil)} von ${chf(result.umsatz)}, also ${chf(result.jahr)} im Jahr.`;
   const r = result.rahmen;
   const erster = r
-    ? `Für die Phase «${phaseLabel(phase)}» liegt die Spanne bei ${pctCH(r.min)} bis ${pctCH(r.max)} vom Umsatz (Quelle: ${r.source}).`
-    : "Ohne Richtwert, eigener Anteil: Für Schweizer KMU gibt es keine belastbare Zahl, welcher Anteil vom Umsatz üblich ist. Darum rechnet dieses Werkzeug mit deiner Angabe.";
-  return [erster, anteil, vergleichText(data)].filter(Boolean).join(" ");
+    ? `Für die Phase «${phaseLabel(phase)}» liegt die Spanne bei ${pctCH(r.min)} bis ${pctCH(r.max)} vom ${bezug} (Quelle: ${r.source}).`
+    : `Ohne Richtwert, eigener Anteil: Für ${verein ? "Schweizer Vereine" : "Schweizer KMU"} gibt es keine belastbare Zahl, welcher Anteil vom ${bezug} üblich ist. Darum rechnet dieses Werkzeug mit deiner Angabe.`;
+  // Der Vergleich stammt aus Umfragen bei Firmen; für Vereine sagt er nichts.
+  return [erster, anteil, verein ? "" : vergleichText(data)].filter(Boolean).join(" ");
 }
 
 export const HINWEISE: string[] = [
@@ -453,13 +478,13 @@ export function toDocument(result: BudgetResult, input: BudgetInput, data: Budge
         { label: verein ? "Jahresbudget des Vereins" : "Jahresumsatz (ungefähr)", value: chf(result.umsatz) },
         { label: "Phase", value: phaseLabel(input.phase) },
         { label: "Ziel für dieses Jahr", value: zielLabel(input.ziel) },
-        { label: "Anteil vom Umsatz", value: pctCH(result.anteil) },
+        { label: verein ? "Anteil vom Jahresbudget" : "Anteil vom Umsatz", value: pctCH(result.anteil) },
         { label: "Geldbudget pro Jahr", value: chf(result.jahr) },
         { label: "Geldbudget pro Monat", value: chf(result.monat) },
       ],
     },
     { type: "heading", level: 1, text: "Rahmen" },
-    { type: "paragraph", text: rahmenText(result, input.phase, data) },
+    { type: "paragraph", text: rahmenText(result, input.phase, data, verein) },
     { type: "heading", level: 1, text: "Aufteilung auf Kanäle" },
     {
       type: "paragraph",
@@ -510,7 +535,7 @@ export function eingabeText(input: BudgetInput): string {
     `${verein ? "Jahresbudget" : "Jahresumsatz"}: ${chf(input.umsatz)}`,
     `Phase: ${phaseLabel(input.phase)}`,
     `Ziel: ${zielLabel(input.ziel)}`,
-    `Anteil vom Umsatz: ${pctCH(input.anteil)}`,
+    `Anteil vom ${verein ? "Jahresbudget" : "Umsatz"}: ${pctCH(input.anteil)}`,
     `Kanäle: ${input.kanaele.map(kanalLabel).join(", ")}`,
     `Eigenleistung: ${eigen}`,
   ].join("\n");
@@ -521,8 +546,6 @@ export function eingabeText(input: BudgetInput): string {
 export const CSV_BOM = "﻿";
 export const CSV_HEADER = ["Kanal", "Rolle", "Monat", "Betrag CHF", "Fremdkosten CHF", "Werbebudget CHF"];
 
-const csvCell = (s: string) => (/[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
-
 /**
  * CSV mit Semikolon, UTF-8 mit BOM, Zeilenende CRLF, Zahlen ohne Tausendertrennzeichen und mit Dezimalpunkt (hier ganze
  * Franken). Eine Zeile je Kanal und Monat, danach eine Summenzeile je Monat.
@@ -531,9 +554,10 @@ export function toCsv(result: Pick<BudgetResult, "kanaele">): string {
   const rows: string[][] = [CSV_HEADER];
   const summen = MONATE.map(() => ({ betrag: 0, fremd: 0, werbe: 0 }));
   for (const k of result.kanaele) {
-    const werbeanteil = kanalByKey(k.key).werbeanteil;
+    // Das Werbebudget wird wie das Jahr auf zwölf Monate verteilt (nicht je Monat neu gerundet), damit die Jahressummen der Datei stimmen.
+    const werbeMonate = zwoelfMonate(k.werbe);
     k.monate.forEach((betrag, i) => {
-      const werbe = Math.round(betrag * werbeanteil);
+      const werbe = werbeMonate[i];
       const fremd = betrag - werbe;
       summen[i].betrag += betrag;
       summen[i].fremd += fremd;
