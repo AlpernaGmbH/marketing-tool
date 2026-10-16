@@ -169,7 +169,7 @@ describe("textcheck: gemeinsame Prüfung", () => {
   it("prüft Gesamteindruck und Grund weiter gegen Stimme und Regeln und gegen das Schema", () => {
     expect(checkGenerated(textcheckGenerator, { ...output, gesamt: "Ein guter Text, jetzt noch verbessern!" }, input)).toMatchObject({ ok: false, reason: "regel" });
     expect(checkGenerated(textcheckGenerator, mit([{ ...mallerei, grund: "Das ist ein ganzheitlicher Fehler." }]), input)).toMatchObject({ ok: false, reason: "stimme" });
-    expect(checkGenerated(textcheckGenerator, { gesamt: "x" }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(textcheckGenerator, { gesamt: "x" }, input)).toMatchObject({ ok: false, reason: "schema" });
   });
 
   it("verwirft ein Original, das nicht im Text steht, mit der Kennung «nichtimtext»", () => {
@@ -181,7 +181,7 @@ describe("textcheck: gemeinsame Prüfung", () => {
       const hint = repairHint("check", k);
       expect(hint, k).not.toContain("Eine Regel der Anweisung ist verletzt");
     }
-    expect(repairHint("check", "zahl")).toContain("Kennung: zahl");
+    expect(repairHint("check", "zahl")).toContain("nicht wörtlich in den Angaben");
   });
 });
 

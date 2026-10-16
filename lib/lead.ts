@@ -26,7 +26,8 @@ export const CLIP_CHARS = 1900;
 
 export function clipText(text: string, max = CLIP_CHARS): string {
   const t = text.replace(/\r\n?/g, "\n").trim();
-  return t.length <= max ? t : `${t.slice(0, max - 2).trimEnd()} …`;
+  // Ein Emoji besteht aus zwei Einheiten; bleibt vom Schnitt nur die erste, fällt sie weg.
+  return t.length <= max ? t : `${t.slice(0, max - 2).replace(/[\ud800-\udbff]$/, "").trimEnd()} …`;
 }
 
 export type ResultLead = { email: string; consent: boolean; /** Adresse schon bekannt (siehe LeadPayload.bekannt); Standard: nein. */ known?: boolean; firma?: string; tool: string; eingabe: string; ausgabe: string };
@@ -92,12 +93,20 @@ export type DrainResult = { sent: number; waiting: number; invalid: number };
  * da). Abgeholte Leads fallen aus der Warteschlange, die übrigen bleiben für den nächsten Lauf. Ein Lead, der nach
  * dem Versand nicht entfernt werden kann, würde doppelt ankommen; das nehmen wir in Kauf («lieber doppelt als verloren»).
  */
-export async function drainLeads(store: AccessStore, fetchImpl: typeof fetch = fetch, max = 50): Promise<DrainResult> {
+export async function drainLeads(store: AccessStore, fetchImpl: typeof fetch = fetch, max = 50, budgetMs = 45_000): Promise<DrainResult> {
   const items = await store.peekLeads(max);
+  const deadline = Date.now() + budgetMs;
   let done = 0;
+  let dropped = 0;
   let sent = 0;
   let invalid = 0;
   for (const json of items) {
+    // Nach je zehn Leads aus der Warteschlange nehmen, damit ein abgebrochener Lauf (Zeitlimit der Funktion) keine gesendeten Leads zurücklässt.
+    if (done - dropped >= 10) {
+      await store.dropLeads(done - dropped);
+      dropped = done;
+    }
+    if (Date.now() > deadline) break;
     let payload: LeadPayload | null = null;
     try {
       const parsed = JSON.parse(json) as Partial<LeadPayload>;
@@ -114,7 +123,7 @@ export async function drainLeads(store: AccessStore, fetchImpl: typeof fetch = f
     sent++;
     done++;
   }
-  await store.dropLeads(done);
+  if (done > dropped) await store.dropLeads(done - dropped);
   return { sent, waiting: items.length - done, invalid };
 }
 

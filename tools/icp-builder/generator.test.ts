@@ -141,8 +141,8 @@ describe("icp-builder: Generator mit checkGenerated", () => {
   });
   it("verwirft eine Antwort mit fremder Zahl über die eigene Prüfung und eine falsche Form über das Schema", () => {
     expect(checkGenerated(icpGenerator, output({ beschreibung: `${output().beschreibung} Seit 1985 im Dorf.` }), input)).toMatchObject({ ok: false, reason: "check" });
-    expect(checkGenerated(icpGenerator, output({ punktekarte: karte([3, 3, 2, 2, 2]) }), input)).toEqual({ ok: false, reason: "schema" });
-    expect(checkGenerated(icpGenerator, { segmentName: "x" }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(icpGenerator, output({ punktekarte: karte([3, 3, 2, 2, 2]) }), input)).toMatchObject({ ok: false, reason: "schema" });
+    expect(checkGenerated(icpGenerator, { segmentName: "x" }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(icpGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
     expect(checkGenerated(icpGenerator, output({ beschreibung: `${output().beschreibung} Jetzt anfragen.` }), input)).toMatchObject({ ok: false, reason: "regel" });
   });

@@ -223,9 +223,9 @@ describe("bewertungsantwort: Generator mit checkGenerated", () => {
   it("verwirft Ausrufezeichen, Sperrwörter, Gedankenstriche, fremde Links, falsche Form und Text ohne JSON", () => {
     expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Danke!") }), input)).toMatchObject({ ok: false, reason: "regel" });
     expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Wir arbeiten ganzheitlich, danke") }), input)).toMatchObject({ ok: false, reason: "stimme" });
-    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Danke — wirklich") }), input)).toMatchObject({ ok: false, reason: "stimme" });
+    expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace("Danke", "Danke—wirklich") }), input)).toMatchObject({ ok: false, reason: "stimme" });
     expect(checkGenerated(bewertungsantwortGenerator, output({ text: v1.text.replace(PLATZHALTER, "info@malerei-keller.example") }), input)).toMatchObject({ ok: false, reason: "link" });
-    expect(checkGenerated(bewertungsantwortGenerator, { varianten: [v1] }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(bewertungsantwortGenerator, { varianten: [v1] }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(bewertungsantwortGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
   });
   it("lässt eine E-Mail-Adresse aus der Bewertung zu, weil sie in den Angaben steht", () => {

@@ -127,7 +127,7 @@ describe("anspruchsgruppen: Generator, Prüfung", () => {
 
   it("läuft durch die gemeinsame Prüfung: Schema, Stimme und eigene Regeln", () => {
     expect(checkGenerated(anspruchsgruppenGenerator, output, input).ok).toBe(true);
-    expect(checkGenerated(anspruchsgruppenGenerator, { gruppen: [] }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(anspruchsgruppenGenerator, { gruppen: [] }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(anspruchsgruppenGenerator, mit(output.gruppen.map((x, i) => (i === 0 ? { ...x, erwartung: "Erwartet jetzt mehr Mehrwert vom Verein." } : x))), input)).toMatchObject({ ok: false });
     expect(checkGenerated(anspruchsgruppenGenerator, mit(output.gruppen.map((x) => ({ ...x, interesse: 5, einfluss: 5 }))), input)).toEqual({ ok: false, reason: "check", detail: "streuung" });
   });
@@ -137,7 +137,7 @@ describe("anspruchsgruppen: Generator, Prüfung", () => {
       const hint = repairHint("check", k);
       expect(hint, k).not.toContain("Eine Regel der Anweisung ist verletzt");
     }
-    expect(repairHint("check", "zahl")).toContain("Kennung: zahl");
+    expect(repairHint("check", "zahl")).toContain("nicht wörtlich in den Angaben");
   });
 });
 

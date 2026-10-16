@@ -325,16 +325,18 @@ describe("inhalte-strategie: Generator mit checkGenerated", () => {
     expect(checkGenerated(strategieGenerator, output({ kernbotschaft: "Die Malerei Keller streicht in den ersten 90 Tagen Fassaden und Räume in Gossau, mit Terminen, die halten." }), input)).toEqual({ ok: false, reason: "check", detail: "zahl" });
   });
   it("verwirft kaputte Form über das Schema, verbotene Wörter über die Regeln und die Stimme", () => {
-    expect(checkGenerated(strategieGenerator, { kernbotschaft: output().kernbotschaft }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(strategieGenerator, { kernbotschaft: output().kernbotschaft }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(strategieGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
     expect(checkGenerated(strategieGenerator, output({ niemals: ["Jetzt buchen, weil es sich lohnt.", output().niemals[1]] }), input)).toMatchObject({ ok: false, reason: "regel" });
     expect(checkGenerated(strategieGenerator, output({ kernbotschaft: "Innovative Fassaden für Gossau, die zeigen, wie sauber die Malerei Keller arbeitet." }), input)).toMatchObject({ ok: false, reason: "stimme" });
     expect(checkGenerated(strategieGenerator, output({ messung: ["Mehr dazu auf www.beispiel.ch ablesen und zählen, jeden Monat.", ...output().messung.slice(1)] }), input)).toMatchObject({ ok: false, reason: "link" });
   });
   it("gibt der KI bei einem Fehler der eigenen Prüfung die Kennung zurück", () => {
-    const hint = repairHint("check", "kanal");
-    expect(hint).toContain("Kennung: kanal");
-    expect(hint).toContain("Ziffern nur, wenn sie wörtlich in den Angaben stehen");
+    const hint = repairHint("check", "gibt-es-nicht");
+    expect(hint).toContain("Kennung: gibt-es-nicht");
+    expect(hint).toContain("Zahlen nur, wenn sie wörtlich in den Angaben stehen");
+    // «kanal» hat einen eigenen festen Satz
+    expect(repairHint("check", "kanal")).toContain("gewählten Kanäle");
   });
 });
 

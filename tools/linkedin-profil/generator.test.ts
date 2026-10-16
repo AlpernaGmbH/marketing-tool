@@ -111,7 +111,7 @@ describe("linkedin-profil: Generator, Ausgabe und Prüfung", () => {
 
   it("läuft durch die gemeinsame Prüfung: Schema, Stimme und eigene Regeln", () => {
     expect(checkGenerated(linkedinGenerator, output, input).ok).toBe(true);
-    expect(checkGenerated(linkedinGenerator, { headlines: [] }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(linkedinGenerator, { headlines: [] }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(linkedinGenerator, mit({ infoAnfang: `${output.infoAnfang} Jetzt anrufen!` }), input)).toMatchObject({ ok: false });
     expect(checkGenerated(linkedinGenerator, mitHeadline(2, "Malermeister seit 25 Jahren für Familien in Gossau"), input)).toEqual({
       ok: false,
@@ -126,7 +126,7 @@ describe("linkedin-profil: Generator, Ausgabe und Prüfung", () => {
       expect(hint, k).not.toContain("Eine Regel der Anweisung ist verletzt");
       expect(hint, k).not.toContain(k.toUpperCase());
     }
-    for (const k of ["zahl", "erfunden", "platzhalter"]) expect(repairHint("check", k), k).toContain(`Kennung: ${k}`);
+    for (const k of ["zahl", "erfunden", "platzhalter"]) expect(repairHint("check", k), k).not.toContain("Eine Regel der Anweisung ist verletzt");
   });
 });
 

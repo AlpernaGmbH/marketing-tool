@@ -161,7 +161,8 @@ describe("POST /api/generate", () => {
     });
     const res = await call();
     expect(res.status).toBe(502);
-    expect(await res.json()).toEqual({ error: "ai_rejected", detail: "schema" });
+    // Bei einer falschen Form nennt «rule» Feld und Art des Fehlers aus dem Schema, nie Text aus dem Entwurf.
+    expect(await res.json()).toEqual({ error: "ai_rejected", detail: "schema", rule: expect.stringMatching(/^punkte:invalid_type/) });
     expect(logs.join("\n")).toContain("rejected:schema");
   });
 

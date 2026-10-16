@@ -117,8 +117,8 @@ describe("botschaften: numbersIn", () => {
   it("findet Ziffernfolgen ohne Trennzeichen und ohne Listenmarken", () => {
     expect(numbersIn("CHF 1'200.- seit 1985")).toEqual(["1200", "1985"]);
     expect(numbersIn("1. Punkt\n2) Zweiter Punkt 2024")).toEqual(["2024"]);
-    expect(numbersIn("Ruf an: 071 123 45 67")).toEqual(["071", "123", "45", "67"]);
-    expect(numbersIn("zwanzig Jahre, fünf Jahre Garantie")).toEqual([]);
+    expect(numbersIn("Ruf an: 071 123 45 67")).toEqual(["71", "123", "45", "67"]); // führende Nullen zählen nicht
+    expect(numbersIn("zwanzig Jahre, fünf Jahre Garantie")).toEqual(["20"]); // Zehnerzahlen zählen wie Ziffern, «fünf» als einzelnes Wort nicht
   });
 });
 
@@ -165,7 +165,7 @@ describe("botschaften: Generator mit checkGenerated", () => {
     expect(checkGenerated(botschaftenGenerator, output({ botschaften: [botschaft(), botschaft(), botschaft({ fuer: "Offerte" })] }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(botschaftenGenerator, output({ telefonsatz: "Wir streichen Fassaden in Gossau, die halten!" }), input)).toMatchObject({ ok: false, reason: "regel" });
     expect(checkGenerated(botschaftenGenerator, output({ nichtSagen: ["Dass wir führend in der Region sind", "Dass wir alles machen", "Ein Preis am Telefon"] }), input)).toMatchObject({ ok: false, reason: "stimme" });
-    expect(checkGenerated(botschaftenGenerator, { hauptbotschaft: "nur ein Feld" }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(botschaftenGenerator, { hauptbotschaft: "nur ein Feld" }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(botschaftenGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
   });
   it("hält Eingaben aus der Anweisung heraus und kennzeichnet sie in der Nutzernachricht als Daten", () => {

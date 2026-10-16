@@ -98,7 +98,7 @@ describe("positionierung: numbersIn", () => {
     expect(numbersIn("CHF 1'200.- seit 1985")).toEqual(["1200", "1985"]);
     expect(numbersIn("1. Punkt\n2) Zweiter Punkt 2024")).toEqual(["2024"]);
     expect(numbersIn("9200 Gossau, 12 Mitarbeitende")).toEqual(["9200", "12"]);
-    expect(numbersIn("zwanzig Jahre")).toEqual([]);
+    expect(numbersIn("zwanzig Jahre")).toEqual(["20"]); // Zahlwörter zählen wie Ziffern
   });
 });
 
@@ -147,7 +147,7 @@ describe("positionierung: Generator mit checkGenerated", () => {
     expect(checkGenerated(positionierungGenerator, output({ varianten: [varianten[0], varianten[0], varianten[2]] }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(positionierungGenerator, output({ kernsatz: "Fassaden für Hausbesitzer in Gossau, in zwei Wochen fertig!" }), input)).toMatchObject({ ok: false, reason: "regel" });
     expect(checkGenerated(positionierungGenerator, output({ wasAnders: "Die Malerei Keller arbeitet innovativ und ganzheitlich, anders als die anderen Betriebe." }), input)).toMatchObject({ ok: false, reason: "stimme" });
-    expect(checkGenerated(positionierungGenerator, { kernsatz: "nur ein Feld" }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(positionierungGenerator, { kernsatz: "nur ein Feld" }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(positionierungGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
   });
   it("hält Eingaben aus der Anweisung heraus und kennzeichnet sie in der Nutzernachricht als Daten", () => {

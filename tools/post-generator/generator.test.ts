@@ -303,7 +303,7 @@ describe("post-generator: checkGenerated und Prompt", () => {
 
   it("verwirft falsche Form, Ausrufezeichen, Sperrwörter und fremde Links", () => {
     expect(checkGenerated(postGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
-    expect(checkGenerated(postGenerator, { hooks: ["nur einer"], hauptteil: "x" }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(postGenerator, { hooks: ["nur einer"], hauptteil: "x" }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(postGenerator, output({ cta: "Schreib uns in die Kommentare!" }), input)).toMatchObject({ ok: false, reason: "regel" });
     expect(checkGenerated(postGenerator, output({ hauptteil: `${output().hauptteil}\n\nEine innovative Lösung für die Fassade.` }), input)).toMatchObject({ ok: false, reason: "stimme" });
     expect(checkGenerated(postGenerator, output({ cta: "Mehr dazu auf https://example.com in den Kommentaren." }), input)).toMatchObject({ ok: false, reason: "link" });

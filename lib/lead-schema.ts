@@ -3,7 +3,8 @@ import { z } from "zod";
 // Gemeinsam für das E-Mail-Fenster (Browser) und /api/lead (Server). Zugang v3: die Adresse (Pflicht) und die Einwilligung zur
 // Kontaktaufnahme (freiwillig, nDSG Art. 6 Abs. 6); ohne Häkchen gibt es das Ergebnis trotzdem, im CRM steht dann «Nein».
 export const leadSchema = z.object({
-  email: z.string().trim().toLowerCase().max(254).email("Bitte gib eine gültige E-Mail-Adresse an."),
+  // Kein z.email(): Es lehnt Adressen mit Umlauten ab («info@bäckerei-müller.ch»), die es in der Schweiz gibt.
+  email: z.string().trim().toLowerCase().max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, "Bitte gib eine gültige E-Mail-Adresse an."),
   consent: z.boolean().default(false),
   tool: z.string().min(1).max(80),
   // Honeypot: für Menschen unsichtbar, muss leer bleiben.

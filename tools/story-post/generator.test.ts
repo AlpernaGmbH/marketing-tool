@@ -106,7 +106,7 @@ describe("story-post: Generator, Ausgabe und Prüfung", () => {
   it("läuft durch die gemeinsame Prüfung: Stimme, Zeichen und Schema", () => {
     expect(checkGenerated(storyGenerator, output, input).ok).toBe(true);
     expect(checkGenerated(storyGenerator, mit({ lehre: "Erst messen, dann streichen!" }), input)).toMatchObject({ ok: false, reason: "regel" });
-    expect(checkGenerated(storyGenerator, { ausgangslage: "x" }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(storyGenerator, { ausgangslage: "x" }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(storyGenerator, mit({ ergebnis: "Die Fassade hält seit 7 Jahren." }), input)).toEqual({ ok: false, reason: "check", detail: "zahl" });
   });
 

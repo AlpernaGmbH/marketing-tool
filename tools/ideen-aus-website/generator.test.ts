@@ -62,7 +62,7 @@ describe("ideen-aus-website: numbersIn", () => {
   it("findet Ziffernfolgen ohne Trennzeichen und ohne Listenmarken", () => {
     expect(numbersIn("CHF 1'200.- seit 1985")).toEqual(["1200", "1985"]);
     expect(numbersIn("1. Punkt\n2) Zweiter Punkt 2024")).toEqual(["2024"]);
-    expect(numbersIn("Ruf an: 071 123 45 67")).toEqual(["071", "123", "45", "67"]);
+    expect(numbersIn("Ruf an: 071 123 45 67")).toEqual(["71", "123", "45", "67"]); // führende Nullen zählen nicht
     expect(numbersIn("keine Zahl")).toEqual([]);
   });
 });
@@ -106,7 +106,7 @@ describe("ideen-aus-website: Generator mit checkGenerated", () => {
     expect(checkGenerated(ideenGenerator, falsch, input)).toMatchObject({ ok: false, reason: "check" });
     const zahl = output([...Array.from({ length: 7 }, () => idee()), idee({ hook: "Über 500 Kunden vertrauen uns." })]);
     expect(checkGenerated(ideenGenerator, zahl, input)).toMatchObject({ ok: false, reason: "check" });
-    expect(checkGenerated(ideenGenerator, { themen: ["a"], ideen: [] }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(ideenGenerator, { themen: ["a"], ideen: [] }, input)).toMatchObject({ ok: false, reason: "schema" });
   });
   it("hält Eingaben aus der Anweisung heraus und kennzeichnet sie in der Nutzernachricht als Daten", () => {
     const system = systemPrompt(ideenGenerator);

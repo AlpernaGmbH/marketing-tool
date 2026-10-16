@@ -76,7 +76,7 @@ describe("nutzenversprechen: numbersIn", () => {
   it("findet Ziffernfolgen ohne Trennzeichen und ohne Listenmarken", () => {
     expect(numbersIn("CHF 1'200.- seit 1985")).toEqual(["1200", "1985"]);
     expect(numbersIn("1. Punkt\n2) Zweiter Punkt 2024")).toEqual(["2024"]);
-    expect(numbersIn("zwanzig Jahre")).toEqual([]);
+    expect(numbersIn("zwanzig Jahre")).toEqual(["20"]); // Zahlwörter zählen wie Ziffern
   });
 });
 
@@ -118,7 +118,7 @@ describe("nutzenversprechen: Generator mit checkGenerated", () => {
   it("verwirft eine Antwort mit fremder Zahl, mit Ausrufezeichen oder in falscher Form", () => {
     expect(checkGenerated(nutzenGenerator, output({ kurz: "Über 300 Fassaden in Gossau gestrichen." }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(nutzenGenerator, output({ kurz: "Fassaden in Gossau, die halten!" }), input)).toMatchObject({ ok: false, reason: "regel" });
-    expect(checkGenerated(nutzenGenerator, { kurz: "nur ein Feld" }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(nutzenGenerator, { kurz: "nur ein Feld" }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(nutzenGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
   });
   it("hält Eingaben aus der Anweisung heraus und kennzeichnet sie in der Nutzernachricht als Daten", () => {

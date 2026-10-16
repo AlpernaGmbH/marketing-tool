@@ -70,7 +70,8 @@ export function typoCH(text: string): string {
   t = t.replace(/\bCHF\s?(-?)(\d{4,})(?![\d'])/g, (_m, minus: string, digits: string) => `CHF ${minus}${group(digits)}`);
 
   // Prozent mit (geschütztem) Leerzeichen: 8% / 8,1% → 8 % / 8,1 %
-  t = t.replace(/(\d)\s?%/g, "$1 %");
+  // (Nicht in URLs: «5%20» ist ein kodiertes Leerzeichen, kein Prozentwert.)
+  t = t.replace(/(\d)\s?%(?![0-9A-Fa-f]{2})/g, "$1 %");
 
   // Datum mit führenden Nullen: 3.10.2026 → 03.10.2026
   t = t.replace(/(?<![\d.])(\d{1,2})\.(\d{1,2})\.(\d{4})(?!\d)/g, (_m, d: string, mo: string, y: string) =>

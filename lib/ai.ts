@@ -310,7 +310,7 @@ export const generateRaw: GenerateRaw = async (fakten, opts) => {
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000, budgetMs: 50_000, ...opts, accept: (t) => acceptEinordnung(t, fakten) });
+    const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000, budgetMs: 38_000, ...opts, accept: (t) => acceptEinordnung(t, fakten) });
     const value = parseJsonObject(text); // geprüft wird danach in pruefeEinordnung
     if (value === null) throw new MistralError("AiBadJson");
     return value;
@@ -354,7 +354,7 @@ export const generateJson: GenerateJson = async ({ system, prompt, maxOutputToke
   const provider = aiProvider();
   if (provider !== "gateway") {
     const chat = provider === "openrouter" ? openrouterChat : mistralChat;
-    text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000, budgetMs: 52_000, freeOnly, onUsage, accept: (t) => {
+    text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000, budgetMs: 45_000, freeOnly, onUsage, accept: (t) => {
       const v = parseJsonObject(t);
       return v === null ? "Antworte ausschliesslich mit einem JSON-Objekt in genau der verlangten Form." : accept ? accept(v) : true;
     } });

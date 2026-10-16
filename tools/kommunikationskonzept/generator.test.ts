@@ -379,7 +379,7 @@ describe("kommunikationskonzept: checkGenerated", () => {
   });
   it("verwirft eine Antwort ohne JSON und eine mit falscher Form", () => {
     expect(checkGenerated(konzeptGenerator, "Leider kann ich das nicht.", input)).toEqual({ ok: false, reason: "json" });
-    expect(checkGenerated(konzeptGenerator, { ...output(), kanalplan: [] }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(konzeptGenerator, { ...output(), kanalplan: [] }, input)).toMatchObject({ ok: false, reason: "schema" });
   });
   it("verwirft eine Antwort mit fremder Zahl, zu vielen Stunden, fremdem Anlass oder fremdem Kanal als «check»", () => {
     expect(checkGenerated(konzeptGenerator, output({ kernbotschaft: "Seit 1999 ein Verein mit Herz für Trogen und das Dorf." }), input)).toMatchObject({ ok: false, reason: "check" });

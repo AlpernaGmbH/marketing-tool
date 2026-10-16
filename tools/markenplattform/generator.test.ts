@@ -100,7 +100,7 @@ describe("markenplattform: numbersIn und hasDuForm", () => {
   it("findet Ziffernfolgen ohne Trennzeichen und ohne Listenmarken", () => {
     expect(numbersIn("CHF 1'200.- seit 1985")).toEqual(["1200", "1985"]);
     expect(numbersIn("1. Punkt\n2) Zweiter Punkt 2024")).toEqual(["2024"]);
-    expect(numbersIn("071 000 00 00")).toEqual(["071", "000", "00", "00"]);
+    expect(numbersIn("071 000 00 00")).toEqual(["71"]); // führende Nullen und Nullen allein zählen nicht
     expect(numbersIn("seit 1985 5 Mitarbeitende")).toEqual(["1985", "5"]);
     expect(numbersIn("keine Zahl")).toEqual([]);
   });
@@ -154,7 +154,7 @@ describe("markenplattform: Generator mit checkGenerated", () => {
   it("verwirft fremde Zahlen und falsche Anrede über die eigene Prüfung, kaputte Form über das Schema, verbotene Wörter über Stimme und Regeln, und Text ohne JSON", () => {
     expect(checkGenerated(markenGenerator, output({ geschichte: output().geschichte.replace("1985", "1972") }), input)).toMatchObject({ ok: false, reason: "check" });
     expect(checkGenerated(markenGenerator, output({ tonalitaet: { ...output().tonalitaet, beispielSatz: "Gern schauen wir uns deine Fassade an und sagen dir, was sie braucht." } }), input)).toMatchObject({ ok: false, reason: "check" });
-    expect(checkGenerated(markenGenerator, { versprechen: "x", werte: [] }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(markenGenerator, { versprechen: "x", werte: [] }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(markenGenerator, output({ woerter: { ...output().woerter, vermeiden: ["innovativ", "Premium", "exklusiv", "Lösung", "Aktion"] } }), input)).toMatchObject({ ok: false, reason: "stimme" });
     expect(checkGenerated(markenGenerator, output({ versprechen: "Wir streichen so, dass die Fassade hält und der Termin steht, versprochen!" }), input)).toMatchObject({ ok: false, reason: "regel" });
     expect(checkGenerated(markenGenerator, "Leider kann ich dazu nichts sagen.", input)).toEqual({ ok: false, reason: "json" });

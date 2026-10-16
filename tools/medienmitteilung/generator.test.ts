@@ -143,7 +143,7 @@ describe("medienmitteilung: Anweisung und Rückmeldung zu Meta- und Füllsätzen
       expect(hint).not.toContain("Kennung:");
       expect(hint).toContain("korrigierten JSON-Objekt");
     }
-    expect(repairHint("check", "laenge")).toContain("Kennung: laenge");
+    expect(repairHint("check", "gibt-es-nicht")).toContain("Kennung: gibt-es-nicht");
   });
 });
 
@@ -190,8 +190,8 @@ describe("medienmitteilung: checkMitteilung", () => {
     const i = { ...input, wann: "Samstag, 14.11.2026, 10 bis 16 Uhr" };
     const lead = BEISPIEL_OUTPUT.lead.replace("14. November 2026, von 10 bis 16 Uhr", "14. November 2026, um 10.00 Uhr");
     expect(fremdeZahlen(output({ lead }), i)).toEqual([]);
-    // Der Monat als Zahl steht in der Angabe, der Name des Monats nicht: umgekehrt ist es eine fremde Zahl.
-    expect(fremdeZahlen(output({ lead: BEISPIEL_OUTPUT.lead.replace("14. November 2026", "14.11.2026") }), input)).toEqual(["11"]);
+    // Ein Datum gilt in jeder Schreibweise gleich: «14. November 2026» und «14.11.2026».
+    expect(fremdeZahlen(output({ lead: BEISPIEL_OUTPUT.lead.replace("14. November 2026", "14.11.2026") }), input)).toEqual([]);
     // Ein Datum am Anfang der Angabe zählt nicht als Listenmarke.
     expect(fremdeZahlen(output(), { ...input, wann: "14. November 2026, 10 bis 16 Uhr" })).toEqual([]);
   });
@@ -324,7 +324,7 @@ describe("medienmitteilung: Generator mit checkGenerated", () => {
   it("verwirft Ausrufezeichen, Links aus dem Nichts, falsche Form und Text ohne JSON", () => {
     expect(checkGenerated(medienGenerator, output({ titel: "Malerei Keller feiert 40 Jahre mit einem Fest!" }), input)).toMatchObject({ ok: false, reason: "regel" });
     expect(checkGenerated(medienGenerator, output({ boilerplate: `${BEISPIEL_OUTPUT.boilerplate} Siehe www.beispiel.ch oder info@beispiel.ch.` }), input)).toMatchObject({ ok: false, reason: "link" });
-    expect(checkGenerated(medienGenerator, { titel: "nur ein Feld" }, input)).toEqual({ ok: false, reason: "schema" });
+    expect(checkGenerated(medienGenerator, { titel: "nur ein Feld" }, input)).toMatchObject({ ok: false, reason: "schema" });
     expect(checkGenerated(medienGenerator, "kein JSON", input)).toEqual({ ok: false, reason: "json" });
   });
   it("verwirft Wörter der Sperrliste, die die Marke ausschliesst", () => {

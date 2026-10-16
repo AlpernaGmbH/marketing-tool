@@ -22,14 +22,14 @@ export const BRAND_RULES: BrandRule[] = [
   hart(/die zukunft gehört|eine welt, in der|sei der erste, der/i, "KI-Floskel («Die Zukunft gehört», «Eine Welt, in der», «Sei der Erste»)"),
   hart(/bist du bereit,/i, "«Bist du bereit, …?»"),
   hart(/(?:^|[.!?]\s+)stell(?:en sie)? (?:dir|sich) vor\b/im, "«Stell dir vor» als Einstieg"),
-  hart(/wussten sie schon|haben sie sich jemals gefragt|\bim folgenden\b|lange rede, kurzer sinn/i, "verbotener Satzanfang (ANTI-PATTERNS 2.1)"),
+  hart(/wussten sie schon|haben sie sich jemals gefragt|\bim folgenden\b(?!\s+(?:jahr|monat|tag|abschnitt|kapitel|woche|quartal)\w*)|lange rede, kurzer sinn/i, "verbotener Satzanfang (ANTI-PATTERNS 2.1)"),
   hart(/hot take:|unpopuläre meinung:|spoiler:/i, "Hot-Take-Opener"),
   // 1.2 Business-Schwurbel
   hart(/\bsynergie/i, "«Synergien»: konkret sagen, was zusammenwirkt"),
   hart(/\bganzheitlich|\bholistisch/i, "«ganzheitlich» / «holistisch»: konkret sagen, was die Lösung umfasst"),
   hart(/massgeschneidert/i, "«massgeschneiderte Lösung»: «auf dich zugeschnitten» oder weglassen"),
-  hart(/state of the art|best practice/i, "«State of the Art» / «Best Practice»: «Erfahrungswert» oder konkret"),
-  hart(/\bmehrwert|\bwin-win\b/i, "«Mehrwert» / «Win-Win»: konkret sagen"),
+  hart(/state[- ]of[- ]the[- ]art|best practice/i, "«State of the Art» / «Best Practice»: «Erfahrungswert» oder konkret"),
+  hart(/\bmehrwert(?!steuer)|\bwin-win\b/i, "«Mehrwert» / «Win-Win»: konkret sagen"),
   hart(/\bstakeholder|customer[- ]journey|touchpoint/i, "«Stakeholder» / «Customer Journey» / «Touchpoint»: «Beteiligte» / «Kundenweg» / «Berührungspunkt»"),
   hart(/\bmindset\b|pain[- ]points?\b/i, "«Mindset» / «Pain Points»: «Haltung» / «Probleme, Frust»"),
   hart(/\bführend|\bmarktführer/i, "«führend» / «Marktführer»: nie"),
@@ -51,7 +51,7 @@ export const BRAND_RULES: BrandRule[] = [
   meiden(/\bviral\b/i, "«viral» ist nie ein Verkaufsargument"),
   // 7.1 Formatierung
   hart(/—/, "Gedankenstrich «—» (Em-Dash) ist als Standard-Interpunktion verboten"),
-  hart(/\s[,.;:!?]/, "Leerzeichen vor Satzzeichen"),
+  hart(/\s[,;:!?]|\s\.(?=\s|$)/, "Leerzeichen vor Satzzeichen"),
 ];
 
 export type BrandHit = { level: "hart" | "vermeiden"; what: string; line: number; text: string };
@@ -74,11 +74,11 @@ export function brandHits(body: string): BrandHit[] {
  */
 export const GENERATED_RULES: BrandRule[] = [
   hart(
-    /\b(?:soll(?:en|te)?|dient|dienen|zielt|will|wollen|möchte|möchten)\b[^.!?\n]{0,70}\b(?:sichtbarkeit|reichweite|bekanntheit|aufmerksamkeit|präsenz|wahrnehmung|image|kundenbindung|attraktivität)\b/i,
+    /\b(?:soll(?:en|te)?|dient|dienen|will|wollen|möchte|möchten)\b[^.!?\n]{0,70}\b(?:sichtbarkeit|reichweite|bekanntheit|aufmerksamkeit|präsenz|wahrnehmung|image|kundenbindung|attraktivität)\b[^.!?\n]{0,40}\b(?:erhöh|steiger|stärk|verbesser|gewinn|erzeug|schaff|ausbau|vergrösser)\w*/i,
     "Absichtssatz («soll die Sichtbarkeit erhöhen»): schreibe, was passiert, nicht wozu es dient",
   ),
   hart(
-    /\bziel (?:ist|war|der|des|von)\b[^.!?\n]{0,70}\b(?:sichtbarkeit|reichweite|bekanntheit|aufmerksamkeit|präsenz|wahrnehmung|image|kundenbindung|attraktivität)\b/i,
+    /\b(?:ziel (?:ist|war|der|des|von)|zielt)\b[^.!?\n]{0,70}\b(?:sichtbarkeit|reichweite|bekanntheit|aufmerksamkeit|präsenz|wahrnehmung|image|kundenbindung|attraktivität)\b/i,
     "Absichtssatz («Ziel ist mehr Reichweite»): schreibe, was passiert, nicht wozu es dient",
   ),
   hart(
