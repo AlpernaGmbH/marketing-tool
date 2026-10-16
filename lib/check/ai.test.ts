@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { buildFakten, pruefeEinordnung, userPrompt, SYSTEM_PROMPT, type Fakten } from "@/lib/check/ai";
+import { buildFakten, einordnungSchema, pruefeEinordnung, userPrompt, SYSTEM_PROMPT, type Fakten } from "@/lib/check/ai";
 import { sampleResult } from "@/lib/check/fixtures";
 
 let f: Fakten;
@@ -144,7 +144,42 @@ describe("pruefeEinordnung", () => {
     expect(pruefeEinordnung({ ...ok(id), zusammenfassung: "Ein Satz. ".repeat(80) }, f)).toEqual({ ok: false, reason: "zu_lang" });
     expect(pruefeEinordnung("kein objekt", f)).toEqual({ ok: false, reason: "schema" });
     expect(pruefeEinordnung({ zusammenfassung: "x" }, f)).toEqual({ ok: false, reason: "schema" });
-    const four = { ...ok(id), prioritaeten: f.schritte.slice(0, 4).map((s) => ({ schritt: s.id, text: "Beginne hier, der Aufwand ist klein und die Wirkung ist gross." })) };
-    expect(pruefeEinordnung(four, f)).toEqual({ ok: false, reason: "schema" });
+  });
+
+  it("kürzt mehr als drei Prioritäten auf die ersten drei, statt die Antwort zu verwerfen", () => {
+    const id = f.schritte[0].id;
+    const viele = (n: number) => ({ ...ok(id), prioritaeten: f.schritte.slice(0, n).map((s, i) => ({ schritt: s.id, text: `Beginne hier, der Aufwand ist klein und die Wirkung ist gross (${i === 0 ? "erster" : "weiterer"} Schritt).` })) });
+    for (const n of [4, 5, f.schritte.length]) {
+      const r = pruefeEinordnung(viele(n), f);
+      expect(r.ok, `${n} Prioritäten`).toBe(true);
+      if (r.ok) expect(r.value.prioritaeten.map((p) => p.schritt)).toEqual(f.schritte.slice(0, 3).map((s) => s.id));
+    }
+    // genau drei bleiben drei; die Prüfung der Kürzung gilt nur für die behaltenen (ein falscher Schritt unter den ersten drei verwirft)
+    const drei = pruefeEinordnung(viele(3), f);
+    expect(drei.ok && drei.value.prioritaeten).toHaveLength(3);
+    const falsch = viele(4);
+    falsch.prioritaeten[1].schritt = "erfunden.id";
+    expect(pruefeEinordnung(falsch, f)).toEqual({ ok: false, reason: "schritt" });
+    // ein falscher Schritt hinter dem dritten fällt mit weg
+    const hinten = viele(4);
+    hinten.prioritaeten[3].schritt = "erfunden.id";
+    expect(pruefeEinordnung(hinten, f).ok).toBe(true);
+    // andere Formfehler bleiben Formfehler
+    expect(pruefeEinordnung({ prioritaeten: viele(4).prioritaeten }, f)).toEqual({ ok: false, reason: "schema" });
+    expect(einordnungSchema.safeParse(viele(4)).success).toBe(false); // die Form für den Anbieter bleibt bei höchstens drei
+  });
+
+  it("nennt im Prompt die Wörter, die die eigene Prüfung ablehnt, auch «nur noch» und «grundsätzlich»", () => {
+    for (const wort of ["jetzt", "nur noch", "garantiert", "grundsätzlich", "innovativ", "ganzheitlich", "Mehrwert", "Agentur", "im Wesentlichen"]) expect(SYSTEM_PROMPT, wort).toContain(wort);
+    // und die Prüfung lehnt genau diese ab (sonst wäre der Hinweis falsch)
+    for (const [text, reason] of [
+      ["Das ist ein kleiner Schritt, dann fehlt nur noch der Eintrag im Google-Profil.", "regel"],
+      ["Grundsätzlich ist die Website lesbar und auf dem Handy nutzbar, es fehlen aber Signale für Google.", "stimme"],
+      ["Im Wesentlichen fehlen Signale für Google und ein bestätigter Eintrag im Profil.", "stimme"],
+    ] as const) {
+      const raw = ok(f.schritte[0].id);
+      raw.zusammenfassung = text;
+      expect(pruefeEinordnung(raw, f), text).toEqual({ ok: false, reason });
+    }
   });
 });

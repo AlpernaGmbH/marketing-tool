@@ -93,8 +93,30 @@ const charCount = (s: string): number => Array.from(s).length;
 /** Text für den Vergleich: klein, ohne Satzzeichen, Leerraum zusammengezogen. */
 const vergleich = (s: string): string => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 
-/** Emoji-Bereiche: Piktogramme, Emoji mit Bildform, Flaggen (Regional Indicators) und das Tastenkappen-Zeichen. */
-export const EMOJI_RE = /\p{Extended_Pictographic}|\p{Emoji_Presentation}|[\u{1F1E6}-\u{1F1FF}]|⃣/u;
+/**
+ * Emoji-Bereiche: Piktogramme, Emoji mit Bildform, Flaggen (Regional Indicators) und das Tastenkappen-Zeichen.
+ * © ® ™ sind keine Emojis (Markennamen, «Caparol™»), ☎ und ✉ nur, solange kein Variantenzeichen sie zum Bild macht («☎ 071 …»).
+ */
+export const EMOJI_RE = /(?![©®™]|[☎✉](?!\uFE0F))\p{Extended_Pictographic}|\p{Emoji_Presentation}|[\u{1F1E6}-\u{1F1FF}]|⃣/u;
+
+/** Höchstens so viele Emojis hat der ganze Beitrag (Hauptteil und Aufforderung), wenn die Person sie erlaubt; im Hook steht keines. */
+export const EMOJI_MAX = 3;
+
+/**
+ * Zahl der Emojis in einem Text. Gezählt wird, was die Person als ein Zeichen sieht (Graphem): eine Flagge «🇨🇭», ein Emoji mit
+ * Hautton oder ein zusammengesetztes «👨‍🎨» zählen je eins, nicht je Codepunkt. Ohne Intl.Segmenter (alte Browser) zählt die
+ * Rückfallregel Emoji-Folgen mit Verbindern und Variantenzeichen als eines.
+ */
+export function emojiCount(text: string): number {
+  if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+    const segmenter = new Intl.Segmenter("de", { granularity: "grapheme" });
+    let n = 0;
+    for (const { segment } of segmenter.segment(text)) if (EMOJI_RE.test(segment)) n++;
+    return n;
+  }
+  const folge = /[\u{1F1E6}-\u{1F1FF}]{2}|(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})[\uFE0F\u{1F3FB}-\u{1F3FF}]*(?:\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})[\uFE0F\u{1F3FB}-\u{1F3FF}]*)*|[0-9#*]\uFE0F?\u20E3/gu;
+  return (text.match(folge) ?? []).filter((m) => EMOJI_RE.test(m)).length;
+}
 
 /** Ein Hashtag: «#» vor einem Buchstaben, einer Ziffer oder einem Unterstrich, am Anfang oder nach einem Leerzeichen. */
 export const HASHTAG_RE = /(?:^|[\s(])#[\p{L}\p{N}_]/u;
@@ -114,7 +136,8 @@ const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 export function containsWord(text: string, word: string): boolean {
   const w = word.trim();
   if (!w) return false;
-  const body = w.split(/\s+/).map(escapeRe).join("\\s+");
+  // «Rundum-Service» findet auch «Rundumservice» und «Rundum Service»: der Bindestrich ist optional.
+  const body = w.split(/\s+/).map((t) => escapeRe(t).replace(/-/g, "[-\\s]?")).join("\\s+");
   return new RegExp(`(?<![\\p{L}\\p{N}])${body}(?:${ENDUNGEN})?(?![\\p{L}\\p{N}])`, "iu").test(text);
 }
 
@@ -136,7 +159,8 @@ export function googleLaenge(hook: string, hauptteil: string, cta: string): numb
  * «hooks»: die beiden Hooks sind (bis auf Gross- und Kleinschreibung und Satzzeichen) gleich;
  * «laenge»: der Hauptteil ist länger als die Plattform erlaubt, oder der Google-Beitrag mit einem der Hooks länger als 1'500 Zeichen;
  * «zahl»: eine Ziffernfolge in irgendeinem Text, die nicht in den Angaben steht;
- * «emoji»: ein Emoji, obwohl die Person keine erlaubt hat;
+ * «emoji»: ein Emoji, obwohl die Person keine erlaubt hat; mit Erlaubnis ein Emoji in einem Hook oder mehr als drei in Hauptteil und
+ * Aufforderung (gezählt je Graphem, siehe emojiCount);
  * «hashtag»: ein Hashtag (die Person schreibt sie selbst);
  * «anrede»: bei Sie ein du, dich, dir oder dein in Hook, Hauptteil oder Aufforderung;
  * «vermeiden»: ein Wort aus den zu vermeidenden Wörtern.
@@ -153,6 +177,7 @@ export function checkPost(output: PostOutput, input: PostInput): string | null {
   for (const n of numbersIn(texte.join("\n"))) if (!known.has(n)) return "zahl";
 
   if (!input.emojis && texte.some((t) => EMOJI_RE.test(t))) return "emoji";
+  if (input.emojis && (output.hooks.some((h) => emojiCount(h) > 0) || emojiCount(output.hauptteil) + emojiCount(output.cta) > EMOJI_MAX)) return "emoji";
   if (texte.some((t) => HASHTAG_RE.test(t))) return "hashtag";
 
   if (input.anrede === "sie" && [...output.hooks, output.hauptteil, output.cta].some((t) => DU_RE.test(t))) return "anrede";
@@ -174,7 +199,7 @@ const INSTRUCTION = `Schreib einen Beitrag für das Social-Media-Konto eines Sch
 - Keine Hashtags und kein Zeichen #. Die Person ergänzt sie selbst.
 - Hintergrund, wenn er da ist: «tonalitaet» (so schreibt der Betrieb), «werte», «positionierung», «persona» (wer den Beitrag liest) und «saeule» (das Themenfeld des Beitrags). Nimm sie als Haltung, wiederhole sie nicht wörtlich. Wörter aus «vermeiden» kommen nirgends vor, auch nicht in anderer Wortform.
 - Nutze Ort («ort») und Alltag des Betriebs, wo es zur Idee passt. Erfinde nichts zur Idee dazu. Fehlt etwas Wichtiges wie ein Datum, ein Name oder ein Preis, schreib einen Platzhalter in eckigen Klammern, zum Beispiel [Datum des Anlasses].
-- Ziffern nur, wenn sie wörtlich in den Angaben stehen. Sonst schreib die Zahl als Wort oder lass sie weg. Nummern wie «1.» am Zeilenanfang einer Liste sind erlaubt.
+- Ziffern nur, wenn sie wörtlich in den Angaben stehen. Sonst lass die Zahl weg, auch als Wort («seit über fünfzig Jahren», «drei von vier»). Nummern wie «1.» am Zeilenanfang einer Liste sind erlaubt.
 - «hinweis»: ein Satz, höchstens 200 Zeichen, ohne Anrede, was zur Idee noch fehlt, damit der Beitrag besser wird, zum Beispiel «Ein Foto der fertigen Fassade würde den Beitrag stärken.». Fehlt nichts, schreib eine leere Zeichenkette "".
 Form: {"hooks": ["…", "…"], "hauptteil": "…", "cta": "…", "hinweis": "…"}`;
 

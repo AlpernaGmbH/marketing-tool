@@ -8,6 +8,7 @@ import {
   HOOK_MAX,
   INSTAGRAM_MAX,
   INSTAGRAM_TOO_LONG,
+  KI_HINWEIS,
   LESEZEIT_NOTE,
   PFLICHT_KEYS,
   RICHTWERT_NOTE,
@@ -592,6 +593,28 @@ describe("story-post: toDocument", () => {
     expect(paragraphs).toHaveLength(1 + 6 + 6);
   });
 
+  it("sagt im Dokument, wer die Sätze geschrieben hat: bei «ki» der KI-Hinweis (auch im Text zum Kopieren), sonst der Satz «Die Sätze sind deine»", () => {
+    const ki = compose({ anrede: "du", felder: KELLER, hook: 1, modus: "ki" });
+    const von = compose({ anrede: "du", felder: KELLER, hook: 1, modus: "ordnen" });
+    expect(ki.modus).toBe("ki");
+    expect(von.modus).toBe("ordnen");
+    expect(compose({ anrede: "du", felder: KELLER, hook: 1 }).modus).toBe("ordnen");
+
+    const kiDoc = toDocument(ki, { firma: "Malerei Keller" });
+    const kiTexts = kiDoc.blocks.filter((b) => b.type === "paragraph").map((b) => (b.type === "paragraph" ? b.text : ""));
+    expect(kiTexts[0]).toBe(KI_HINWEIS);
+    expect(kiTexts).not.toContain(SAETZE_NOTE);
+    expect(toMarkdown(kiDoc)).toContain(KI_HINWEIS);
+    expect(toMarkdown(kiDoc)).not.toContain(SAETZE_NOTE);
+
+    const vonDoc = toDocument(von, { firma: "Malerei Keller" });
+    expect(toMarkdown(vonDoc)).toContain(SAETZE_NOTE);
+    expect(toMarkdown(vonDoc)).not.toContain(KI_HINWEIS);
+
+    expect(KI_HINWEIS).toBe("Von einer KI formuliert. Prüfe Namen, Zahlen und Aussagen, bevor du den Text verwendest.");
+    expect(brandHits(KI_HINWEIS)).toEqual([]);
+  });
+
   it("nennt ohne Hook «Ohne Hook», führt Platzhalter und Hinweise auf und zeigt den Instagram-Hinweis", () => {
     const d = toDocument(story({ ausgangslage: "[Name] rief an: Ihre Fassade blätterte nach drei Wintern ab.", lehre: "Das bringt Mehrwert und hält." }, 0));
     const md = toMarkdown(d);
@@ -700,6 +723,7 @@ describe("story-post: Texte im Werkzeug", () => {
   it("halten die Sperrliste und die Schreibregeln ein", () => {
     const texts = [
       SAETZE_NOTE,
+      KI_HINWEIS,
       LESEZEIT_NOTE,
       RICHTWERT_NOTE,
       INSTAGRAM_TOO_LONG,

@@ -39,6 +39,8 @@ export const WORDS_PER_MINUTE = 200;
 export const LESEZEIT_NOTE = `Annahme von Alperna: ${WORDS_PER_MINUTE} Wörter pro Minute, keine Statistik`;
 export const RICHTWERT_NOTE = "Richtwert von Alperna, keine Statistik";
 export const SAETZE_NOTE = "Die Sätze sind deine; das Werkzeug ordnet sie.";
+/** Steht über dem Beitrag am Bildschirm und im Dokument (PDF, Word, Text), wenn eine KI die Sätze formuliert hat. */
+export const KI_HINWEIS = "Von einer KI formuliert. Prüfe Namen, Zahlen und Aussagen, bevor du den Text verwendest.";
 export const INSTAGRAM_TOO_LONG = "Zu lang für Instagram: kürze von Hand";
 
 /** Weg zum Beitrag: «ki» formuliert aus Stichworten, «ordnen» nimmt die Sätze der Person, wie sie sind. */
@@ -430,6 +432,8 @@ export type Story = {
   instagram: InstagramFassung;
   platzhalter: string[];
   hinweise: string[];
+  /** Weg zum Beitrag: «ki» (eine KI hat die Sätze formuliert) oder «ordnen» (die Sätze der Person). */
+  modus: Modus;
 };
 
 /** Setzt den Beitrag zusammen. Der Text der Person wird nicht umformuliert; nur der Hook setzt Wörter zusammen. */
@@ -448,6 +452,7 @@ export function compose(input: Input): Story {
     instagram: instagram(teile),
     platzhalter: platzhalter(felder),
     hinweise: [...satzHinweise(felder), ...sperrHinweise(felder), ...anredeHinweise(felder, input.anrede)],
+    modus: input.modus === "ki" ? "ki" : "ordnen",
   };
 }
 
@@ -468,7 +473,8 @@ export function toDocument(story: Story, opts: { firma?: string } = {}): Documen
         { label: "Instagram", value: `${numberCH(story.instagram.zeichen, 0)} Zeichen, höchstens ${numberCH(INSTAGRAM_MAX, 0)} (${RICHTWERT_NOTE})` },
       ],
     },
-    para(SAETZE_NOTE),
+    // Bei «ki» sind es nicht die Sätze der Person: Das Dokument sagt es, wo immer es hingeht (PDF, Word, Text zum Kopieren).
+    para(story.modus === "ki" ? KI_HINWEIS : SAETZE_NOTE),
     { type: "heading", level: 1, text: "LinkedIn-Fassung" },
     ...story.absaetze.map((a) => para(a.text)),
     { type: "heading", level: 1, text: "Instagram-Fassung" },

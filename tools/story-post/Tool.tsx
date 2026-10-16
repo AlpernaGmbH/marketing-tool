@@ -14,7 +14,7 @@ import { numberCH } from "@/lib/ch";
 import { useLocalJson } from "@/lib/use-local";
 import { useProfile } from "@/lib/use-profile";
 import { foldHint, splitAtFold } from "@/tools/caption-baukasten/logic";
-import { KI_HINWEIS, profilTeile } from "@/tools/post-generator/logic";
+import { profilTeile } from "@/tools/post-generator/logic";
 import { storyGenerator, type StoryInput, type StoryOutput } from "./generator";
 import {
   ANREDEN,
@@ -23,6 +23,7 @@ import {
   FOLD_NOTE,
   HOOK_MAX,
   INSTAGRAM_MAX,
+  KI_HINWEIS,
   LESEZEIT_NOTE,
   MODI,
   SAETZE_NOTE,

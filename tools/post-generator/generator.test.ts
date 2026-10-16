@@ -4,6 +4,7 @@ import { PLATFORMS } from "@/tools/caption-baukasten/logic";
 import {
   ANREDE_KEYS,
   DU_RE,
+  EMOJI_MAX,
   EMOJI_RE,
   FORMAT_KEYS,
   GOOGLE_GRENZE,
@@ -14,6 +15,7 @@ import {
   ZIEL_KEYS,
   checkPost,
   containsWord,
+  emojiCount,
   googleLaenge,
   numbersIn,
   postGenerator,
@@ -166,6 +168,41 @@ describe("post-generator: Hilfen der Prüfung", () => {
     }
   });
 
+  it("EMOJI_RE: © ® ™ und ein Telefon- oder Brief-Zeichen im Textstil sind keine Emojis, dasselbe Zeichen mit Variantenzeichen schon", () => {
+    for (const t of ["Caparol™ Indeko-plus", "© 2026 Malerei Keller", "Farbe®", "☎ 071 123 45 67", "✉ info@malerei-keller.ch"]) expect(EMOJI_RE.test(t), t).toBe(false);
+    for (const t of ["☎️ 071 123 45 67", "✉️ schreib uns"]) expect(EMOJI_RE.test(t), t).toBe(true);
+  });
+
+  it("emojiCount zählt Graphem für Graphem: Flagge, zusammengesetztes Emoji, Hautton und Tastenkappe je eines", () => {
+    expect(emojiCount("Keine Emojis, nur Text: ✓ → ™ ©")).toBe(0);
+    expect(emojiCount("🏠🎨🖌️🪣🌞🙂")).toBe(6);
+    expect(emojiCount("Text 🇨🇭 und 👨‍🎨")).toBe(2);
+    expect(emojiCount("👍🏽 und 1️⃣")).toBe(2);
+    expect(emojiCount("🎨🎨🎨🎨")).toBe(4);
+    expect(emojiCount("")).toBe(0);
+  });
+
+  it("emojiCount zählt auch ohne Intl.Segmenter je Emoji-Folge und nicht je Zeichen", () => {
+    const original = Intl.Segmenter;
+    // @ts-expect-error Browser ohne Intl.Segmenter nachstellen
+    delete Intl.Segmenter;
+    try {
+      expect(emojiCount("Text 🇨🇭 und 👨‍🎨 und 👍🏽 und ☀️ und 1️⃣")).toBe(5);
+      expect(emojiCount("🏠🎨🖌️🪣🌞🙂")).toBe(6);
+      expect(emojiCount("Caparol™ © ✓")).toBe(0);
+    } finally {
+      Object.defineProperty(Intl, "Segmenter", { value: original, configurable: true, writable: true });
+    }
+  });
+
+  it("containsWord findet ein Wort mit Bindestrich auch ohne Bindestrich und mit Leerzeichen", () => {
+    for (const t of ["Wir bieten Rundumservice an.", "Wir bieten Rundum Service an.", "Der Rundum-Service ist da."]) expect(containsWord(t, "Rundum-Service"), t).toBe(true);
+    expect(containsWord("Wir bieten Service rundum an.", "Rundum-Service")).toBe(false);
+    expect(containsWord("Top-Qualität", "Top-Qualität")).toBe(true);
+    expect(containsWord("Topqualitäten", "Top-Qualität")).toBe(true);
+    expect(containsWord("Topqualitätskontrolle", "Top-Qualität")).toBe(false);
+  });
+
   it("googleLaenge zählt Hook, Hauptteil und Aufforderung mit einfachen Zeilenumbrüchen ohne Leerzeilen", () => {
     expect(googleLaenge("aaaaaaaaaa", "bb\n\nbb\n\n\ncc", "dddddddddd")).toBe(10 + 1 + 8 + 1 + 10);
     expect(googleLaenge("a", "b", "c")).toBe(5);
@@ -232,6 +269,30 @@ describe("post-generator: checkPost", () => {
     expect(checkPost(output({ hooks: ["Warum blättert der Anstrich ab? 🤔", output().hooks[1]] }), input)).toBe("emoji");
     expect(checkPost(output({ cta: "Schreib uns in die Kommentare 👇" }), input)).toBe("emoji");
     expect(checkPost(mitEmoji, { ...input, emojis: true })).toBeNull();
+  });
+
+  it("«emoji» mit Erlaubnis: höchstens drei in Hauptteil und Aufforderung (je Graphem), keines im Hook", () => {
+    const erlaubt = { ...input, emojis: true };
+    expect(EMOJI_MAX).toBe(3);
+    const mit = (hauptteil: string, cta = output().cta, hooks = output().hooks) => output({ hauptteil: `${output().hauptteil}\n\n${hauptteil}`, cta, hooks });
+    // drei sind erlaubt, auch wenn eines aus mehreren Zeichen besteht
+    expect(checkPost(mit("Alles trocken 🏠 🎨 🇨🇭"), erlaubt)).toBeNull();
+    expect(checkPost(mit("Alles trocken 🏠 🎨", "Welche Farbe? 👨‍🎨"), erlaubt)).toBeNull();
+    // vier, sechs, in zwei Feldern verteilt
+    expect(checkPost(mit("Alles trocken 🏠🎨🖌️", "Welche Farbe? 🙂"), erlaubt)).toBe("emoji");
+    expect(checkPost(mit("Alles trocken 🏠🎨🖌️🪣🌞🙂"), erlaubt)).toBe("emoji");
+    expect(checkPost(output({ cta: "Welche Farbe? 🎨🎨🎨🎨🎨🎨🎨🎨🎨🎨🎨🎨" }), erlaubt)).toBe("emoji");
+    // keines im Hook, auch nicht in der zweiten Variante
+    expect(checkPost(mit("Alles trocken", output().cta, ["🎨 Warum blättert der Anstrich schon nach wenigen Wintern ab?", output().hooks[1]]), erlaubt)).toBe("emoji");
+    expect(checkPost(mit("Alles trocken", output().cta, [output().hooks[0], "Ein Anstrich hält so gut wie der Untergrund 🏠"]), erlaubt)).toBe("emoji");
+    // © ® ™ zählen nicht
+    expect(checkPost(mit("Farbe: Caparol™ Indeko-plus. © Malerei Keller 🏠🎨🖌️"), erlaubt)).toBeNull();
+  });
+
+  it("«emoji» ohne Erlaubnis: ™ © ® und ein Zeichen wie ✓ → sind in Ordnung", () => {
+    expect(checkPost(output({ hauptteil: `${output().hauptteil} Farbe: Caparol™ Indeko-plus, © Malerei Keller.\n✓ Muster an der Wand\n→ Entscheid am Abend` }), input)).toBeNull();
+    expect(checkGenerated(postGenerator, output({ hauptteil: `${output().hauptteil} Farbe: Caparol™ Indeko-plus.` }), input).ok).toBe(true);
+    expect(checkPost(output({ hauptteil: `${output().hauptteil} Farbe ☎️` }), input)).toBe("emoji");
   });
 
   it("«hashtag»: ein Hashtag in irgendeinem Text fällt auf, ein # ohne Wort nicht", () => {
@@ -317,6 +378,9 @@ describe("post-generator: checkGenerated und Prompt", () => {
     const system = systemPrompt(postGenerator);
     expect(system).toContain("Form:");
     for (const key of ["hooks", "hauptteil", "cta", "hinweis", "plattform", "format", "ziel", "kategorie", "anrede", "emojis", "vermeiden"]) expect(system).toContain(`«${key}»`);
+    // Eine fremde Zahl wird weggelassen, nicht als Wort geschrieben (sonst entstehen «seit über fünfzig Jahren» und «zwanzig Prozent»).
+    expect(system).not.toContain("schreib die Zahl als Wort");
+    expect(system).toContain("lass die Zahl weg");
     expect(system).not.toContain(input.betrieb);
     expect(system).not.toContain(input.idee);
     const prompt = postGenerator.prompt(input);

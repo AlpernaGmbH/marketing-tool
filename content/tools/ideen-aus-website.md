@@ -58,7 +58,7 @@ Den Platzhalter füllt die Malerei Keller selbst aus.
 Betrieb, Branche und Ort aus deinem Firmenprofil, die gewählten Kanäle und der Text deiner Startseite: Titel, Beschreibung, Überschriften und bis 8'000 Zeichen. Nicht deine E-Mail-Adresse. Unser Server gibt den Text an den KI-Anbieter weiter und speichert ihn nicht.
 
 ### Kann die KI etwas erfinden?
-Ja. Sie soll nur verwenden, was auf der Website steht, und für Unbekanntes Platzhalter setzen. Das Werkzeug verwirft Antworten mit fremden Zahlen oder nicht gewählten Kanälen. Namen und Aussagen prüfst du selbst.
+Ja. Sie soll nur verwenden, was auf der Website steht, und für Unbekanntes Platzhalter setzen. Das Werkzeug verwirft Antworten mit fremden Zahlen, nicht gewählten Kanälen oder Ideen ohne Bezug zur Seite. Namen und Aussagen prüfst du selbst.
 
 ### Liest das Werkzeug meine ganze Website?
 Nein, nur die Seite, deren Adresse du angibst. Unterseiten, Bilder und PDF-Dateien sieht es nicht. Steht das Wichtige auf einer Unterseite, gib deren Adresse an.

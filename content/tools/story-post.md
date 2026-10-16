@@ -66,7 +66,7 @@ Der Hook nennt das Ergebnis, darum steht es nicht noch einmal im Text. Das Werkz
 
 ## Häufige Fragen
 ### Schreibt eine KI den Text?
-Ja, wenn du den Weg mit KI wählst. Sie macht aus deinen Stichworten Sätze und erfindet keine Zahlen, Namen oder Folgen dazu. Prüfe den Text vor dem Veröffentlichen. Wer selbst schreibt, wählt «Meine Sätze ordnen»: Dann ordnet das Werkzeug nur und kürzt Instagram.
+Ja, wenn du den Weg mit KI wählst. Sie macht aus deinen Stichworten Sätze und erfindet keine Zahlen, Namen, Gefühle oder Folgen dazu. Das Dokument sagt «Von einer KI formuliert». Prüfe den Text vor dem Veröffentlichen. Wer selbst schreibt, wählt «Meine Sätze ordnen»: Dann ordnet das Werkzeug nur und kürzt Instagram.
 
 ### Warum ein Hook?
 Auf LinkedIn und Instagram sieht die Leserschaft zuerst nur den Anfang. Der Hook ist die erste Zeile und entscheidet, ob jemand auf «mehr» tippt. Er hat höchstens 140 Zeichen (Richtwert von Alperna, keine Statistik) und besteht aus Wörtern deiner Antworten.

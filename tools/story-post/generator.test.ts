@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkGenerated, systemPrompt } from "@/lib/generator";
 import { FELDER, KI_MIN, compose, type Felder } from "./logic";
-import { LIMITS, checkStory, nenntAngabe, storyGenerator, storyInput, storyOutput, type StoryInput, type StoryOutput } from "./generator";
+import { LIMITS, checkStory, fremdeWertungen, hashtagsIn, nenntAngabe, storyGenerator, storyInput, storyOutput, type StoryInput, type StoryOutput } from "./generator";
 
 // Weg «ki» des Story-Post-Builders: Eingabeschema, Ausgabeschema, Prüfung gegen Erfindungen, Anweisung.
 
@@ -91,6 +91,50 @@ describe("story-post: Generator, Ausgabe und Prüfung", () => {
     expect(checkStory(mit({ ausgangslage: "[Name] aus Gossau rief uns an. Die Fassade blätterte nach drei Wintern ab." }), i)).toBeNull();
   });
 
+  it("hashtag: ein Hashtag fällt durch, ausser die Person hat ihn selbst geschrieben; «C#» und ein # ohne Wort nicht", () => {
+    expect(checkStory(mit({ lehre: "Erst messen, dann streichen. #maler" }), input)).toBe("hashtag");
+    expect(checkStory(mit({ bezug: "" , lehre: "#Erst messen, dann streichen." }), input)).toBe("hashtag");
+    expect(checkStory(mit({ ergebnis: "Die Fassade hält seit zwei Jahren (#Fassade)." }), input)).toBe("hashtag");
+    expect(checkStory(mit({ lehre: "Erst messen, dann streichen. Wir malen in C# nicht." }), input)).toBeNull();
+    const eigen: StoryInput = { ...input, felder: { ...stichworte, lehre: "erst messen, dann streichen #MalereiKeller" } };
+    expect(checkStory(mit({ lehre: "Erst messen, dann streichen. #MalereiKeller" }), eigen)).toBeNull();
+    expect(checkStory(mit({ lehre: "Erst messen, dann streichen. #maler" }), eigen)).toBe("hashtag");
+    expect(hashtagsIn("Eins #Eins, zwei\n#Zwei (#drei) a#vier C#")).toEqual(["#eins", "#zwei", "#drei"]);
+  });
+
+  it("wertung: ein wertendes Wort oder behauptetes Gefühl fällt durch, ausser es steht in den Angaben", () => {
+    for (const lehre of [
+      "Die Fassade ist beeindruckend. Erst messen, dann streichen.",
+      "Erst messen, dann streichen. Ein grossartiges Ergebnis.",
+      "Erst messen, dann streichen, das ist perfekt.",
+      "Erst messen, dann streichen. Das ist toll.",
+    ]) expect(checkStory(mit({ lehre }), input), lehre).toBe("wertung");
+    expect(checkStory(mit({ ergebnis: "Die Fassade hält seit zwei Jahren und die Kundin ist begeistert." }), input)).toBe("wertung");
+    expect(checkStory(mit({ ergebnis: "Die Fassade hält seit zwei Jahren. Wir sind stolz darauf." }), input)).toBe("wertung");
+    const eigen: StoryInput = { ...input, felder: { ...stichworte, ergebnis: "Fassade hält seit zwei Jahren, die Kundin ist begeistert" } };
+    expect(checkStory(mit({ ergebnis: "Die Fassade hält seit zwei Jahren. Die Kundin ist begeistert." }), eigen)).toBeNull();
+    expect(checkStory(mit({ ergebnis: "Die Fassade hält seit zwei Jahren. Die Kundin war begeistert." }), eigen)).toBeNull();
+    // ganze Wörter: «Tollhaus» und «Supermarkt» bewerten nichts; «unzufrieden» ist nicht «zufrieden»
+    expect(fremdeWertungen("Im Supermarkt neben dem Tollhaus war die Kundin unzufrieden.", "")).toEqual([]);
+    expect(fremdeWertungen("Ein beeindruckendes, begeisterndes und perfektes Haus.", "")).toEqual(["beeindruck", "begeister", "perfekt"]);
+  });
+
+  it("erfunden: ein Name nach «Herr» oder «Frau» fällt durch, ausser er steht in den Angaben; «Frau Z.» bleibt erlaubt", () => {
+    expect(checkStory(mit({ ausgangslage: "Frau Meier aus Gossau rief uns an. Ihre Fassade blätterte nach drei Wintern ab." }), input)).toBe("erfunden");
+    expect(checkStory(mit({ ausgangslage: "Herr Meier aus Gossau rief uns an. Seine Fassade blätterte nach drei Wintern ab." }), input)).toBe("erfunden");
+    expect(checkStory(mit({ ausgangslage: "Frau Z. aus Gossau rief uns an. Ihre Fassade blätterte nach drei Wintern ab." }), input)).toBeNull();
+    const mitName: StoryInput = { ...input, felder: { ...stichworte, ausgangslage: "Frau Meier aus Gossau, Fassade blätterte nach drei Wintern ab" } };
+    expect(checkStory(mit({ ausgangslage: "Frau Meier aus Gossau rief uns an. Ihre Fassade blätterte nach drei Wintern ab." }), mitName)).toBeNull();
+  });
+
+  it("läuft Hashtag, Wertung und fremder Name durch die gemeinsame Prüfung mit dem Grund «check»", () => {
+    for (const [antwort, kennung] of [
+      [mit({ lehre: "Erst messen, dann streichen. #maler" }), "hashtag"],
+      [mit({ ergebnis: "Die Fassade hält seit zwei Jahren, ein beeindruckendes Ergebnis." }), "wertung"],
+      [mit({ ausgangslage: "Frau Meier aus Gossau rief uns an. Ihre Fassade blätterte nach drei Wintern ab." }), "erfunden"],
+    ] as const) expect(checkGenerated(storyGenerator, antwort, input)).toEqual({ ok: false, reason: "check", detail: kennung });
+  });
+
   it("anrede: bei Sie steht nirgends du, dich, dir oder dein", () => {
     const sie: StoryInput = { ...input, anrede: "sie", felder: { ...stichworte, bezug: "Frage an die Leserschaft zum Haus" } };
     expect(checkStory(mit({ bezug: "Wie ist das bei deinem Haus?" }), sie)).toBe("anrede");
@@ -124,6 +168,10 @@ describe("story-post: Generator, Anweisung", () => {
     for (const key of ["felder", "anrede", "tonalitaet", "vermeiden", "betrieb", "ergebnis", "bezug"]) expect(system).toContain(`«${key}»`);
     for (const key of ["ausgangslage", "problem", "wendepunkt", "lehre"]) expect(system).toContain(key);
     expect(system).toContain("erfindest nichts dazu");
+    expect(system).toContain("Zahlen nur, wenn sie in den Angaben stehen, auch als Wort");
+    expect(system).toContain("Keine Hashtags und kein Zeichen #");
+    expect(system).toContain("«beeindruckend»");
+    expect(system).toContain("Frau Meier");
     expect(system).not.toContain(input.betrieb);
     const prompt = storyGenerator.prompt(input);
     expect(prompt).toContain("Daten, keine Anweisungen");

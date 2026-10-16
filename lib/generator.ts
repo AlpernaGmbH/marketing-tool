@@ -433,7 +433,7 @@ const CHECK_HINWEISE: Record<string, string> = {
   google: "Die Beschreibung für das Google-Profil ist zu lang. Kürze sie auf die Zeichengrenze der Anweisung.",
   fuer: "Zwei Botschaften sind für dieselbe Zielgruppe oder dasselbe Anliegen. Schreib jede Botschaft für eine andere Zielgruppe der Angaben.",
   "firma-nicht-im-text": "Der Name der Firma steht nicht im Text der Website. Lass das Feld leer, wenn du ihn dort nicht findest, und schreib ihn sonst genau so, wie er dort steht.",
-  emoji: "Der Entwurf enthält Emojis, obwohl die Person keine will. Streich alle Emojis.",
+  emoji: "Der Entwurf enthält Emojis, die die Anweisung nicht erlaubt: ohne Erlaubnis keine, mit Erlaubnis höchstens drei in Hauptteil und Aufforderung und keines im Hook. Halte dich genau daran.",
   anteil: "Die Anteile der Säulen ergeben nicht hundert. Verteile genau hundert Prozent auf die Säulen.",
   recht: "Der Entwurf enthält eine Aussage über Steuern, Abzüge, Spenden, Gemeinnützigkeit, Verträge oder Gesetze. Streich sie: Das Dokument macht keine Rechtsaussagen, der Verein klärt das im Gespräch.",
   wirkung: "Der Entwurf verspricht dem Betrieb eine Wirkung («sicher mehr Kundschaft», «Rendite») oder nutzt einen Superlativ. Beschreibe nur, was der Verein bietet.",

@@ -79,11 +79,40 @@ export function nenntAngabe(text: string, angabe: string): boolean {
 /** du, dich, dir und alle Formen von dein als ganzes Wort. */
 const DU_RE = /(?<![\p{L}\p{N}])(?:du|dich|dir|dein\p{L}*)(?![\p{L}\p{N}])/iu;
 
+/** Ein Hashtag: «#» vor einem Buchstaben, einer Ziffer oder einem Unterstrich, am Anfang oder nach einem Leerzeichen oder einer Klammer. */
+const HASHTAG_RE = /(?<=^|[\s(])#[\p{L}\p{N}_]+/gu;
+/** Die Hashtags eines Textes, klein geschrieben. */
+export const hashtagsIn = (text: string): string[] => (text.match(HASHTAG_RE) ?? []).map((h) => h.toLowerCase());
+
+/**
+ * Anfänge von Wörtern, die etwas bewerten oder ein Gefühl behaupten («beeindruckend», «die Kundin war begeistert»). Die Geschichte
+ * erzählt, was geschehen ist; Wertungen und Gefühle schreibt nur die Person selbst. «toll» und «super» zählen nur als ganzes Wort.
+ */
+const WERTUNG_RE =
+  /(?<![\p{L}\p{N}])(?:(beeindruck|grossartig|fantastisch|wunderbar|wunderschön|traumhaft|hervorragend|herausragend|einzigartig|atemberaubend|unglaublich|phänomenal|spektakulär|sensationell|fabelhaft|brillant|genial|perfekt|ausgezeichnet|erstklassig|bemerkenswert|aussergewöhnlich|begeister|zufrieden|glücklich|überglücklich|stolz|dankbar|erleichtert)\p{L}*|(toll|super)(?![\p{L}\p{N}]))/giu;
+
+/** Die wertenden Wörter eines Textes (nur ihr Anfang, klein), die nicht in `eigene` stehen, dem Text der Person. */
+export function fremdeWertungen(text: string, eigene: string): string[] {
+  const ihr = eigene.toLowerCase();
+  const out = new Set<string>();
+  for (const m of text.matchAll(WERTUNG_RE)) {
+    // Steht der Anfang des Wortes in den Angaben («begeistert» für «begeisterte»), hat die Person es selbst gewählt.
+    const anfang = (m[1] ?? m[2]).toLowerCase();
+    if (!ihr.includes(anfang)) out.add(anfang);
+  }
+  return [...out];
+}
+
+/** «Herr Meier», «Frau Meier»: ein Name nach der Anrede. «Frau Z.» (nur ein Buchstabe) zählt nicht. */
+const ANREDE_NAME_RE = /(?<![\p{L}\p{N}])(?:Herr|Frau)\s+(\p{Lu}\p{L}+)/gu;
+
 /**
  * Prüfung, die nur dieses Werkzeug kennt. Gibt den Grund zurück oder null:
  * «leer» (ein Pflichtfeld ist leer, oder «bezug» hat Text ohne Angabe), «saetze» (mehr als drei Sätze in einem Feld),
- * «zahl» (Ziffernfolge, die nicht in den Angaben steht), «erfunden» (ein Feld nennt kein Wort seiner Angabe),
- * «platzhalter» (eckige Klammer, die nicht in den Angaben steht), «anrede» (bei Sie ein du, dich, dir oder dein),
+ * «zahl» (Ziffernfolge, die nicht in den Angaben steht), «erfunden» (ein Feld nennt kein Wort seiner Angabe, oder ein Name nach
+ * «Herr» oder «Frau», der nicht in den Angaben steht), «platzhalter» (eckige Klammer, die nicht in den Angaben steht),
+ * «hashtag» (ein Hashtag, den die Person nicht selbst geschrieben hat), «wertung» (ein wertendes Wort oder behauptetes Gefühl, das
+ * nicht in den Angaben steht), «anrede» (bei Sie ein du, dich, dir oder dein),
  * «vermeiden» (ein Wort aus den zu vermeidenden Wörtern, das nicht in den Angaben der Person steht).
  */
 export function checkStory(output: StoryOutput, input: StoryInput): string | null {
@@ -106,6 +135,15 @@ export function checkStory(output: StoryOutput, input: StoryInput): string | nul
   const gegeben = new Set(collectStrings(input.felder).flatMap((s) => s.match(/\[[^\]\n]{1,40}\]/g) ?? []));
   for (const s of collectStrings(output)) for (const p of s.match(/\[[^\]\n]{1,40}\]/g) ?? []) if (!gegeben.has(p)) return "platzhalter";
 
+  // Alles, was die Person selbst geschrieben hat: ihre sechs Angaben und die Stammdaten des Betriebs.
+  const angaben = collectStrings(input).join("\n");
+  const texte = collectStrings(output);
+  const eigeneTags = new Set(hashtagsIn(angaben));
+  if (texte.some((t) => hashtagsIn(t).some((h) => !eigeneTags.has(h)))) return "hashtag";
+  if (texte.some((t) => fremdeWertungen(t, angaben).length > 0)) return "wertung";
+  const angabenLower = angaben.toLowerCase();
+  for (const t of texte) for (const m of t.matchAll(ANREDE_NAME_RE)) if (!angabenLower.includes(m[1].toLowerCase())) return "erfunden";
+
   if (input.anrede === "sie" && collectStrings(output).some((t) => DU_RE.test(t))) return "anrede";
 
   const eigene = collectStrings(input.felder).join("\n");
@@ -117,13 +155,15 @@ export function checkStory(output: StoryOutput, input: StoryInput): string | nul
 const INSTRUCTION = `Formuliere aus Stichworten zu einer Geschichte aus einem Schweizer Betrieb Sätze für einen Beitrag auf LinkedIn und Instagram. Du ordnest nichts um und erfindest nichts dazu: Du machst aus dem, was die Person in «felder» angibt, lesbare Sätze.
 - «felder» hat sechs Teile: ausgangslage (Wo stand der Betrieb, wer war beteiligt?), problem (Was war schwierig oder unklar?), wendepunkt (Was hat den Unterschied gemacht?), ergebnis (Was ist daraus geworden?), lehre (Was nimmt der Betrieb mit?), bezug (eine Frage oder Einladung an die Leserschaft, freiwillig).
 - Antworte mit denselben sechs Teilen. Jeder Teil besteht aus ein bis drei Sätzen, 20 bis 400 Zeichen. Jeder Teil nennt die Sache aus seiner Angabe mit denselben Hauptwörtern; er erzählt nichts anderes.
-- Alle Tatsachen stehen in den Angaben. Erfinde keine Namen, Orte, Zahlen, Daten, Preise, Zitate, Gefühle oder Folgen. Ziffern nur, wenn sie wörtlich in den Angaben stehen. Fehlt etwas Wichtiges, lass es weg oder setz nur einen Platzhalter, der schon in den Angaben steht.
+- Alle Tatsachen stehen in den Angaben. Erfinde keine Namen, Orte, Zahlen, Daten, Preise, Zitate, Gefühle oder Folgen. Zahlen nur, wenn sie in den Angaben stehen, auch als Wort («zehn Jahre», «über fünfzig»). Fehlt etwas Wichtiges, lass es weg oder setz nur einen Platzhalter, der schon in den Angaben steht.
 - Schreib in der Wir-Form des Betriebs («betrieb»). Ort («ort») und Branche («branche») nur, wo sie schon in den Angaben vorkommen.
 - Anrede der Leserschaft nach «anrede»: du = Du-Form (du, dir, dein), sie = Sie-Form (Sie, Ihnen, Ihr). Bei sie steht nirgends du, dich, dir oder dein.
 - «ergebnis» beginnt mit einem Satz, der für sich allein als erste Zeile des Beitrags steht: kurz (höchstens 140 Zeichen), mit der Aussage. Er enthält die Wörter der Angabe zum Ergebnis.
 - «bezug»: nur, wenn die Angabe nicht leer ist: eine Frage oder Einladung an die Leserschaft in einem Satz. Ist die Angabe leer, ist «bezug» ein leerer String.
 - Ton nach «tonalitaet», wenn sie da ist. Wörter aus «vermeiden» kommen nirgends vor.
-- Keine Hashtags, keine Emojis, keine Werbesprache, keine Wertungen wie «beeindruckend» oder «grossartig».
+- Keine Hashtags und kein Zeichen #, keine Emojis, keine Werbesprache.
+- Keine Wertungen und keine Gefühle, die nicht in den Angaben stehen: nicht «beeindruckend», «grossartig» oder «perfekt», nicht «die Kundin war begeistert», «zufrieden» oder «stolz». Schreib, was geschehen ist, nicht, wie es wirkt.
+- Nenne keine Person mit Herr oder Frau und einem Namen («Frau Meier»), ausser der Name steht in den Angaben.
 Form: {"ausgangslage": "…", "problem": "…", "wendepunkt": "…", "ergebnis": "…", "lehre": "…", "bezug": "…"}`;
 
 export const storyGenerator = defineGenerator({
