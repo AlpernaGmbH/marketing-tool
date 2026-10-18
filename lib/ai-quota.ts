@@ -161,9 +161,21 @@ const MICRO = 1_000_000;
 
 export type SpendLimits = { perAddressRp: number; globalRp: number };
 
+/**
+ * Standard des globalen Tagesbudgets: mit Anthropic 250 Rappen (rund 3,10 US-Dollar am Tag, 31 Tage knapp 100 US-Dollar, das Monatsbudget
+ * vom 18.10.2026), sonst 500 Rappen. Mit Anthropic ist das Budget eine harte Grenze: Danach gibt es keine KI mehr bis zum nächsten Tag
+ * (`aiStopsAtBudget`), weil es kein kostenloses Modell als Rückfall gibt.
+ */
+export const DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC = 250;
+
 export function spendLimitsFromEnv(env: Record<string, string | undefined> = process.env): SpendLimits {
   const n = (v: string | undefined, d: number) => (v && /^\d+$/.test(v) ? Number(v) : d);
-  return { perAddressRp: n(env.AI_ADDRESS_DAILY_RP, 30), globalRp: n(env.AI_GLOBAL_DAILY_RP, 500) };
+  return { perAddressRp: n(env.AI_ADDRESS_DAILY_RP, 30), globalRp: n(env.AI_GLOBAL_DAILY_RP, aiProvider(env) === "anthropic" ? DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC : 500) };
+}
+
+/** Hört die KI auf, wenn das globale Tagesbudget erreicht ist? Ja mit Anthropic (kein Gratismodell als Rückfall). */
+export function aiStopsAtBudget(mode: BudgetMode, env: Record<string, string | undefined> = process.env): boolean {
+  return mode === "global" && aiProvider(env) === "anthropic";
 }
 
 const rpToMicro = (rp: number) => Math.round((rp / RP_PER_USD) * MICRO);

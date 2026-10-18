@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { RP_PER_USD, budgetMode, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot, type AiStore, type Limits } from "@/lib/ai-quota";
+import { DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC, RP_PER_USD, aiStopsAtBudget, budgetMode, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot, type AiStore, type Limits } from "@/lib/ai-quota";
 
 class Memory implements AiStore {
   counters = new Map<string, number>();
@@ -38,6 +38,9 @@ describe("limitsFromEnv", () => {
     expect(limitsFromEnv({ OPENROUTER_API_KEY: "k" }).global).toBe(1000);
     expect(limitsFromEnv({ OPENROUTER_API_KEY: "k", AI_DAILY_CAP: "900" }).global).toBe(900);
     expect(limitsFromEnv({ OPENROUTER_API_KEY: "k", AI_PROVIDER: "gateway" }).global).toBe(2000);
+  });
+  it("lässt mit Anthropic die Anzahl am Tag bei 2000: Das Tagesbudget in Rappen begrenzt, nicht die Anzahl", () => {
+    expect(limitsFromEnv({ ANTHROPIC_API_KEY: "k" }).global).toBe(2000);
   });
 });
 
@@ -150,6 +153,27 @@ describe("Tagesbudget in Rappen", () => {
     expect(spendLimitsFromEnv({})).toEqual({ perAddressRp: 30, globalRp: 500 });
     expect(spendLimitsFromEnv({ AI_ADDRESS_DAILY_RP: "10", AI_GLOBAL_DAILY_RP: "200" })).toEqual({ perAddressRp: 10, globalRp: 200 });
     expect(spendLimitsFromEnv({ AI_ADDRESS_DAILY_RP: "viel" }).perAddressRp).toBe(30);
+  });
+
+  it("setzt mit Anthropic das globale Tagesbudget auf 250 Rappen (31 Tage knapp 100 US-Dollar), überschreibbar", () => {
+    const env = { ANTHROPIC_API_KEY: "k" };
+    expect(DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC).toBe(250);
+    expect(spendLimitsFromEnv(env)).toEqual({ perAddressRp: 30, globalRp: 250 });
+    expect(spendLimitsFromEnv({ ...env, AI_GLOBAL_DAILY_RP: "100" }).globalRp).toBe(100);
+    expect(spendLimitsFromEnv({ ...env, AI_PROVIDER: "gateway" }).globalRp).toBe(500);
+    expect(spendLimitsFromEnv({ OPENROUTER_API_KEY: "k" }).globalRp).toBe(500);
+    // 31 Tage mit vollem Tagesbudget bleiben unter dem Monatsbudget von 100 US-Dollar
+    expect((31 * DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC) / RP_PER_USD).toBeLessThan(100);
+  });
+
+  it("hört mit Anthropic beim globalen Budget ganz auf (kein Gratismodell als Rückfall), sonst nie", () => {
+    const anthropic = { ANTHROPIC_API_KEY: "k" };
+    expect(aiStopsAtBudget("global", anthropic)).toBe(true);
+    expect(aiStopsAtBudget("address", anthropic)).toBe(false); // nur noch das günstigste Modell
+    expect(aiStopsAtBudget("paid", anthropic)).toBe(false);
+    expect(aiStopsAtBudget("global", {})).toBe(false);
+    expect(aiStopsAtBudget("global", { OPENROUTER_API_KEY: "k" })).toBe(false);
+    expect(aiStopsAtBudget("global", { ...anthropic, AI_PROVIDER: "gateway" })).toBe(false);
   });
 
   it("antwortet bezahlt, bis eine Adresse 30 Rappen verbraucht hat, dann nur noch kostenlos; andere Adressen bleiben bezahlt", async () => {

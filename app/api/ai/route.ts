@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { accountHash, clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
-import { budgetMode, cacheHash, defaultAiStore, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot } from "@/lib/ai-quota";
+import { aiStopsAtBudget, budgetMode, cacheHash, defaultAiStore, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot } from "@/lib/ai-quota";
 import { describeAiError, generateRaw } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
 import { buildFakten, pruefeEinordnung } from "@/lib/check/ai";
@@ -71,6 +71,10 @@ export async function POST(req: NextRequest) {
   const fakten = buildFakten(result);
   const mode = await budgetMode(store, acchash, spendLimitsFromEnv());
   if (mode === "global") await notifyCapacity(store, limits, new Date(), fetch, process.env, "ki_budget");
+  if (aiStopsAtBudget(mode)) {
+    await releaseSlot(store, acchash);
+    return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity", "budget");
+  }
   const spend = spendCollector();
   let checked;
   try {

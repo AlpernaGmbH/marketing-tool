@@ -2,7 +2,11 @@ import { generateText, Output } from "ai";
 import { SYSTEM_PROMPT, einordnungSchema, pruefeEinordnung, userPrompt, type Fakten } from "@/lib/check/ai";
 import { parseJsonObject } from "@/lib/generator";
 
-// Aufruf der KI. Drei Wege, gewählt mit AI_PROVIDER (siehe aiProvider):
+// Aufruf der KI. Vier Wege, gewählt mit AI_PROVIDER (siehe aiProvider):
+//  0. Anthropic direkt (Standard, sobald ANTHROPIC_API_KEY gesetzt ist; seit 18.10.2026, Entscheid Alperna: «alles über die Claude API»,
+//     Monatsbudget 100 US-Dollar): Claude Haiku 5.5 zuerst (0,10 / 0,50 US-Dollar je Million Token Ein- und Ausgabe), bei abgelehnter Antwort
+//     Claude Sonnet 5.5 (2 / 10). Modelle: ANTHROPIC_MODELS. Die Kosten rechnet die Anwendung aus `usage` der Antwort (ANTHROPIC_PRICES).
+//     Anthropic gibt bei Schlüsseln ohne Arbeitsbereich den Kopf `anthropic-workspace-id` vor (ANTHROPIC_WORKSPACE_ID).
 //  1. OpenRouter (Standard, sobald OPENROUTER_API_KEY gesetzt ist; seit 05.10.2026): kostenlose Modelle («:free»), ohne
 //     Monatsgebühr. Grenzen: 20 Anfragen je Minute und 50 je Tag, ab 10 gekauften Credits 1'000 je Tag (openrouter.ai/docs/api-reference/limits).
 //     Die Anbieter kostenloser Modelle dürfen Eingaben für das Training nutzen (docs/DATENSCHUTZ-FAKTEN.md). Modelle: OPENROUTER_MODELS.
@@ -42,8 +46,10 @@ export function describeAiError(error: unknown, depth = 0): string {
 
 // ---- Anbieter mit OpenAI-kompatibler Schnittstelle (Mistral direkt, OpenRouter) -------------------------------------
 
-export type AiProvider = "openrouter" | "gateway" | "mistral";
+export type AiProvider = "anthropic" | "openrouter" | "gateway" | "mistral";
 
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_VERSION = "2023-06-01";
 const MISTRAL_URL = "https://api.mistral.ai/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const DEFAULT_MISTRAL_MODELS = ["mistral-small-latest", "open-mistral-nemo"];
@@ -91,17 +97,65 @@ export function openrouterKey(env: Record<string, string | undefined> = process.
   return env.OPENROUTER_API_KEY || env.openrouter_api_key || undefined;
 }
 
+// Claude direkt bei Anthropic. Haiku 5.5 zuerst: Es kostet rund 0,001 US-Dollar je Entwurf; Sonnet 5.5 antwortet, wenn Haiku zweimal
+// keinen gültigen Entwurf liefert. Modell-Kennungen ohne Datum (Anthropic-Liste, 18.10.2026).
+export const DEFAULT_ANTHROPIC_MODELS = ["claude-haiku-5-5", "claude-sonnet-5-5"];
+
+/** Listenpreise in US-Dollar je Million Token (Eingabe, Ausgabe), Anthropic-Preisliste, Stand 18.10.2026. Haiku 5.5: bis 100'000 Token Prompt. */
+export const ANTHROPIC_PRICES: Record<string, readonly [number, number]> = {
+  "claude-haiku-5-5": [0.1, 0.5],
+  "claude-sonnet-5-5": [2, 10],
+  "claude-sonnet-5": [2, 10],
+  "claude-opus-5-5": [4, 20],
+  "claude-opus-5": [5, 25],
+  "claude-fable-5-1": [10, 50],
+  "claude-haiku-4-5": [1, 5],
+  "claude-sonnet-4-6": [3, 15],
+};
+/** Unbekanntes Modell: der höchste Preis, damit das Tagesbudget eher zu früh als zu spät greift. */
+const ANTHROPIC_PRICE_FALLBACK: readonly [number, number] = [10, 50];
+
+/** Anthropic-Modelle aus ANTHROPIC_MODELS (kommagetrennt, erstes zuerst, bis zu drei); ungültige Einträge fallen weg, leer gilt der Standard. */
+export function anthropicModelsFromEnv(raw: string | undefined = process.env.ANTHROPIC_MODELS): string[] {
+  const list = (raw ?? "")
+    .split(",")
+    .map((m) => m.trim())
+    .filter((m) => /^claude-[a-z0-9][a-z0-9.-]*$/i.test(m))
+    .slice(0, 3);
+  return list.length > 0 ? list : DEFAULT_ANTHROPIC_MODELS;
+}
+
+/** Schlüssel von Anthropic, gross oder klein geschrieben. */
+export function anthropicKey(env: Record<string, string | undefined> = process.env): string | undefined {
+  return env.ANTHROPIC_API_KEY || env.anthropic_api_key || undefined;
+}
+
+/** Kosten einer Antwort in US-Dollar aus `usage`: Eingabe, Ausgabe und, falls vorhanden, Schreiben (1,25 fach) und Lesen (0,1 fach) des Zwischenspeichers. */
+export function anthropicCostUsd(model: string, usage: unknown): number {
+  const u = (usage ?? {}) as Record<string, unknown>;
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0);
+  const [pin, pout] = ANTHROPIC_PRICES[model] ?? ANTHROPIC_PRICE_FALLBACK;
+  const input = num(u.input_tokens) + num(u.cache_creation_input_tokens) * 1.25 + num(u.cache_read_input_tokens) * 0.1;
+  return (input * pin + num(u.output_tokens) * pout) / 1_000_000;
+}
+
 /**
- * Welcher Weg gilt? AI_PROVIDER nennt ihn ausdrücklich (openrouter, gateway, mistral). Ohne Angabe gilt OpenRouter, wenn ein Schlüssel
- * da ist, sonst das Gateway. Mistral direkt nur auf ausdrücklichen Wunsch: Ein vergessener Schlüssel soll nicht still den Weg ersetzen.
+ * Welcher Weg gilt? AI_PROVIDER nennt ihn ausdrücklich (anthropic, openrouter, gateway, mistral). Ohne Angabe gilt Anthropic, wenn
+ * ANTHROPIC_API_KEY da ist, dann OpenRouter, wenn dessen Schlüssel da ist, sonst das Gateway. Mistral direkt nur auf ausdrücklichen Wunsch: Ein vergessener Schlüssel soll nicht still den Weg ersetzen.
  * Fehlt zu einem genannten Weg der Schlüssel, gilt das Gateway.
  */
 export function aiProvider(env: Record<string, string | undefined> = process.env): AiProvider {
   const want = env.AI_PROVIDER?.trim().toLowerCase();
   if (want === "gateway") return "gateway";
   if (want === "mistral") return mistralKey(env) ? "mistral" : "gateway";
+  if ((want === "anthropic" || !want) && anthropicKey(env)) return "anthropic";
   if ((want === "openrouter" || !want) && openrouterKey(env)) return "openrouter";
   return "gateway";
+}
+
+/** Läuft die KI über Anthropic direkt? */
+export function usesAnthropic(env: Record<string, string | undefined> = process.env): boolean {
+  return aiProvider(env) === "anthropic";
 }
 
 /** Läuft die KI über Mistral direkt? Nur auf ausdrücklichen Wunsch (AI_PROVIDER=mistral) und mit Schlüssel. */
@@ -169,13 +223,15 @@ function contentText(content: unknown): string {
 }
 
 type Endpoint = {
-  label: "Mistral" | "OpenRouter";
+  label: "Mistral" | "OpenRouter" | "Anthropic";
   url: string;
   jsonMode: boolean;
   /** Zusätzliche Felder im Anfrage-Körper. */
   extra?: Record<string, unknown>;
   /** Fehlercodes, bei denen ein anderes Modell nichts nützt (falscher Schlüssel). Sonst geht es mit dem nächsten Modell weiter. */
   fatal: (status: number) => boolean;
+  /** Eigener Aufruf statt der OpenAI-kompatiblen Schnittstelle (Anthropic). */
+  send?: (model: string, args: ChatArgs, key: string, fetchImpl: typeof fetch, history: History, timeoutMs: number) => Promise<ChatReply>;
 };
 
 type ChatReply = { text: string; /** true, wenn der Anbieter wegen der Ausgabegrenze abgebrochen hat (finish_reason «length»). */ truncated: boolean };
@@ -235,7 +291,8 @@ async function chatWithFallback(ep: Endpoint, models: string[], args: ChatArgs, 
       const left = deadline - Date.now();
       if (left < MIN_ATTEMPT_MS) throw last ?? new MistralError(`${ep.label}Timeout`);
       try {
-        const { text, truncated } = await chatOnce(ep, model, args, key, fetchImpl, history, Math.min(args.timeoutMs, left));
+        const timeout = Math.min(args.timeoutMs, left);
+        const { text, truncated } = await (ep.send ? ep.send(model, args, key, fetchImpl, history, timeout) : chatOnce(ep, model, args, key, fetchImpl, history, timeout));
         // Eine abgeschnittene Antwort ist nie vollständig, auch wenn sie sonst lesbar aussieht (Freitext ohne `accept`).
         const verdict = truncated ? TRUNCATED_HINT : args.accept ? args.accept(text) : true;
         if (verdict === true) return text;
@@ -253,6 +310,84 @@ async function chatWithFallback(ep: Endpoint, models: string[], args: ChatArgs, 
     }
   }
   throw last;
+}
+
+/**
+ * Die Anfrage an die Messages-API von Anthropic. Ohne `temperature`: Haiku 5.5 und Sonnet 5.5 lehnen jeden anderen Wert als den
+ * Standard mit 400 ab. Denken ist ausgeschaltet (Haiku: `disabled`, Sonnet: `between_tools`), damit die Ausgabegrenze für den Entwurf
+ * reicht und die Antwort schnell kommt; die Modelle der Opus- und Fable-Reihe können es nicht ausschalten und bekommen niedrigen Aufwand.
+ * Antwort ohne Text, `refusal` und Netzfehler gelten als Fehler des Modells (das nächste kommt dran); nichts davon trägt Text des Anbieters.
+ */
+export function anthropicBody(model: string, args: ChatArgs, history: History): Record<string, unknown> {
+  const thinking: Record<string, unknown> = /^claude-haiku-5/.test(model)
+    ? { thinking: { type: "disabled" } }
+    : /^claude-sonnet-5-5/.test(model)
+      ? { thinking: { type: "between_tools" } }
+      : /^claude-(opus-5|fable|mythos)/.test(model)
+        ? { output_config: { effort: "low" } }
+        : {};
+  return {
+    model,
+    max_tokens: args.maxTokens,
+    system: args.system,
+    messages: [{ role: "user", content: args.prompt }, ...history],
+    ...thinking,
+  };
+}
+
+async function anthropicSend(model: string, args: ChatArgs, key: string, fetchImpl: typeof fetch, history: History, timeoutMs: number, workspaceId?: string): Promise<ChatReply> {
+  let res: Response;
+  try {
+    res = await fetchImpl(ANTHROPIC_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": ANTHROPIC_VERSION,
+        ...(workspaceId ? { "anthropic-workspace-id": workspaceId } : {}),
+      },
+      body: JSON.stringify(anthropicBody(model, args, history)),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (e) {
+    throw new MistralError((e as { name?: string })?.name === "TimeoutError" ? "AnthropicTimeout" : "AnthropicNetworkError");
+  }
+  if (!res.ok) throw new MistralError("AnthropicHttpError", res.status);
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    throw new MistralError("AnthropicBadResponse");
+  }
+  const body = data as { content?: Array<{ type?: unknown; text?: unknown }>; stop_reason?: unknown; usage?: unknown };
+  // Die Kosten zählen, sobald Anthropic geantwortet hat, auch wenn die Antwort danach abgelehnt wird.
+  args.onUsage?.({ model, costUsd: anthropicCostUsd(model, body?.usage), free: false });
+  if (body?.stop_reason === "refusal") throw new MistralError("AnthropicRefusal");
+  const text = (Array.isArray(body?.content) ? body.content : [])
+    .map((b) => (b?.type === "text" && typeof b.text === "string" ? b.text : ""))
+    .join("")
+    .trim();
+  if (!text) throw new MistralError("AnthropicEmptyError");
+  return { text, truncated: body?.stop_reason === "max_tokens" };
+}
+
+/**
+ * Eine Anfrage an Claude bei Anthropic. Ein anderes Modell hilft bei jedem Fehler ausser einem ungültigen oder gesperrten Schlüssel
+ * (401, 403). Ist das Tagesbudget der Adresse aufgebraucht (`freeOnly`), antwortet nur das erste, günstigste Modell der Liste.
+ */
+export async function anthropicChat(args: ChatArgs, fetchImpl: typeof fetch = fetch, env: Record<string, string | undefined> = process.env): Promise<string> {
+  const key = anthropicKey(env);
+  if (!key) throw new MistralError("AnthropicNoKey");
+  const workspaceId = env.ANTHROPIC_WORKSPACE_ID?.trim() || undefined;
+  const ep: Endpoint = {
+    label: "Anthropic",
+    url: ANTHROPIC_URL,
+    jsonMode: false,
+    fatal: (status) => status === 401 || status === 403,
+    send: (model, a, k, f, h, t) => anthropicSend(model, a, k, f, h, t, workspaceId),
+  };
+  const models = anthropicModelsFromEnv(env.ANTHROPIC_MODELS);
+  return chatWithFallback(ep, args.freeOnly ? models.slice(0, 1) : models, args, key, fetchImpl);
 }
 
 /** Eine Anfrage an Mistral (direkt, bezahlter Plan). */
@@ -301,7 +436,7 @@ function acceptEinordnung(text: string, fakten: Fakten): true | string {
 
 export type GenerateRaw = (fakten: Fakten, opts?: AiCallOpts) => Promise<unknown>;
 
-/** Wahl des Budgets und Kostenmeldung eines Aufrufs; gilt nur für OpenRouter (die anderen Wege melden keine Kosten). */
+/** Wahl des Budgets und Kostenmeldung eines Aufrufs; gilt für Anthropic und OpenRouter (die anderen Wege melden keine Kosten). */
 export type AiCallOpts = Pick<ChatArgs, "freeOnly" | "onUsage">;
 
 const EINORDNUNG_FORM = `Antworte ausschliesslich mit einem JSON-Objekt in genau dieser Form: {"zusammenfassung": "…", "prioritaeten": [{"schritt": "id aus schritte", "text": "…"}]}.`;
@@ -309,7 +444,7 @@ const EINORDNUNG_FORM = `Antworte ausschliesslich mit einem JSON-Objekt in genau
 export const generateRaw: GenerateRaw = async (fakten, opts) => {
   const provider = aiProvider();
   if (provider !== "gateway") {
-    const chat = provider === "openrouter" ? openrouterChat : mistralChat;
+    const chat = provider === "anthropic" ? anthropicChat : provider === "openrouter" ? openrouterChat : mistralChat;
     const text = await chat({ system: `${SYSTEM_PROMPT}\n${EINORDNUNG_FORM}`, prompt: userPrompt(fakten), maxTokens: 700, temperature: 0.3, json: true, timeoutMs: 25_000, budgetMs: 38_000, ...opts, accept: (t) => acceptEinordnung(t, fakten) });
     const value = parseJsonObject(text); // geprüft wird danach in pruefeEinordnung
     if (value === null) throw new MistralError("AiBadJson");
@@ -353,7 +488,7 @@ export const generateJson: GenerateJson = async ({ system, prompt, maxOutputToke
   let text: string;
   const provider = aiProvider();
   if (provider !== "gateway") {
-    const chat = provider === "openrouter" ? openrouterChat : mistralChat;
+    const chat = provider === "anthropic" ? anthropicChat : provider === "openrouter" ? openrouterChat : mistralChat;
     text = await chat({ system, prompt, maxTokens: maxOutputTokens, temperature, json: true, timeoutMs: 40_000, budgetMs: 45_000, freeOnly, onUsage, accept: (t) => {
       const v = parseJsonObject(t);
       return v === null ? "Antworte ausschliesslich mit einem JSON-Objekt in genau der verlangten Form." : accept ? accept(v) : true;
@@ -389,7 +524,7 @@ export type GenerateFreeText = (args: {
 export const generateFreeText: GenerateFreeText = async ({ system, prompt, maxOutputTokens, accept, freeOnly, onUsage }) => {
   const provider = aiProvider();
   if (provider !== "gateway") {
-    const chat = provider === "openrouter" ? openrouterChat : mistralChat;
+    const chat = provider === "anthropic" ? anthropicChat : provider === "openrouter" ? openrouterChat : mistralChat;
     return chat({ system, prompt, maxTokens: maxOutputTokens, temperature: 0.5, timeoutMs: 30_000, budgetMs: 40_000, accept, freeOnly, onUsage });
   }
   const [model, ...fallbacks] = modelsFromEnv();

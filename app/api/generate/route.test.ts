@@ -3,6 +3,7 @@ import { z } from "zod";
 import { MemoryStore, SECRET, gateCookie, post } from "@/tests/helpers";
 import type { AiStore } from "@/lib/ai-quota";
 import { defineGenerator } from "@/lib/generator";
+import { dayKey, keys } from "@/lib/redis";
 
 const store = new MemoryStore();
 const limit = vi.hoisted(() => ({ allow: true }));
@@ -65,7 +66,10 @@ beforeEach(() => {
   logs = [];
   vi.spyOn(console, "log").mockImplementation((...a) => void logs.push(a.join(" ")));
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 describe("POST /api/generate", () => {
   it("liefert den geprüften Entwurf und gibt Regeln, Aufgabe und Eingaben an die KI weiter", async () => {
@@ -95,6 +99,27 @@ describe("POST /api/generate", () => {
     // eine andere Adresse bleibt bezahlt
     expect((await call(body(), gateCookie("bea@muster.ch"))).status).toBe(200);
     expect((gen.fn.mock.calls[2][0] as { freeOnly: boolean }).freeOnly).toBe(false);
+  });
+
+  it("hört mit Anthropic beim globalen Tagesbudget auf: 503, kein Aufruf der KI, der Platz kommt zurück", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-test");
+    const day = dayKey(new Date());
+    ai.counters.set(keys.aiCostGlobal(day), 3_125_000); // 250 Rappen = 3,125 US-Dollar
+    const res = await call();
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "capacity" });
+    expect(gen.fn).not.toHaveBeenCalled();
+    expect(ai.counters.get(keys.aiGlobal(day))).toBe(0);
+    // knapp darunter wird noch geantwortet
+    ai.counters.set(keys.aiCostGlobal(day), 3_124_999);
+    expect((await call()).status).toBe(200);
+  });
+
+  it("antwortet ohne Anthropic auch nach dem globalen Budget (nur kostenlose Modelle)", async () => {
+    const day = dayKey(new Date());
+    ai.counters.set(keys.aiCostGlobal(day), 99_000_000);
+    expect((await call()).status).toBe(200);
+    expect((gen.fn.mock.calls[0][0] as { freeOnly: boolean }).freeOnly).toBe(true);
   });
 
   it("bucht auch die Kosten eines Aufrufs, der keinen Entwurf liefert", async () => {

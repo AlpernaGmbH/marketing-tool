@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { accountHash, clientIp, gateSecret, ipHash, readGateCookie } from "@/lib/access";
-import { budgetMode, defaultAiStore, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot } from "@/lib/ai-quota";
+import { aiStopsAtBudget, budgetMode, defaultAiStore, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot } from "@/lib/ai-quota";
 import { describeAiError, generateFreeText } from "@/lib/ai";
 import { readJson, respond } from "@/lib/api";
 import { withinLimit } from "@/lib/ratelimit";
@@ -53,6 +53,10 @@ export async function POST(req: NextRequest) {
   // Tagesbudget: Ist es aufgebraucht, antworten nur kostenlose Modelle (lib/ai-quota.ts).
   const mode = await budgetMode(store, acchash, spendLimitsFromEnv());
   if (mode === "global") await notifyCapacity(store, limits, new Date(), fetch, process.env, "ki_budget");
+  if (aiStopsAtBudget(mode)) {
+    await releaseSlot(store, null, new Date(), "text");
+    return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity", "budget");
+  }
   const spend = spendCollector();
   // Eine leere, zu kurze, abgelehnte oder unveränderte Antwort geht mit einem Hinweis zurück an dasselbe Modell (zweiter Versuch), danach ans nächste.
   const acceptText = (raw: string): true | string => {

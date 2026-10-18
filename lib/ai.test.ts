@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_AI_MODELS, DEFAULT_MISTRAL_MODELS, DEFAULT_OPENROUTER_MODELS, MistralError, aiProvider, describeAiError, mistralChat, mistralKey, mistralModelsFromEnv, openrouterChat, openrouterModelsFromEnv, usesMistral, usesOpenrouter } from "@/lib/ai";
+import { ANTHROPIC_PRICES, DEFAULT_AI_MODELS, DEFAULT_ANTHROPIC_MODELS, DEFAULT_MISTRAL_MODELS, DEFAULT_OPENROUTER_MODELS, MistralError, aiProvider, anthropicBody, anthropicChat, anthropicCostUsd, anthropicKey, anthropicModelsFromEnv, describeAiError, mistralChat, mistralKey, mistralModelsFromEnv, openrouterChat, openrouterModelsFromEnv, usesAnthropic, usesMistral, usesOpenrouter } from "@/lib/ai";
 import { freeModelsOf, generateJson, modelsFromEnv, type AiUsage } from "@/lib/ai";
 
 describe("modelsFromEnv", () => {
@@ -353,5 +353,204 @@ describe("Kosten, Abschnitt der Antwort und Gratisweg bei OpenRouter", () => {
     const fetchImpl = vi.fn(async () => reply("Abgeschnitten", {}, "length"));
     await expect(openrouterChat(ARGS, asFetch(fetchImpl), ENV)).rejects.toMatchObject({ name: "AiBadJson" });
     expect(fetchImpl).toHaveBeenCalledTimes(6); // 3 Modelle zu je 2 Versuchen
+  });
+});
+
+describe("Anthropic direkt", () => {
+  const ARGS = { system: "Regeln", prompt: "Ausgangstext", maxTokens: 300, temperature: 0.4, timeoutMs: 5_000 };
+  const ENV = { ANTHROPIC_API_KEY: "sk-test" };
+  const reply = (text: string, extra: Record<string, unknown> = {}, stop: string | undefined = "end_turn") =>
+    new Response(JSON.stringify({ content: text === "" ? [] : [{ type: "text", text }], stop_reason: stop, usage: { input_tokens: 1000, output_tokens: 500 }, ...extra }), { status: 200, headers: { "content-type": "application/json" } });
+  const fail = (status: number) => new Response("{}", { status });
+  const asFetch = (fn: ReturnType<typeof vi.fn>) => fn as unknown as typeof fetch;
+  const bodyOf = (fn: ReturnType<typeof vi.fn>, n = 0) => JSON.parse((fn.mock.calls[n] as unknown as [string, RequestInit])[1].body as string);
+  const headersOf = (fn: ReturnType<typeof vi.fn>, n = 0) => (fn.mock.calls[n] as unknown as [string, RequestInit])[1].headers as Record<string, string>;
+  const [HAIKU, SONNET] = DEFAULT_ANTHROPIC_MODELS;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("wählt den Weg: Anthropic vor OpenRouter, sobald der Schlüssel da ist; AI_PROVIDER kann etwas anderes verlangen", () => {
+    expect(aiProvider(ENV)).toBe("anthropic");
+    expect(aiProvider({ anthropic_api_key: "klein" })).toBe("anthropic");
+    expect(aiProvider({ ...ENV, OPENROUTER_API_KEY: "or" })).toBe("anthropic");
+    expect(aiProvider({ ...ENV, AI_PROVIDER: "anthropic" })).toBe("anthropic");
+    expect(aiProvider({ ...ENV, OPENROUTER_API_KEY: "or", AI_PROVIDER: "openrouter" })).toBe("openrouter");
+    expect(aiProvider({ ...ENV, AI_PROVIDER: "gateway" })).toBe("gateway");
+    expect(aiProvider({ AI_PROVIDER: "anthropic" })).toBe("gateway"); // ohne Schlüssel
+    expect(aiProvider({ AI_PROVIDER: "anthropic", OPENROUTER_API_KEY: "or" })).toBe("gateway"); // kein stiller Wechsel zu einem anderen Anbieter
+    expect(aiProvider({ ...ENV, MISTRAL_API_KEY: "m", AI_PROVIDER: "mistral" })).toBe("mistral");
+    expect(usesAnthropic(ENV)).toBe(true);
+    expect(usesAnthropic({})).toBe(false);
+    expect(anthropicKey({ ANTHROPIC_API_KEY: "gross", anthropic_api_key: "klein" })).toBe("gross");
+  });
+
+  it("liest die Modelle aus ANTHROPIC_MODELS und fällt bei Müll auf Haiku 5.5, dann Sonnet 5.5", () => {
+    expect(DEFAULT_ANTHROPIC_MODELS).toEqual(["claude-haiku-5-5", "claude-sonnet-5-5"]);
+    expect(anthropicModelsFromEnv(undefined)).toEqual(DEFAULT_ANTHROPIC_MODELS);
+    expect(anthropicModelsFromEnv(" claude-sonnet-5-5 , claude-opus-5-5 ")).toEqual(["claude-sonnet-5-5", "claude-opus-5-5"]);
+    expect(anthropicModelsFromEnv("gpt-5,../x,;drop,http://a")).toEqual(DEFAULT_ANTHROPIC_MODELS);
+    expect(anthropicModelsFromEnv("claude-a,claude-b,claude-c,claude-d")).toHaveLength(3);
+  });
+
+  it("rechnet die Kosten aus usage: Haiku 5.5 0,10 / 0,50 und Sonnet 5.5 2 / 10 US-Dollar je Million Token", () => {
+    expect(anthropicCostUsd("claude-haiku-5-5", { input_tokens: 1000, output_tokens: 500 })).toBeCloseTo(0.00035, 8);
+    expect(anthropicCostUsd("claude-sonnet-5-5", { input_tokens: 1000, output_tokens: 500 })).toBeCloseTo(0.007, 8);
+    // Zwischenspeicher: Schreiben 1,25 fach, Lesen 0,1 fach des Eingabepreises
+    expect(anthropicCostUsd("claude-sonnet-5-5", { input_tokens: 0, cache_creation_input_tokens: 1_000_000, cache_read_input_tokens: 1_000_000 })).toBeCloseTo(2.5 + 0.2, 8);
+    // unbekanntes Modell: der höchste Preis, damit das Budget eher zu früh greift
+    expect(anthropicCostUsd("claude-neu-9", { input_tokens: 1_000_000, output_tokens: 0 })).toBeCloseTo(10, 8);
+    for (const junk of [null, undefined, 5, "x", {}, { input_tokens: -3, output_tokens: "viel" }]) expect(anthropicCostUsd("claude-haiku-5-5", junk)).toBe(0);
+    expect(Object.keys(ANTHROPIC_PRICES)).toEqual(expect.arrayContaining(DEFAULT_ANTHROPIC_MODELS));
+  });
+
+  it("schickt Schlüssel, Version und Nachrichten an die Messages-API, ohne temperature, und gibt den Text zurück", async () => {
+    const fetchImpl = vi.fn(async () => reply('{"a": 1}'));
+    expect(await anthropicChat({ ...ARGS, json: true }, asFetch(fetchImpl), ENV)).toBe('{"a": 1}');
+    const [url] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.anthropic.com/v1/messages");
+    expect(headersOf(fetchImpl)).toEqual({ "content-type": "application/json", "x-api-key": "sk-test", "anthropic-version": "2023-06-01" });
+    const body = bodyOf(fetchImpl);
+    expect(body).toEqual({ model: HAIKU, max_tokens: 300, system: "Regeln", messages: [{ role: "user", content: "Ausgangstext" }], thinking: { type: "disabled" } });
+    expect(body.temperature).toBeUndefined(); // Haiku 5.5 und Sonnet 5.5 lehnen Werte ausser dem Standard mit 400 ab
+    expect(body.response_format).toBeUndefined();
+  });
+
+  it("setzt den Kopf anthropic-workspace-id, wenn ANTHROPIC_WORKSPACE_ID gesetzt ist (Schlüssel eines Benutzers)", async () => {
+    const fetchImpl = vi.fn(async () => reply("Text"));
+    await anthropicChat(ARGS, asFetch(fetchImpl), { ...ENV, ANTHROPIC_WORKSPACE_ID: " wrkspc_123 " });
+    expect(headersOf(fetchImpl)["anthropic-workspace-id"]).toBe("wrkspc_123");
+    const without = vi.fn(async () => reply("Text"));
+    await anthropicChat(ARGS, asFetch(without), { ...ENV, ANTHROPIC_WORKSPACE_ID: "  " });
+    expect(headersOf(without)).not.toHaveProperty("anthropic-workspace-id");
+  });
+
+  it("stellt das Denken je Modell so ein, dass die Anfrage gültig ist", () => {
+    const h = [] as Parameters<typeof anthropicBody>[2];
+    expect(anthropicBody("claude-haiku-5-5", ARGS, h).thinking).toEqual({ type: "disabled" });
+    expect(anthropicBody("claude-sonnet-5-5", ARGS, h).thinking).toEqual({ type: "between_tools" }); // «disabled» wäre bei Sonnet 5.5 ein 400
+    expect(anthropicBody("claude-opus-5-5", ARGS, h)).toMatchObject({ output_config: { effort: "low" } });
+    expect(anthropicBody("claude-fable-5-1", ARGS, h)).toMatchObject({ output_config: { effort: "low" } });
+    expect(anthropicBody("claude-opus-5-5", ARGS, h).thinking).toBeUndefined();
+    expect(anthropicBody("claude-haiku-4-5", ARGS, h)).not.toHaveProperty("thinking");
+    for (const m of ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5", "claude-haiku-4-5"]) expect(anthropicBody(m, ARGS, h)).not.toHaveProperty("temperature");
+  });
+
+  it("hängt die abgelehnte Antwort samt Hinweis an und versucht es beim selben Modell noch einmal, dann beim nächsten", async () => {
+    const accept = (t: string) => (t.startsWith("{") ? (true as const) : "Nur JSON bitte.");
+    const same = vi.fn().mockResolvedValueOnce(reply("Hier dein Text ohne JSON.")).mockResolvedValueOnce(reply('{"a": 1}'));
+    expect(await anthropicChat({ ...ARGS, accept }, asFetch(same), ENV)).toBe('{"a": 1}');
+    expect(bodyOf(same, 1).model).toBe(HAIKU);
+    expect(bodyOf(same, 1).messages).toEqual([
+      { role: "user", content: "Ausgangstext" },
+      { role: "assistant", content: "Hier dein Text ohne JSON." },
+      { role: "user", content: "Nur JSON bitte." },
+    ]);
+    const next = vi.fn().mockResolvedValueOnce(reply("kein json")).mockResolvedValueOnce(reply("wieder nicht")).mockResolvedValueOnce(reply('{"b": 2}'));
+    expect(await anthropicChat({ ...ARGS, accept }, asFetch(next), ENV)).toBe('{"b": 2}');
+    expect(bodyOf(next, 2).model).toBe(SONNET);
+    expect(bodyOf(next, 2).messages).toHaveLength(1); // das nächste Modell beginnt ohne Rückmeldung
+    const none = vi.fn(async () => reply("immer Text"));
+    await expect(anthropicChat({ ...ARGS, accept }, asFetch(none), ENV)).rejects.toMatchObject({ name: "AiBadJson" });
+    expect(none).toHaveBeenCalledTimes(DEFAULT_ANTHROPIC_MODELS.length * 2);
+  });
+
+  it("versucht bei Überlastung, Serverfehler, Verweigerung oder leerer Antwort das nächste Modell", async () => {
+    for (const first of [fail(429), fail(529), fail(500), fail(400), fail(404), reply("", {}, "end_turn"), reply("", {}, "refusal"), reply("Text", {}, "refusal")]) {
+      const fetchImpl = vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce(reply("Zweites Modell."));
+      expect(await anthropicChat(ARGS, asFetch(fetchImpl), ENV)).toBe("Zweites Modell.");
+      expect(bodyOf(fetchImpl, 1).model).toBe(SONNET);
+    }
+    const all = vi.fn(async () => fail(529));
+    await expect(anthropicChat(ARGS, asFetch(all), ENV)).rejects.toMatchObject({ name: "AnthropicHttpError", statusCode: 529 });
+    expect(all).toHaveBeenCalledTimes(DEFAULT_ANTHROPIC_MODELS.length);
+    expect(describeAiError(new MistralError("AnthropicHttpError", 429))).toBe("AnthropicHttpError:429");
+  });
+
+  it("versucht bei einem ungültigen oder gesperrten Schlüssel (401, 403) nichts weiter", async () => {
+    for (const status of [401, 403]) {
+      const fetchImpl = vi.fn(async () => fail(status));
+      await expect(anthropicChat(ARGS, asFetch(fetchImpl), ENV)).rejects.toMatchObject({ name: "AnthropicHttpError", statusCode: status });
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("zeigt eine an der Ausgabegrenze abgeschnittene Antwort nie, sondern verlangt eine kürzere", async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(reply("Der Text bricht mitten im Sa", {}, "max_tokens")).mockResolvedValueOnce(reply("Der vollständige Text."));
+    expect(await anthropicChat(ARGS, asFetch(fetchImpl), ENV)).toBe("Der vollständige Text.");
+    expect(bodyOf(fetchImpl, 1).model).toBe(HAIKU);
+    expect(bodyOf(fetchImpl, 1).messages[2].content).toContain("abgeschnitten");
+    const always = vi.fn(async () => reply("Abgeschnitten", {}, "max_tokens"));
+    await expect(anthropicChat(ARGS, asFetch(always), ENV)).rejects.toMatchObject({ name: "AiBadJson" });
+    expect(always).toHaveBeenCalledTimes(DEFAULT_ANTHROPIC_MODELS.length * 2);
+  });
+
+  it("meldet die Kosten jeder Antwort, auch einer später abgelehnten oder verweigerten, nie jedoch bei einem Fehlerstatus", async () => {
+    const usages: AiUsage[] = [];
+    const accept = (t: string) => (t.startsWith("{") ? (true as const) : "Nur JSON.");
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(reply("kein json")) // Haiku, abgelehnt: 1000 / 500 Token
+      .mockResolvedValueOnce(fail(529)) // Haiku, Fehlerstatus: keine Kosten
+      .mockResolvedValueOnce(reply("", { usage: { input_tokens: 1000, output_tokens: 20 } }, "refusal")) // Sonnet, verweigert
+      .mockResolvedValueOnce(reply('{"a": 1}', { usage: { input_tokens: 2000, output_tokens: 100 } })); // Opus
+    const env = { ...ENV, ANTHROPIC_MODELS: "claude-haiku-5-5,claude-sonnet-5-5,claude-opus-5-5" };
+    await anthropicChat({ ...ARGS, accept, onUsage: (u) => usages.push(u) }, asFetch(fetchImpl), env);
+    expect(usages.map((u) => u.model)).toEqual(["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"]);
+    expect(usages.every((u) => !u.free)).toBe(true);
+    expect(usages[0].costUsd).toBeCloseTo(0.00035, 8);
+    expect(usages[1].costUsd).toBeCloseTo(0.0022, 8);
+    expect(usages[2].costUsd).toBeCloseTo(0.01, 8);
+  });
+
+  it("nimmt mit freeOnly (Budget der Adresse aufgebraucht) nur das erste, günstigste Modell", async () => {
+    const fetchImpl = vi.fn(async () => reply("Text"));
+    await anthropicChat({ ...ARGS, freeOnly: true }, asFetch(fetchImpl), { ...ENV, ANTHROPIC_MODELS: "claude-sonnet-5-5,claude-opus-5-5" });
+    expect(bodyOf(fetchImpl).model).toBe("claude-sonnet-5-5");
+    const down = vi.fn(async () => fail(529));
+    await expect(anthropicChat({ ...ARGS, freeOnly: true }, asFetch(down), ENV)).rejects.toMatchObject({ name: "AnthropicHttpError" });
+    expect(down).toHaveBeenCalledTimes(1);
+  });
+
+  it("wirft ohne Schlüssel, bei Netzfehlern, Zeitüberschreitung und unlesbarer Antwort mit lesbarer Fehlerart", async () => {
+    await expect(anthropicChat(ARGS, asFetch(vi.fn()), {})).rejects.toMatchObject({ name: "AnthropicNoKey" });
+    const net = vi.fn(async () => {
+      throw new TypeError("fetch failed: Malerei Keller");
+    });
+    const err = await anthropicChat(ARGS, asFetch(net), { ...ENV, ANTHROPIC_MODELS: "claude-haiku-5-5" }).catch((e: unknown) => e);
+    expect(err).toMatchObject({ name: "AnthropicNetworkError" });
+    expect(describeAiError(err)).not.toContain("Malerei");
+    const slow = vi.fn(async () => {
+      throw Object.assign(new Error("zu lang"), { name: "TimeoutError" });
+    });
+    await expect(anthropicChat(ARGS, asFetch(slow), { ...ENV, ANTHROPIC_MODELS: "claude-haiku-5-5" })).rejects.toMatchObject({ name: "AnthropicTimeout" });
+    const junk = vi.fn(async () => new Response("<html>", { status: 200 }));
+    await expect(anthropicChat(ARGS, asFetch(junk), { ...ENV, ANTHROPIC_MODELS: "claude-haiku-5-5" })).rejects.toMatchObject({ name: "AnthropicBadResponse" });
+  });
+
+  it("hält die Gesamtzeit ein: bleibt weniger als 5 Sekunden, beginnt kein Versuch mehr", async () => {
+    const fetchImpl = vi.fn(async () => reply("Text"));
+    await expect(anthropicChat({ ...ARGS, accept: () => "abgelehnt", budgetMs: 4_000 }, asFetch(fetchImpl), ENV)).rejects.toMatchObject({ name: "AnthropicTimeout" });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("generateJson läuft über Anthropic, sobald ANTHROPIC_API_KEY gesetzt ist, und gibt Kosten weiter", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-test");
+    vi.stubEnv("AI_PROVIDER", "");
+    vi.stubEnv("OPENROUTER_API_KEY", "");
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(reply('```json\n{"titel": "Zu kurz"}\n```'))
+      .mockResolvedValueOnce(reply('{"titel": "Lang genug für die Prüfung"}'));
+    vi.stubGlobal("fetch", fetchImpl);
+    const usages: AiUsage[] = [];
+    const accept = (v: unknown) => (String((v as { titel?: string }).titel).length > 10 ? (true as const) : "Der Titel ist zu kurz.");
+    const out = await generateJson({ system: "s", prompt: "p", maxOutputTokens: 100, accept, onUsage: (u) => usages.push(u) });
+    expect(out).toEqual({ titel: "Lang genug für die Prüfung" });
+    expect((fetchImpl.mock.calls[0] as unknown as [string])[0]).toBe("https://api.anthropic.com/v1/messages");
+    expect(bodyOf(fetchImpl, 1).messages[2]).toEqual({ role: "user", content: "Der Titel ist zu kurz." });
+    expect(usages).toHaveLength(2);
   });
 });

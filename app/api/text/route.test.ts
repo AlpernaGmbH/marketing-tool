@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryStore, SECRET, gateCookie, post } from "@/tests/helpers";
 import type { AiStore } from "@/lib/ai-quota";
+import { dayKey, keys } from "@/lib/redis";
 
 const store = new MemoryStore();
 const limit = vi.hoisted(() => ({ allow: true }));
@@ -59,7 +60,10 @@ beforeEach(() => {
   logs = [];
   vi.spyOn(console, "log").mockImplementation((...a) => void logs.push(a.join(" ")));
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 describe("POST /api/text", () => {
   it("liefert den umgeschriebenen Text und gibt Text, Stil und Anrede an die KI weiter", async () => {
@@ -135,6 +139,19 @@ describe("POST /api/text", () => {
     const cap = await call();
     expect(cap.status).toBe(503);
     expect(await cap.json()).toEqual({ error: "capacity" });
+  });
+
+  it("hört mit Anthropic beim globalen Tagesbudget auf: 503, kein Aufruf der KI, der Platz kommt zurück", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-test");
+    const day = dayKey(new Date());
+    ai.counters.set(keys.aiCostGlobal(day), 3_125_000); // 250 Rappen = 3,125 US-Dollar
+    const res = await call();
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "capacity" });
+    expect(gen.fn).not.toHaveBeenCalled();
+    expect(ai.counters.get(keys.aiGlobal(day))).toBe(0);
+    ai.counters.set(keys.aiCostGlobal(day), 3_124_999);
+    expect((await call()).status).toBe(200);
   });
 
   it("zählt nur die globale Tagesgrenze, nichts pro Person", async () => {

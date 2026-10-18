@@ -6,6 +6,7 @@ import { buildFakten } from "@/lib/check/ai";
 import { signResult } from "@/lib/check/sign";
 import type { CheckResult } from "@/lib/check/types";
 import type { AiStore } from "@/lib/ai-quota";
+import { dayKey, keys } from "@/lib/redis";
 
 const store = new MemoryStore();
 const limit = vi.hoisted(() => ({ allow: true }));
@@ -74,7 +75,10 @@ beforeEach(async () => {
   logs = [];
   vi.spyOn(console, "log").mockImplementation((...a) => void logs.push(a.join(" ")));
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 /** `cookie: null` heisst: ohne Cookie (undefined würde den Standard ziehen). */
 const call = (result: unknown = signed, ip = IP, cookie: string | null = COOKIE) => POST(post("/api/ai", { result }, { ip, cookie: cookie ?? undefined }));
@@ -145,6 +149,26 @@ describe("POST /api/ai", () => {
     const second = await call(r2);
     expect(second.status).toBe(503);
     expect(await second.json()).toEqual({ error: "capacity" });
+  });
+
+  it("hört mit Anthropic beim globalen Tagesbudget auf: 503, kein Aufruf der KI, Platz der Adresse und des Tages kommen zurück", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-test");
+    const day = dayKey(new Date());
+    ai.counters.set(keys.aiCostGlobal(day), 3_125_000); // 250 Rappen = 3,125 US-Dollar
+    const res = await call();
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "capacity" });
+    expect(gen.fn).not.toHaveBeenCalled();
+    expect(ai.counters.get(keys.aiGlobal(day))).toBe(0);
+    expect([...ai.counters.entries()].filter(([k]) => k.startsWith("ai:") && !k.startsWith("ai:global:")).every(([, v]) => v === 0)).toBe(true);
+    expect(ai.cache.size).toBe(0);
+    // Eine schon vorhandene Einordnung kostet nichts und kommt weiterhin aus dem Zwischenspeicher.
+    ai.counters.set(keys.aiCostGlobal(day), 0);
+    expect((await call()).status).toBe(200);
+    ai.counters.set(keys.aiCostGlobal(day), 3_125_000);
+    const again = await call();
+    expect(again.status).toBe(200);
+    expect(await again.json()).toMatchObject({ cached: true });
   });
 
   it("meldet 502, wenn die KI ausfällt, und speichert nichts", async () => {
