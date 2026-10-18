@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   if (mode === "global") await notifyCapacity(store, limits, new Date(), fetch, process.env, "ki_budget");
   if (aiStopsAtBudget(mode)) {
     await releaseSlot(store, null, new Date(), "text");
-    return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity", "budget");
+    return respond(ROUTE, 503, { error: "capacity" }, "ai_capacity", `budget:${mode}`);
   }
   const spend = spendCollector();
 

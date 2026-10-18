@@ -58,9 +58,9 @@ popular:<slug> (Zähler je gesendetem Ergebnis), ai:<acchash>:<YYYY-MM-DD>
 (Einordnungen pro Adresse) und ai:global:<YYYY-MM-DD> (TTL 2 Tage),
 aicost:<acchash>:<YYYY-MM-DD> und aicost:global:<YYYY-MM-DD> (KI-Ausgaben in
 Millionstel Dollar aus usage.cost bzw. mit Anthropic aus usage und Preisliste,
-TTL 2 Tage; ab 30 Rappen je Adresse und Tag antwortet nur noch das erste, günstigste
-bzw. kostenlose Modell; global CHF 5.- (mit Anthropic 250 Rappen) und dann nur noch
-kostenlose Modelle, mit Anthropic gar keine KI bis zum nächsten Tag, lib/ai-quota.ts),
+TTL 2 Tage; ohne Anthropic ab 30 Rappen je Adresse und Tag nur noch kostenlose Modelle, global
+CHF 5.- und dann ebenso; mit Anthropic 5 Rappen je Adresse und 25 Rappen global, danach gar
+keine KI bis zum nächsten Tag, lib/ai-quota.ts),
 known:<acchash> (Mail «neuer Lead» schon ausgelöst, TTL 365 Tage),
 aicache:<hash der Signatur> (fertige Einordnung, TTL 24 Stunden), rl:<name>
 (Ratenbegrenzung), lead_queue (Liste). Keine Zähler pro Besucher, keine
@@ -144,7 +144,7 @@ analyze.ts, seo.ts, social.ts, gbp.ts, detect.ts, massnahmen.ts, client.ts,
 sign.ts (Signatur des Ergebnisses), ai.ts (Fakten, Prompt, Prüfung der KI-Antwort),
 ai-client.ts (Browser)
 - lib/ai.ts, lib/ai-quota.ts – KI: seit 18.10.2026 direkt bei Anthropic (Claude Haiku 5.5, dann Sonnet 5.5; mit ANTHROPIC_API_KEY,
-Monatsbudget 100 US-Dollar, globales Tagesbudget 250 Rappen als harte Grenze), sonst über OpenRouter (kostenlose Modelle, mit
+rund 10 US-Dollar im Monat, Tagesbudget 25 Rappen global und 5 Rappen je Adresse als harte Grenze), sonst über OpenRouter (kostenlose Modelle, mit
 OPENROUTER_API_KEY), das Vercel AI Gateway (gekauftes Guthaben, AI_MODELS) oder mit AI_PROVIDER=mistral direkt bei Mistral
 (bezahlter Plan); Tageslimits, Zwischenspeicher und die Tagesmeldung per n8n (ALERT_WEBHOOK_URL)
 - lib/generator.ts, lib/generate-client.ts – Generatoren: Regeln der Alperna-Stimme, Prüfung

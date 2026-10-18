@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryStore, SECRET, gateCookie, post } from "@/tests/helpers";
-import { ipHash } from "@/lib/access";
+import { accountHash, ipHash } from "@/lib/access";
 import { sampleResult } from "@/lib/check/fixtures";
 import { buildFakten } from "@/lib/check/ai";
 import { signResult } from "@/lib/check/sign";
@@ -154,7 +154,7 @@ describe("POST /api/ai", () => {
   it("hört mit Anthropic beim globalen Tagesbudget auf: 503, kein Aufruf der KI, Platz der Adresse und des Tages kommen zurück", async () => {
     vi.stubEnv("ANTHROPIC_API_KEY", "sk-test");
     const day = dayKey(new Date());
-    ai.counters.set(keys.aiCostGlobal(day), 3_125_000); // 250 Rappen = 3,125 US-Dollar
+    ai.counters.set(keys.aiCostGlobal(day), 312_500); // 25 Rappen = 0,3125 US-Dollar
     const res = await call();
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ error: "capacity" });
@@ -165,10 +165,22 @@ describe("POST /api/ai", () => {
     // Eine schon vorhandene Einordnung kostet nichts und kommt weiterhin aus dem Zwischenspeicher.
     ai.counters.set(keys.aiCostGlobal(day), 0);
     expect((await call()).status).toBe(200);
-    ai.counters.set(keys.aiCostGlobal(day), 3_125_000);
+    ai.counters.set(keys.aiCostGlobal(day), 312_500);
     const again = await call();
     expect(again.status).toBe(200);
     expect(await again.json()).toMatchObject({ cached: true });
+  });
+
+  it("hört mit Anthropic beim Tagesbudget einer Adresse (5 Rappen) auf: 429 account_limit, kein Aufruf der KI, andere Adressen antworten weiter", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-test");
+    const day = dayKey(new Date());
+    ai.counters.set(keys.aiCost(accountHash("anna@keller.ch", SECRET), day), 62_500); // 5 Rappen = 0,0625 US-Dollar
+    const res = await call();
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "account_limit" });
+    expect(gen.fn).not.toHaveBeenCalled();
+    expect(ai.counters.get(keys.aiGlobal(day))).toBe(0);
+    expect((await call(signed, IP, gateCookie("bea@muster.ch"))).status).toBe(200);
   });
 
   it("meldet 502, wenn die KI ausfällt, und speichert nichts", async () => {

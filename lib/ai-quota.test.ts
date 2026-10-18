@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC, RP_PER_USD, aiStopsAtBudget, budgetMode, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot, type AiStore, type Limits } from "@/lib/ai-quota";
+import { DEFAULT_ADDRESS_DAILY_RP_ANTHROPIC, DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC, RP_PER_USD, aiStopsAtBudget, budgetMode, limitsFromEnv, notifyCapacity, recordSpend, releaseSlot, spendCollector, spendLimitsFromEnv, takeSlot, type AiStore, type Limits } from "@/lib/ai-quota";
 
 class Memory implements AiStore {
   counters = new Map<string, number>();
@@ -155,25 +155,29 @@ describe("Tagesbudget in Rappen", () => {
     expect(spendLimitsFromEnv({ AI_ADDRESS_DAILY_RP: "viel" }).perAddressRp).toBe(30);
   });
 
-  it("setzt mit Anthropic das globale Tagesbudget auf 250 Rappen (31 Tage knapp 100 US-Dollar), überschreibbar", () => {
+  it("setzt mit Anthropic das globale Tagesbudget auf 25 Rappen (31 Tage knapp 10 US-Dollar) und 5 Rappen je Adresse, überschreibbar", () => {
     const env = { ANTHROPIC_API_KEY: "k" };
-    expect(DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC).toBe(250);
-    expect(spendLimitsFromEnv(env)).toEqual({ perAddressRp: 30, globalRp: 250 });
-    expect(spendLimitsFromEnv({ ...env, AI_GLOBAL_DAILY_RP: "100" }).globalRp).toBe(100);
-    expect(spendLimitsFromEnv({ ...env, AI_PROVIDER: "gateway" }).globalRp).toBe(500);
-    expect(spendLimitsFromEnv({ OPENROUTER_API_KEY: "k" }).globalRp).toBe(500);
-    // 31 Tage mit vollem Tagesbudget bleiben unter dem Monatsbudget von 100 US-Dollar
-    expect((31 * DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC) / RP_PER_USD).toBeLessThan(100);
+    expect(DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC).toBe(25);
+    expect(DEFAULT_ADDRESS_DAILY_RP_ANTHROPIC).toBe(5);
+    expect(spendLimitsFromEnv(env)).toEqual({ perAddressRp: 5, globalRp: 25 });
+    expect(spendLimitsFromEnv({ ...env, AI_GLOBAL_DAILY_RP: "100", AI_ADDRESS_DAILY_RP: "10" })).toEqual({ perAddressRp: 10, globalRp: 100 });
+    expect(spendLimitsFromEnv({ ...env, AI_PROVIDER: "gateway" })).toEqual({ perAddressRp: 30, globalRp: 500 });
+    expect(spendLimitsFromEnv({ OPENROUTER_API_KEY: "k" })).toEqual({ perAddressRp: 30, globalRp: 500 });
+    // 31 Tage mit vollem Tagesbudget bleiben unter 10 US-Dollar, und eine Adresse kann das Tagesbudget nicht allein verbrauchen
+    expect((31 * DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC) / RP_PER_USD).toBeLessThan(10);
+    expect(DEFAULT_ADDRESS_DAILY_RP_ANTHROPIC).toBeLessThan(DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC);
   });
 
-  it("hört mit Anthropic beim globalen Budget ganz auf (kein Gratismodell als Rückfall), sonst nie", () => {
+  it("hört mit Anthropic bei jedem erreichten Tagesbudget ganz auf (kein Gratismodell als Rückfall), sonst nie", () => {
     const anthropic = { ANTHROPIC_API_KEY: "k" };
     expect(aiStopsAtBudget("global", anthropic)).toBe(true);
-    expect(aiStopsAtBudget("address", anthropic)).toBe(false); // nur noch das günstigste Modell
+    expect(aiStopsAtBudget("address", anthropic)).toBe(true);
     expect(aiStopsAtBudget("paid", anthropic)).toBe(false);
-    expect(aiStopsAtBudget("global", {})).toBe(false);
-    expect(aiStopsAtBudget("global", { OPENROUTER_API_KEY: "k" })).toBe(false);
-    expect(aiStopsAtBudget("global", { ...anthropic, AI_PROVIDER: "gateway" })).toBe(false);
+    for (const mode of ["global", "address"] as const) {
+      expect(aiStopsAtBudget(mode, {})).toBe(false);
+      expect(aiStopsAtBudget(mode, { OPENROUTER_API_KEY: "k" })).toBe(false);
+      expect(aiStopsAtBudget(mode, { ...anthropic, AI_PROVIDER: "gateway" })).toBe(false);
+    }
   });
 
   it("antwortet bezahlt, bis eine Adresse 30 Rappen verbraucht hat, dann nur noch kostenlos; andere Adressen bleiben bezahlt", async () => {

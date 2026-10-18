@@ -247,7 +247,7 @@ Anlass: Rückmeldung nach dem Test aller Werkzeuge. Ausgenommen sind die Strateg
 
 **Kostenbasis (OpenRouter, Woche bis 09.10.2026):** 152 Anfragen, USD 0.48. Haiku 4.5: 70 Anfragen, USD 0.44, das sind 0.50 Rp je Anfrage und deckt sich mit dem Modell (0.51 Rp). GPT-4.1 mini (19) und Nemotron (38) stammen aus Messläufen. Ziel ist Haiku 5.5 (USD 0.10 und 0.50 je Million Token, ein Zehntel von Haiku 4.5). Plan-Obergrenze 0.3 Rp im Schnitt je Durchlauf und 1 Rp je Werkzeug.
 
-**Planwechsel 18.10.2026 (Entscheid 67 in STATUS.md):** Die KI läuft direkt über die Claude API (Haiku 5.5, bei Ablehnung Sonnet 5.5), Monatsbudget 100 US-Dollar. Das globale Tagesbudget ist 250 Rappen und eine harte Grenze (31 Tage rund 97 US-Dollar). Rechnung je Entwurf: etwa 1'500 Token Eingabe und 600 Token Ausgabe kosten mit Haiku 5.5 rund 0,0005 US-Dollar, mit Sonnet 5.5 rund 0,009 US-Dollar; die Plan-Obergrenze von 0,3 Rp im Schnitt je Durchlauf bleibt damit nur einhaltbar, solange Sonnet selten antwortet. Das ist Rechnung, nicht Messung.
+**Planwechsel 18.10.2026 (Entscheid 67 in STATUS.md):** Die KI läuft direkt über die Claude API (Haiku 5.5, bei Ablehnung Sonnet 5.5), die Anwendung darf höchstens 10 US-Dollar im Monat ausgeben. Tagesbudget als harte Grenze: 25 Rappen global, 5 Rappen je Adresse. Gemessen am 18.10.2026: im Mittel 0,09 Cent je Entwurf, Sonnet nie gebraucht; damit reicht das Budget für mehrere hundert Entwürfe am Tag. Die Plan-Obergrenze von 0,3 Rp im Schnitt je Durchlauf ist eingehalten (gemessen rund 0,07 Rp).
 
 **Phasen und Reihenfolge:** P0 → P1a → P1b → P1c → P2 → P3 (A, dann C, dann B) → P4.
 

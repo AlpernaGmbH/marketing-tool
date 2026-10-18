@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { MemoryStore, SECRET, gateCookie, post } from "@/tests/helpers";
+import { accountHash } from "@/lib/access";
 import type { AiStore } from "@/lib/ai-quota";
 import { defineGenerator } from "@/lib/generator";
 import { dayKey, keys } from "@/lib/redis";
@@ -104,15 +105,27 @@ describe("POST /api/generate", () => {
   it("hört mit Anthropic beim globalen Tagesbudget auf: 503, kein Aufruf der KI, der Platz kommt zurück", async () => {
     vi.stubEnv("ANTHROPIC_API_KEY", "sk-test");
     const day = dayKey(new Date());
-    ai.counters.set(keys.aiCostGlobal(day), 3_125_000); // 250 Rappen = 3,125 US-Dollar
+    ai.counters.set(keys.aiCostGlobal(day), 312_500); // 25 Rappen = 0,3125 US-Dollar
     const res = await call();
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ error: "capacity" });
     expect(gen.fn).not.toHaveBeenCalled();
     expect(ai.counters.get(keys.aiGlobal(day))).toBe(0);
     // knapp darunter wird noch geantwortet
-    ai.counters.set(keys.aiCostGlobal(day), 3_124_999);
+    ai.counters.set(keys.aiCostGlobal(day), 312_499);
     expect((await call()).status).toBe(200);
+  });
+
+  it("hört mit Anthropic beim Tagesbudget einer Adresse (5 Rappen) auf; andere Adressen antworten weiter", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-test");
+    const day = dayKey(new Date());
+    ai.counters.set(keys.aiCost(accountHash("anna@keller.ch", SECRET), day), 62_500); // 5 Rappen = 0,0625 US-Dollar
+    const res = await call();
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "capacity" });
+    expect(gen.fn).not.toHaveBeenCalled();
+    expect(ai.counters.get(keys.aiGlobal(day))).toBe(0);
+    expect((await call(body(), gateCookie("bea@muster.ch"))).status).toBe(200);
   });
 
   it("antwortet ohne Anthropic auch nach dem globalen Budget (nur kostenlose Modelle)", async () => {

@@ -162,20 +162,27 @@ const MICRO = 1_000_000;
 export type SpendLimits = { perAddressRp: number; globalRp: number };
 
 /**
- * Standard des globalen Tagesbudgets: mit Anthropic 250 Rappen (rund 3,10 US-Dollar am Tag, 31 Tage knapp 100 US-Dollar, das Monatsbudget
- * vom 18.10.2026), sonst 500 Rappen. Mit Anthropic ist das Budget eine harte Grenze: Danach gibt es keine KI mehr bis zum nächsten Tag
- * (`aiStopsAtBudget`), weil es kein kostenloses Modell als Rückfall gibt.
+ * Standard der Tagesbudgets mit Anthropic (Entscheid 18.10.2026: rund 10 US-Dollar im Monat für die KI der Anwendung): global 25 Rappen
+ * (rund 0,31 US-Dollar am Tag, 31 Tage knapp 10 US-Dollar), je Adresse 5 Rappen (gut 60 Entwürfe). Ein Entwurf kostet gemessen rund 0,1 Cent,
+ * 25 Rappen reichen also für mehrere hundert Entwürfe am Tag. Sonst gelten 30 Rappen je Adresse und 500 Rappen global (kostenlose Modelle als
+ * Rückfall). Mit Anthropic sind beide eine harte Grenze (`aiStopsAtBudget`): Danach gibt es bis zum nächsten Tag keine KI mehr, weil es
+ * kein kostenloses Modell als Rückfall gibt. Mehr Budget: AI_GLOBAL_DAILY_RP und AI_ADDRESS_DAILY_RP in Vercel.
  */
-export const DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC = 250;
+export const DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC = 25;
+export const DEFAULT_ADDRESS_DAILY_RP_ANTHROPIC = 5;
 
 export function spendLimitsFromEnv(env: Record<string, string | undefined> = process.env): SpendLimits {
   const n = (v: string | undefined, d: number) => (v && /^\d+$/.test(v) ? Number(v) : d);
-  return { perAddressRp: n(env.AI_ADDRESS_DAILY_RP, 30), globalRp: n(env.AI_GLOBAL_DAILY_RP, aiProvider(env) === "anthropic" ? DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC : 500) };
+  const anthropic = aiProvider(env) === "anthropic";
+  return {
+    perAddressRp: n(env.AI_ADDRESS_DAILY_RP, anthropic ? DEFAULT_ADDRESS_DAILY_RP_ANTHROPIC : 30),
+    globalRp: n(env.AI_GLOBAL_DAILY_RP, anthropic ? DEFAULT_GLOBAL_DAILY_RP_ANTHROPIC : 500),
+  };
 }
 
-/** Hört die KI auf, wenn das globale Tagesbudget erreicht ist? Ja mit Anthropic (kein Gratismodell als Rückfall). */
+/** Hört die KI auf, wenn ein Tagesbudget (der Adresse oder aller) erreicht ist? Ja mit Anthropic (kein Gratismodell als Rückfall). */
 export function aiStopsAtBudget(mode: BudgetMode, env: Record<string, string | undefined> = process.env): boolean {
-  return mode === "global" && aiProvider(env) === "anthropic";
+  return mode !== "paid" && aiProvider(env) === "anthropic";
 }
 
 const rpToMicro = (rp: number) => Math.round((rp / RP_PER_USD) * MICRO);
